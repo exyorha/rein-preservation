@@ -1,0 +1,3 @@
+[submodule "fakeassembly/dynarmic"]
+	path = fakeassembly/dynarmic
+	url = https://github.com/merryhime/dynarmic.git

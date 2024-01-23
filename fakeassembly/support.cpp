@@ -6,7 +6,7 @@
 #include <dlfcn.h>
 #include <stdexcept>
 
-void stubcall(const char *format, ...) {
+void panic(const char *format, ...) {
     va_list args;
 
     va_start(args, format);

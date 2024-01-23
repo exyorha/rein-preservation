@@ -3,6 +3,11 @@ project(il2cpp-arm-adapter)
 
 include(GenerateExportHeader)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
+set(DYNARMIC_USE_BUNDLED_EXTERNALS TRUE CACHE BOOL "Use all bundled externals (useful when e.g. cross-compiling)" FORCE)
+add_subdirectory(dynarmic)
+
 find_program(RUBY ruby REQUIRED)
 
 add_library(GameAssembly MODULE
@@ -12,18 +17,34 @@ add_library(GameAssembly MODULE
     il2cpp_api_replacements/il2cpp-config-api.h
     ${CMAKE_CURRENT_BINARY_DIR}/include/il2cpp_export.h
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
+    android_api.cpp
+    android_api.h
     ElfModule.cpp
     ElfModule.h
     FileDescriptor.cpp
     FileDescriptor.h
     Image.cpp
     Image.h
+    JIT.cpp
+    JIT.h
+    JITThreadContext.cpp
+    JITThreadContext.h
     support.h
-    support.cpp)
+    support.cpp
+    thunking.cpp
+    thunking.h
+    ThunkManager.cpp
+    ThunkManager.h
+    SystemAPIThunking.cpp
+    SystemAPIThunking.h
+)
 target_include_directories(GameAssembly PRIVATE il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include .)
+target_link_libraries(GameAssembly PRIVATE dynarmic)
 
-install(TARGETS GameAssembly DESTINATION .)
-install(FILES app.info DESTINATION LinuxPlayer_Data)
+install(TARGETS GameAssembly DESTINATION . COMPONENT GameAssembly)
+install(FILES app.info DESTINATION LinuxPlayer_Data COMPONENT GameAssembly)
+
+
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden

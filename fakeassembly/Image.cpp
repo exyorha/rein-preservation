@@ -14,6 +14,7 @@
 
 #include "support.h"
 #include "thunking.h"
+#include "SystemAPIThunking.h"
 
 std::shared_mutex Image::m_initializationMutex;
 std::optional<Image> Image::m_il2cpp;
@@ -99,12 +100,14 @@ void Image::mapImageSegments() {
 
             int prot = PROT_NONE;
 
-            if(phdr.p_flags & (PF_R | PF_X)) {
+            if(phdr.p_flags & PF_R)
                 prot |= PROT_READ;
-            }
 
             if(phdr.p_flags & PF_W)
                 prot |= PROT_WRITE;
+
+            if(phdr.p_flags & PF_X)
+                prot |= PROT_EXEC;
 
             if(phdr.p_filesz != 0) {
                 if((phdr.p_offset & (PageSize - 1)) != (phdr.p_vaddr & (PageSize - 1)))
@@ -382,17 +385,10 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
     if(symbol.st_shndx == SHN_ABS) {
         return reinterpret_cast<void *>(symbol.st_value);
     } else if(symbol.st_shndx == SHN_UNDEF) {
-        return resolveUndefinedSymbol(m_stringTable + symbol.st_name);
+        return resolveUndefinedARMSymbol(m_stringTable + symbol.st_name);
     } else {
         return displace(symbol.st_value);
     }
-}
-
-void *Image::resolveUndefinedSymbol(const char *name) {
-    static uint32_t pseudofunc = UINT32_C(0xD40175A1); // SVC #0xBAD
-
-    printf("requested to resolve an undefined (external) symbol %s\n", name);
-    return &pseudofunc;
 }
 
 Image::ImageMapping::ImageMapping(void *preferredBase, size_t size) : m_preferredBase(preferredBase), m_size(size) {

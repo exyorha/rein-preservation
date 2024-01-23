@@ -32,8 +32,6 @@ private:
 
     static uint32_t symbolHash(const char *name);
 
-    static void *resolveUndefinedSymbol(const char *name);
-
     class ImageMapping {
     public:
         explicit ImageMapping(void *preferredBase, size_t size);

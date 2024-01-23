@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-[[noreturn]] void stubcall(const char *format, ...);
+[[noreturn]] void panic(const char *format, ...);
 
 std::filesystem::path thisLibraryDirectory();
 
