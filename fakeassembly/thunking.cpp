@@ -25,10 +25,12 @@ void runARMCall(JITThreadContext &context) {
             if(!key)
                 panic("ARMToX86ThunkCallSVC at an unknown thunk address");
 
+            auto savedLR = context.lr();
+
             thunkUtilitySlot = key;
             invokable();
 
-            context.pc = context.lr();
+            context.pc = savedLR;
         } else if(exitSVC != ARMCallEndSVC) {
             panic("unknown SVC 0x%04X in armcall\n", exitSVC);
         }
@@ -72,3 +74,56 @@ void storeARMCallPointerSizedArgument(int position, uintptr_t value) {
     }
 }
 
+void storeX86CallFloatResult(float result) {
+    auto &context = JITThreadContext::get();
+
+    context.vectors[0][0] = std::bit_cast<uint32_t>(result);
+    context.vectors[0][1] = 0;
+}
+
+void storeX86CallFloatResult(double result) {
+    auto &context = JITThreadContext::get();
+
+    context.vectors[0][0] = std::bit_cast<uint64_t>(result);
+    context.vectors[0][1] = 0;
+}
+
+void storeX86CallFloatResult(long double result) {
+    auto &context = JITThreadContext::get();
+
+    auto val = std::bit_cast<__int128_t>(result);
+
+    context.vectors[0][0] = static_cast<uint64_t>(val);
+    context.vectors[0][1] = static_cast<uint64_t>(val >> 64);
+}
+
+
+void fetchX86CallFloatingPointArgument(int position, float &out) {
+    if(position < 8) {
+        auto &context = JITThreadContext::get();
+        out = std::bit_cast<float>(static_cast<uint32_t>(context.vectors[position][0]));
+    } else {
+        panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
+    }
+}
+
+void fetchX86CallFloatingPointArgument(int position, double &out) {
+    if(position < 8) {
+        auto &context = JITThreadContext::get();
+        out = std::bit_cast<double>(static_cast<uint64_t>(context.vectors[position][0]));
+    } else {
+        panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
+    }
+}
+
+void fetchX86CallFloatingPointArgument(int position, long double &out) {
+    if(position < 8) {
+        auto &context = JITThreadContext::get();
+
+        __int128_t i128 = (static_cast<__int128_t>(context.vectors[position][1]) << 64) | context.vectors[position][0];
+
+        out = std::bit_cast<long double>(i128);
+    } else {
+        panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
+    }
+}

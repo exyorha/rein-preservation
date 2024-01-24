@@ -129,6 +129,11 @@ size_t ElfModuleImpl<T>::phnum() const {
 }
 
 template<typename T>
+size_t ElfModuleImpl<T>::phoff() const {
+    return m_ehdr.e_phoff;
+}
+
+template<typename T>
 Elf64_Phdr ElfModuleImpl<T>::phent(size_t index) const {
     return Traits::normalizePHDR(m_phdr.at(index));
 }

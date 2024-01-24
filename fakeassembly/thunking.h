@@ -22,6 +22,14 @@ struct WideningType<true> { using Type = intptr_t; };
 void storeARMCallPointerSizedArgument(int index, uintptr_t argument);
 uintptr_t fetchARMCallPointerSizedResult();
 
+void fetchX86CallFloatingPointArgument(int index, float &out);
+void fetchX86CallFloatingPointArgument(int index, double &out);
+void fetchX86CallFloatingPointArgument(int index, long double &out);
+
+void storeX86CallFloatResult(float result);
+void storeX86CallFloatResult(double result);
+void storeX86CallFloatResult(long double result);
+
 void runARMCall(JITThreadContext &context);
 
 extern "C" {
@@ -139,11 +147,13 @@ ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Ar
 
     auto &context = JITThreadContext::get();
 
-    context.push(context.lr());
+    auto savedPC = context.pc;
+    auto savedLR = context.lr();
+   // context.push(context.pc);
+   // context.push(context.lr());
 
     armCallStoreArguments(0, args...);
 
-    context.lr() = context.pc;
     context.pc = reinterpret_cast<uintptr_t>(armFunctionPointer);
 
     /*
@@ -151,7 +161,10 @@ ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Ar
      */
     runARMCall(context);
 
-    context.lr() = context.pop();
+    //context.lr() = context.pop();
+    //context.pc = context.pop();
+    context.lr() = savedLR;
+    context.pc = savedPC;
 
     return ARMCallResultFetcher<ReturnType>::fetchAndReturn();
 }
@@ -212,8 +225,10 @@ static inline auto retrieveX86CallArgument(int position) -> typename std::enable
 }
 
 template<typename T>
-auto retrieveX86CallArgument(int position) -> typename std::enable_if<std::is_floating_point_v<T>, T>::type {
-    panic("floating point argument retrieval is not implemented yet\n");
+static inline auto retrieveX86CallArgument(int position) -> typename std::enable_if<std::is_floating_point_v<T>, T>::type {
+    T result;
+    fetchX86CallFloatingPointArgument(position, result);
+    return result;
 }
 
 template<typename T>
@@ -250,7 +265,7 @@ static inline auto storeX86CallResult(T result) -> typename std::enable_if<std::
 
 template<typename T>
 auto storeX86CallResult(T result) -> typename std::enable_if<std::is_floating_point_v<T>>::type {
-    panic("floating point result storing is not implemented yet");
+    storeX86CallFloatResult(result);
 }
 
 template<typename T>

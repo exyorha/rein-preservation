@@ -63,11 +63,13 @@ File.open(ARGV[1], "wb") do |outf|
         inf.each_line do |line|
             line.strip!
 
+
             if line =~ /DO_API(_NO_RETURN)?\((.+?),\s*(.+?),\s*\((.*)\)\)/
 
+                func = $3
 
-                if $3 == "il2cpp_add_internal_call" || $3 == "il2cpp_resolve_icall"
-                    next
+                if func == "il2cpp_add_internal_call" || $3 == "il2cpp_resolve_icall"
+                   next
                 end
 
                 args = split_arg_list($4)
@@ -79,7 +81,7 @@ File.open(ARGV[1], "wb") do |outf|
                 end
 
 
-                outf.puts "#{$2} #{$3}(#{$4}) {"
+                outf.puts "#{$2} #{func}(#{$4}) {"
                 outf.puts "  typedef #{$2}(*FunctionPointer)(#{$4});"
                 outf.puts "  static FunctionPointer arm_#{$3} = reinterpret_cast<FunctionPointer>(Image::get_il2cpp_image()->getSymbolChecked(#{$3.inspect}));"
                 if $1.nil?

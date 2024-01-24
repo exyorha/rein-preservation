@@ -5,8 +5,9 @@
 
 #include <cstdio>
 #include <cinttypes>
+#include <signal.h>
 
-std::recursive_mutex JIT::m_globalJITLock;
+std::mutex JIT::m_globalJITLock;
 std::optional<JIT> JIT::m_jit;
 
 JIT::JIT() :
@@ -30,6 +31,25 @@ JIT::JIT() :
 JIT::~JIT() = default;
 
 uint32_t JIT::doRunToSVC(JITThreadContext &context) {
+#if 0
+    struct SignalGuard {
+        SignalGuard() {
+            sigset_t armSignals;
+            sigemptyset(&armSignals);
+            sigaddset(&armSignals, SIGPWR);
+            sigaddset(&armSignals, SIGXCPU);
+            sigprocmask(SIG_BLOCK, &armSignals, &oldmask);
+        }
+
+        ~SignalGuard() {
+            sigprocmask(SIG_SETMASK, &oldmask, nullptr);
+        }
+
+    private:
+        sigset_t oldmask;
+
+    } signalGuard;
+#endif
     context.apply(*m_dynarmic);
 
     m_exitingOnSVC.reset();
@@ -53,7 +73,7 @@ uint32_t JIT::doRunToSVC(JITThreadContext &context) {
 }
 
 uint32_t JIT::runToSVC(JITThreadContext &thread) {
-    std::unique_lock<std::recursive_mutex> locker(m_globalJITLock);
+    std::unique_lock<std::mutex> locker(m_globalJITLock);
 
     return jitInstanceLocked()->doRunToSVC(thread);
 }
@@ -82,7 +102,29 @@ std::uint32_t JIT::MemoryRead32(Dynarmic::A64::VAddr vaddr) {
 }
 
 std::uint64_t JIT::MemoryRead64(Dynarmic::A64::VAddr vaddr) {
-    panic("unmapped 64-bit memory read from %016" PRIx64 "\n", vaddr);
+    fputs("ARM state:\n", stdout);
+    for(unsigned int gpr = 0; gpr < 31; gpr++) {
+        printf("R%-2u:  0x%016" PRIx64, gpr, m_dynarmic->GetRegister(gpr));
+        if((gpr % 2) == 0)
+            fputs("    ", stdout);
+        else
+            fputs("\n", stdout);
+    }
+
+    printf("\nPC:   0x%016" PRIx64 "    SP:    0x%016" PRIx64 "\n", m_dynarmic->GetPC(), m_dynarmic->GetSP());
+
+    printf("PSTATE: 0x%08" PRIx32 "   FPCR: 0x%08" PRIx32 "   FPSR: 0x%08" PRIx32 "\n",
+           m_dynarmic->GetPstate(), m_dynarmic->GetFpcr(), m_dynarmic->GetFpsr());
+#if 0 // this is *x86* disassembly, not very useful
+    printf("Instruction disassembly:\n");
+
+    auto insns = m_dynarmic->Disassemble();
+    for(const auto &insn: insns) {
+        printf("  %s\n", insn.c_str());
+    }
+#endif
+    panic("unmapped 64-bit memory read from %016" PRIx64 "; ARM PC %016" PRIx64 "\n", vaddr,
+          m_dynarmic->GetPC());
 }
 
 Dynarmic::A64::Vector JIT::MemoryRead128(Dynarmic::A64::VAddr vaddr) {

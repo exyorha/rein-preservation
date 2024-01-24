@@ -1,4 +1,8 @@
 #include "android_api.h"
+#include "Image.h"
+#include "SystemAPIThunking.h"
+
+#include <elf.h>
 
 #include <cstdio>
 #include <fcntl.h>
@@ -36,19 +40,41 @@ char *emulated_dlerror(void) {
     return nullptr;
 }
 
+struct android_dl_phdr_info {
+  Elf64_Addr dlpi_addr;
+  const char* dlpi_name;
+  const Elf64_Phdr* dlpi_phdr;
+  Elf64_Half dlpi_phnum;
+};
+
 int emulated_dl_iterate_phdr(int (*callback)(struct android_dl_phdr_info *info, size_t size, void *data), void *data) {
+    /*
+     * We report exactly one module - libil2cpp.so.
+     */
+    auto image = Image::get_il2cpp_image();
+
+    struct android_dl_phdr_info info;
+    info.dlpi_addr = image->displacement();
+    info.dlpi_name = "libil2cpp.so";
+    info.dlpi_phdr = image->phdr();
+    info.dlpi_phnum = image->phnum();
+
     printf("emulated_dl_iterate_phdr(%p, %p)\n", callback, data);
-    return 0;
+
+    return callback(&info, sizeof(info), data);
 }
 
 void *emulated_dlopen(const char *filename, int flags) {
-    printf("emulated_dlopen(%p, %d)\n", filename, flags);
-    return nullptr;
+    static unsigned char pseudohandle;
+
+    printf("emulated_dlopen(%s, %d)\n", filename, flags);
+
+    return &pseudohandle;
 }
 
 void *emulated_dlsym(void *handle, const char *sym) {
     printf("emulated_dlsym(%p, %s)\n", handle, sym);
-    return nullptr;
+    return resolveUndefinedARMSymbol(sym);
 }
 
 void android_FD_SET_chk(int fd, fd_set *set, size_t size) {

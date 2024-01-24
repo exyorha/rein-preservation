@@ -24,6 +24,18 @@ public:
     bool getSymbol(const char *name, void *&symbol) const;
     void *getSymbolChecked(const char *name) const;
 
+    inline intptr_t displacement() const {
+        return m_mapping->displacement();
+    }
+
+    inline const Elf64_Phdr* phdr() const {
+        return m_phdr;
+    }
+
+    inline size_t phnum() const {
+        return m_phnum;
+    }
+
 private:
     void createBackgroundMapping();
     void mapImageSegments();
@@ -93,6 +105,8 @@ private:
     size_t m_relocationsSize;
     const Elf64_Rela *m_pltRelocations;
     size_t m_pltRelocationsSize;
+    Elf64_Phdr *m_phdr;
+    size_t m_phnum;
 };
 
 #endif

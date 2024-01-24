@@ -3,6 +3,9 @@ project(il2cpp-arm-adapter)
 
 include(GenerateExportHeader)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFI REQUIRED IMPORTED_TARGET libffi)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 set(DYNARMIC_USE_BUNDLED_EXTERNALS TRUE CACHE BOOL "Use all bundled externals (useful when e.g. cross-compiling)" FORCE)
@@ -16,6 +19,7 @@ add_library(GameAssembly SHARED
     il2cpp_api/il2cpp-api-functions.h
     il2cpp_api/il2cpp-api-types.h
     il2cpp_api/il2cpp-api.h
+    il2cpp_api/il2cpp-blob.h
     il2cpp_api_replacements/il2cpp-config-api.h
     ${CMAKE_CURRENT_BINARY_DIR}/include/il2cpp_export.h
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
@@ -46,7 +50,7 @@ add_library(GameAssembly SHARED
 )
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_include_directories(GameAssembly PRIVATE .)
-target_link_libraries(GameAssembly PRIVATE dynarmic)
+target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI)
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden

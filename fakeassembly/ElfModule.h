@@ -24,6 +24,7 @@ public:
     virtual uint64_t entryPoint() const = 0;
 
     virtual size_t phnum() const = 0;
+    virtual size_t phoff() const = 0;
     virtual Elf64_Phdr phent(size_t index) const = 0;
 
     virtual void readFileData(void *data, size_t size, off_t offset) = 0;
@@ -78,6 +79,7 @@ public:
     uint64_t entryPoint() const override;
 
     size_t phnum() const override;
+    size_t phoff() const override;
     Elf64_Phdr phent(size_t index) const override;
 
     void readFileData(void *data, size_t size, off_t offset) override;

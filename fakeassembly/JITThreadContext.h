@@ -27,6 +27,7 @@ public:
     std::array<Dynarmic::A64::Vector, 32> vectors;
     uint32_t fpcr;
     uint32_t fpsr;
+    uint32_t pstate;
 
     inline uint64_t &lr() {
         return gprs[30];
@@ -51,7 +52,7 @@ public:
     }
 
 private:
-    static constexpr size_t ThreadStackSize = 128 * 1024;
+    static constexpr size_t ThreadStackSize = 512 * 1024;
 
     static thread_local std::unique_ptr<JITThreadContext> m_jitThread;
     void *m_threadStack;

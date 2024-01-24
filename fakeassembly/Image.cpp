@@ -30,14 +30,21 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
     m_symbolTable(nullptr),
     m_got(nullptr),
     m_relocations(nullptr), m_relocationsSize(0),
-    m_pltRelocations(nullptr), m_pltRelocationsSize(0) {
+    m_pltRelocations(nullptr), m_pltRelocationsSize(0),
+    m_phdr(nullptr),
+    m_phnum(0) {
 
     if(m_module->moduleClass() != ELFCLASS64 || m_module->machine() != EM_AARCH64) {
         throw std::runtime_error("unsupported module class or architecture");
     }
 
+    m_phnum = m_module->phnum();
+
     createBackgroundMapping();
     mapImageSegments();
+
+    if(!m_phdr)
+        throw std::runtime_error("unable to map the PHDR into one of the segments");
 
     printf("----- ARM image %s is occupying the memory range from %p to %p\n",
            path.c_str(),
@@ -97,6 +104,9 @@ void Image::createBackgroundMapping() {
 }
 
 void Image::mapImageSegments() {
+    auto phstart = m_module->phoff();
+    auto phend = phstart + m_module->phnum() * sizeof(Elf64_Phdr);
+
     for(size_t entry = 0, num = m_module->phnum(); entry < num; entry++) {
         auto phdr = m_module->phent(entry);
 
@@ -143,6 +153,10 @@ void Image::mapImageSegments() {
                 if(result < 0) {
                     throw std::system_error(errno, std::generic_category());
                 }
+            }
+
+            if(!m_phdr && (phdr.p_offset <= phstart && phdr.p_offset + phdr.p_filesz >= phend)) {
+                m_phdr = displace<Elf64_Phdr>(phdr.p_vaddr + (phstart - phdr.p_offset));
             }
         } else if(phdr.p_type == PT_DYNAMIC) {
             if(m_dynamic)

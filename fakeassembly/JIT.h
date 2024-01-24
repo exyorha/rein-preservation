@@ -51,7 +51,7 @@ private:
 
     uint32_t doRunToSVC(JITThreadContext &thread);
 
-    static std::recursive_mutex m_globalJITLock;
+    static std::mutex m_globalJITLock;
     static std::optional<JIT> m_jit;
 
     struct SVCExit {

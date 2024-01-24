@@ -57,7 +57,7 @@ static void *getFileArrayPointer() {
     /*
      * TODO: do something with this thing.
      */
-    return nullptr;
+    return reinterpret_cast<void *>(UINT64_C(0xDEADDEADDEADDEAD));
 }
 
 static int ioctl_compat(int fd, unsigned long request, void *data) {
