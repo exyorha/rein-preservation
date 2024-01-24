@@ -30,6 +30,9 @@ extern "C" {
 }
 
 
+template<typename ReturnType, typename... Args>
+static constexpr inline ThunkManager::X86ThunkTarget createTypedX86Thunk(ReturnType (*)(Args...));
+
 template<typename T>
 static inline auto fetchARMCallResult() -> typename std::enable_if<std::is_integral_v<T>, T>::type {
     return static_cast<T>(fetchARMCallPointerSizedResult());
@@ -78,7 +81,27 @@ static inline auto armCallStorePointerArgument(int argumentIndex, T *arg) -> typ
 
 template<typename T>
 auto armCallStorePointerArgument(int argumentIndex, T *arg) -> typename std::enable_if<std::is_function_v<T>>::type {
-    panic("thunking is not yet implemented for pointer to functions passed as arguments\n");
+    if(!arg) {
+        storeARMCallPointerSizedArgument(argumentIndex, 0);
+        return;
+    }
+
+    /*
+     * Is this an x86 to ARM thunk?
+     */
+    auto thunkedARMFunction = ThunkManager::lookupX86ToARMThunkCall(reinterpret_cast<ThunkManager::X86ThunkTarget>(arg));
+    if(thunkedARMFunction) {
+        /*
+         * Yes; don't double-thunk, just return the ARM function.
+         */
+        storeARMCallPointerSizedArgument(argumentIndex, reinterpret_cast<uintptr_t>(thunkedARMFunction));
+        return;
+    }
+
+    auto thunk =
+        ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(arg), createTypedX86Thunk(arg));
+
+    storeARMCallPointerSizedArgument(argumentIndex, reinterpret_cast<uintptr_t>(thunk));
 }
 
 template<typename T>
@@ -119,8 +142,6 @@ ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Ar
     context.push(context.lr());
 
     armCallStoreArguments(0, args...);
-
-    // TODO: arguments!
 
     context.lr() = context.pc;
     context.pc = reinterpret_cast<uintptr_t>(armFunctionPointer);
@@ -164,9 +185,14 @@ static auto retrieveX86CallPointer(int position) -> typename std::enable_if<std:
     if(!ptr)
         return nullptr;
 
-    /*
-     * TODO: un-thunk back to x86 if ptr is a pointer to a thunked ARM function.
-     */
+    void *thunkedX86 = ThunkManager::lookupARMToX86ThunkCall(ptr);
+    if(thunkedX86) {
+        /*
+         * This is a thunked x86 function pointer; pass it directly, don't double-thunk.
+         */
+
+        return reinterpret_cast<T *>(thunkedX86);
+    }
 
     auto thunk = ThunkManager::allocateX86ToARMThunkCall(ptr, reinterpret_cast<ThunkManager::X86ThunkTarget>(static_cast<T *>(x86CallThunk)));
 
@@ -188,6 +214,11 @@ static inline auto retrieveX86CallArgument(int position) -> typename std::enable
 template<typename T>
 auto retrieveX86CallArgument(int position) -> typename std::enable_if<std::is_floating_point_v<T>, T>::type {
     panic("floating point argument retrieval is not implemented yet\n");
+}
+
+template<typename T>
+static inline auto retrieveX86CallArgument(int position) -> typename std::enable_if<std::is_enum_v<T>, T>::type {
+    return static_cast<T>(retrieveX86CallArgument<typename std::underlying_type<T>::type>(position));
 }
 
 template<typename T>
@@ -222,6 +253,10 @@ auto storeX86CallResult(T result) -> typename std::enable_if<std::is_floating_po
     panic("floating point result storing is not implemented yet");
 }
 
+template<typename T>
+static inline auto storeX86CallResult(T result) -> typename std::enable_if<std::is_enum_v<T>>::type {
+    storeX86CallResult(static_cast<typename std::underlying_type<T>::type>(result));
+}
 
 template<int Position>
 struct X86CallTranslateArgument {
@@ -272,6 +307,16 @@ template<typename ReturnType, typename... Args>
 void x86call(ReturnType (*x86FunctionPointer)(Args... args)) {
 
     X86CallTranslatingFunctionApply<sizeof...(Args), decltype(x86FunctionPointer)>::apply(x86FunctionPointer);
+}
+
+template<typename ReturnType, typename... Args>
+void x86call() {
+    return x86call(reinterpret_cast<ReturnType (*)(Args...)>(thunkUtilitySlot));
+}
+
+template<typename ReturnType, typename... Args>
+static constexpr inline ThunkManager::X86ThunkTarget createTypedX86Thunk(ReturnType (*)(Args...)) {
+    return static_cast<ThunkManager::X86ThunkTarget>(&x86call<ReturnType, Args...>);
 }
 
 #endif

@@ -5,7 +5,7 @@
 #include <cstdlib>
 
 int main(int argc, char *argv[]) {
-    il2cpp_set_data_dir("LinuxPlayer_Data/Managed");
+    il2cpp_set_data_dir("LinuxPlayer_Data/il2cpp_data");
     auto result = il2cpp_init("IL2CPP Root Domain");
     if(!result) {
         fprintf(stderr, "il2cpp has failed to initialize.\n");
@@ -63,7 +63,8 @@ int main(int argc, char *argv[]) {
                 auto returnType = il2cpp_method_get_return_type(method);
                 auto returnTypeCategory = il2cpp_type_get_type(returnType);
                 auto returnTypeName = il2cpp_type_get_name(returnType);
-                printf("      return type: '%s', category: %d\n", returnTypeName, returnTypeCategory);
+                printf("      return type: '%s', category: %d; pointer: %d, byref: %d\n", returnTypeName, returnTypeCategory,
+                       il2cpp_type_is_pointer_type(returnType), il2cpp_type_is_byref(returnType));
 
                 size_t argCount = il2cpp_method_get_param_count(method);
                 for(size_t argIndex = 0; argIndex < argCount; argIndex++) {
@@ -71,7 +72,9 @@ int main(int argc, char *argv[]) {
                     auto argumentTypeCategory = il2cpp_type_get_type(argumentType);
                     auto argumentTypeName = il2cpp_type_get_name(argumentType);
 
-                    printf("      argument %zu type: '%s', category: %d\n", argIndex, argumentTypeName, argumentTypeCategory);
+                    printf("      argument %zu type: '%s', category: %d; pointer: %d, byref: %d\n", argIndex, argumentTypeName, argumentTypeCategory,
+                           il2cpp_type_is_pointer_type(argumentType),
+                           il2cpp_type_is_byref(argumentType));
                 }
             }
         }

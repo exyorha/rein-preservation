@@ -8,9 +8,11 @@
 #include <cstring>
 
 std::shared_mutex ThunkManager::m_thunkTableMutex;
-std::unordered_map<ThunkManager::X86ThunkTarget, void *> ThunkManager::m_thunkX86ToArmTableForward;
-std::unordered_map<void *, ThunkManager::X86ThunkTarget> ThunkManager::m_thunkX86ToArmTableReverse;
+std::unordered_map<void *, void *> ThunkManager::m_thunkX86ToArmTableForward;
+std::unordered_map<void *, void *> ThunkManager::m_thunkX86ToArmTableReverse;
 std::unordered_map<void *, ThunkManager::X86ThunkTarget> ThunkManager::m_thunkArmToX86TableForward;
+std::unordered_map<ThunkManager::X86ThunkTarget, void *> ThunkManager::m_thunkArmToX86TableReverse;
+
 #if 0
 void *ThunkManager::m_currentARMThunkBlock = nullptr;
 size_t ThunkManager::m_currentARMThunkBlockRemaining = 0;
@@ -19,14 +21,14 @@ size_t ThunkManager::m_currentARMThunkBlockRemaining = 0;
 ThunkManager::BumpAllocator ThunkManager::m_armThunkAllocator;
 ThunkManager::BumpAllocator ThunkManager::m_x86ThunkAllocator;
 
-void *ThunkManager::allocateARMToX86ThunkCall(X86ThunkTarget x86SideTarget) {
-    if(!x86SideTarget)
+void *ThunkManager::allocateARMToX86ThunkCall(void *key, X86ThunkTarget x86FunctionToCall) {
+    if(!key || !x86FunctionToCall)
         throw std::logic_error("cannot thunk to null");
 
     {
         std::shared_lock<std::shared_mutex> locker(m_thunkTableMutex);
 
-        auto it = m_thunkX86ToArmTableForward.find(x86SideTarget);
+        auto it = m_thunkX86ToArmTableForward.find(key);
         if(it != m_thunkX86ToArmTableForward.end()) {
             return it->second;
         }
@@ -35,28 +37,37 @@ void *ThunkManager::allocateARMToX86ThunkCall(X86ThunkTarget x86SideTarget) {
     {
         std::unique_lock<std::shared_mutex> locker(m_thunkTableMutex);
 
-        auto it = m_thunkX86ToArmTableForward.find(x86SideTarget);
+        auto it = m_thunkX86ToArmTableForward.find(key);
         if(it != m_thunkX86ToArmTableForward.end()) {
             return it->second;
         }
 
-        auto address = static_cast<uint32_t *>(m_armThunkAllocator.allocate(sizeof(uint32_t)));
-        *address = UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMToX86ThunkCallSVC) << 5);
+        auto address = static_cast<ARMThunk *>(m_armThunkAllocator.allocate(sizeof(ARMThunk)));
+        address->insn = UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMToX86ThunkCallSVC) << 5);
+        address->functionToCall = x86FunctionToCall;
 
-        m_thunkX86ToArmTableForward.emplace(x86SideTarget, address);
-        m_thunkX86ToArmTableReverse.emplace(address, x86SideTarget);
+        m_thunkX86ToArmTableForward.emplace(key, address);
+        m_thunkX86ToArmTableReverse.emplace(address, key);
 
         return address;
     }
 }
 
-ThunkManager::X86ThunkTarget ThunkManager::lookupARMToX86ThunkCall(void *armCallAddress) {
+void *ThunkManager::lookupARMToX86ThunkCall(void *armCallAddress, ThunkManager::X86ThunkTarget *functionToCall) {
     std::shared_lock<std::shared_mutex> locker(m_thunkTableMutex);
 
     auto it = m_thunkX86ToArmTableReverse.find(armCallAddress);
 
-    if(it != m_thunkX86ToArmTableReverse.end())
-        return it->second;
+    if(it != m_thunkX86ToArmTableReverse.end()) {
+        auto key = it->second;
+
+        if(functionToCall) {
+            auto thunk = static_cast<ARMThunk *>(armCallAddress);
+            *functionToCall = thunk->functionToCall;
+        }
+
+        return key;
+    }
 
     return nullptr;
 }
@@ -125,6 +136,17 @@ ThunkManager::X86ThunkTarget ThunkManager::allocateX86ToARMThunkCall(void *key, 
         return thunkFunc;
     }
 
+}
+
+void *ThunkManager::lookupX86ToARMThunkCall(X86ThunkTarget thunk) {
+    std::shared_lock<std::shared_mutex> locker(m_thunkTableMutex);
+
+    auto it = m_thunkArmToX86TableReverse.find(thunk);
+
+    if(it != m_thunkArmToX86TableReverse.end())
+        return it->second;
+
+    return nullptr;
 }
 
 ThunkManager::BumpAllocator::BumpAllocator() : m_currentBlock(nullptr), m_currentBlockEnd(nullptr) {

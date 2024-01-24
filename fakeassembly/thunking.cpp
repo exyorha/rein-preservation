@@ -1,4 +1,5 @@
 #include "thunking.h"
+#include "ThunkManager.h"
 
 #include <cinttypes>
 
@@ -18,11 +19,14 @@ void runARMCall(JITThreadContext &context) {
         exitSVC = JIT::runToSVC(context);
 
         if(exitSVC == ThunkManager::ARMToX86ThunkCallSVC) {
-            auto x86Side = ThunkManager::lookupARMToX86ThunkCall(reinterpret_cast<void *>(context.pc - 4));
-            if(!x86Side)
+            ThunkManager::X86ThunkTarget invokable;
+
+            auto key = ThunkManager::lookupARMToX86ThunkCall(reinterpret_cast<void *>(context.pc - 4), &invokable);
+            if(!key)
                 panic("ARMToX86ThunkCallSVC at an unknown thunk address");
 
-            x86Side();
+            thunkUtilitySlot = key;
+            invokable();
 
             context.pc = context.lr();
         } else if(exitSVC != ARMCallEndSVC) {

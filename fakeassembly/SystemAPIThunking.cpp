@@ -37,19 +37,16 @@ extern "C" {
 
 using SymbolProvidingFunction = void *(*)();
 
-template<auto x86Function>
-static void x86ThunkImpl() {
-    x86call(x86Function);
-}
 
 template<auto x86Function>
 static void *thunkX86() {
-    return ThunkManager::allocateARMToX86ThunkCall(x86ThunkImpl<x86Function>);
+    return ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function),
+                                                   createTypedX86Thunk(x86Function));
 }
 
 template<void (*x86Function)(void)>
 static void *thunkX86Raw() {
-    return ThunkManager::allocateARMToX86ThunkCall(x86Function);
+    return ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function), x86Function);
 }
 
 static void *getEnvironPointer() {
