@@ -18,6 +18,7 @@ public:
     Image(const Image &other) = delete;
     Image &operator =(const Image &other) = delete;
 
+    static Image *get_armlib_image();
     static Image *get_il2cpp_image();
 
     bool getSymbol(const char *name, void *&symbol) const;
@@ -65,6 +66,7 @@ private:
     static uint32_t queryPageSize();
 
     static std::shared_mutex m_initializationMutex;
+    static std::optional<Image> m_armlib;
     static std::optional<Image> m_il2cpp;
     static const uint32_t PageSize;
 

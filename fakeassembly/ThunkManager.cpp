@@ -46,9 +46,6 @@ void *ThunkManager::allocateARMToX86ThunkCall(X86ThunkTarget x86SideTarget) {
         m_thunkX86ToArmTableForward.emplace(x86SideTarget, address);
         m_thunkX86ToArmTableReverse.emplace(address, x86SideTarget);
 
-        printf("new thunk allocated: ARM call to %p will be translated to an X86 call to %p\n",
-               address, x86SideTarget);
-
         return address;
     }
 }

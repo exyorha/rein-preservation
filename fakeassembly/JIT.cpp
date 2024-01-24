@@ -30,8 +30,6 @@ JIT::JIT() :
 JIT::~JIT() = default;
 
 uint32_t JIT::doRunToSVC(JITThreadContext &context) {
-    printf("JIT: starting JIT execution; PC: 0x%016" PRIx64 "\n", context.pc);
-
     context.apply(*m_dynarmic);
 
     m_exitingOnSVC.reset();
@@ -49,8 +47,6 @@ uint32_t JIT::doRunToSVC(JITThreadContext &context) {
 
     auto svc = *m_exitingOnSVC;
     m_exitingOnSVC.reset();
-
-    printf("JIT: JIT has exited on SVC 0x%04X; PC: 0x%016" PRIx64 "\n", svc, context.pc);
 
     return svc;
 

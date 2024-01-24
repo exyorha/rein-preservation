@@ -1,0 +1,83 @@
+#include <il2cpp-api.h>
+#include <il2cpp-tabledefs.h>
+
+#include <cstdio>
+#include <cstdlib>
+
+int main(int argc, char *argv[]) {
+    il2cpp_set_data_dir("LinuxPlayer_Data/Managed");
+    auto result = il2cpp_init("IL2CPP Root Domain");
+    if(!result) {
+        fprintf(stderr, "il2cpp has failed to initialize.\n");
+        return 1;
+    }
+
+    printf("il2cpp has been successfully initialized.\n");
+
+    // TODO: possibly use il2cpp_class_for_each
+
+
+    auto domain = il2cpp_domain_get();
+
+    size_t numberOfAssemblies;
+    auto assemblies = il2cpp_domain_get_assemblies(domain, &numberOfAssemblies);
+    printf("the default domain %p contains %zu assemblies.\n", domain, numberOfAssemblies);
+    for(size_t index = 0; index <numberOfAssemblies; index++) {
+        auto assembly = assemblies[index];
+        auto image = il2cpp_assembly_get_image(assembly);
+        auto assemblyName = il2cpp_image_get_name(image);
+
+        auto classCount = il2cpp_image_get_class_count(image);
+
+        bool assemblyHeading = false;
+
+        for(size_t classIndex = 0; classIndex < classCount; classIndex++) {
+            auto classDesc = const_cast<Il2CppClass *>(il2cpp_image_get_class(image, classIndex));
+            auto className = il2cpp_class_get_name(classDesc);
+            auto namespaceName = il2cpp_class_get_namespace(classDesc);
+
+            bool classHeading = false;
+
+            void *iter = nullptr;
+            const MethodInfo *method;
+            while((method = il2cpp_class_get_methods(classDesc, &iter)) != nullptr) {
+                auto name = il2cpp_method_get_name(method);
+                uint32_t iflags;
+                uint32_t flags = il2cpp_method_get_flags(method, &iflags);
+
+                if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+                    continue;
+
+                if(!assemblyHeading) {
+                    assemblyHeading = true;
+                    printf("assembly no. %zu: assembly %p, image %p: '%s', containing %zu classes total:\n", index, assembly, image, assemblyName, classCount);
+                }
+
+                if(!classHeading) {
+                    classHeading = true;
+                    printf("  class no. %zu: %s#%s\n", classIndex, namespaceName, className);
+                }
+
+                printf("    internal method: '%s', flags: 0x%08X, iflags: 0x%08X\n", name, flags, iflags);
+
+                auto returnType = il2cpp_method_get_return_type(method);
+                auto returnTypeCategory = il2cpp_type_get_type(returnType);
+                auto returnTypeName = il2cpp_type_get_name(returnType);
+                printf("      return type: '%s', category: %d\n", returnTypeName, returnTypeCategory);
+
+                size_t argCount = il2cpp_method_get_param_count(method);
+                for(size_t argIndex = 0; argIndex < argCount; argIndex++) {
+                    auto argumentType = il2cpp_method_get_param(method, argIndex);
+                    auto argumentTypeCategory = il2cpp_type_get_type(argumentType);
+                    auto argumentTypeName = il2cpp_type_get_name(argumentType);
+
+                    printf("      argument %zu type: '%s', category: %d\n", argIndex, argumentTypeName, argumentTypeCategory);
+                }
+            }
+        }
+
+    }
+
+    // the JIT currently crashes on an orderly shutdown through no fault of dynarmic
+    _Exit(0);
+}

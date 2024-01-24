@@ -10,8 +10,6 @@ void runARMCall(JITThreadContext &context) {
 
     static const uint32_t stopSVC = UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMCallEndSVC) << 5);
 
-    printf("Starting armcall on JIT thread %p, calling 0x%016" PRIx64 "\n", &context, context.pc);
-
     uint32_t exitSVC;
 
     context.lr() = reinterpret_cast<uintptr_t>(&stopSVC);
@@ -24,13 +22,9 @@ void runARMCall(JITThreadContext &context) {
             if(!x86Side)
                 panic("ARMToX86ThunkCallSVC at an unknown thunk address");
 
-            printf("  ARM->x86 call of %p\n", x86Side);
-
             x86Side();
 
-            printf("  returning to LR 0x%016" PRIx64 "\n", context.gprs[30]);
-
-            context.pc = context.gprs[30];
+            context.pc = context.lr();
         } else if(exitSVC != ARMCallEndSVC) {
             panic("unknown SVC 0x%04X in armcall\n", exitSVC);
         }
@@ -49,14 +43,10 @@ uintptr_t retrieveX86CallPointerSizedArgument(int position) {
         panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
     }
 
-    printf("Fetched pointer-sized argument %d: 0x%016" PRIx64 "\n", position, value);
-
     return value;
 }
 
 void storeX86CallPointerSizedResult(uintptr_t result) {
-    printf("Store pointer-sized result: 0x%016" PRIx64 "\n", result);
-
     auto &context = JITThreadContext::get();
     context.gprs[0] = result;
 }
@@ -65,17 +55,11 @@ uintptr_t fetchARMCallPointerSizedResult() {
 
     auto &context = JITThreadContext::get();
 
-    auto result = context.gprs[0];
-
-    printf("Fetch pointer-sized result: 0x%016" PRIx64 "\n", result);
-
-    return result;
+    return  context.gprs[0];
 }
 
 void storeARMCallPointerSizedArgument(int position, uintptr_t value) {
     auto &context = JITThreadContext::get();
-
-    printf("Storing pointer-sized argument %d: 0x%016" PRIx64 "\n", position, value);
 
     if(position < 8) {
         context.gprs[position] = value;

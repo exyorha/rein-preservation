@@ -12,7 +12,7 @@ find_program(RUBY ruby REQUIRED)
 
 enable_language(ASM)
 
-add_library(GameAssembly MODULE
+add_library(GameAssembly SHARED
     il2cpp_api/il2cpp-api-functions.h
     il2cpp_api/il2cpp-api-types.h
     il2cpp_api/il2cpp-api.h
@@ -25,12 +25,15 @@ add_library(GameAssembly MODULE
     ElfModule.h
     FileDescriptor.cpp
     FileDescriptor.h
+    icall_api.cpp
     Image.cpp
     Image.h
     JIT.cpp
     JIT.h
     JITThreadContext.cpp
     JITThreadContext.h
+    signal_compatibility.cpp
+    signal_compatibility.h
     support.h
     support.cpp
     thunking.cpp
@@ -41,11 +44,9 @@ add_library(GameAssembly MODULE
     SystemAPIThunking.cpp
     SystemAPIThunking.h
 )
-target_include_directories(GameAssembly PRIVATE il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include .)
+target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(GameAssembly PRIVATE .)
 target_link_libraries(GameAssembly PRIVATE dynarmic)
-
-install(TARGETS GameAssembly DESTINATION . COMPONENT GameAssembly)
-install(FILES app.info DESTINATION LinuxPlayer_Data COMPONENT GameAssembly)
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden
@@ -77,3 +78,36 @@ add_custom_command(
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/il2cpp_api/il2cpp-api-functions.h
     VERBATIM
 )
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so
+    COMMAND
+        aarch64-linux-gnu-gcc
+        -shared
+        -o ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so
+        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/armlib.c
+        -x assembler-with-cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/setjmp.S
+        -nostdinc
+        -nostdlib
+        -ffreestanding
+        -Wall -W
+        -O2
+        -fPIC
+        -Wl,-Bsymbolic
+        -Wl,--hash-style=sysv
+        -Wl,-z,norelro
+    DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/armlib.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/setjmp.S
+        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/nanoprintf.h
+)
+
+add_custom_target(armlib DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so)
+add_dependencies(GameAssembly armlib)
+
+add_subdirectory(interrogator)
+
+install(TARGETS GameAssembly interrogator DESTINATION . COMPONENT GameAssembly)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so DESTINATION . COMPONENT GameAssembly)
+install(FILES app.info DESTINATION LinuxPlayer_Data COMPONENT GameAssembly)

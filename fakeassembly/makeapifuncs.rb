@@ -65,6 +65,11 @@ File.open(ARGV[1], "wb") do |outf|
 
             if line =~ /DO_API(_NO_RETURN)?\((.+?),\s*(.+?),\s*\((.*)\)\)/
 
+
+                if $3 == "il2cpp_add_internal_call" || $3 == "il2cpp_resolve_icall"
+                    next
+                end
+
                 args = split_arg_list($4)
 
                 argpack = ""

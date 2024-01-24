@@ -27,6 +27,7 @@
 #include <sys/utsname.h>
 
 #include "android_api.h"
+#include "signal_compatibility.h"
 
 using namespace std::string_view_literals;
 
@@ -102,22 +103,6 @@ static int *errno_compat() {
     return &errno;
 }
 
-static void sprintfRawThunk(void) {
-    panic("sprintfRawThunk\n");
-}
-
-static void snprintfRawThunk(void) {
-    panic("snprintfRawThunk\n");
-}
-
-static void sscanfRawThunk(void) {
-    panic("sscanfRawThunk\n");
-}
-
-static void swprintfRawThunk(void) {
-    panic("swprintfRawThunk\n");
-}
-
 static void syslogRawThunk(void) {
     panic("syslogRawThunk\n");
 }
@@ -130,17 +115,59 @@ static void vfprintfRawThunk(void) {
     panic("vfprintfRawThunk\n");
 }
 
+static void divRawThunk(void) {
+    panic("divRawThunk");
+}
 
-static void vsnprintfRawThunk(void) {
-    panic("vsnprintfRawThunk\n");
+static int pthread_attr_getstack_compat(const pthread_attr_t *attr, void **stackaddr, size_t *stacksize) {
+    printf("pthread_attr_getstack(%p, %p, %p)\n", attr, stackaddr, stacksize);
+
+    auto result = pthread_attr_getstack(attr, stackaddr, stacksize);
+
+    if(result == 0) {
+        auto addr = *stackaddr;
+        auto size = *stacksize;
+
+        void *currentHostSP;
+        __asm__ ("movq %%rsp, %0" : "=r"(currentHostSP));
+
+        auto end = static_cast<unsigned char *>(addr) + size;
+
+        printf("  pthread_attr_getstack query; stack range: %p<->%p, current host SP: %p\n",
+               addr, end, currentHostSP);
+
+        if(currentHostSP >= addr && currentHostSP <= end) {
+            /*
+             * Boehm GC queries the stack area of the current thread for the
+             * value tracking purposes.
+             *
+             * We need to redirect it to the ARM stack.
+             */
+
+            printf("    querying the stack range of the current thread, subsituting the ARM stack\n");
+
+            auto &context = JITThreadContext::get();
+
+            *stackaddr = context.threadARMStack();
+            *stacksize = context.threadARMStackSize();
+        }
+
+        return result;
+    }
+
+    return result;
+}
+
+static void sscanfRawThunk(void) {
+    panic("sscanfRawThunk\n");
+}
+
+static void swprintfRawThunk(void) {
+    panic("swprintfRawThunk\n");
 }
 
 static void vsscanfRawThunk(void) {
     panic("vsscanfRawThunk\n");
-}
-
-static void divRawThunk(void) {
-    panic("divRawThunk");
 }
 
 static const std::unordered_map<std::string_view, SymbolProvidingFunction> systemAPI{
@@ -287,7 +314,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "powf", &thunkX86<powf> },
     { "pthread_atfork", &thunkX86<pthread_atfork> },
     { "pthread_attr_destroy", &thunkX86<pthread_attr_destroy> },
-    { "pthread_attr_getstack", &thunkX86<pthread_attr_getstack> },
+    { "pthread_attr_getstack", &thunkX86<pthread_attr_getstack_compat> },
     { "pthread_attr_init", &thunkX86<pthread_attr_init> },
     { "pthread_condattr_destroy", &thunkX86<pthread_condattr_destroy> },
     { "pthread_condattr_init", &thunkX86<pthread_condattr_init> },
@@ -344,23 +371,24 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "send", &thunkX86<send> },
     { "sendmsg", &thunkX86<sendmsg> },
     { "setenv", &thunkX86<setenv> },
-    { "setjmp", &thunkX86Raw<arm_setjmp> },
+    //{ "setjmp", &thunkX86Raw<arm_setjmp> }, - armlib
     { "setlocale", &thunkX86<setlocale> },
     { "setsockopt", &thunkX86<setsockopt> },
     { "__sF", &getFileArrayPointer },
     { "shutdown", &thunkX86<shutdown> },
-    { "sigaction", &thunkX86<sigaction> },
+    { "sigaction", &thunkX86<sigaction_compat> },
     { "sigaddset", &thunkX86<sigaddset> },
     { "sigdelset", &thunkX86<sigdelset> },
     { "sigemptyset", &thunkX86<sigemptyset> },
     { "sigfillset", &thunkX86<sigfillset> },
+    { "sigprocmask", &thunkX86<sigprocmask> },
     { "signal", &thunkX86<signal> },
     { "sigsuspend", &thunkX86<sigsuspend> },
     { "sin", &thunkX86<sin> },
     { "sinf", &thunkX86<sinf> },
-    { "snprintf", &thunkX86Raw<snprintfRawThunk> },
+    //{ "snprintf", &thunkX86Raw<snprintfRawThunk> }, - armlib
     { "socket", &thunkX86<socket> },
-    { "sprintf", &thunkX86Raw<sprintfRawThunk> },
+    //{ "sprintf", &thunkX86Raw<sprintfRawThunk> }, - armlib
     { "sqrt", &thunkX86<sqrt> },
     { "sqrtf", &thunkX86<sqrtf> },
     { "sscanf", &thunkX86<sscanfRawThunk> },
@@ -410,7 +438,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "usleep", &thunkX86<usleep> },
     { "vasprintf", &thunkX86Raw<vasprintfRawThunk> },
     { "vfprintf", &thunkX86Raw<vfprintfRawThunk> },
-    { "vsnprintf", &thunkX86Raw<vsnprintfRawThunk> },
+    //{ "vsnprintf", &thunkX86Raw<vsnprintfRawThunk> }, - armlib
     { "vsscanf", &thunkX86Raw<vsscanfRawThunk> },
     { "wcrtomb", &thunkX86<wcrtomb> },
     { "wcscoll", &thunkX86<wcscoll> },

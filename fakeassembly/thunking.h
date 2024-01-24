@@ -119,7 +119,6 @@ ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Ar
     context.push(context.lr());
 
     armCallStoreArguments(0, args...);
-    printf("@@@ IMPLEMENT ARMCALL ARGUMENT SETTING\n");
 
     // TODO: arguments!
 
@@ -170,8 +169,6 @@ static auto retrieveX86CallPointer(int position) -> typename std::enable_if<std:
      */
 
     auto thunk = ThunkManager::allocateX86ToARMThunkCall(ptr, reinterpret_cast<ThunkManager::X86ThunkTarget>(static_cast<T *>(x86CallThunk)));
-
-    printf("ARM function %p thunked via %p\n", ptr, thunk);
 
     return reinterpret_cast<T *>(thunk);
 }

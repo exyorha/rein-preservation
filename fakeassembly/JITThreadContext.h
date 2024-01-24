@@ -42,6 +42,14 @@ public:
     void push(uint64_t value);
     uint64_t pop();
 
+    inline void *threadARMStack() {
+        return m_threadStack;
+    }
+
+    inline size_t threadARMStackSize() {
+        return ThreadStackSize;
+    }
+
 private:
     static constexpr size_t ThreadStackSize = 128 * 1024;
 

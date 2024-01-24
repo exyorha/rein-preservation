@@ -17,6 +17,7 @@
 #include "SystemAPIThunking.h"
 
 std::shared_mutex Image::m_initializationMutex;
+std::optional<Image> Image::m_armlib;
 std::optional<Image> Image::m_il2cpp;
 const uint32_t Image::PageSize = queryPageSize();
 
@@ -37,6 +38,10 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
 
     createBackgroundMapping();
     mapImageSegments();
+
+    printf("----- ARM image %s is occupying the memory range from %p to %p\n",
+           path.c_str(),
+           m_mapping->actualBase(), static_cast<unsigned char *>(m_mapping->actualBase()) + m_mapping->size());
 
     m_module.reset();
 
@@ -252,8 +257,42 @@ uint32_t Image::queryPageSize() {
     return static_cast<uint32_t>(result);
 }
 
+Image *Image::get_armlib_image() {
+    Image *image = nullptr;
+
+    {
+        std::shared_lock<std::shared_mutex> shared(m_initializationMutex);
+
+        if(m_armlib.has_value())
+            image = &*m_armlib;
+    }
+
+    {
+        std::unique_lock<std::shared_mutex> unique(m_initializationMutex);
+
+        if(!m_armlib.has_value()) {
+            setlinebuf(stdout);
+            setlinebuf(stderr);
+
+            auto path = thisLibraryDirectory() / "armlib.so";
+            m_armlib.emplace(path);
+
+            printf("---- armlib has been initialized ----\n");
+        }
+
+        image = &*m_armlib;
+    }
+
+    return image;
+}
+
 Image *Image::get_il2cpp_image() {
     Image *image = nullptr;
+
+    /*
+     * Ensure that armlib is loaded before il2cpp.
+     */
+    (void)get_armlib_image();
 
     {
         std::shared_lock<std::shared_mutex> shared(m_initializationMutex);
@@ -387,7 +426,22 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
     if(symbol.st_shndx == SHN_ABS) {
         return reinterpret_cast<void *>(symbol.st_value);
     } else if(symbol.st_shndx == SHN_UNDEF) {
-        return resolveUndefinedARMSymbol(m_stringTable + symbol.st_name);
+        auto name = m_stringTable + symbol.st_name;
+
+        Image *armlibToCheck = nullptr;
+        if(m_armlib.has_value() && &*m_armlib != this) {
+            armlibToCheck = &*m_armlib;
+        }
+
+        void *symbol;
+
+        if(armlibToCheck && armlibToCheck->getSymbol(name, symbol)) {
+            printf("resolved %s to %p from armlib\n", name, symbol);
+            return symbol;
+        } else {
+            return resolveUndefinedARMSymbol(name);
+        }
+
     } else {
         return displace(symbol.st_value);
     }
