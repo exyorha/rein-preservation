@@ -2,6 +2,8 @@
 
 #include <cinttypes>
 
+thread_local void *thunkUtilitySlot;
+
 void runARMCall(JITThreadContext &context) {
 
     static const uint16_t ARMCallEndSVC = 0xE0;
@@ -12,7 +14,7 @@ void runARMCall(JITThreadContext &context) {
 
     uint32_t exitSVC;
 
-    context.gprs[30] = reinterpret_cast<uintptr_t>(&stopSVC);
+    context.lr() = reinterpret_cast<uintptr_t>(&stopSVC);
 
     do {
         exitSVC = JIT::runToSVC(context);
@@ -58,3 +60,27 @@ void storeX86CallPointerSizedResult(uintptr_t result) {
     auto &context = JITThreadContext::get();
     context.gprs[0] = result;
 }
+
+uintptr_t fetchARMCallPointerSizedResult() {
+
+    auto &context = JITThreadContext::get();
+
+    auto result = context.gprs[0];
+
+    printf("Fetch pointer-sized result: 0x%016" PRIx64 "\n", result);
+
+    return result;
+}
+
+void storeARMCallPointerSizedArgument(int position, uintptr_t value) {
+    auto &context = JITThreadContext::get();
+
+    printf("Storing pointer-sized argument %d: 0x%016" PRIx64 "\n", position, value);
+
+    if(position < 8) {
+        context.gprs[position] = value;
+    } else {
+        panic("stack argument passing is not implemented yet, cannot store an argument no. %d\n", position);
+    }
+}
+

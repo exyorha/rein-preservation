@@ -50,3 +50,18 @@ void JITThreadContext::capture(const Dynarmic::A64::Jit &jit) {
     fpcr = jit.GetFpcr();
     fpsr = jit.GetFpsr();
 }
+
+void JITThreadContext::push(uint64_t value) {
+    sp -= 16;
+
+    *reinterpret_cast<uint64_t *>(sp) = value;
+}
+
+uint64_t JITThreadContext::pop() {
+    auto value = *reinterpret_cast<uint64_t *>(sp);
+
+    sp += 16;
+
+    return value;
+}
+

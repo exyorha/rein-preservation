@@ -9,7 +9,11 @@
 std::recursive_mutex JIT::m_globalJITLock;
 std::optional<JIT> JIT::m_jit;
 
-JIT::JIT() {
+JIT::JIT() :
+    /*
+     * We currently have a global JIT lock, so only one CPU can be waiting on a monitor.
+     */
+    m_exclusiveMonitor(1) {
     Dynarmic::A64::UserConfig config;
     config.callbacks = this;
     config.silently_mirror_page_table = false;
@@ -17,6 +21,8 @@ JIT::JIT() {
     config.fastmem_address_space_bits = 64;
     config.silently_mirror_fastmem = false;
     config.use_null_fastmem = true;
+    config.fastmem_exclusive_access = true;
+    config.global_monitor = &m_exclusiveMonitor;
 
     m_dynarmic.emplace(config);
 }

@@ -268,6 +268,8 @@ Image *Image::get_il2cpp_image() {
         if(!m_il2cpp.has_value()) {
             auto path = thisLibraryDirectory() / "libil2cpp.so";
             m_il2cpp.emplace(path);
+
+            printf("---- ARM il2cpp has been initialized, releasing normal execution ----\n");
         }
 
         image = &*m_il2cpp;

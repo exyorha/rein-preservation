@@ -7,6 +7,7 @@
 
 #include <dynarmic/interface/A64/config.h>
 #include <dynarmic/interface/A64/a64.h>
+#include <dynarmic/interface/exclusive_monitor.h>
 
 class JITThreadContext;
 
@@ -59,6 +60,7 @@ private:
 
     std::optional<Dynarmic::A64::Jit> m_dynarmic;
     std::optional<uint32_t> m_exitingOnSVC;
+    Dynarmic::ExclusiveMonitor m_exclusiveMonitor;
 };
 
 #endif

@@ -28,6 +28,20 @@ public:
     uint32_t fpcr;
     uint32_t fpsr;
 
+    inline uint64_t &lr() {
+        return gprs[30];
+    }
+
+    inline uint64_t lr() const {
+        return gprs[30];
+    }
+
+    /*
+     * These two routines work with *16-byte* stack slots!
+     */
+    void push(uint64_t value);
+    uint64_t pop();
+
 private:
     static constexpr size_t ThreadStackSize = 128 * 1024;
 

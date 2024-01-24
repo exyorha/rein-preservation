@@ -10,6 +10,8 @@ add_subdirectory(dynarmic)
 
 find_program(RUBY ruby REQUIRED)
 
+enable_language(ASM)
+
 add_library(GameAssembly MODULE
     il2cpp_api/il2cpp-api-functions.h
     il2cpp_api/il2cpp-api-types.h
@@ -35,6 +37,7 @@ add_library(GameAssembly MODULE
     thunking.h
     ThunkManager.cpp
     ThunkManager.h
+    thunkutils.S
     SystemAPIThunking.cpp
     SystemAPIThunking.h
 )
@@ -43,8 +46,6 @@ target_link_libraries(GameAssembly PRIVATE dynarmic)
 
 install(TARGETS GameAssembly DESTINATION . COMPONENT GameAssembly)
 install(FILES app.info DESTINATION LinuxPlayer_Data COMPONENT GameAssembly)
-
-
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden
