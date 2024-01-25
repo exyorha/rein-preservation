@@ -9,6 +9,8 @@
 #include <dynarmic/interface/A64/a64.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include "GDBStub.h"
+
 class JITThreadContext;
 
 class JIT final : private Dynarmic::A64::UserCallbacks {
@@ -20,6 +22,10 @@ public:
     JIT &operator =(const JIT &other) = delete;
 
     static uint32_t runToSVC(JITThreadContext &thread);
+
+    static void stopDebuggerIfAttached(unsigned int signal);
+
+    static void flushInstructionCacheLockedInternal(uintptr_t addr, size_t size);
 
 private:
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A64::VAddr vaddr) override;
@@ -45,6 +51,9 @@ private:
     std::uint64_t GetTicksRemaining() override;
     std::uint64_t GetCNTPCT() override;
 
+    void doStopDebuggerIfAttached(unsigned int signal);
+
+    void dumpMachineContext();
 
 private:
     static JIT *jitInstanceLocked();
@@ -60,7 +69,11 @@ private:
 
     std::optional<Dynarmic::A64::Jit> m_dynarmic;
     std::optional<uint32_t> m_exitingOnSVC;
+    std::optional<uint64_t> m_pcAtFault;
+    std::optional<Dynarmic::A64::Exception> m_exitingOnException;
     Dynarmic::ExclusiveMonitor m_exclusiveMonitor;
+    std::optional<GDBStub> m_gdbStub;
+    uint64_t m_currentTPIDR_EL0;
 };
 
 #endif

@@ -167,9 +167,14 @@ static void vsscanfRawThunk(void) {
     panic("vsscanfRawThunk\n");
 }
 
+static void abortWrapped(void) {
+    JIT::stopDebuggerIfAttached(SIGABRT);
+    abort();
+}
+
 static const std::unordered_map<std::string_view, SymbolProvidingFunction> systemAPI{
 
-    { "abort"sv, &thunkX86<abort> },
+    { "abort"sv, &thunkX86<abortWrapped> },
     { "accept"sv, &thunkX86<accept> },
     { "access"sv, &thunkX86<access> },
     { "acos"sv, &thunkX86<acos> },
@@ -233,7 +238,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     /*
      * TODO: struct stat may be incompatible
      */
-    { "fstat", &thunkX86<fstat> },
+    { "fstat", &thunkX86<android_fstat> },
     { "ftello", &thunkX86<ftello> },
     { "ftruncate", &thunkX86<ftruncate> },
     { "fwrite", &thunkX86<fwrite> },
@@ -280,7 +285,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     /*
      * TODO: struct stat may be incompatible
      */
-    { "lstat", &thunkX86<lstat> },
+    { "lstat", &thunkX86<android_lstat> },
     { "malloc", &thunkX86<malloc> },
     { "mbrlen", &thunkX86<mbrlen> },
     { "mbrtowc", &thunkX86<mbrtowc> },
@@ -390,7 +395,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "sqrtf", &thunkX86<sqrtf> },
     { "sscanf", &thunkX86<sscanfRawThunk> },
     { "__stack_chk_fail", &thunkX86<replace_stack_chk_fail> },
-    { "stat", &thunkX86<stat> },
+    { "stat", &thunkX86<android_stat> },
     { "strchr", &thunkX86<strchr_compat> },
     { "strcmp", &thunkX86<strcmp> },
     { "strcoll", &thunkX86<strcoll> },

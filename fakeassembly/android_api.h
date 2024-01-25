@@ -29,9 +29,12 @@ void *emulated_dlsym(void *handle, const char *sym);
 
 void android_FD_SET_chk(int fd, fd_set *set, size_t size);
 
-void arm_setjmp();
-void arm_longjmp();
-
 int android_system_property_get(const char *name, char *value);
+
+struct android_stat;
+
+int android_stat(const char *pathname, struct android_stat *statbuf);
+int android_lstat(const char *pathname, struct android_stat *statbuf);
+int android_fstat(int fd, struct android_stat *statbuf);
 
 #endif

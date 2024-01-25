@@ -20,6 +20,11 @@ public:
 
     static Image *get_armlib_image();
     static Image *get_il2cpp_image();
+    static Image *get_il2cpp_image_debugger();
+
+    inline const std::filesystem::path &path() const {
+        return m_path;
+    }
 
     bool getSymbol(const char *name, void *&symbol) const;
     void *getSymbolChecked(const char *name) const;
@@ -44,6 +49,8 @@ private:
     void *resolveSymbol(uint32_t symbolIndex);
 
     static uint32_t symbolHash(const char *name);
+
+    void init();
 
     class ImageMapping {
     public:
@@ -89,6 +96,7 @@ private:
 
     using InitFiniFunc = void (*)();
 
+    std::filesystem::path m_path;
     std::unique_ptr<ElfModule> m_module;
     std::optional<ImageMapping> m_mapping;
     const Elf64_Dyn *m_dynamic;

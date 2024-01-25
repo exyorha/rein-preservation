@@ -3,10 +3,37 @@
 #include "SystemAPIThunking.h"
 
 #include <elf.h>
+#include <signal.h>
 
 #include <cstdio>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+
+#include "JIT.h"
+
+typedef uint32_t android_nlink_t;
+
+struct android_stat {
+  dev_t st_dev;
+  ino_t st_ino;
+  mode_t st_mode;
+  android_nlink_t st_nlink;
+  uid_t st_uid;
+  gid_t st_gid;
+  dev_t st_rdev;
+  unsigned long __pad1;
+  off_t st_size;
+  int st_blksize;
+  int __pad2;
+  long st_blocks;
+  struct timespec st_atim;
+  struct timespec st_mtim;
+  struct timespec st_ctim;
+  unsigned int __unused4;
+  unsigned int __unused5;
+
+};
 
 void android_log_print_raw_thunk(void) {
     printf("android_log_print_raw_thunk\n");
@@ -74,6 +101,7 @@ void *emulated_dlopen(const char *filename, int flags) {
 
 void *emulated_dlsym(void *handle, const char *sym) {
     printf("emulated_dlsym(%p, %s)\n", handle, sym);
+
     return resolveUndefinedARMSymbol(sym);
 }
 
@@ -88,6 +116,51 @@ int android_system_property_get(const char *name, char *value) {
     return 0;
 }
 
-void arm_setjmp() {
-    printf("arm_setjmp\n");
+static void translateStat(const struct stat *native, struct android_stat *android) {
+    android->st_dev = native->st_dev;
+    android->st_ino = native->st_ino;
+    android->st_mode = native->st_mode;
+    android->st_nlink = native->st_nlink;
+    android->st_uid = native->st_uid;
+    android->st_gid = native->st_gid;
+    android->st_rdev = native->st_rdev;
+    android->st_size = native->st_size;
+    android->st_blksize = native->st_blksize;
+    android->st_blocks = native->st_blocks;
+    android->st_atim = native->st_atim;
+    android->st_mtim = native->st_mtim;
+    android->st_ctim = native->st_ctim;
+}
+
+int android_stat(const char *pathname, struct android_stat *statbuf) {
+    struct stat native;
+
+    auto result = ::stat(pathname, &native);
+    if(result >= 0) {
+        translateStat(&native, statbuf);
+    }
+
+    return result;
+}
+
+int android_lstat(const char *pathname, struct android_stat *statbuf) {
+    struct stat native;
+
+    auto result = ::lstat(pathname, &native);
+    if(result >= 0) {
+        translateStat(&native, statbuf);
+    }
+
+    return result;
+}
+
+int android_fstat(int fd, struct android_stat *statbuf) {
+    struct stat native;
+
+    auto result = ::fstat(fd, &native);
+    if(result >= 0) {
+        translateStat(&native, statbuf);
+    }
+
+    return result;
 }

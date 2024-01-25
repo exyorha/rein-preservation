@@ -32,7 +32,8 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
     m_relocations(nullptr), m_relocationsSize(0),
     m_pltRelocations(nullptr), m_pltRelocationsSize(0),
     m_phdr(nullptr),
-    m_phnum(0) {
+    m_phnum(0),
+    m_path(path) {
 
     if(m_module->moduleClass() != ELFCLASS64 || m_module->machine() != EM_AARCH64) {
         throw std::runtime_error("unsupported module class or architecture");
@@ -59,7 +60,9 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
 
     if(m_pltRelocations && m_pltRelocationsSize > 0)
         processRelocations(m_pltRelocations, m_pltRelocationsSize);
+}
 
+void Image::init() {
     printf("init array: %p, %zu; fini array: %p, %zu\n",
            m_initArray, m_initArraySize,
            m_finiArray, m_finiArraySize);
@@ -291,6 +294,8 @@ Image *Image::get_armlib_image() {
             auto path = thisLibraryDirectory() / "armlib.so";
             m_armlib.emplace(path);
 
+            m_armlib->init();
+
             printf("---- armlib has been initialized ----\n");
         }
 
@@ -322,6 +327,8 @@ Image *Image::get_il2cpp_image() {
             auto path = thisLibraryDirectory() / "libil2cpp.so";
             m_il2cpp.emplace(path);
 
+            m_il2cpp->init();
+
             printf("---- ARM il2cpp has been initialized, releasing normal execution ----\n");
         }
 
@@ -329,6 +336,10 @@ Image *Image::get_il2cpp_image() {
     }
 
     return image;
+}
+
+Image *Image::get_il2cpp_image_debugger() {
+    return &*m_il2cpp;
 }
 
 bool Image::getSymbol(const char *name, void *&value) const {

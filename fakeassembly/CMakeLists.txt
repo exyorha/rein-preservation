@@ -25,10 +25,18 @@ add_library(GameAssembly SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
     android_api.cpp
     android_api.h
+    DebugMemoryAccess.cpp
+    DebugMemoryAccess.h
     ElfModule.cpp
     ElfModule.h
     FileDescriptor.cpp
     FileDescriptor.h
+    GDBPacketFormatter.cpp
+    GDBPacketFormatter.h
+    GDBPacketParser.cpp
+    GDBPacketParser.h
+    GDBStub.cpp
+    GDBStub.h
     icall_api.cpp
     Image.cpp
     Image.h

@@ -18,6 +18,9 @@ JITThreadContext::JITThreadContext() : sp(0), pc(0), fpcr(0), fpsr(0), pstate(UI
         throw std::system_error(errno, std::generic_category());
 
     sp = reinterpret_cast<uintptr_t>(m_threadStack) + ThreadStackSize;
+
+    tpidr_el0 = reinterpret_cast<uint64_t>(&fakeTLS);
+    memset(&fakeTLS, 0, sizeof(fakeTLS));
 }
 
 JITThreadContext::~JITThreadContext() {

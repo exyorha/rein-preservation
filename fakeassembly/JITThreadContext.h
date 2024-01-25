@@ -51,6 +51,10 @@ public:
         return ThreadStackSize;
     }
 
+    uint64_t tpidr_el0;
+
+    std::array<uint64_t, 32> fakeTLS;
+
 private:
     static constexpr size_t ThreadStackSize = 512 * 1024;
 
