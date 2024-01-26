@@ -1,11 +1,15 @@
 #include <ICall/PreparedInternalCall.h>
+#include <ICall/ICallInterposerManager.h>
 
+#include <ffi.h>
 #include <il2cpp-api.h>
 #include <il2cpp-tabledefs.h>
 
 #include "support.h"
 
 PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
+
+    m_interposer = ICallInterposerManager::getInterposerForMethod(fullName);
 
     auto methodNameDelim = fullName.find("::");
     if(methodNameDelim == std::string::npos)
@@ -98,6 +102,10 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
 
     resultPacker.pack(il2cpp_method_get_return_type(methodDef));
 
+    if(m_interposer) {
+        argumentPacker.reserveFFIOnlyArgument(&ffi_type_pointer);
+    }
+
     m_arguments = std::move(argumentPacker.finish());
     m_result = resultPacker.finish().makeIntoSingleArgument();
 
@@ -112,36 +120,7 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
     }
 
 }
-#if 0
-    if(fullName == "UnityEngine.Networking.UnityWebRequest::SetUrl") {
-        auto url = static_cast<Il2CppString **>(argumentPointers.at(1));
-        printf("string at (probably) %p\n", *url);
-        auto length = il2cpp_string_length(*url);
-        auto chars = il2cpp_string_chars(*url);
-        printf("length %p, chars %u\n", chars, length);
-        std::string conv;
-        for(size_t index = 0; index < length; index++) {
-            conv.push_back(chars[index]);
-        }
 
-        printf("Web Request for '%s'\n", conv.c_str());
-
-        if(conv.starts_with("jar:")) {
-            printf("Requesting a file from the game APK, repairing the path: '%s'\n", conv.c_str());
-
-            conv.erase(conv.begin(), conv.begin() + 4);
-
-            auto bang = conv.find('!');
-            if(bang != std::string::npos) {
-                conv.erase(bang, 1);
-            }
-
-            printf("Redirecting to %s\n", conv.c_str());
-
-            *url = il2cpp_string_new_len(conv.data(), conv.size());
-        }
-    }
-#endif
 #if 0
 else if(fullName == "UnityEngine.AndroidJNI::FindClass") {
         auto url = static_cast<Il2CppString **>(argumentPointers.at(0));
@@ -177,9 +156,6 @@ PreparedInternalCall::~PreparedInternalCall() = default;
 
 void PreparedInternalCall::invokeInternal(Il2CppMethodPointer method, JITThreadContext &context, SavedICallContext *contextWithInputArgs) const {
 
-
-    printf("calling!\n");
-
     std::vector<void *> args;
     if(contextWithInputArgs) {
         args = m_arguments.getPointers(*contextWithInputArgs);
@@ -189,11 +165,23 @@ void PreparedInternalCall::invokeInternal(Il2CppMethodPointer method, JITThreadC
 
     auto returnPointer = m_result.getPointer(context);
 
-    ffi_call(
-        &m_cif,
-        method,
-        returnPointer,
-        args.data());
+    if(m_interposer) {
+        args.push_back(&method);
+
+        ffi_call(
+            &m_cif,
+            m_interposer,
+            returnPointer,
+            args.data());
+    } else {
+
+        ffi_call(
+            &m_cif,
+            method,
+            returnPointer,
+            args.data());
+    }
+
 #if 0
     if(fullName == "UnityEngine.AndroidJNI::FindClass" || fullName == "UnityEngine.AndroidJNI::NewGlobalRef") {
         static unsigned char fake;
@@ -203,6 +191,4 @@ void PreparedInternalCall::invokeInternal(Il2CppMethodPointer method, JITThreadC
         printf("Java: exception occurred: %016" PRIx64 "\n", thread.gprs[0]);
     }
 #endif
-
-    printf("done!\n");
 }

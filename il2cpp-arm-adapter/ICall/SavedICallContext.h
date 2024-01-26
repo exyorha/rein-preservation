@@ -15,6 +15,7 @@ public:
 
     std::array<std::uint64_t, 8> intArgs;
     std::array<Dynarmic::A64::Vector, 8> vectorArgs;
+    uint64_t sp;
 };
 
 #endif

@@ -30,6 +30,7 @@ public:
 private:
     void invokeInternal(Il2CppMethodPointer method, JITThreadContext &context, SavedICallContext *contextWithInputArgs) const;
 
+    Il2CppMethodPointer m_interposer;
     ARMArgumentSet m_arguments;
     ARMSingleArgument m_result;
     mutable ffi_cif m_cif;

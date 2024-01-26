@@ -70,7 +70,7 @@ public:
     ARMSingleArgument makeIntoSingleArgument();
 
     inline size_t size() const {
-        return m_argumentLocations.size();
+        return m_argumentTypes.size();
     }
 
     inline ffi_type **types() {
@@ -107,6 +107,8 @@ public:
 
     void packPointer();
     void pack(const Il2CppType *type);
+
+    void reserveFFIOnlyArgument(ffi_type *type);
 
     inline ARMArgumentSet &&finish() {
         return std::move(m_argumentSet);

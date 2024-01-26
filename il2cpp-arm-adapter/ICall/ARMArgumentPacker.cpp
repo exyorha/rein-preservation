@@ -9,33 +9,41 @@
 #include <variant>
 
 template<typename T>
-static inline void *getPointerToLocation(const std::monostate &voidLocation, T &context) {
+static inline void *getPointerToSpecificLocation(const std::monostate &voidLocation, T &context) {
     (void)context;
     return nullptr;
 }
 
-static inline void *getPointerToLocation(const ARMIntegerLocation &location, JITThreadContext &context) {
+static inline void *getPointerToSpecificLocation(const ARMIntegerLocation &location, JITThreadContext &context) {
     return &context.gprs[location.registerNumber];
 }
 
-static inline void *getPointerToLocation(const ARMVectorLocation &location, JITThreadContext &context) {
+static inline void *getPointerToSpecificLocation(const ARMVectorLocation &location, JITThreadContext &context) {
     return &context.vectors[location.registerNumber];
 }
 
-static inline void *getPointerToLocation(const ARMIntegerLocation &location, SavedICallContext &context) {
+static inline void *getPointerToSpecificLocation(const ARMStackLocation &location, JITThreadContext &context) {
+    return reinterpret_cast<void *>(context.sp + location.offsetFromSP);
+}
+
+static inline void *getPointerToSpecificLocation(const ARMIntegerLocation &location, SavedICallContext &context) {
     return &context.intArgs[location.registerNumber];
 }
 
-static inline void *getPointerToLocation(const ARMVectorLocation &location, SavedICallContext &context) {
+static inline void *getPointerToSpecificLocation(const ARMVectorLocation &location, SavedICallContext &context) {
     return &context.vectorArgs[location.registerNumber];
 }
 
+static inline void *getPointerToSpecificLocation(const ARMStackLocation &location, SavedICallContext &context) {
+    return reinterpret_cast<void *>(context.sp + location.offsetFromSP);
+}
+
 void *getPointerToLocation(const ARMArgumentLocation &location, JITThreadContext &context) {
-    return std::visit([&context](const auto &locationType) -> void * { return getPointerToLocation(locationType, context); }, location);
+    return std::visit([&context](const auto &locationType) -> void * { return getPointerToSpecificLocation(locationType, context); }, location);
 }
 
 void *getPointerToLocation(const ARMArgumentLocation &location, SavedICallContext &context) {
-    return std::visit([&context](const auto &locationType) -> void * { return getPointerToLocation(locationType, context); }, location);
+    return std::visit([&context](const auto &locationType) -> void * { return getPointerToSpecificLocation(locationType, context); }, location);
 }
 
 ARMSingleArgument::ARMSingleArgument() :
@@ -180,3 +188,7 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
 
 }
 
+
+void ARMArgumentPacker::reserveFFIOnlyArgument(ffi_type *type) {
+    m_argumentSet.m_argumentTypes.emplace_back(type);
+}

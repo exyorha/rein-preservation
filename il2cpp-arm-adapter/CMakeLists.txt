@@ -6,6 +6,8 @@ include(GenerateExportHeader)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFI REQUIRED IMPORTED_TARGET libffi)
 
+find_package(Iconv REQUIRED)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 set(DYNARMIC_USE_BUNDLED_EXTERNALS TRUE CACHE BOOL "Use all bundled externals (useful when e.g. cross-compiling)" FORCE)
@@ -33,6 +35,8 @@ add_library(GameAssembly SHARED
 
     FileDescriptor.cpp
     FileDescriptor.h
+    Il2CppUtilities.cpp
+    Il2CppUtilities.h
 
     GDB/DebugMemoryAccess.cpp
     GDB/DebugMemoryAccess.h
@@ -48,6 +52,8 @@ add_library(GameAssembly SHARED
     ICall/ARMArgumentPacker.cpp
     ICall/ARMArgumentPacker.h
     ICall/icall_api.cpp
+    ICall/ICallInterposerManager.cpp
+    ICall/ICallInterposerManager.h
     ICall/InternalCallThunk.cpp
     ICall/InternalCallThunk.h
     ICall/PreparedInternalCall.cpp
@@ -72,10 +78,12 @@ add_library(GameAssembly SHARED
     Translator/ThunkManager.cpp
     Translator/ThunkManager.h
     Translator/thunkutils.S
+
+    UnityWebRequest.cpp
 )
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_include_directories(GameAssembly PRIVATE .)
-target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI)
+target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI Iconv::Iconv)
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden
