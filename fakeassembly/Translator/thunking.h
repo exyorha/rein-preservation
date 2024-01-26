@@ -2,9 +2,9 @@
 #define THUNKING_H
 
 #include "support.h"
-#include "JIT.h"
-#include "JITThreadContext.h"
-#include "ThunkManager.h"
+#include <Translator/JIT.h>
+#include <Translator/JITThreadContext.h>
+#include <Translator/ThunkManager.h>
 #include <cinttypes>
 
 #include <cstddef>

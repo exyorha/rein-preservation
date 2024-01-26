@@ -1,10 +1,10 @@
-#include "GDBStub.h"
+#include <GDB/GDBStub.h>
 #include "FileDescriptor.h"
-#include "GDBPacketParser.h"
-#include "GDBPacketFormatter.h"
-#include "DebugMemoryAccess.h"
+#include <GDB/GDBPacketParser.h>
+#include <GDB/GDBPacketFormatter.h>
+#include <GDB/DebugMemoryAccess.h>
 #include "support.h"
-#include "Image.h"
+#include <ELF/Image.h>
 
 #include <cstring>
 #include <system_error>

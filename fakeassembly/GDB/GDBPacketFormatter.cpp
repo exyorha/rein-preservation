@@ -1,4 +1,4 @@
-#include "GDBPacketFormatter.h"
+#include <GDB/GDBPacketFormatter.h>
 
 GDBPacketFormatter::GDBPacketFormatter() = default;
 

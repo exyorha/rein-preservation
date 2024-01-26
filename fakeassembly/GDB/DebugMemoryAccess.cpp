@@ -1,5 +1,6 @@
-#include "DebugMemoryAccess.h"
-#include "JIT.h"
+#include <GDB/DebugMemoryAccess.h>
+
+#include <Translator/JIT.h>
 
 #include <signal.h>
 #include <system_error>

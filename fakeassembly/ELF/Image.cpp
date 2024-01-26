@@ -1,5 +1,5 @@
-#include "Image.h"
-#include "ElfModule.h"
+#include <ELF/Image.h>
+#include <ELF/ElfModule.h>
 
 #include <algorithm>
 #include <elf.h>
@@ -13,7 +13,7 @@
 #include <sys/mman.h>
 
 #include "support.h"
-#include "thunking.h"
+#include <Translator/thunking.h>
 #include "SystemAPIThunking.h"
 
 std::shared_mutex Image::m_initializationMutex;

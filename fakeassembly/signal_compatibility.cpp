@@ -1,6 +1,6 @@
 #include "signal_compatibility.h"
 #include "support.h"
-#include "thunking.h"
+#include <Translator/thunking.h>
 
 #include <signal.h>
 #include <string.h>

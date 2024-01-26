@@ -5,11 +5,10 @@
 
 #include <cstdio>
 
-#include "JITThreadContext.h"
-#include "il2cpp-api-types.h"
+#include <Translator/JITThreadContext.h>
 #include "support.h"
-#include "thunking.h"
-#include "Image.h"
+#include <Translator/thunking.h>
+#include <ELF/Image.h>
 
 class InternalCallThunk {
 public:

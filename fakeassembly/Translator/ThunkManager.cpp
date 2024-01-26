@@ -1,5 +1,5 @@
-#include "ThunkManager.h"
-#include "thunking.h"
+#include <Translator/ThunkManager.h>
+#include <Translator/thunking.h>
 
 #include <sys/mman.h>
 
@@ -12,11 +12,6 @@ std::unordered_map<void *, void *> ThunkManager::m_thunkX86ToArmTableForward;
 std::unordered_map<void *, void *> ThunkManager::m_thunkX86ToArmTableReverse;
 std::unordered_map<void *, ThunkManager::X86ThunkTarget> ThunkManager::m_thunkArmToX86TableForward;
 std::unordered_map<ThunkManager::X86ThunkTarget, void *> ThunkManager::m_thunkArmToX86TableReverse;
-
-#if 0
-void *ThunkManager::m_currentARMThunkBlock = nullptr;
-size_t ThunkManager::m_currentARMThunkBlockRemaining = 0;
-#endif
 
 ThunkManager::BumpAllocator ThunkManager::m_armThunkAllocator;
 ThunkManager::BumpAllocator ThunkManager::m_x86ThunkAllocator;

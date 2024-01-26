@@ -25,38 +25,45 @@ add_library(GameAssembly SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
     android_api.cpp
     android_api.h
-    DebugMemoryAccess.cpp
-    DebugMemoryAccess.h
-    ElfModule.cpp
-    ElfModule.h
+
+    ELF/ElfModule.cpp
+    ELF/ElfModule.h
+    ELF/Image.cpp
+    ELF/Image.h
+
     FileDescriptor.cpp
     FileDescriptor.h
-    GDBPacketFormatter.cpp
-    GDBPacketFormatter.h
-    GDBPacketLayer.cpp
-    GDBPacketLayer.h
-    GDBPacketParser.cpp
-    GDBPacketParser.h
-    GDBStub.cpp
-    GDBStub.h
+
+    GDB/DebugMemoryAccess.cpp
+    GDB/DebugMemoryAccess.h
+    GDB/GDBPacketFormatter.cpp
+    GDB/GDBPacketFormatter.h
+    GDB/GDBPacketLayer.cpp
+    GDB/GDBPacketLayer.h
+    GDB/GDBPacketParser.cpp
+    GDB/GDBPacketParser.h
+    GDB/GDBStub.cpp
+    GDB/GDBStub.h
+
     icall_api.cpp
-    Image.cpp
-    Image.h
-    JIT.cpp
-    JIT.h
-    JITThreadContext.cpp
-    JITThreadContext.h
+
     signal_compatibility.cpp
     signal_compatibility.h
     support.h
     support.cpp
-    thunking.cpp
-    thunking.h
-    ThunkManager.cpp
-    ThunkManager.h
-    thunkutils.S
+
     SystemAPIThunking.cpp
     SystemAPIThunking.h
+
+    Translator/JIT.cpp
+    Translator/JIT.h
+    Translator/JITThreadContext.cpp
+    Translator/JITThreadContext.h
+    Translator/thunking.cpp
+    Translator/thunking.h
+    Translator/ThunkManager.cpp
+    Translator/ThunkManager.h
+    Translator/thunkutils.S
 )
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_include_directories(GameAssembly PRIVATE .)

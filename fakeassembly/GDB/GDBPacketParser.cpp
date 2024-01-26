@@ -1,4 +1,4 @@
-#include "GDBPacketParser.h"
+#include <GDB/GDBPacketParser.h>
 
 #include <stdexcept>
 

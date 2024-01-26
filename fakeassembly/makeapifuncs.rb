@@ -55,8 +55,8 @@ File.open(ARGV[1], "wb") do |outf|
 
     outf.puts "#include <il2cpp-api.h>"
     outf.puts "#include \"support.h\""
-    outf.puts "#include \"Image.h\""
-    outf.puts "#include \"thunking.h\""
+    outf.puts "#include <ELF/Image.h>"
+    outf.puts "#include <Translator/thunking.h>"
     outf.puts ""
 
     File.open(ARGV[0], "rb") do |inf|

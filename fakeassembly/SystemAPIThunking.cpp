@@ -1,6 +1,6 @@
 #include "SystemAPIThunking.h"
-#include "ThunkManager.h"
-#include "thunking.h"
+#include <Translator/ThunkManager.h>
+#include <Translator/thunking.h>
 
 #include <cstdint>
 #include <cstdio>

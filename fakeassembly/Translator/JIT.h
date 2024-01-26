@@ -9,7 +9,7 @@
 #include <dynarmic/interface/A64/a64.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
-#include "GDBStub.h"
+#include <GDB/GDBStub.h>
 
 class JITThreadContext;
 

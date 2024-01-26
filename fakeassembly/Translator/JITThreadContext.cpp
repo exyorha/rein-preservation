@@ -1,6 +1,4 @@
-#include "JITThreadContext.h"
-
-#include <dynarmic/interface/A64/a64.h>
+#include <Translator/JITThreadContext.h>
 
 #include <sys/mman.h>
 
@@ -31,7 +29,6 @@ JITThreadContext &JITThreadContext::get() {
     auto &thisContext = m_jitThread;
 
     if(!thisContext) {
-        printf("creating a new JIT context in slot %p\n", &thisContext);
         thisContext = std::make_unique<JITThreadContext>();
     }
 

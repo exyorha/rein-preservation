@@ -1,5 +1,5 @@
 #include "android_api.h"
-#include "Image.h"
+#include <ELF/Image.h>
 #include "SystemAPIThunking.h"
 
 #include <elf.h>
@@ -10,9 +10,9 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-#include "JIT.h"
-#include "ThunkManager.h"
-#include "thunking.h"
+#include <Translator/JIT.h>
+#include <Translator/ThunkManager.h>
+#include <Translator/thunking.h>
 
 typedef uint32_t android_nlink_t;
 

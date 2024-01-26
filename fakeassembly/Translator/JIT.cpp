@@ -1,8 +1,6 @@
-#include "JIT.h"
-#include "dynarmic/interface/A64/config.h"
-#include "dynarmic/interface/halt_reason.h"
+#include <Translator/JIT.h>
 #include "support.h"
-#include "JITThreadContext.h"
+#include <Translator/JITThreadContext.h>
 
 #include <cstdio>
 #include <cinttypes>
