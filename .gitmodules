@@ -1,3 +1,3 @@
 [submodule "fakeassembly/dynarmic"]
-	path = fakeassembly/dynarmic
+	path = il2cpp-arm-adapter/dynarmic
 	url = https://github.com/exyorha/dynarmic.git
