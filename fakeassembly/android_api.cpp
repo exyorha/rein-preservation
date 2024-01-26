@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 
 #include "JIT.h"
+#include "ThunkManager.h"
+#include "thunking.h"
 
 typedef uint32_t android_nlink_t;
 
@@ -91,16 +93,29 @@ int emulated_dl_iterate_phdr(int (*callback)(struct android_dl_phdr_info *info, 
     return callback(&info, sizeof(info), data);
 }
 
+static unsigned char nocallHandle;
+
+static void dummyThunk() {
+    printf("Crashlytics function was called\n");
+}
+
 void *emulated_dlopen(const char *filename, int flags) {
     static unsigned char pseudohandle;
 
     printf("emulated_dlopen(%s, %d)\n", filename, flags);
+
+    if(std::string_view(filename).find("FirebaseCppApp") != std::string_view::npos)
+        return &nocallHandle;
 
     return &pseudohandle;
 }
 
 void *emulated_dlsym(void *handle, const char *sym) {
     printf("emulated_dlsym(%p, %s)\n", handle, sym);
+
+    if(handle == &nocallHandle) {
+        return ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(dummyThunk), dummyThunk);
+    }
 
     return resolveUndefinedARMSymbol(sym);
 }

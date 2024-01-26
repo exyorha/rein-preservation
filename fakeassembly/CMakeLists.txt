@@ -33,6 +33,8 @@ add_library(GameAssembly SHARED
     FileDescriptor.h
     GDBPacketFormatter.cpp
     GDBPacketFormatter.h
+    GDBPacketLayer.cpp
+    GDBPacketLayer.h
     GDBPacketParser.cpp
     GDBPacketParser.h
     GDBStub.cpp
