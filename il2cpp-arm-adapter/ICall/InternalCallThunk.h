@@ -3,8 +3,14 @@
 
 #include <il2cpp-api.h>
 #include <string>
+#include <shared_mutex>
+#include <variant>
+#include <optional>
 
 #include <ffi.h>
+
+#include <ICall/PreparedInternalCall.h>
+#include <ICall/SavedICallContext.h>
 
 class InternalCallThunk {
 public:
@@ -18,17 +24,19 @@ public:
 
 private:
 
-    enum class ValueCategory {
-        Integer,
-        Void,
-        Vector
-    };
-
     void execute();
 
-    static ValueCategory getValueCategory(const Il2CppType *type, ffi_type **ffi);
+    static inline const PreparedInternalCall *prepareInternalCall(const PreparedInternalCall &prepared,
+                                                                  std::optional<SavedICallContext> &savedContext) {
+        (void)savedContext;
+        return &prepared;
+    }
 
-    std::string m_name;
+    const PreparedInternalCall *prepareInternalCall(std::string &&name,
+                                                    std::optional<SavedICallContext> &savedContext);
+
+    std::shared_mutex m_thunkMutex;
+    std::variant<std::string, PreparedInternalCall> m_call;
     Il2CppMethodPointer m_x86Method;
 };
 
