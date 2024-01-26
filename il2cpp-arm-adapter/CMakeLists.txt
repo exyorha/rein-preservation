@@ -45,7 +45,9 @@ add_library(GameAssembly SHARED
     GDB/GDBStub.cpp
     GDB/GDBStub.h
 
-    icall_api.cpp
+    ICall/icall_api.cpp
+    ICall/InternalCallThunk.cpp
+    ICall/InternalCallThunk.h
 
     signal_compatibility.cpp
     signal_compatibility.h

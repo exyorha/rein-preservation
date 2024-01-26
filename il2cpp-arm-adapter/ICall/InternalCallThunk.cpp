@@ -1,4 +1,4 @@
-#include <il2cpp-api.h>
+#include <ICall/InternalCallThunk.h>
 #include <il2cpp-tabledefs.h>
 #include <il2cpp-blob.h>
 #include <ffi.h>
@@ -6,35 +6,7 @@
 #include <cstdio>
 
 #include <Translator/JITThreadContext.h>
-#include "support.h"
 #include <Translator/thunking.h>
-#include <ELF/Image.h>
-
-class InternalCallThunk {
-public:
-    InternalCallThunk(const char *name, Il2CppMethodPointer x86Method);
-    ~InternalCallThunk();
-
-    InternalCallThunk(const InternalCallThunk &other) = delete;
-    InternalCallThunk &operator =(const InternalCallThunk &other) = delete;
-
-    static void thunkCall();
-
-private:
-
-    enum class ValueCategory {
-        Integer,
-        Void,
-        Vector
-    };
-
-    void execute();
-
-    static ValueCategory getValueCategory(const Il2CppType *type, ffi_type **ffi);
-
-    std::string m_name;
-    Il2CppMethodPointer m_x86Method;
-};
 
 InternalCallThunk::InternalCallThunk(const char *name, Il2CppMethodPointer x86Method) : m_name(name), m_x86Method(x86Method) {
 
@@ -126,8 +98,17 @@ void InternalCallThunk::execute() {
     std::vector<void *> argumentPointers;
     std::vector<ffi_type *> argumentTypes;
 
-    argumentPointers.reserve(32);
-    argumentTypes.reserve(32);
+    auto argumentCount = il2cpp_method_get_param_count(methodDef);
+
+    size_t argumentsToReserve = argumentCount;
+
+    bool hasThis = !(flags & METHOD_ATTRIBUTE_STATIC);
+
+    if(hasThis)
+        argumentsToReserve++;
+
+    argumentPointers.reserve(argumentsToReserve);
+    argumentTypes.reserve(argumentsToReserve);
 
     auto returnType = &ffi_type_void;
     void *returnPointer = nullptr;
@@ -135,11 +116,7 @@ void InternalCallThunk::execute() {
     unsigned int integerArgumentSlot = 0;
     unsigned int vectorArgumentSlot = 0;
 
-    /*
-     * TODO: do we need to manage 'this'?
-     */
-
-    if(!(flags & METHOD_ATTRIBUTE_STATIC)) {
+    if(hasThis) {
         printf("the method is not static, getting the this pointer\n");
 
         argumentPointers.emplace_back(&intArgs[integerArgumentSlot]);
@@ -148,7 +125,6 @@ void InternalCallThunk::execute() {
         argumentTypes.emplace_back(&ffi_type_pointer);
     }
 
-    auto argumentCount = il2cpp_method_get_param_count(methodDef);
     printf("  %u arguments\n", argumentCount);
     for(unsigned int argumentIndex = 0; argumentIndex < argumentCount; argumentIndex++) {
         auto argumentType = il2cpp_method_get_param(methodDef, argumentIndex);
@@ -331,24 +307,3 @@ auto InternalCallThunk::getValueCategory(const Il2CppType *type, ffi_type **ffi)
     }
 
 }
-
-void il2cpp_add_internal_call(const char* name, Il2CppMethodPointer method) {
-    auto thunkContext = std::make_unique<InternalCallThunk>(name, method);
-
-    typedef void(*FunctionPointer)(const char* name, void *method);
-
-    static FunctionPointer arm_il2cpp_add_internal_call =
-        reinterpret_cast<FunctionPointer>(Image::get_il2cpp_image()->getSymbolChecked("il2cpp_add_internal_call"));
-
-    auto thunk = ThunkManager::allocateARMToX86ThunkCall(thunkContext.release(), &InternalCallThunk::thunkCall);
-
-    armcall(arm_il2cpp_add_internal_call,
-        name,
-        thunk
-    );
-}
-
-Il2CppMethodPointer il2cpp_resolve_icall(const char* name) {
-    panic("il2cpp_resolve_icall('%s')\n", name);
-}
-
