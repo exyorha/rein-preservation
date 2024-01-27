@@ -45,4 +45,6 @@ public:
     ICallInterposerRegistration &operator =(const ICallInterposerRegistration &other) = delete;
 };
 
+#define INTERPOSE_ICALL(name,function) static ICallInterposerRegistration function ## _Reg(name, function);
+
 #endif

@@ -43,4 +43,4 @@ static void *UnityWebRequest_SetUrl(
 
     return original(thisPointer, url);
 }
-static ICallInterposerRegistration UnityWebRequest_SetUrl_Reg("UnityEngine.Networking.UnityWebRequest::SetUrl", UnityWebRequest_SetUrl);
+INTERPOSE_ICALL("UnityEngine.Networking.UnityWebRequest::SetUrl", UnityWebRequest_SetUrl)

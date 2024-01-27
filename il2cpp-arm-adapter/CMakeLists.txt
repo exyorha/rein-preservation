@@ -27,6 +27,7 @@ add_library(GameAssembly SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
     android_api.cpp
     android_api.h
+    AndroidJNI.cpp
 
     ELF/ElfModule.cpp
     ELF/ElfModule.h
@@ -61,6 +62,31 @@ add_library(GameAssembly SHARED
     ICall/SavedICallContext.cpp
     ICall/SavedICallContext.h
 
+    Java/AdjustSdkAdjust.cpp
+    Java/AdjustSdkAdjust.h
+    Java/AndroidUtilLog.cpp
+    Java/AndroidUtilLog.h
+    Java/JavaClasses.cpp
+    Java/JNIAccessibleObject.cpp
+    Java/JNIAccessibleObject.h
+    Java/JNIClass.cpp
+    Java/JNIClass.h
+    Java/JNIField.cpp
+    Java/JNIGlobalState.cpp
+    Java/JNIGlobalState.h
+    Java/JNIObject.cpp
+    Java/JNIObject.h
+    Java/JNIState.cpp
+    Java/JNIState.h
+    Java/JNIString.cpp
+    Java/JNIString.h
+    Java/JNIThrowable.cpp
+    Java/JNIThrowable.h
+    Java/JNIUnityPlayer.cpp
+    Java/JNIUnityPlayer.h
+    Java/JNIUnityReflectionHelper.cpp
+    Java/JNIUnityReflectionHelper.h
+
     signal_compatibility.cpp
     signal_compatibility.h
     support.h
@@ -91,6 +117,7 @@ set_target_properties(GameAssembly PROPERTIES
     VISIBILITY_INLINES_HIDDEN TRUE
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
+    PREFIX ""
 )
 
 if(UNIX)

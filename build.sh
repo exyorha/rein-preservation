@@ -8,4 +8,3 @@ cmake \
 ln -sf ../build/compile_commands.json il2cpp-arm-adapter
 cmake --build build
 cmake --install build --component GameAssembly
-ln -sf libGameAssembly.so graft/GameAssembly.so
