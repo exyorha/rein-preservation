@@ -153,7 +153,7 @@ add_custom_command(
         -x assembler-with-cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/armlib/setjmp.S
         -nostdinc
-        -nostdlib
+        -nostartfiles
         -ffreestanding
         -Wall -W
         -O2
@@ -161,6 +161,7 @@ add_custom_command(
         -Wl,-Bsymbolic
         -Wl,--hash-style=sysv
         -Wl,-z,norelro
+        -lgcc
     DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/armlib/armlib.c
         ${CMAKE_CURRENT_SOURCE_DIR}/armlib/setjmp.S

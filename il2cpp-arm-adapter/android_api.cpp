@@ -96,7 +96,7 @@ int emulated_dl_iterate_phdr(int (*callback)(struct android_dl_phdr_info *info, 
 static unsigned char nocallHandle;
 
 static void dummyThunk() {
-    printf("Crashlytics function was called\n");
+    //printf("Crashlytics function was called\n");
 }
 
 void *emulated_dlopen(const char *filename, int flags) {

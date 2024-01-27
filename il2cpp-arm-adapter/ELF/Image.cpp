@@ -158,6 +158,10 @@ void Image::mapImageSegments() {
                 }
             }
 
+            if(phdr.p_memsz > phdr.p_filesz) {
+                memset(displace<char>(phdr.p_vaddr + phdr.p_filesz), 0, phdr.p_memsz - phdr.p_filesz);
+            }
+
             if(!m_phdr && (phdr.p_offset <= phstart && phdr.p_offset + phdr.p_filesz >= phend)) {
                 m_phdr = displace<Elf64_Phdr>(phdr.p_vaddr + (phstart - phdr.p_offset));
             }

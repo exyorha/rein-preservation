@@ -226,7 +226,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "__FD_SET_chk", &thunkX86<android_FD_SET_chk> },
     { "fflush", &thunkX86<fflush> },
     { "fmod", &thunkX86<fmod> },
-    { "fmodf", &thunkX86<fmodf> },
+  //  { "fmodf", &thunkX86<fmodf> },
     { "fopen", &thunkX86<fopen> },
     { "fputc", &thunkX86<fputc> },
     { "fread", &thunkX86<fread> },

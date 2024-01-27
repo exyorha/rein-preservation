@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
         auto classCount = il2cpp_image_get_class_count(image);
 
-        bool assemblyHeading = false;
+        printf("assembly no. %zu: assembly %p, image %p: '%s', containing %zu classes total:\n", index, assembly, image, assemblyName, classCount);
 
         for(size_t classIndex = 0; classIndex < classCount; classIndex++) {
             auto classDesc = const_cast<Il2CppClass *>(il2cpp_image_get_class(image, classIndex));
@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
 
             bool classHeading = false;
 
+            printf("  class no. %zu: %s#%s\n", classIndex, namespaceName, className);
+#if 0
             void *iter = nullptr;
             const MethodInfo *method;
             while((method = il2cpp_class_get_methods(classDesc, &iter)) != nullptr) {
@@ -45,17 +47,15 @@ int main(int argc, char *argv[]) {
                 uint32_t iflags;
                 uint32_t flags = il2cpp_method_get_flags(method, &iflags);
 
-                if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+                if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && false)
                     continue;
 
                 if(!assemblyHeading) {
                     assemblyHeading = true;
-                    printf("assembly no. %zu: assembly %p, image %p: '%s', containing %zu classes total:\n", index, assembly, image, assemblyName, classCount);
                 }
 
                 if(!classHeading) {
                     classHeading = true;
-                    printf("  class no. %zu: %s#%s\n", classIndex, namespaceName, className);
                 }
 
                 printf("    internal method: '%s', flags: 0x%08X, iflags: 0x%08X\n", name, flags, iflags);
@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
                            il2cpp_type_is_byref(argumentType));
                 }
             }
+#endif
         }
 
     }

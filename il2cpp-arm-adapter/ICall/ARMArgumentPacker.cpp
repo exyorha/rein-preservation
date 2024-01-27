@@ -6,6 +6,7 @@
 #include <support.h>
 
 #include <il2cpp-blob.h>
+#include <utility>
 #include <variant>
 
 template<typename T>
@@ -85,7 +86,7 @@ ARMSingleArgument ARMArgumentSet::makeIntoSingleArgument() {
     return ARMSingleArgument(m_argumentLocations.front(), m_argumentTypes.front());
 }
 
-ARMArgumentPacker::ARMArgumentPacker() : m_integerArgumentSlot(0), m_vectorArgumentSlot(0) {
+ARMArgumentPacker::ARMArgumentPacker() : m_integerArgumentSlot(0), m_vectorArgumentSlot(0), m_currentSPOffset(0) {
 
 }
 
@@ -113,7 +114,8 @@ void ARMArgumentPacker::pack(const Il2CppType *argumentType) {
 
     if(category == ValueCategory::Integer) {
         if(m_integerArgumentSlot >= MaximumIntegerArguments) {
-            panic("fetching integer args from stack is not implemented yet\n");
+            m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMStackLocation>(), m_currentSPOffset);
+            m_currentSPOffset += sizeof(uintptr_t); // will need fixing for arguments larger than a pointer
         } else {
             m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMIntegerLocation>(), m_integerArgumentSlot);
             m_integerArgumentSlot++;
@@ -149,6 +151,17 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
     } else if(typeCategory == IL2CPP_TYPE_BOOLEAN) {
         *ffi = &ffi_type_uint8;
         return ValueCategory::Integer;
+    } else if(typeCategory == IL2CPP_TYPE_U1) {
+        *ffi = &ffi_type_uint8;
+        return ValueCategory::Integer;
+
+    } else if(typeCategory == IL2CPP_TYPE_U2) {
+        *ffi = &ffi_type_uint16;
+        return ValueCategory::Integer;
+
+    } else if(typeCategory == IL2CPP_TYPE_U4) {
+        *ffi = &ffi_type_uint32;
+        return ValueCategory::Integer;
 
     } else if(
         ptr ||
@@ -165,6 +178,9 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
         *ffi = &ffi_type_sint32;
         return ValueCategory::Integer;
 
+    } else if(typeCategory == IL2CPP_TYPE_I8) {
+        *ffi = &ffi_type_sint64;
+        return ValueCategory::Integer;
     } else if(typeCategory == IL2CPP_TYPE_VALUETYPE) {
         auto typeClass = il2cpp_type_get_class_or_element_class(type);
         uint32_t valueAlign;

@@ -131,6 +131,7 @@ private:
 
     size_t m_integerArgumentSlot;
     size_t m_vectorArgumentSlot;
+    size_t m_currentSPOffset;
 
 
 };
