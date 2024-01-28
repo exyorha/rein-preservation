@@ -23,7 +23,7 @@ JIT::JIT() :
     config.enable_cycle_counting = false;
     config.fastmem_address_space_bits = 64;
     config.silently_mirror_fastmem = false;
-    config.use_null_fastmem = true;
+    config.fastmem_pointer = 0;
     config.fastmem_exclusive_access = true;
     config.recompile_on_exclusive_fastmem_failure = false;
     config.recompile_on_fastmem_failure = false;
