@@ -1,0 +1,19 @@
+The API uses gRPC over HTTP 2.0 ('application/grpc') protocol, with the normal
+Length-Prefixed-Message encoding. gRPC messages carry protobuf-encoded
+messages that are additionally encrypted.
+
+The encryption used is AES-128-CBC with the PKCS#7 padding, applied over the
+whole body of the message.
+
+The encryption keys used:
+    Request encryption key:  "1234567890ABCDEF" (ASCII string)
+    Request encryption IV:   "it8bAjktKdFIBYtU"
+    Response encryption key: "6Cb01321EE5e6bBe"
+    Response encryption IV:  "EfcAef4CAe5f6DaA"
+
+These keys are retrieved by the game from the EXIF data of the following files
+in the APK:
+    - /assets/Icon-60@2x.jpg (response keys)
+    - /assets/Icon-60@3x.jpg (request keys)
+
+
