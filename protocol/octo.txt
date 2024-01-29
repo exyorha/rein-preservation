@@ -1,0 +1,33 @@
+'Octo' is the system used for the asset retrieval.
+
+The 'Octo key' needed for accessing the endpoints is specified as a string
+literal within the game code, and is 'l488k2zmalogay245osa257ifw2lczq4'.
+
+The 'Octo AES key' is also a literal, and appears to be 'st4q3c7p1ibgwdhm'
+
+Octo list is initially downloaded from:
+https://resources-api.app.nierreincarnation.com/v2/pub/a/<octo A value>/v/<octo D value>/list/0
+The first 16 bytes is the IV, the rest is the data.
+
+AES, CBC, PKCS#7 padding
+The key = SHA256(the string result of the virtual method #4 of Octo_IOctoSettings, encoded as UTF-8)
+The key size is likely 256 bits
+Block size is 128 bits
+The initial IV is md5('LvAUtf+tnz'), but it's probably not used
+
+
+Octo 'A' value is e.g. 301,
+Octo 'B' value is the 'client secret key'
+Octo 'C' value is the 'client AES key'
+Octo 'D' value is e.g. 300116832
+Octo 'E' value is the environment URL'
+Octo 'F' value is formatted from 'dark_{0}_{1}', where 0 - A value, 1 - D value
+
+Potentially relevant setting:
+settings/octo/octo_overwrite_config
+
+
++0 BlockSize - set by calling at +414
++1 FeedbackSize
++2 IV
++3 Key       - set by calling at +544 ; the difference is 16 pointers. 4 pointers per prop???

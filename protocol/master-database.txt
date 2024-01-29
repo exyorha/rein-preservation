@@ -1,0 +1,29 @@
+A bulk of the non-asset game data is stored in the 'master database'.
+
+It's downloaded by a plain UnityWebRequest from the following endpoint:
+
+https://web.app.nierreincarnation.com/assets/release/<version>/database.bin.e
+
+<version> - e.g, prd-us/20240128180453
+
+the <version> is retrieved by the following gRPC call:
+https://api.app.nierreincarnation.com/apb.api.data.DataService/GetLatestMasterDataVersion
+With the usual HTTP headers, empty request data (no protobuf tuples), and with the
+response of one string tuple with the ID=1 containing the version.
+
+The database.bin.e file is encrypted with AES-128-CBC with the PKCS#7 padding,
+applied over the whole file content. The encryption parameters used are as
+follows:
+
+Key: "6Cb01321EE5e6bBe"
+IV:  "EfcAef4CAe5f6DaA"
+
+These parameters are retrieved from the EXIF data of the following file in
+the game APK: /assets/Icon-60@2x.jpg
+
+The master database file is MessagePack-encoded, starts with the index of all tables
+contained, and continues with the table data. See parse_database.rb for an example
+of proper parsing.
+
+Note that the database uses single block LZ4 compression (extension 0x63),
+which is not widely supported across MessagePack implementations.

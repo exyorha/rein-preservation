@@ -12,12 +12,8 @@ responses:
 
 There's a second set of key material, but it's not yet known what it's used
 for:
-    Key: "6Cb01321EE5e6bBe"
-    IV:  "EfcAef4CAe5f6DaA"
 
-These keys are retrieved by the game from the EXIF data of the following files
-in the APK:
-    - /assets/Icon-60@2x.jpg (unknown keys)
-    - /assets/Icon-60@3x.jpg (app.app.* keys)
+These keys are retrieved by the game from the EXIF data of the following file
+in the APK: /assets/Icon-60@3x.jpg
 
 
