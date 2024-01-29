@@ -121,7 +121,16 @@ set_target_properties(GameAssembly PROPERTIES
 )
 
 if(UNIX)
-    target_link_options(GameAssembly PRIVATE -Wl,-z,defs "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
+    target_link_options(GameAssembly PRIVATE
+        -Wl,-z,defs
+        "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.lds"
+        -Wl,--relax
+        -Wl,-Bsymbolic
+        -Wl,-z,now
+    )
+    target_compile_options(GameAssembly PRIVATE
+        -ftls-model=initial-exec
+    )
     set_target_properties(GameAssembly PROPERTIES LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
 endif()
 
@@ -173,6 +182,21 @@ add_dependencies(GameAssembly armlib)
 
 add_subdirectory(interrogator)
 
-install(TARGETS GameAssembly interrogator DESTINATION . COMPONENT GameAssembly)
+add_subdirectory(unity_stub)
+
+add_executable(GameExecutable game_executable.cpp)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly)
+set_target_properties(GameExecutable PROPERTIES
+    OUTPUT_NAME NieR
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "\$ORIGIN"
+    LINKER_LANGUAGE C
+)
+
+if(UNIX)
+    target_link_options(GameExecutable PRIVATE -Wl,-z,now)
+endif()
+
+install(TARGETS GameAssembly interrogator GameExecutable DESTINATION . COMPONENT GameAssembly)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so DESTINATION . COMPONENT GameAssembly)
-install(FILES app.info DESTINATION LinuxPlayer_Data COMPONENT GameAssembly)
+install(FILES app.info DESTINATION $<TARGET_FILE_BASE_NAME:GameExecutable>_Data COMPONENT GameAssembly)

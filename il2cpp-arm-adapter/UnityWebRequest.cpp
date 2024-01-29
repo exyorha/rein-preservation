@@ -44,3 +44,16 @@ static void *UnityWebRequest_SetUrl(
     return original(thisPointer, url);
 }
 INTERPOSE_ICALL("UnityEngine.Networking.UnityWebRequest::SetUrl", UnityWebRequest_SetUrl)
+
+static int SystemInfo_GetOperatingSystemFamily(int (*original)(void)) {
+    int real = original();
+    int reported = 0;
+
+    if(real != reported) {
+        printf("SystemInfo_GetOperatingSystemFamily: changing the reported operating system family from %d to %d\n", real, reported);
+    }
+
+    return reported;
+}
+
+INTERPOSE_ICALL("UnityEngine.SystemInfo::GetOperatingSystemFamily", SystemInfo_GetOperatingSystemFamily)
