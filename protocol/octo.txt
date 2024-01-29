@@ -1,33 +1,47 @@
 'Octo' is the system used for the asset retrieval.
 
-The 'Octo key' needed for accessing the endpoints is specified as a string
-literal within the game code, and is 'l488k2zmalogay245osa257ifw2lczq4'.
+There are several values used for its configuration, alternatively named by
+latin letters and by more descriptive names.
 
-The 'Octo AES key' is also a literal, and appears to be 'st4q3c7p1ibgwdhm'
+'A' value is the integer 'app id', which seems to be hardcoded as 301,
+'B' value is the 'client secret key', which seems to be hardcoded as
+    the string 'l488k2zmalogay245osa257ifw2lczq4'
+'C' value is the 'client AES key', which seems to be hardcoded as
+    the string 'st4q3c7p1ibgwdhm'.
+'D' value is the integer 'octo version', which seems to be hardcoded
+    as 300116832.
+'E' value is the base URL, which seems to be hardcoded as
+    'https://resources-api.app.nierreincarnation.com/'.
+'F' value is strictly derivative, and is calculated by formatting a string
+    'dark_{0}_{1}' with 0 = A value, 1 = D value
 
-Octo list is initially downloaded from:
-https://resources-api.app.nierreincarnation.com/v2/pub/a/<octo A value>/v/<octo D value>/list/0
-The first 16 bytes is the IV, the rest is the data.
+Additionally, all of these parameters (except F) can be overriden by a
+'settings/octo/octo_overwrite_config' resource, if it's present. In the
+game as it currently this, this resource is present, but empty, and overrides
+nothing.
 
-AES, CBC, PKCS#7 padding
-The key = SHA256(the string result of the virtual method #4 of Octo_IOctoSettings, encoded as UTF-8)
-The key size is likely 256 bits
-Block size is 128 bits
-The initial IV is md5('LvAUtf+tnz'), but it's probably not used
-
-
-Octo 'A' value is e.g. 301,
-Octo 'B' value is the 'client secret key'
-Octo 'C' value is the 'client AES key'
-Octo 'D' value is e.g. 300116832
-Octo 'E' value is the environment URL'
-Octo 'F' value is formatted from 'dark_{0}_{1}', where 0 - A value, 1 - D value
-
-Potentially relevant setting:
-settings/octo/octo_overwrite_config
+In a 'review environment' all of these settings are unconditionally overriden
+by a separate, review-only, configuration file downloaded from a server. This
+is not yet researched.
 
 
-+0 BlockSize - set by calling at +414
-+1 FeedbackSize
-+2 IV
-+3 Key       - set by calling at +544 ; the difference is 16 pointers. 4 pointers per prop???
+The Octo list of assets is downloaded by a plain GET request (executed via
+UnityWebRequest) from the following URL:
+
+<octo E value>/v2/pub/a/<octo A value>/v/<octo D value>/list/<version>
+
+Two additional headers need to be set on the request:
+    - 'X-OCTO-KEY', with the value set to the 'B' value.
+    - 'Accept: application/x-protobuf,x-octo-app/<octo A value>'.
+
+The response will be served with the Content-Type of 'application/x-protobuf',
+and contain a delta manifest between the version specified in the request
+(or a full manifest, if the version is set as 0, as would be expected). ETag
+is meaningful and should be used for caching.
+
+The response is encrypted with AES-256-CBC, with PKCS#7 padding. The key
+used for the encryption is obtained from sha256(octo F value, UTF-8 encoded).
+
+The first 16 bytes of the response contain the initialization vector, the rest
+is the encrypted data. After decryption, the obtained data should contain
+protocol buffers-encoded manifest content.
