@@ -17,19 +17,10 @@ def request(context, flow = None):
             # Host header
             flow.request.host = flow.request.pretty_host(hostheader=True)
 
-def decrypt_api_request(data, is_request):
+def decrypt_api_request(data):
 
-    print("encrypted data: %s, is request: %s" % ( data.hex(), is_request ) )
-
-    key = None
-    iv = None
-
-    #if is_request:
     key = b'1234567890ABCDEF'
     iv = b'it8bAjktKdFIBYtU'
-    #else:
-    #    key = b'6Cb01321EE5e6bBe'
-    #    iv = b'EfcAef4CAe5f6DaA'
 
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
     padder = padding.PKCS7(algorithms.AES.block_size)
@@ -40,15 +31,11 @@ def decrypt_api_request(data, is_request):
         msg_is_compressed, length = struct.unpack("!?i", data[:5])
         decoded_message = struct.unpack("!%is" % length, data[5 : 5 + length])[0]
 
-        print(decoded_message.hex())
-
         decryptor = cipher.decryptor()
         padder_instance = padder.unpadder()
         decrypted_message = padder_instance.update(decryptor.update(decoded_message))
         decrypted_message += padder_instance.update(decryptor.finalize())
         decrypted_message += padder_instance.finalize()
-
-        print(decrypted_message.hex())
 
         decrypted_data += struct.pack("!?i", msg_is_compressed, len(decrypted_message))
         decrypted_data += decrypted_message
@@ -70,7 +57,7 @@ class EncryptedGrpcView(contentviews.grpc.ViewGrpcProtobuf):
         **unknown_metadata,
     ) -> contentviews.TViewResult:
 
-        data = decrypt_api_request(data, isinstance(http_message, http.Request))
+        data = decrypt_api_request(data)
 
         unused_title, contents = contentviews.grpc.ViewGrpcProtobuf.__call__(self, data,
                                                                         content_type = content_type,
