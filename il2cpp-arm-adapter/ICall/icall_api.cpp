@@ -4,15 +4,17 @@
 #include <Translator/thunking.h>
 #include <ELF/Image.h>
 
+#include "GlobalContext.h"
+
 void il2cpp_add_internal_call(const char* name, Il2CppMethodPointer method) {
     auto thunkContext = std::make_unique<InternalCallThunk>(name, method);
 
     typedef void(*FunctionPointer)(const char* name, void *method);
 
     static FunctionPointer arm_il2cpp_add_internal_call =
-        reinterpret_cast<FunctionPointer>(Image::get_il2cpp_image()->getSymbolChecked("il2cpp_add_internal_call"));
+        reinterpret_cast<FunctionPointer>(GlobalContext::get().il2cpp().getSymbolChecked("il2cpp_add_internal_call"));
 
-    auto thunk = ThunkManager::allocateARMToX86ThunkCall(thunkContext.release(), &InternalCallThunk::thunkCall);
+    auto thunk = GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(thunkContext.release(), &InternalCallThunk::thunkCall);
 
     armcall(arm_il2cpp_add_internal_call,
         name,

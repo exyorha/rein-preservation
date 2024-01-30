@@ -7,6 +7,8 @@
 #include <setjmp.h>
 #include <sys/mman.h>
 
+#include "GlobalContext.h"
+
 static jmp_buf recoverFromDebugFault;
 
 static void debugMemoryAccessFault(int signal) {
@@ -57,7 +59,7 @@ bool debugMemoryWrite(uintptr_t address, const void *src, size_t length) {
      */
 
     {
-        uintptr_t misalign = address & 4095;
+        uintptr_t misalign = address & (GlobalContext::PageSize - 1);
         mprotect(reinterpret_cast<void *>(address - misalign), length + misalign, PROT_READ | PROT_WRITE | PROT_EXEC);
     }
 
@@ -84,7 +86,7 @@ bool debugMemoryWrite(uintptr_t address, const void *src, size_t length) {
     if(sigaction(SIGSEGV, &oldAction, nullptr) < 0)
         throw std::system_error(errno, std::generic_category());
 
-    JIT::flushInstructionCacheLockedInternal(address, length);
+    GlobalContext::get().jit().flushInstructionCacheLockedInternal(address, length);
 
     return success;
 }

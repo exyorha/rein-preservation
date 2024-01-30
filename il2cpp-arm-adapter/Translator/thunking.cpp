@@ -1,6 +1,8 @@
 #include <Translator/thunking.h>
 #include <Translator/ThunkManager.h>
 
+#include "GlobalContext.h"
+
 #include <cinttypes>
 
 thread_local void *thunkUtilitySlot;
@@ -16,12 +18,12 @@ void runARMCall(JITThreadContext &context) {
     context.lr() = reinterpret_cast<uintptr_t>(&stopSVC);
 
     do {
-        exitSVC = JIT::runToSVC(context);
+        exitSVC = GlobalContext::get().jit().runToSVC(context);
 
         if(exitSVC == ThunkManager::ARMToX86ThunkCallSVC) {
             ThunkManager::X86ThunkTarget invokable;
 
-            auto key = ThunkManager::lookupARMToX86ThunkCall(reinterpret_cast<void *>(context.pc - 4), &invokable);
+            auto key = GlobalContext::get().thunkManager().lookupARMToX86ThunkCall(reinterpret_cast<void *>(context.pc - 4), &invokable);
             if(!key)
                 panic("ARMToX86ThunkCallSVC at an unknown thunk address");
 

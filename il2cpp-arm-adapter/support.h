@@ -5,6 +5,4 @@
 
 [[noreturn]] void panic(const char *format, ...);
 
-std::filesystem::path thisLibraryDirectory();
-
 #endif

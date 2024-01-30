@@ -7,14 +7,9 @@
 #include <mutex>
 #include <cstring>
 
-std::shared_mutex ThunkManager::m_thunkTableMutex;
-std::unordered_map<void *, void *> ThunkManager::m_thunkX86ToArmTableForward;
-std::unordered_map<void *, void *> ThunkManager::m_thunkX86ToArmTableReverse;
-std::unordered_map<void *, ThunkManager::X86ThunkTarget> ThunkManager::m_thunkArmToX86TableForward;
-std::unordered_map<ThunkManager::X86ThunkTarget, void *> ThunkManager::m_thunkArmToX86TableReverse;
+ThunkManager::ThunkManager() = default;
 
-ThunkManager::BumpAllocator ThunkManager::m_armThunkAllocator;
-ThunkManager::BumpAllocator ThunkManager::m_x86ThunkAllocator;
+ThunkManager::~ThunkManager() = default;
 
 void *ThunkManager::allocateARMToX86ThunkCall(void *key, X86ThunkTarget x86FunctionToCall) {
     if(!key || !x86FunctionToCall)

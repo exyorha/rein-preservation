@@ -40,13 +40,13 @@ using SymbolProvidingFunction = void *(*)();
 
 template<auto x86Function>
 static void *thunkX86() {
-    return ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function),
+    return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function),
                                                    createTypedX86Thunk(x86Function));
 }
 
 template<void (*x86Function)(void)>
 static void *thunkX86Raw() {
-    return ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function), x86Function);
+    return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function), x86Function);
 }
 
 static void *getEnvironPointer() {
@@ -167,14 +167,9 @@ static void vsscanfRawThunk(void) {
     panic("vsscanfRawThunk\n");
 }
 
-static void abortWrapped(void) {
-    JIT::stopDebuggerIfAttached(SIGABRT);
-    abort();
-}
-
 static const std::unordered_map<std::string_view, SymbolProvidingFunction> systemAPI{
 
-    { "abort"sv, &thunkX86<abortWrapped> },
+    { "abort"sv, &thunkX86<abort> },
     { "accept"sv, &thunkX86<accept> },
     { "access"sv, &thunkX86<access> },
     { "acos"sv, &thunkX86<acos> },
@@ -235,9 +230,6 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "freelocale", &thunkX86<freelocale> },
     { "fseek", &thunkX86<fseek> },
     { "fseeko", &thunkX86<fseeko> },
-    /*
-     * TODO: struct stat may be incompatible
-     */
     { "fstat", &thunkX86<android_fstat> },
     { "ftello", &thunkX86<ftello> },
     { "ftruncate", &thunkX86<ftruncate> },
@@ -282,9 +274,6 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "logb", &thunkX86<logb> },
     { "logf", &thunkX86<logf> },
     { "lseek", &thunkX86<lseek> },
-    /*
-     * TODO: struct stat may be incompatible
-     */
     { "lstat", &thunkX86<android_lstat> },
     { "malloc", &thunkX86<malloc> },
     { "mbrlen", &thunkX86<mbrlen> },

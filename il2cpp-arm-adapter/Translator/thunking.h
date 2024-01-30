@@ -2,6 +2,7 @@
 #define THUNKING_H
 
 #include "support.h"
+#include "GlobalContext.h"
 #include <Translator/JIT.h>
 #include <Translator/JITThreadContext.h>
 #include <Translator/ThunkManager.h>
@@ -97,7 +98,7 @@ auto armCallStorePointerArgument(int argumentIndex, T *arg) -> typename std::ena
     /*
      * Is this an x86 to ARM thunk?
      */
-    auto thunkedARMFunction = ThunkManager::lookupX86ToARMThunkCall(reinterpret_cast<ThunkManager::X86ThunkTarget>(arg));
+    auto thunkedARMFunction = GlobalContext::get().thunkManager().lookupX86ToARMThunkCall(reinterpret_cast<ThunkManager::X86ThunkTarget>(arg));
     if(thunkedARMFunction) {
         /*
          * Yes; don't double-thunk, just return the ARM function.
@@ -107,7 +108,7 @@ auto armCallStorePointerArgument(int argumentIndex, T *arg) -> typename std::ena
     }
 
     auto thunk =
-        ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(arg), createTypedX86Thunk(arg));
+        GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(arg), createTypedX86Thunk(arg));
 
     storeARMCallPointerSizedArgument(argumentIndex, reinterpret_cast<uintptr_t>(thunk));
 }
@@ -198,7 +199,7 @@ static auto retrieveX86CallPointer(int position) -> typename std::enable_if<std:
     if(!ptr)
         return nullptr;
 
-    void *thunkedX86 = ThunkManager::lookupARMToX86ThunkCall(ptr);
+    void *thunkedX86 = GlobalContext::get().thunkManager().lookupARMToX86ThunkCall(ptr);
     if(thunkedX86) {
         /*
          * This is a thunked x86 function pointer; pass it directly, don't double-thunk.
@@ -207,7 +208,8 @@ static auto retrieveX86CallPointer(int position) -> typename std::enable_if<std:
         return reinterpret_cast<T *>(thunkedX86);
     }
 
-    auto thunk = ThunkManager::allocateX86ToARMThunkCall(ptr, reinterpret_cast<ThunkManager::X86ThunkTarget>(static_cast<T *>(x86CallThunk)));
+    auto thunk = GlobalContext::get().thunkManager().allocateX86ToARMThunkCall(
+        ptr, reinterpret_cast<ThunkManager::X86ThunkTarget>(static_cast<T *>(x86CallThunk)));
 
     return reinterpret_cast<T *>(thunk);
 }

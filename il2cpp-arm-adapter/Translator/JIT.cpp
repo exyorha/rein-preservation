@@ -1,13 +1,11 @@
 #include <Translator/JIT.h>
-#include "support.h"
 #include <Translator/JITThreadContext.h>
 
 #include <cstdio>
 #include <cinttypes>
 #include <signal.h>
 
-std::mutex JIT::m_globalJITLock;
-std::optional<JIT> JIT::m_jit;
+#include "support.h"
 
 JIT::JIT() :
     /*
@@ -41,7 +39,9 @@ JIT::JIT() :
 
 JIT::~JIT() = default;
 
-uint32_t JIT::doRunToSVC(JITThreadContext &context) {
+uint32_t JIT::runToSVC(JITThreadContext &context) {
+    std::unique_lock<std::mutex> locker(m_globalJITLock);
+
 #if 0
     struct SignalGuard {
         SignalGuard() {
@@ -154,29 +154,12 @@ uint32_t JIT::doRunToSVC(JITThreadContext &context) {
 void JIT::stopDebuggerIfAttached(unsigned int signal) {
     std::unique_lock<std::mutex> locker(m_globalJITLock);
 
-    return jitInstanceLocked()->doStopDebuggerIfAttached(signal);
-}
-
-void JIT::doStopDebuggerIfAttached(unsigned int signal) {
     if(m_gdbStub.has_value())
         m_gdbStub->stopped(signal);
 }
 
-uint32_t JIT::runToSVC(JITThreadContext &thread) {
-    std::unique_lock<std::mutex> locker(m_globalJITLock);
-
-    return jitInstanceLocked()->doRunToSVC(thread);
-}
-
 void JIT::flushInstructionCacheLockedInternal(uintptr_t addr, size_t size) {
-    return jitInstanceLocked()->m_dynarmic->InvalidateCacheRange(addr, size);
-}
-
-JIT *JIT::jitInstanceLocked() {
-    if(!m_jit.has_value())
-        m_jit.emplace();
-
-    return &*m_jit;
+    return m_dynarmic->InvalidateCacheRange(addr, size);
 }
 
 std::optional<std::uint32_t> JIT::MemoryReadCode(Dynarmic::A64::VAddr vaddr) {

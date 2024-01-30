@@ -1,4 +1,5 @@
 #include <unity_stub.h>
+#include <translator_api.h>
 
 #include <cstdint>
 #include <cstring>
@@ -257,5 +258,5 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    return PlayerMain(argc, argv);
+    return translator_main(argc, argv, PlayerMain);
 }

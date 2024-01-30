@@ -5,6 +5,7 @@
 #include <GDB/DebugMemoryAccess.h>
 #include "support.h"
 #include <ELF/Image.h>
+#include "GlobalContext.h"
 
 #include <cstring>
 #include <system_error>
@@ -226,7 +227,7 @@ bool GDBStub::processPacket(const std::string &packet) {
             } else if(query == "Offsets") {
                 std::stringstream offsets;
                 offsets << "TextSeg=";
-                offsets << std::hex << Image::get_il2cpp_image_debugger()->displacement();
+                offsets << std::hex << GlobalContext::get().il2cpp().displacement();
                 m_packetLayer.sendPacket(offsets.str());
 
             } else {
@@ -366,11 +367,11 @@ std::optional<std::string_view> GDBStub::readLibraries(const std::string_view &a
     if(!m_libraries.has_value()) {
 
         std::stringstream libraryDesc;
-        auto il2cpp = Image::get_il2cpp_image_debugger();
+        const auto &il2cpp = GlobalContext::get().il2cpp();
         libraryDesc <<
             "<library-list>\n"
-                "<library name=\"" << il2cpp->path() << "\" />\n"
-                    "<segment address=\">0x" << std::hex << il2cpp->displacement() << "\" />\n"
+                "<library name=\"" << il2cpp.path() << "\" />\n"
+                    "<segment address=\">0x" << std::hex << il2cpp.displacement() << "\" />\n"
                 "</library>\n"
             "</library-list>\n";
         m_libraries = std::move(libraryDesc.str());
@@ -385,7 +386,7 @@ std::optional<std::string_view> GDBStub::readExecFile(const std::string_view &an
 
     if(!m_execFilename.has_value()) {
 
-        m_execFilename = Image::get_il2cpp_image_debugger()->path();
+        m_execFilename = GlobalContext::get().il2cpp().path();
     }
 
     return *m_execFilename;

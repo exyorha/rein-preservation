@@ -3,8 +3,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dlfcn.h>
-#include <stdexcept>
 
 void panic(const char *format, ...) {
     va_list args;
@@ -16,15 +14,4 @@ void panic(const char *format, ...) {
     fflush(stderr);
 
     abort();
-}
-
-std::filesystem::path thisLibraryDirectory() {
-        static unsigned char thisImageSymbol;
-
-    Dl_info info;
-
-    if(!dladdr(&thisImageSymbol, &info))
-        throw std::runtime_error("Unable to resolve own library");
-
-    return std::filesystem::absolute(std::filesystem::path(info.dli_fname)).parent_path();
 }

@@ -28,6 +28,7 @@ add_library(GameAssembly SHARED
     android_api.cpp
     android_api.h
     AndroidJNI.cpp
+    translator_main.cpp
 
     ELF/ElfModule.cpp
     ELF/ElfModule.h
@@ -49,6 +50,9 @@ add_library(GameAssembly SHARED
     GDB/GDBPacketParser.h
     GDB/GDBStub.cpp
     GDB/GDBStub.h
+
+    GlobalContext.cpp
+    GlobalContext.h
 
     ICall/ARMArgumentPacker.cpp
     ICall/ARMArgumentPacker.h
@@ -105,9 +109,11 @@ add_library(GameAssembly SHARED
     Translator/ThunkManager.h
     Translator/thunkutils.S
 
+    translator_api/translator_api.h
+
     UnityWebRequest.cpp
 )
-target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
 target_include_directories(GameAssembly PRIVATE .)
 target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI Iconv::Iconv)
 

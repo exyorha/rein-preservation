@@ -25,7 +25,7 @@ static bool isSignalPermittedToHaveAnARMHandler(int sig) {
 template<typename T>
 static inline T * thunkARMSignalHandler(T *func) {
     return reinterpret_cast<T *>(
-        ThunkManager::allocateX86ToARMThunkCall(
+        GlobalContext::get().thunkManager().allocateX86ToARMThunkCall(
             reinterpret_cast<void *>(func),
             reinterpret_cast<ThunkManager::X86ThunkTarget>(static_cast<T *>(x86CallThunk))));
 }

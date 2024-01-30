@@ -18,10 +18,6 @@ public:
     Image(const Image &other) = delete;
     Image &operator =(const Image &other) = delete;
 
-    static Image *get_armlib_image();
-    static Image *get_il2cpp_image();
-    static Image *get_il2cpp_image_debugger();
-
     inline const std::filesystem::path &path() const {
         return m_path;
     }
@@ -49,8 +45,6 @@ private:
     void *resolveSymbol(uint32_t symbolIndex);
 
     static uint32_t symbolHash(const char *name);
-
-    void init();
 
     class ImageMapping {
     public:
@@ -81,13 +75,6 @@ private:
         void *m_base;
         size_t m_size;
     };
-
-    static uint32_t queryPageSize();
-
-    static std::shared_mutex m_initializationMutex;
-    static std::optional<Image> m_armlib;
-    static std::optional<Image> m_il2cpp;
-    static const uint32_t PageSize;
 
     template<typename T = void>
     inline T *displace(uintptr_t address) const {

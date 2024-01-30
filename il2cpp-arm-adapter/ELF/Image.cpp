@@ -15,11 +15,7 @@
 #include "support.h"
 #include <Translator/thunking.h>
 #include "SystemAPIThunking.h"
-
-std::shared_mutex Image::m_initializationMutex;
-std::optional<Image> Image::m_armlib;
-std::optional<Image> Image::m_il2cpp;
-const uint32_t Image::PageSize = queryPageSize();
+#include "GlobalContext.h"
 
 Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFromFile(path)),
     m_dynamic(nullptr),
@@ -60,9 +56,7 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
 
     if(m_pltRelocations && m_pltRelocationsSize > 0)
         processRelocations(m_pltRelocations, m_pltRelocationsSize);
-}
 
-void Image::init() {
     printf("init array: %p, %zu; fini array: %p, %zu\n",
            m_initArray, m_initArraySize,
            m_finiArray, m_finiArraySize);
@@ -96,12 +90,12 @@ void Image::createBackgroundMapping() {
         throw std::runtime_error("nothing to load in the image");
     }
 
-    if(*lowestVA & (PageSize - 1))
+    if(*lowestVA & (GlobalContext::PageSize - 1))
         throw std::runtime_error("image lowest VA is not aligned to the system page size");
 
     auto imageSize = *highestVA - *lowestVA;
 
-    imageSize = (imageSize + PageSize - 1) & ~(PageSize - 1);
+    imageSize = (imageSize + GlobalContext::PageSize - 1) & ~(GlobalContext::PageSize - 1);
 
     m_mapping.emplace(reinterpret_cast<void *>(*lowestVA), imageSize);
 }
@@ -128,15 +122,15 @@ void Image::mapImageSegments() {
                 prot |= PROT_EXEC;
 
             if(phdr.p_filesz != 0) {
-                if((phdr.p_offset & (PageSize - 1)) != (phdr.p_vaddr & (PageSize - 1)))
+                if((phdr.p_offset & (GlobalContext::PageSize - 1)) != (phdr.p_vaddr & (GlobalContext::PageSize - 1)))
                     throw std::runtime_error("the program segment offset and the virtual address are not congruent modulo system page size");
 
-                mappedSize = (phdr.p_filesz + (PageSize - 1)) & ~(PageSize - 1);
+                mappedSize = (phdr.p_filesz + (GlobalContext::PageSize - 1)) & ~(GlobalContext::PageSize - 1);
 
-                auto misalign = phdr.p_vaddr & (PageSize - 1);
+                auto misalign = phdr.p_vaddr & (GlobalContext::PageSize - 1);
 
-                auto alignedVaddr = phdr.p_vaddr & ~(PageSize - 1);
-                auto alignedOffset = phdr.p_offset & ~(PageSize - 1);
+                auto alignedVaddr = phdr.p_vaddr & ~(GlobalContext::PageSize - 1);
+                auto alignedOffset = phdr.p_offset & ~(GlobalContext::PageSize - 1);
 
                 auto result = mmap(
                     displace(alignedVaddr), mappedSize,
@@ -149,8 +143,8 @@ void Image::mapImageSegments() {
             }
 
             if(phdr.p_memsz > mappedSize) {
-                auto tailStart = (phdr.p_vaddr & ~(PageSize - 1)) + mappedSize;
-                auto tailSize = (phdr.p_memsz - mappedSize + (PageSize - 1)) & ~(PageSize - 1);
+                auto tailStart = (phdr.p_vaddr & ~(GlobalContext::PageSize - 1)) + mappedSize;
+                auto tailSize = (phdr.p_memsz - mappedSize + (GlobalContext::PageSize - 1)) & ~(GlobalContext::PageSize - 1);
 
                 auto result = mprotect(displace(tailStart), tailSize, prot);
                 if(result < 0) {
@@ -268,84 +262,6 @@ void Image::parseDynamic() {
 
 Image::~Image() = default;
 
-uint32_t Image::queryPageSize() {
-
-    auto result = sysconf(_SC_PAGESIZE);
-    if(result < 0) {
-        throw std::system_error(errno, std::generic_category());
-    }
-
-    return static_cast<uint32_t>(result);
-}
-
-Image *Image::get_armlib_image() {
-    Image *image = nullptr;
-
-    {
-        std::shared_lock<std::shared_mutex> shared(m_initializationMutex);
-
-        if(m_armlib.has_value())
-            image = &*m_armlib;
-    }
-
-    {
-        std::unique_lock<std::shared_mutex> unique(m_initializationMutex);
-
-        if(!m_armlib.has_value()) {
-            setlinebuf(stdout);
-            setlinebuf(stderr);
-
-            auto path = thisLibraryDirectory() / "armlib.so";
-            m_armlib.emplace(path);
-
-            m_armlib->init();
-
-            printf("---- armlib has been initialized ----\n");
-        }
-
-        image = &*m_armlib;
-    }
-
-    return image;
-}
-
-Image *Image::get_il2cpp_image() {
-    Image *image = nullptr;
-
-    /*
-     * Ensure that armlib is loaded before il2cpp.
-     */
-    (void)get_armlib_image();
-
-    {
-        std::shared_lock<std::shared_mutex> shared(m_initializationMutex);
-
-        if(m_il2cpp.has_value())
-            image = &*m_il2cpp;
-    }
-
-    {
-        std::unique_lock<std::shared_mutex> unique(m_initializationMutex);
-
-        if(!m_il2cpp.has_value()) {
-            auto path = thisLibraryDirectory() / "libil2cpp.so";
-            m_il2cpp.emplace(path);
-
-            m_il2cpp->init();
-
-            printf("---- ARM il2cpp has been initialized, releasing normal execution ----\n");
-        }
-
-        image = &*m_il2cpp;
-    }
-
-    return image;
-}
-
-Image *Image::get_il2cpp_image_debugger() {
-    return &*m_il2cpp;
-}
-
 bool Image::getSymbol(const char *name, void *&value) const {
     auto hash = symbolHash(name);
 
@@ -457,9 +373,11 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
     } else if(symbol.st_shndx == SHN_UNDEF) {
         auto name = m_stringTable + symbol.st_name;
 
-        Image *armlibToCheck = nullptr;
-        if(m_armlib.has_value() && &*m_armlib != this) {
-            armlibToCheck = &*m_armlib;
+        const Image *armlibToCheck = nullptr;
+
+        auto &ctx = GlobalContext::get();
+        if(ctx.hasArmlib()) {
+            armlibToCheck = &ctx.armlib();
         }
 
         void *symbol;

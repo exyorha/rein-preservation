@@ -1,6 +1,7 @@
 #include "android_api.h"
 #include <ELF/Image.h>
 #include "SystemAPIThunking.h"
+#include "GlobalContext.h"
 
 #include <elf.h>
 #include <signal.h>
@@ -80,13 +81,13 @@ int emulated_dl_iterate_phdr(int (*callback)(struct android_dl_phdr_info *info, 
     /*
      * We report exactly one module - libil2cpp.so.
      */
-    auto image = Image::get_il2cpp_image();
+    const auto &image = GlobalContext::get().il2cpp();
 
     struct android_dl_phdr_info info;
-    info.dlpi_addr = image->displacement();
+    info.dlpi_addr = image.displacement();
     info.dlpi_name = "libil2cpp.so";
-    info.dlpi_phdr = image->phdr();
-    info.dlpi_phnum = image->phnum();
+    info.dlpi_phdr = image.phdr();
+    info.dlpi_phnum = image.phnum();
 
     printf("emulated_dl_iterate_phdr(%p, %p)\n", callback, data);
 
@@ -114,7 +115,7 @@ void *emulated_dlsym(void *handle, const char *sym) {
     printf("emulated_dlsym(%p, %s)\n", handle, sym);
 
     if(handle == &nocallHandle) {
-        return ThunkManager::allocateARMToX86ThunkCall(reinterpret_cast<void *>(dummyThunk), dummyThunk);
+        return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(dummyThunk), dummyThunk);
     }
 
     return resolveUndefinedARMSymbol(sym);

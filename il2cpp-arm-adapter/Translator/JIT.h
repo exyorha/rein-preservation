@@ -21,11 +21,9 @@ public:
     JIT(const JIT &other) = delete;
     JIT &operator =(const JIT &other) = delete;
 
-    static uint32_t runToSVC(JITThreadContext &thread);
-
-    static void stopDebuggerIfAttached(unsigned int signal);
-
-    static void flushInstructionCacheLockedInternal(uintptr_t addr, size_t size);
+    uint32_t runToSVC (JITThreadContext &thread);
+    void stopDebuggerIfAttached(unsigned int signal);
+    void flushInstructionCacheLockedInternal(uintptr_t addr, size_t size);
 
 private:
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A64::VAddr vaddr) override;
@@ -56,17 +54,11 @@ private:
     void dumpMachineContext();
 
 private:
-    static JIT *jitInstanceLocked();
-
-    uint32_t doRunToSVC(JITThreadContext &thread);
-
-    static std::mutex m_globalJITLock;
-    static std::optional<JIT> m_jit;
-
     struct SVCExit {
         uint32_t svc;
     };
 
+    std::mutex m_globalJITLock;
     std::optional<Dynarmic::A64::Jit> m_dynarmic;
     std::optional<uint32_t> m_exitingOnSVC;
     std::optional<uint64_t> m_pcAtFault;

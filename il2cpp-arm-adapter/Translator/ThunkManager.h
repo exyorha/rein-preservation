@@ -6,15 +6,21 @@
 
 class ThunkManager {
 public:
-    using X86ThunkTarget = void (*)(void);
-
-    static void *allocateARMToX86ThunkCall(void *key, X86ThunkTarget functionToCallOnX86);
-    static void *lookupARMToX86ThunkCall(void *armCallAddress, ThunkManager::X86ThunkTarget *functionToCall = nullptr);
-
     static constexpr uint16_t ARMToX86ThunkCallSVC = 'T';
 
-    static X86ThunkTarget allocateX86ToARMThunkCall(void *key, X86ThunkTarget functionToCall);
-    static void *lookupX86ToARMThunkCall(X86ThunkTarget thunk);
+    using X86ThunkTarget = void (*)(void);
+
+    ThunkManager();
+    ~ThunkManager();
+
+    ThunkManager(const ThunkManager &other) = delete;
+    ThunkManager &operator =(const ThunkManager &other) = delete;
+
+    void *allocateARMToX86ThunkCall(void *key, X86ThunkTarget functionToCallOnX86);
+    void *lookupARMToX86ThunkCall(void *armCallAddress, ThunkManager::X86ThunkTarget *functionToCall = nullptr);
+
+    X86ThunkTarget allocateX86ToARMThunkCall(void *key, X86ThunkTarget functionToCall);
+    void *lookupX86ToARMThunkCall(X86ThunkTarget thunk);
 
 private:
     class BumpAllocator {
@@ -38,19 +44,15 @@ private:
         X86ThunkTarget functionToCall;
     };
 
-    static std::shared_mutex m_thunkTableMutex;
-    static std::unordered_map<void *, void *> m_thunkX86ToArmTableForward;
-    static std::unordered_map<void *, void *> m_thunkX86ToArmTableReverse;
+    std::shared_mutex m_thunkTableMutex;
+    std::unordered_map<void *, void *> m_thunkX86ToArmTableForward;
+    std::unordered_map<void *, void *> m_thunkX86ToArmTableReverse;
 
-    static std::unordered_map<void *, X86ThunkTarget> m_thunkArmToX86TableForward;
-    static std::unordered_map<X86ThunkTarget, void *> m_thunkArmToX86TableReverse;
+    std::unordered_map<void *, X86ThunkTarget> m_thunkArmToX86TableForward;
+    std::unordered_map<X86ThunkTarget, void *> m_thunkArmToX86TableReverse;
 
-    static BumpAllocator m_armThunkAllocator;
-    static BumpAllocator m_x86ThunkAllocator;
-#if 0
-    static void *m_currentARMThunkBlock;
-    static size_t m_currentARMThunkBlockRemaining;
-#endif
+    BumpAllocator m_armThunkAllocator;
+    BumpAllocator m_x86ThunkAllocator;
 };
 
 #endif
