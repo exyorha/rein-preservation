@@ -50,3 +50,22 @@ The received protocol buffer is an Octo.Proto.Database.proto and is described in
 separate file.
 
 
+The individual assets are received from an URL specified in the list of assets, in
+the 'urlFormat' field. For illustration purposes only, currently that is:
+
+"https://resources.app.nierreincarnation.com/unso-{v}-{type}/{o}?generation={g}&alt=media"
+
+Following substitutions are made on the URL, based on the Octo.Proto.Data of
+the file to be retrieved:
+
+  'v'    - 'uploadVersionId' of the file,
+  'type' - 'assetbundle', if the file comes from 'assetBundleList' in the
+           database, or 'resource' if the file comes from 'resourceList',
+  'o'    - 'objectName' of the file,
+  'g'    - 'generation' of the file,
+
+A plain GET request is made with no special headers. The User-Agent is that
+of the Android Java VM, such as:
+
+'User-Agent: Dalvik/2.1.0 (Linux; U; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.036.A1)'
+
