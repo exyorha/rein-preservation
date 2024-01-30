@@ -45,3 +45,8 @@ used for the encryption is obtained from sha256(octo F value, UTF-8 encoded).
 The first 16 bytes of the response contain the initialization vector, the rest
 is the encrypted data. After decryption, the obtained data should contain
 protocol buffers-encoded manifest content.
+
+The received protocol buffer is an Octo.Proto.Database.proto and is described in a
+separate file.
+
+
