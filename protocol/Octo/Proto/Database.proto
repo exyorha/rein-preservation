@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+message Database {
+    int32 revision = 1; // offset 0x10
+    repeated Data assetBundleList = 2; // offset 0x18
+    repeated string tagname = 3; // offset 0x20
+    repeated Data resourceList = 4; // offset 0x28
+    string urlFormat = 5; // offset 0x30
+}
+
+message Data {
+    int32 id = 1; // offset 0x10
+    string filepath = 2; // offset 0x18
+    string name = 3; // offset 0x20
+    int32 size = 4; // offset 0x28
+    uint32 crc = 5; // offset 0x2c
+    string md5 = 10; // offset 0x30
+    int32 priority = 6; // offset 0x38
+    repeated int32 tagid = 7; // offset 0x40
+    repeated int32 dependendecie = 8; // [sic], offset 0x48
+    string objectName = 11; // offset 0x50
+    uint64 generation = 12; // offset 0x58
+    int32 uploadVersionId = 13; // offset 0x60
+    int32 state = 9; // offset 0x64
+}
