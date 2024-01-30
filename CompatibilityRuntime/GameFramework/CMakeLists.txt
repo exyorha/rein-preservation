@@ -10,7 +10,6 @@ add_library(GameAssembly SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
     android_api.cpp
     android_api.h
-    AndroidJNI.cpp
     translator_main.cpp
 
     ELF/ElfModule.cpp
@@ -20,8 +19,6 @@ add_library(GameAssembly SHARED
 
     FileDescriptor.cpp
     FileDescriptor.h
-    Il2CppUtilities.cpp
-    Il2CppUtilities.h
 
     GDB/DebugMemoryAccess.cpp
     GDB/DebugMemoryAccess.h
@@ -49,31 +46,6 @@ add_library(GameAssembly SHARED
     ICall/SavedICallContext.cpp
     ICall/SavedICallContext.h
 
-    Java/AdjustSdkAdjust.cpp
-    Java/AdjustSdkAdjust.h
-    Java/AndroidUtilLog.cpp
-    Java/AndroidUtilLog.h
-    Java/JavaClasses.cpp
-    Java/JNIAccessibleObject.cpp
-    Java/JNIAccessibleObject.h
-    Java/JNIClass.cpp
-    Java/JNIClass.h
-    Java/JNIField.cpp
-    Java/JNIGlobalState.cpp
-    Java/JNIGlobalState.h
-    Java/JNIObject.cpp
-    Java/JNIObject.h
-    Java/JNIState.cpp
-    Java/JNIState.h
-    Java/JNIString.cpp
-    Java/JNIString.h
-    Java/JNIThrowable.cpp
-    Java/JNIThrowable.h
-    Java/JNIUnityPlayer.cpp
-    Java/JNIUnityPlayer.h
-    Java/JNIUnityReflectionHelper.cpp
-    Java/JNIUnityReflectionHelper.h
-
     signal_compatibility.cpp
     signal_compatibility.h
     support.h
@@ -93,13 +65,11 @@ add_library(GameAssembly SHARED
     Translator/thunkutils.S
 
     translator_api/translator_api.h
-
-    UnityWebRequest.cpp
 )
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
     ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
 target_include_directories(GameAssembly PRIVATE .)
-target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI Iconv::Iconv)
+target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI)
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden

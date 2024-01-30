@@ -1,4 +1,4 @@
-#include <ICall/ICallInterposerManager.h>
+#include <translator_api.h>
 #include "Il2CppUtilities.h"
 
 #include <Java/JNIState.h>

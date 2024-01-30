@@ -1,6 +1,8 @@
 #include <ICall/ICallInterposerManager.h>
 #include <mutex>
 
+#include <translator_api.h>
+
 std::shared_mutex ICallInterposerManager::m_tableMutex;
 std::optional<ICallInterposerManager::InterposerTable> ICallInterposerManager::m_table;
 
@@ -47,3 +49,12 @@ Il2CppMethodPointer ICallInterposerManager::getInterposerForMethodLocked(const s
 
     return it->second;
 }
+
+void translator_add_icall_interposer(const char *name, Il2CppMethodPointer interposer) {
+    ICallInterposerManager::addInterposerForMethod(name, interposer);
+}
+
+void translator_remove_icall_interposer(const char *name) {
+    ICallInterposerManager::removeInterposerForMethod(name);
+}
+

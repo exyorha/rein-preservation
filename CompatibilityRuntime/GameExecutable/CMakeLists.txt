@@ -1,10 +1,47 @@
-add_executable(GameExecutable main.cpp)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly)
+add_executable(GameExecutable
+    AndroidJNI.cpp
+
+    Il2CppUtilities.cpp
+    Il2CppUtilities.h
+
+    Java/AdjustSdkAdjust.cpp
+    Java/AdjustSdkAdjust.h
+    Java/AndroidUtilLog.cpp
+    Java/AndroidUtilLog.h
+    Java/JavaClasses.cpp
+    Java/JNIAccessibleObject.cpp
+    Java/JNIAccessibleObject.h
+    Java/JNIClass.cpp
+    Java/JNIClass.h
+    Java/JNIField.cpp
+    Java/JNIGlobalState.cpp
+    Java/JNIGlobalState.h
+    Java/JNIObject.cpp
+    Java/JNIObject.h
+    Java/JNIState.cpp
+    Java/JNIState.h
+    Java/JNIString.cpp
+    Java/JNIString.h
+    Java/JNIThrowable.cpp
+    Java/JNIThrowable.h
+    Java/JNIUnityPlayer.cpp
+    Java/JNIUnityPlayer.h
+    Java/JNIUnityReflectionHelper.cpp
+    Java/JNIUnityReflectionHelper.h
+
+    main.cpp
+
+    UnityWebRequest.cpp
+)
+
+target_include_directories(GameExecutable PRIVATE .)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE
     INSTALL_RPATH "\$ORIGIN"
-    LINKER_LANGUAGE C
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED TRUE
 )
 
 if(UNIX)
