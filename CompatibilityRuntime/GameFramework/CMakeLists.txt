@@ -1,27 +1,10 @@
-cmake_minimum_required(VERSION 3.20)
-project(il2cpp-arm-adapter)
-
 include(GenerateExportHeader)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFI REQUIRED IMPORTED_TARGET libffi)
-
-find_package(Iconv REQUIRED)
-
-set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-
-set(DYNARMIC_USE_BUNDLED_EXTERNALS TRUE CACHE BOOL "Use all bundled externals (useful when e.g. cross-compiling)" FORCE)
-add_subdirectory(dynarmic)
-
-find_program(RUBY ruby REQUIRED)
-
-enable_language(ASM)
-
 add_library(GameAssembly SHARED
-    il2cpp_api/il2cpp-api-functions.h
-    il2cpp_api/il2cpp-api-types.h
-    il2cpp_api/il2cpp-api.h
-    il2cpp_api/il2cpp-blob.h
+    ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api-functions.h
+    ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api-types.h
+    ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api.h
+    ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-blob.h
     il2cpp_api_replacements/il2cpp-config-api.h
     ${CMAKE_CURRENT_BINARY_DIR}/include/il2cpp_export.h
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
@@ -113,7 +96,8 @@ add_library(GameAssembly SHARED
 
     UnityWebRequest.cpp
 )
-target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements il2cpp_api ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
+target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
+    ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
 target_include_directories(GameAssembly PRIVATE .)
 target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI Iconv::Iconv)
 
@@ -151,58 +135,13 @@ add_custom_command(
     COMMAND
         ${RUBY} --
         ${CMAKE_CURRENT_SOURCE_DIR}/makeapifuncs.rb
-        ${CMAKE_CURRENT_SOURCE_DIR}/il2cpp_api/il2cpp-api-functions.h
+        ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api-functions.h
         ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/makeapifuncs.rb
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/il2cpp_api/il2cpp-api-functions.h
+    DEPENDS ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api-functions.h
     VERBATIM
 )
 
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so
-    COMMAND
-        aarch64-linux-gnu-gcc
-        -shared
-        -o ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/armlib.c
-        -x assembler-with-cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/setjmp.S
-        -nostdinc
-        -nostartfiles
-        -ffreestanding
-        -Wall -W
-        -O2
-        -fPIC
-        -Wl,-Bsymbolic
-        -Wl,--hash-style=sysv
-        -Wl,-z,norelro
-        -lgcc
-    DEPENDS
-        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/armlib.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/setjmp.S
-        ${CMAKE_CURRENT_SOURCE_DIR}/armlib/nanoprintf.h
-)
-
-add_custom_target(armlib DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so)
 add_dependencies(GameAssembly armlib)
 
-add_subdirectory(interrogator)
-
-add_subdirectory(unity_stub)
-
-add_executable(GameExecutable game_executable.cpp)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly)
-set_target_properties(GameExecutable PROPERTIES
-    OUTPUT_NAME NieR
-    BUILD_WITH_INSTALL_RPATH TRUE
-    INSTALL_RPATH "\$ORIGIN"
-    LINKER_LANGUAGE C
-)
-
-if(UNIX)
-    target_link_options(GameExecutable PRIVATE -Wl,-z,now)
-endif()
-
-install(TARGETS GameAssembly interrogator GameExecutable DESTINATION . COMPONENT GameAssembly)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/armlib/armlib.so DESTINATION . COMPONENT GameAssembly)
-install(FILES app.info DESTINATION $<TARGET_FILE_BASE_NAME:GameExecutable>_Data COMPONENT GameAssembly)
+install(TARGETS GameAssembly DESTINATION . COMPONENT GameAssembly)
