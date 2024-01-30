@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package Octo.Proto;
+
 message Database {
     int32 revision = 1; // offset 0x10
     repeated Data assetBundleList = 2; // offset 0x18

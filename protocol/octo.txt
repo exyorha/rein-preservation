@@ -69,3 +69,56 @@ of the Android Java VM, such as:
 
 'User-Agent: Dalvik/2.1.0 (Linux; U; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.036.A1)'
 
+
+Asset bundles are additionally masked as a weak protection measure. Note that
+the MD5 of the asset bundle specified in the Octo database is that of the
+masked asset - i.e., of the file as it's downloaded from the server.
+
+The first byte of the bundle signals the type of masking done:
+    - If it's 0x31, then the only the first 256 bytes of the bundle are masked,
+    - If it's 0x32, then the whole bundle is masked.
+Any other value is not valid, and the bundle should be rejected in such case.
+
+First, the masking bytes need to be derived from the 'name' of the bundle
+exactly as its specified in the Octo database by the following simple
+algorithm presented in Ruby code:
+
+    def generate_masking_bytes(string)
+        mask_length = string.size * 2
+
+        i = 0
+        j = mask_length - 1
+
+        mask_bytes = Array.new(mask_length)
+
+        string.each_char do |ch|
+            byte = ch.ord
+
+            mask_bytes[i] = byte
+            mask_bytes[j] = byte ^ 0xFF
+
+            i += 2
+            j -= 2
+        end
+
+        mask_of_mask = 0xBB
+        mask_bytes.each do |byte|
+            mask_of_mask = (((mask_of_mask & 1) << 7) | (mask_of_mask >> 1)) ^ byte
+        end
+
+        mask_bytes.map! do |byte|
+            byte ^ mask_of_mask
+        end
+
+        mask_bytes
+    end
+
+Then, the masked portion of the file - either the entire file, or the first
+256 bytes, depending on the masking type - needs to be XORed with the
+calculated masked bytes. That includes the first, type, byte - the type byte
+is not *inserted*, but overwrites the first byte of the bundle. The unmasked
+portion, if any, should be copied as is.
+
+After unmasking, the first byte of the bundle should be corrected by changing
+it to the fixed value of 0x55 ('U'): asset bundles start with the signature of
+'UnityFS'.
