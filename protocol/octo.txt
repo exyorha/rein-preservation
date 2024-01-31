@@ -60,7 +60,7 @@ the file to be retrieved:
 
   'v'    - 'uploadVersionId' of the file,
   'type' - 'assetbundle', if the file comes from 'assetBundleList' in the
-           database, or 'resource' if the file comes from 'resourceList',
+           database, or 'resources' if the file comes from 'resourceList',
   'o'    - 'objectName' of the file,
   'g'    - 'generation' of the file,
 

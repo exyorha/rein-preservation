@@ -111,7 +111,27 @@ class OctoAssetDownloader
         end
 
         if File.exist? local_path
-            # TODO: validate existing local_path
+            md5 =
+                File.open(local_path, "rb") do |inf|
+                    if inf.size != descriptor.size
+                        raise "Asset size doesn't match the descriptor: #{local_path}, #{descriptor.size} in the descriptor, #{inf.size} actual"
+                    end
+
+                    running_md5sum = OpenSSL::Digest::MD5.new
+
+                    while true
+                        chunk = inf.read(128*1024)
+                        break if chunk.nil? || chunk.empty?
+
+                        running_md5sum.update(chunk)
+                    end
+
+                    running_md5sum.hexdigest
+                end
+
+            if md5 != descriptor.md5
+                raise "Asset MD5 doesn't match the descriptor: #{local_path}, #{md5} calculated, #{descriptor.md5} in the descriptor"
+            end
         else
             puts "Downloading #{descriptor.name}"
 
@@ -225,6 +245,13 @@ puts "Loaded the database of the revision level #{database.revision}, containing
 downloader.uri_format = database.urlFormat
 
 database.assetBundleList.each_with_index do |asset, index|
-    puts "#{(index * 100.0 / database.assetBundleList.size).round(2)}% processed"
+#    next if index < first_index
+
+    puts "asset bundle #{index}: #{(index * 100.0 / database.assetBundleList.size).round(2)}% processed"
     path = downloader.acquire_file asset, 'assetbundle'
+end
+
+database.resourceList.each_with_index do |asset, index|
+    puts "resource file #{index}: #{(index * 100.0 / database.resourceList.size).round(2)}% processed"
+    path = downloader.acquire_file asset, 'resources'
 end
