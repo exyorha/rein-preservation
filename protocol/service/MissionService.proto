@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.mission;
+
+option java_package = "jp.co.apb.server.api.proto.mission";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Mission";
+
+message ReceiveMissionRewardsByIdRequest {
+  repeated int32 mission_id = 1;
+}
+
+message ReceiveMissionRewardsByCategoryRequest {
+  int32 mission_category_type = 1;
+}
+
+message UpdateMissionProgressRequest {
+  .apb.api.mission.CageMeasurableValues cage_measurable_values = 50;
+  .apb.api.mission.PictureBookMeasurableValues picture_book_measurable_values = 51;
+}
+
+message ReceiveMissionRewardsResponse {
+  repeated .apb.api.mission.MissionReward received_possession = 1;
+  repeated .apb.api.mission.MissionReward expired_possession = 2;
+  repeated .apb.api.mission.MissionReward overflow_possession = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message MissionReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message UpdateMissionProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message CageMeasurableValues {
+  int32 running_distance_meters = 1;
+  int32 mama_tapped_count = 2;
+}
+
+message PictureBookMeasurableValues {
+  int32 defeat_wizard_count = 1;
+  .apb.api.mission.RhythmInteractionMeasurableValues rhythm_interaction_measurable_values = 2;
+}
+
+message RhythmInteractionMeasurableValues {
+  int32 live_type_id = 1;
+  int32 tap_count = 2;
+}
+
+message ReceiveMissionPassRewardsRequest {
+  int32 mission_pass_id = 1;
+}
+
+message ReceiveMissionPassRewardsResponse {
+  repeated .apb.api.mission.MissionPassReward received_possession = 1;
+  repeated .apb.api.mission.MissionPassReward overflow_possession = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message MissionPassReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+service MissionService {
+  rpc ReceiveMissionRewardsById(.apb.api.mission.ReceiveMissionRewardsByIdRequest) returns (.apb.api.mission.ReceiveMissionRewardsResponse);
+  rpc ReceiveMissionRewardsByCategory(.apb.api.mission.ReceiveMissionRewardsByCategoryRequest) returns (.apb.api.mission.ReceiveMissionRewardsResponse);
+  rpc UpdateMissionProgress(.apb.api.mission.UpdateMissionProgressRequest) returns (.apb.api.mission.UpdateMissionProgressResponse);
+  rpc ReceiveMissionPassRewards(.apb.api.mission.ReceiveMissionPassRewardsRequest) returns (.apb.api.mission.ReceiveMissionPassRewardsResponse);
+}
+

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.explore;
+
+option java_package = "jp.co.apb.server.api.proto.explore";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Explore";
+
+message StartExploreRequest {
+  int32 explore_id = 1;
+  int32 use_consumable_item_id = 2;
+}
+
+message StartExploreResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message FinishExploreRequest {
+  int32 explore_id = 1;
+  int32 score = 2;
+  string vt = 200;
+}
+
+message FinishExploreResponse {
+  int32 acquire_stamina_count = 1;
+  repeated .apb.api.explore.ExploreReward explore_reward = 2;
+  int32 asset_grade_icon_id = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RetireExploreRequest {
+  int32 explore_id = 1;
+}
+
+message RetireExploreResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ExploreReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+service ExploreService {
+  rpc StartExplore(.apb.api.explore.StartExploreRequest) returns (.apb.api.explore.StartExploreResponse);
+  rpc FinishExplore(.apb.api.explore.FinishExploreRequest) returns (.apb.api.explore.FinishExploreResponse);
+  rpc RetireExplore(.apb.api.explore.RetireExploreRequest) returns (.apb.api.explore.RetireExploreResponse);
+}
+

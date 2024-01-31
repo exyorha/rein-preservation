@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.omikuji;
+
+option java_package = "jp.co.apb.server.api.proto.omikuji";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Omikuji";
+
+message OmikujiDrawRequest {
+  int32 omikuji_id = 1;
+}
+
+message OmikujiDrawResponse {
+  int32 omikuji_result_asset_id = 1;
+  repeated .apb.api.omikuji.OmikujiItem omikuji_item = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message OmikujiItem {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+service OmikujiService {
+  rpc OmikujiDraw(.apb.api.omikuji.OmikujiDrawRequest) returns (.apb.api.omikuji.OmikujiDrawResponse);
+}
+

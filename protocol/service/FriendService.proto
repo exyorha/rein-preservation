@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "service/DataService.proto";
+import "service/MissionService.proto";
+package apb.api.friend;
+
+option java_package = "jp.co.apb.server.api.proto.friend";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Friend";
+
+message GetUserRequest {
+  int64 player_id = 1;
+}
+
+message GetUserResponse {
+  .apb.api.friend.User user = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SearchRecommendedUsersResponse {
+  repeated .apb.api.friend.User users = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message User {
+  int64 player_id = 1;
+  string user_name = 2;
+  .google.protobuf.Timestamp last_login_datetime = 3;
+  int32 max_deck_power = 4;
+  int32 favorite_costume_id = 5;
+  int32 level = 6;
+}
+
+message FriendUser {
+  int64 player_id = 1;
+  string user_name = 2;
+  .google.protobuf.Timestamp last_login_datetime = 3;
+  int32 max_deck_power = 4;
+  int32 favorite_costume_id = 5;
+  int32 level = 6;
+  bool cheer_received = 7;
+  bool cheer_sent = 8;
+  bool stamina_received = 9;
+}
+
+message SendFriendRequestRequest {
+  int64 player_id = 1;
+}
+
+message SendFriendRequestResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message AcceptFriendRequestRequest {
+  int64 player_id = 1;
+}
+
+message AcceptFriendRequestResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message DeclineFriendRequestRequest {
+  int64 player_id_old = 1;
+  repeated int64 player_id = 2;
+}
+
+message DeclineFriendRequestResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message DeleteFriendRequest {
+  int64 player_id = 1;
+}
+
+message DeleteFriendResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message CheerFriendRequest {
+  int64 player_id = 1;
+}
+
+message CheerFriendResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message BulkCheerFriendResponse {
+  repeated int64 player_id = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveCheerRequest {
+  int64 player_id = 1;
+}
+
+message ReceiveCheerResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message BulkReceiveCheerResponse {
+  repeated int64 player_id = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetFriendRequestListResponse {
+  repeated .apb.api.friend.User user = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetFriendListRequest {
+  .apb.api.mission.CageMeasurableValues cage_measurable_values = 50;
+}
+
+message GetFriendListResponse {
+  repeated .apb.api.friend.FriendUser friend_user = 1;
+  int32 send_cheer_count = 2;
+  int32 received_cheer_count = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service FriendService {
+  rpc GetUser(.apb.api.friend.GetUserRequest) returns (.apb.api.friend.GetUserResponse);
+  rpc SearchRecommendedUsers(.google.protobuf.Empty) returns (.apb.api.friend.SearchRecommendedUsersResponse);
+  rpc GetFriendList(.apb.api.friend.GetFriendListRequest) returns (.apb.api.friend.GetFriendListResponse);
+  rpc GetFriendRequestList(.google.protobuf.Empty) returns (.apb.api.friend.GetFriendRequestListResponse);
+  rpc SendFriendRequest(.apb.api.friend.SendFriendRequestRequest) returns (.apb.api.friend.SendFriendRequestResponse);
+  rpc AcceptFriendRequest(.apb.api.friend.AcceptFriendRequestRequest) returns (.apb.api.friend.AcceptFriendRequestResponse);
+  rpc DeclineFriendRequest(.apb.api.friend.DeclineFriendRequestRequest) returns (.apb.api.friend.DeclineFriendRequestResponse);
+  rpc DeleteFriend(.apb.api.friend.DeleteFriendRequest) returns (.apb.api.friend.DeleteFriendResponse);
+  rpc CheerFriend(.apb.api.friend.CheerFriendRequest) returns (.apb.api.friend.CheerFriendResponse);
+  rpc BulkCheerFriend(.google.protobuf.Empty) returns (.apb.api.friend.BulkCheerFriendResponse);
+  rpc ReceiveCheer(.apb.api.friend.ReceiveCheerRequest) returns (.apb.api.friend.ReceiveCheerResponse);
+  rpc BulkReceiveCheer(.google.protobuf.Empty) returns (.apb.api.friend.BulkReceiveCheerResponse);
+}
+

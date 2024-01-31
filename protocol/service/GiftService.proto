@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "service/DataService.proto";
+package apb.api.gift;
+
+option java_package = "jp.co.apb.server.api.proto.gift";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Gift";
+
+message ReceiveGiftRequest {
+  repeated string user_gift_uuid = 1;
+}
+
+message ReceiveGiftResponse {
+  repeated string received_gift_uuid = 1;
+  repeated string expired_gift_uuid = 2;
+  repeated string overflow_gift_uuid = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetGiftListRequest {
+  repeated int32 reward_kind_type = 1;
+  int32 expiration_type = 2;
+  bool is_ascending_sort = 3;
+  int64 next_cursor = 4;
+  int64 previous_cursor = 5;
+  int32 get_count = 6;
+}
+
+message GetGiftListResponse {
+  repeated .apb.api.gift.NotReceivedGift gift = 1;
+  int32 total_page_count = 2;
+  int64 next_cursor = 3;
+  int64 previous_cursor = 4;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message NotReceivedGift {
+  .apb.api.gift.GiftCommon gift_common = 1;
+  .google.protobuf.Timestamp expiration_datetime = 2;
+  string user_gift_uuid = 3;
+}
+
+message GiftCommon {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+  .google.protobuf.Timestamp grant_datetime = 4;
+  int32 description_gift_text_id = 5;
+  oneof equipment_data {
+    .apb.api.gift.Costume costume = 6;
+    .apb.api.gift.Companion companion = 7;
+    .apb.api.gift.Weapon weapon = 8;
+    .apb.api.gift.Parts parts = 9;
+  }
+}
+
+message GetGiftReceiveHistoryListResponse {
+  repeated .apb.api.gift.ReceivedGift gift = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceivedGift {
+  .apb.api.gift.GiftCommon giftCommon = 1;
+  .google.protobuf.Timestamp received_datetime = 2;
+}
+
+message Costume {
+  int32 level = 1;
+  int32 exp = 2;
+  int32 limit_break_count = 3;
+  int32 active_skill_level = 4;
+}
+
+message Companion {
+  int32 level = 1;
+}
+
+message Weapon {
+  int32 level = 1;
+  int32 exp = 2;
+  int32 limit_break_count = 3;
+  repeated .apb.api.gift.WeaponAbility ability = 4;
+  repeated .apb.api.gift.WeaponSkill skill = 5;
+}
+
+message WeaponAbility {
+  int32 ability_id = 1;
+  int32 level = 2;
+}
+
+message WeaponSkill {
+  int32 skill_id = 1;
+  int32 level = 2;
+}
+
+message Parts {
+  int32 level = 1;
+  int32 parts_status_main_id = 2;
+  repeated .apb.api.gift.PartsStatusSub parts_status_sub = 3;
+}
+
+message PartsStatusSub {
+  int32 status_index = 1;
+  int32 parts_status_sub_lottery_id = 2;
+  int32 level = 3;
+  int32 status_kind_type = 4;
+  int32 status_calculation_type = 5;
+  int32 status_change_value = 6;
+}
+
+service GiftService {
+  rpc ReceiveGift(.apb.api.gift.ReceiveGiftRequest) returns (.apb.api.gift.ReceiveGiftResponse);
+  rpc GetGiftList(.apb.api.gift.GetGiftListRequest) returns (.apb.api.gift.GetGiftListResponse);
+  rpc GetGiftReceiveHistoryList(.google.protobuf.Empty) returns (.apb.api.gift.GetGiftReceiveHistoryListResponse);
+}
+

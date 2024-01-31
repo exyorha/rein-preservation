@@ -36,7 +36,6 @@ add_library(GameAssembly SHARED
 
     ICall/ARMArgumentPacker.cpp
     ICall/ARMArgumentPacker.h
-    ICall/icall_api.cpp
     ICall/ICallInterposerManager.cpp
     ICall/ICallInterposerManager.h
     ICall/InternalCallThunk.cpp
@@ -45,6 +44,8 @@ add_library(GameAssembly SHARED
     ICall/PreparedInternalCall.h
     ICall/SavedICallContext.cpp
     ICall/SavedICallContext.h
+
+    il2cpp_api.cpp
 
     signal_compatibility.cpp
     signal_compatibility.h

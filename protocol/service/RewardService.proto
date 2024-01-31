@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+import "service/BigHuntService.proto";
+import "service/LabyrinthService.proto";
+import "service/PvpService.proto";
+package apb.api.reward;
+
+option java_package = "jp.co.apb.server.api.proto.reward";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Reward";
+
+message ReceivePvpRewardResponse {
+  .apb.api.pvp.WeeklyGradeResult weeklyGradeResult = 1;
+  .apb.api.pvp.SeasonRankResult seasonRankResult = 2;
+  .apb.api.pvp.WeeklyRankResult weekly_rank_result = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveBigHuntRewardResponse {
+  repeated .apb.api.bighunt.WeeklyScoreResult weekly_score_result = 1;
+  repeated .apb.api.bighunt.BigHuntReward weekly_score_reward = 2;
+  bool is_received_weekly_score_reward = 3;
+  repeated .apb.api.bighunt.BigHuntReward last_week_weekly_score_reward = 4;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveLabyrinthSeasonRewardResponse {
+  repeated .apb.api.labyrinth.LabyrinthSeasonResult season_result = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveMissionPassRemainingRewardResponse {
+  int32 reward_received_mission_pass_id = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service RewardService {
+  rpc ReceivePvpReward(.google.protobuf.Empty) returns (.apb.api.reward.ReceivePvpRewardResponse);
+  rpc ReceiveBigHuntReward(.google.protobuf.Empty) returns (.apb.api.reward.ReceiveBigHuntRewardResponse);
+  rpc ReceiveLabyrinthSeasonReward(.google.protobuf.Empty) returns (.apb.api.reward.ReceiveLabyrinthSeasonRewardResponse);
+  rpc ReceiveMissionPassRemainingReward(.google.protobuf.Empty) returns (.apb.api.reward.ReceiveMissionPassRemainingRewardResponse);
+}
+

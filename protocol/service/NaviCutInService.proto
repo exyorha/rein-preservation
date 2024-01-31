@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.navicutin;
+
+option java_package = "jp.co.apb.server.api.proto.navicutin";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.NaviCutIn";
+
+message RegisterPlayedRequest {
+  int32 navi_cut_id = 1;
+}
+
+message RegisterPlayedResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service NaviCutInService {
+  rpc RegisterPlayed(.apb.api.navicutin.RegisterPlayedRequest) returns (.apb.api.navicutin.RegisterPlayedResponse);
+}
+

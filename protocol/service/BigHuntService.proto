@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+import "service/BattleService.proto";
+package apb.api.bighunt;
+
+option java_package = "jp.co.apb.server.api.proto.bighunt";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.BigHunt";
+
+message StartBigHuntQuestRequest {
+  int32 big_hunt_boss_quest_id = 1;
+  int32 big_hunt_quest_id = 2;
+  int32 user_deck_number = 3;
+  bool is_dry_run = 4;
+}
+
+message StartBigHuntQuestResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateBigHuntQuestSceneProgressRequest {
+  int32 quest_scene_id = 1;
+}
+
+message UpdateBigHuntQuestSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message FinishBigHuntQuestRequest {
+  int32 big_hunt_boss_quest_id = 1;
+  int32 big_hunt_quest_id = 2;
+  bool is_retired = 3;
+  string vt = 200;
+}
+
+message FinishBigHuntQuestResponse {
+  .apb.api.bighunt.BigHuntScoreInfo score_info = 1;
+  repeated .apb.api.bighunt.BigHuntReward score_reward = 2;
+  .apb.api.bighunt.BigHuntBattleReport battle_report = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message BigHuntScoreInfo {
+  int64 user_score = 1;
+  bool is_high_score = 2;
+  int64 total_damage = 3;
+  int64 base_score = 4;
+  int32 difficulty_bonus_permil = 5;
+  int32 alive_bonus_permil = 6;
+  int32 max_combo_bonus_permil = 7;
+  int32 asset_grade_icon_id = 8;
+}
+
+message BigHuntBattleReport {
+  repeated .apb.api.bighunt.BigHuntBattleReportWave battle_report_wave = 1;
+}
+
+message BigHuntBattleReportWave {
+  repeated .apb.api.bighunt.BigHuntBattleReportCostume battle_report_costume = 1;
+}
+
+message BigHuntBattleReportCostume {
+  int32 costume_id = 1;
+  int64 total_damage = 2;
+  int32 hit_count = 3;
+  .apb.api.battle.BattleReportRandomDisplay battle_report_random_display = 4;
+}
+
+message BigHuntReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message SkipBigHuntQuestRequest {
+  int32 big_hunt_boss_quest_id = 1;
+  int32 skip_count = 2;
+}
+
+message SkipBigHuntQuestResponse {
+  repeated .apb.api.bighunt.BigHuntReward score_reward = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RestartBigHuntQuestRequest {
+  int32 big_hunt_boss_quest_id = 1;
+  int32 big_hunt_quest_id = 2;
+}
+
+message RestartBigHuntQuestResponse {
+  bytes battle_binary = 1;
+  int32 deck_number = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SaveBigHuntBattleInfoRequest {
+  bytes battle_binary = 1;
+  .apb.api.bighunt.BigHuntBattleDetail big_hunt_battle_detail = 2;
+  int64 elapsed_frame_count = 3;
+  string vt = 200;
+}
+
+message BigHuntBattleDetail {
+  int32 deck_type = 1;
+  int32 user_triple_deck_number = 2;
+  int32 boss_knock_down_count = 3;
+  int32 max_combo_count = 4;
+  repeated .apb.api.battle.CostumeBattleInfo costume_battle_info = 9;
+}
+
+message SaveBigHuntBattleInfoResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetBigHuntTopDataResponse {
+  repeated .apb.api.bighunt.WeeklyScoreResult weekly_score_result = 1;
+  repeated .apb.api.bighunt.BigHuntReward weekly_score_reward = 2;
+  bool is_received_weekly_score_reward = 3;
+  repeated .apb.api.bighunt.BigHuntReward last_week_weekly_score_reward = 4;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message WeeklyScoreResult {
+  int32 attribute_type = 1;
+  int64 before_max_score = 2;
+  int64 current_max_score = 3;
+  int32 before_asset_grade_icon_id = 4;
+  int32 current_asset_grade_icon_id = 5;
+  int64 after_max_score = 6;
+  int32 after_asset_grade_icon_id = 7;
+}
+
+service BigHuntService {
+  rpc StartBigHuntQuest(.apb.api.bighunt.StartBigHuntQuestRequest) returns (.apb.api.bighunt.StartBigHuntQuestResponse);
+  rpc UpdateBigHuntQuestSceneProgress(.apb.api.bighunt.UpdateBigHuntQuestSceneProgressRequest) returns (.apb.api.bighunt.UpdateBigHuntQuestSceneProgressResponse);
+  rpc FinishBigHuntQuest(.apb.api.bighunt.FinishBigHuntQuestRequest) returns (.apb.api.bighunt.FinishBigHuntQuestResponse);
+  rpc RestartBigHuntQuest(.apb.api.bighunt.RestartBigHuntQuestRequest) returns (.apb.api.bighunt.RestartBigHuntQuestResponse);
+  rpc SkipBigHuntQuest(.apb.api.bighunt.SkipBigHuntQuestRequest) returns (.apb.api.bighunt.SkipBigHuntQuestResponse);
+  rpc SaveBigHuntBattleInfo(.apb.api.bighunt.SaveBigHuntBattleInfoRequest) returns (.apb.api.bighunt.SaveBigHuntBattleInfoResponse);
+  rpc GetBigHuntTopData(.google.protobuf.Empty) returns (.apb.api.bighunt.GetBigHuntTopDataResponse);
+}
+

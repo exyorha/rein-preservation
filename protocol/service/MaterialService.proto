@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.material;
+
+option java_package = "jp.co.apb.server.api.proto.material";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Material";
+
+message SellRequest {
+  repeated .apb.api.material.SellPossession material_possession = 1;
+}
+
+message SellPossession {
+  int32 material_id = 1;
+  int32 count = 2;
+}
+
+message SellResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service MaterialService {
+  rpc Sell(.apb.api.material.SellRequest) returns (.apb.api.material.SellResponse);
+}
+

@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.deck;
+
+option java_package = "jp.co.apb.server.api.proto.deck";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Deck";
+
+message UpdateNameRequest {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  string name = 3;
+}
+
+message UpdateNameResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReplaceDeckRequest {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  .apb.api.deck.Deck deck = 3;
+}
+
+message ReplaceDeckResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SetPvpDefenseDeckRequest {
+  int32 user_deck_number = 1;
+  .apb.api.deck.DeckPower deck_power = 2;
+}
+
+message SetPvpDefenseDeckResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message CopyDeckRequest {
+  int32 from_deck_type = 1;
+  int32 from_user_deck_number = 2;
+  int32 to_deck_type = 3;
+  int32 to_user_deck_number = 4;
+}
+
+message CopyDeckResponse {
+  int32 result_type = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RemoveDeckRequest {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+}
+
+message RemoveDeckResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message Deck {
+  .apb.api.deck.DeckCharacter character_01 = 1;
+  .apb.api.deck.DeckCharacter character_02 = 2;
+  .apb.api.deck.DeckCharacter character_03 = 3;
+}
+
+message DeckCharacter {
+  string user_costume_uuid = 1;
+  string main_user_weapon_uuid = 2;
+  repeated string sub_user_weapon_uuid = 3;
+  string user_companion_uuid = 4;
+  repeated string user_parts_uuid = 5;
+  int32 dressup_costume_id = 6;
+  string user_thought_uuid = 7;
+}
+
+message RefreshDeckPowerRequest {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  .apb.api.deck.DeckPower deck_power = 3;
+}
+
+message DeckPower {
+  int32 power = 1;
+  .apb.api.deck.DeckCharacterPower deck_character_power_01 = 2;
+  .apb.api.deck.DeckCharacterPower deck_character_power_02 = 3;
+  .apb.api.deck.DeckCharacterPower deck_character_power_03 = 4;
+}
+
+message DeckCharacterPower {
+  string user_deck_character_uuid = 1;
+  int32 power = 2;
+}
+
+message RefreshDeckPowerResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateTripleDeckNameRequest {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  string name = 3;
+}
+
+message UpdateTripleDeckNameResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReplaceTripleDeckRequest {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  .apb.api.deck.DeckDetail deck_detail_01 = 3;
+  .apb.api.deck.DeckDetail deck_detail_02 = 4;
+  .apb.api.deck.DeckDetail deck_detail_03 = 5;
+}
+
+message DeckDetail {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  .apb.api.deck.Deck deck = 3;
+}
+
+message ReplaceTripleDeckResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReplaceMultiDeckRequest {
+  repeated .apb.api.deck.DeckDetail deck_detail = 1;
+}
+
+message ReplaceMultiDeckResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RefreshMultiDeckPowerRequest {
+  repeated .apb.api.deck.DeckPowerInfo deck_power_info = 1;
+}
+
+message DeckPowerInfo {
+  int32 deck_type = 1;
+  int32 user_deck_number = 2;
+  .apb.api.deck.DeckPower deck_power = 3;
+}
+
+message RefreshMultiDeckPowerResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service DeckService {
+  rpc UpdateName(.apb.api.deck.UpdateNameRequest) returns (.apb.api.deck.UpdateNameResponse);
+  rpc ReplaceDeck(.apb.api.deck.ReplaceDeckRequest) returns (.apb.api.deck.ReplaceDeckResponse);
+  rpc SetPvpDefenseDeck(.apb.api.deck.SetPvpDefenseDeckRequest) returns (.apb.api.deck.SetPvpDefenseDeckResponse);
+  rpc CopyDeck(.apb.api.deck.CopyDeckRequest) returns (.apb.api.deck.CopyDeckResponse);
+  rpc RemoveDeck(.apb.api.deck.RemoveDeckRequest) returns (.apb.api.deck.RemoveDeckResponse);
+  rpc RefreshDeckPower(.apb.api.deck.RefreshDeckPowerRequest) returns (.apb.api.deck.RefreshDeckPowerResponse);
+  rpc UpdateTripleDeckName(.apb.api.deck.UpdateTripleDeckNameRequest) returns (.apb.api.deck.UpdateTripleDeckNameResponse);
+  rpc ReplaceTripleDeck(.apb.api.deck.ReplaceTripleDeckRequest) returns (.apb.api.deck.ReplaceTripleDeckResponse);
+  rpc ReplaceMultiDeck(.apb.api.deck.ReplaceMultiDeckRequest) returns (.apb.api.deck.ReplaceMultiDeckResponse);
+  rpc RefreshMultiDeckPower(.apb.api.deck.RefreshMultiDeckPowerRequest) returns (.apb.api.deck.RefreshMultiDeckPowerResponse);
+}
+

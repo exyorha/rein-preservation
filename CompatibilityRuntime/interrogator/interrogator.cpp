@@ -1,11 +1,12 @@
 #include <il2cpp-api.h>
 #include <il2cpp-tabledefs.h>
+#include <translator_api.h>
 
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char *argv[]) {
-    il2cpp_set_data_dir("LinuxPlayer_Data/il2cpp_data");
+int tool_main(int argc, char *argv[]) {
+    il2cpp_set_data_dir("graft/NieR_Data/il2cpp_data");
     auto result = il2cpp_init("IL2CPP Root Domain");
     if(!result) {
         fprintf(stderr, "il2cpp has failed to initialize.\n");
@@ -39,7 +40,6 @@ int main(int argc, char *argv[]) {
             bool classHeading = false;
 
             printf("  class no. %zu: %s#%s\n", classIndex, namespaceName, className);
-#if 0
             void *iter = nullptr;
             const MethodInfo *method;
             while((method = il2cpp_class_get_methods(classDesc, &iter)) != nullptr) {
@@ -47,18 +47,18 @@ int main(int argc, char *argv[]) {
                 uint32_t iflags;
                 uint32_t flags = il2cpp_method_get_flags(method, &iflags);
 
-                if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && false)
-                    continue;
+                //if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && false)
+                //    continue;
 
-                if(!assemblyHeading) {
-                    assemblyHeading = true;
-                }
+                //if(!assemblyHeading) {
+                //    assemblyHeading = true;
+                //}
 
-                if(!classHeading) {
-                    classHeading = true;
-                }
+               // if(!classHeading) {
+                //    classHeading = true;
+               // }
 
-                printf("    internal method: '%s', flags: 0x%08X, iflags: 0x%08X\n", name, flags, iflags);
+                printf("    method: '%s', flags: 0x%08X, iflags: 0x%08X\n", name, flags, iflags);
 
                 auto returnType = il2cpp_method_get_return_type(method);
                 auto returnTypeCategory = il2cpp_type_get_type(returnType);
@@ -77,11 +77,15 @@ int main(int argc, char *argv[]) {
                            il2cpp_type_is_byref(argumentType));
                 }
             }
-#endif
         }
 
     }
 
-    // the JIT currently crashes on an orderly shutdown through no fault of dynarmic
-    _Exit(0);
+    return 0;
 }
+
+
+int main(int argc, char *argv[]) {
+    return translator_main(argc, argv, tool_main);
+}
+

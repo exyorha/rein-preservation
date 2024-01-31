@@ -1,0 +1,140 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.battle;
+
+option java_package = "jp.co.apb.server.api.proto.battle";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Battle";
+
+message FinishWaveRequest {
+  bytes battle_binary = 1;
+  .apb.api.battle.BattleDetail battle_detail = 2;
+  repeated .apb.api.battle.UserPartyResultInfo user_party_result_info_list = 3;
+  repeated .apb.api.battle.NpcPartyResultInfo npc_party_result_info_list = 4;
+  int64 elapsed_frame_count = 5;
+  string vt = 200;
+}
+
+message BattleDetail {
+  int32 character_death_count = 1;
+  int32 max_damage = 2;
+  int32 player_costume_active_skill_used_count = 3;
+  int32 player_weapon_active_skill_used_count = 4;
+  int32 player_companion_skill_used_count = 5;
+  int32 critical_count = 6;
+  int32 combo_count = 7;
+  int32 combo_max_damage = 8;
+  repeated .apb.api.battle.CostumeBattleInfo costume_battle_info = 9;
+  int64 total_recover_point = 10;
+}
+
+message CostumeBattleInfo {
+  int32 deck_character_number = 1;
+  int64 total_damage = 2;
+  bool is_alive = 4;
+  int32 hit_count = 5;
+  int64 max_hp = 6;
+  int64 remaining_hp = 7;
+  int32 user_deck_number = 30;
+  .apb.api.battle.BattleReportRandomDisplay battle_report_random_display = 50;
+}
+
+message BattleReportRandomDisplay {
+  int32 random_display_value_type = 1;
+  int64 random_display_value = 2;
+}
+
+message UserPartyResultInfo {
+  int64 user_id = 1;
+  int32 deck_type = 2;
+  int32 user_deck_number = 3;
+  repeated .apb.api.battle.AddUserDamageInfo add_damage_info_list = 4;
+  repeated .apb.api.battle.UserRecoverInfo user_recover_info = 5;
+  repeated .apb.api.battle.SkillUseInfo skill_use_info = 6;
+  int32 character_death_count = 7;
+  int32 character_revive_count = 8;
+  int32 character_hp_depleted_count = 9;
+}
+
+message NpcPartyResultInfo {
+  int64 npcId = 1;
+  int32 deck_type = 2;
+  int32 battle_npc_deck_number = 3;
+  repeated .apb.api.battle.AddNpcDamageInfo add_damage_info_list = 4;
+  repeated .apb.api.battle.NpcRecoverInfo npc_recover_info = 5;
+  repeated .apb.api.battle.SkillUseInfo skill_use_info = 6;
+  int32 character_death_count = 7;
+  int32 character_revive_count = 8;
+  int32 character_hp_depleted_count = 9;
+}
+
+message AddUserDamageInfo {
+  int64 user_id = 1;
+  int32 deck_type = 2;
+  int32 deck_number = 3;
+  int64 total_damage = 4;
+  int64 total_unclamped_damage = 5;
+}
+
+message UserRecoverInfo {
+  int64 user_id = 1;
+  int32 deck_type = 2;
+  int32 deck_number = 3;
+  int64 total_recover_point = 4;
+}
+
+message AddNpcDamageInfo {
+  int64 npc_id = 1;
+  int32 deck_type = 2;
+  int32 deck_number = 3;
+  int64 total_damage = 4;
+  int64 total_unclamped_damage = 5;
+}
+
+message NpcRecoverInfo {
+  int64 npc_id = 1;
+  int32 deck_type = 2;
+  int32 deck_number = 3;
+  int64 total_recover_point = 4;
+}
+
+message SkillUseInfo {
+  string deck_character_uuid = 1;
+  int32 skill_detail_id = 2;
+  int32 use_count = 3;
+}
+
+message FinishWaveResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message StartWaveRequest {
+  repeated .apb.api.battle.UserPartyInitialInfo user_party_initial_info_list = 1;
+  repeated .apb.api.battle.NpcPartyInitialInfo npc_party_initial_info_list = 2;
+}
+
+message UserPartyInitialInfo {
+  int64 user_id = 1;
+  int32 deck_type = 2;
+  int64 user_deck_number = 3;
+  int64 total_hp = 4;
+  string vt = 200;
+}
+
+message NpcPartyInitialInfo {
+  int64 npc_id = 1;
+  int32 deck_type = 2;
+  int32 battle_npc_deck_number = 3;
+  int64 total_hp = 4;
+}
+
+message StartWaveResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service BattleService {
+  rpc StartWave(.apb.api.battle.StartWaveRequest) returns (.apb.api.battle.StartWaveResponse);
+  rpc FinishWave(.apb.api.battle.FinishWaveRequest) returns (.apb.api.battle.FinishWaveResponse);
+}
+

@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.parts;
+
+option java_package = "jp.co.apb.server.api.proto.parts";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Parts";
+
+message SellRequest {
+  repeated string user_parts_uuid = 1;
+}
+
+message SellResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ProtectRequest {
+  repeated string user_parts_uuid = 1;
+}
+
+message ProtectResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UnprotectRequest {
+  repeated string user_parts_uuid = 1;
+}
+
+message UnprotectResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message EnhanceRequest {
+  string user_parts_uuid = 1;
+}
+
+message EnhanceResponse {
+  bool is_success = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdatePresetNameRequest {
+  int32 user_parts_preset_number = 1;
+  string name = 2;
+}
+
+message UpdatePresetNameResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdatePresetTagNumberRequest {
+  int32 user_parts_preset_number = 1;
+  int32 user_parts_preset_tag_number = 2;
+}
+
+message UpdatePresetTagNumberResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdatePresetTagNameRequest {
+  int32 user_parts_preset_tag_number = 1;
+  string name = 2;
+}
+
+message UpdatePresetTagNameResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReplacePresetRequest {
+  int32 user_parts_preset_number = 1;
+  string user_parts_uuid_01 = 2;
+  string user_parts_uuid_02 = 3;
+  string user_parts_uuid_03 = 4;
+}
+
+message ReplacePresetResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message CopyPresetRequest {
+  int32 from_user_parts_preset_number = 1;
+  int32 to_user_parts_preset_number = 2;
+}
+
+message CopyPresetResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RemovePresetRequest {
+  int32 user_parts_preset_number = 1;
+}
+
+message RemovePresetResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service PartsService {
+  rpc Sell(.apb.api.parts.SellRequest) returns (.apb.api.parts.SellResponse);
+  rpc Protect(.apb.api.parts.ProtectRequest) returns (.apb.api.parts.ProtectResponse);
+  rpc Unprotect(.apb.api.parts.UnprotectRequest) returns (.apb.api.parts.UnprotectResponse);
+  rpc Enhance(.apb.api.parts.EnhanceRequest) returns (.apb.api.parts.EnhanceResponse);
+  rpc UpdatePresetName(.apb.api.parts.UpdatePresetNameRequest) returns (.apb.api.parts.UpdatePresetNameResponse);
+  rpc UpdatePresetTagNumber(.apb.api.parts.UpdatePresetTagNumberRequest) returns (.apb.api.parts.UpdatePresetTagNumberResponse);
+  rpc UpdatePresetTagName(.apb.api.parts.UpdatePresetTagNameRequest) returns (.apb.api.parts.UpdatePresetTagNameResponse);
+  rpc ReplacePreset(.apb.api.parts.ReplacePresetRequest) returns (.apb.api.parts.ReplacePresetResponse);
+  rpc CopyPreset(.apb.api.parts.CopyPresetRequest) returns (.apb.api.parts.CopyPresetResponse);
+  rpc RemovePreset(.apb.api.parts.RemovePresetRequest) returns (.apb.api.parts.RemovePresetResponse);
+}
+

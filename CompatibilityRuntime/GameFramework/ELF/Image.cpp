@@ -56,7 +56,9 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
 
     if(m_pltRelocations && m_pltRelocationsSize > 0)
         processRelocations(m_pltRelocations, m_pltRelocationsSize);
+}
 
+void Image::runConstructors() {
     printf("init array: %p, %zu; fini array: %p, %zu\n",
            m_initArray, m_initArraySize,
            m_finiArray, m_finiArraySize);

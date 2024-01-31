@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+import "service/DeckService.proto";
+package apb.api.tutorial;
+
+option java_package = "jp.co.apb.server.api.proto.tutorial";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Tutorial";
+
+message SetTutorialProgressRequest {
+  int32 tutorial_type = 1;
+  int32 progress_phase = 2;
+  int32 choice_id = 3;
+}
+
+message SetTutorialProgressResponse {
+  repeated .apb.api.tutorial.TutorialChoiceReward tutorial_choice_reward = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message TutorialChoiceReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message SetTutorialProgressAndReplaceDeckRequest {
+  int32 tutorial_type = 1;
+  int32 progress_phase = 2;
+  int32 deck_type = 3;
+  int32 user_deck_number = 4;
+  .apb.api.deck.Deck deck = 5;
+}
+
+message SetTutorialProgressAndReplaceDeckResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service TutorialService {
+  rpc SetTutorialProgress(.apb.api.tutorial.SetTutorialProgressRequest) returns (.apb.api.tutorial.SetTutorialProgressResponse);
+  rpc SetTutorialProgressAndReplaceDeck(.apb.api.tutorial.SetTutorialProgressAndReplaceDeckRequest) returns (.apb.api.tutorial.SetTutorialProgressAndReplaceDeckResponse);
+}
+

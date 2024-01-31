@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+package apb.api.portalcage;
+
+option java_package = "jp.co.apb.server.api.proto.portalcage";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.PortalCage";
+
+message UpdatePortalCageSceneProgressRequest {
+  int32 portal_cage_scene_id = 1;
+}
+
+message UpdatePortalCageSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetDropItemResponse {
+  repeated .apb.api.portalcage.PortalCageDropItem portal_cage_drop_item = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message PortalCageDropItem {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+service PortalCageService {
+  rpc UpdatePortalCageSceneProgress(.apb.api.portalcage.UpdatePortalCageSceneProgressRequest) returns (.apb.api.portalcage.UpdatePortalCageSceneProgressResponse);
+  rpc GetDropItem(.google.protobuf.Empty) returns (.apb.api.portalcage.GetDropItemResponse);
+}
+

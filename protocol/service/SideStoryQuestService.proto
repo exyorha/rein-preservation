@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+package apb.api.sidestoryquest;
+
+option java_package = "jp.co.apb.server.api.proto.sidestoryquest";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.SideStoryQuest";
+
+message MoveSideStoryQuestRequest {
+  int32 side_story_quest_id = 1;
+}
+
+message MoveSideStoryQuestResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateSideStoryQuestSceneProgressRequest {
+  int32 side_story_quest_id = 1;
+  int32 side_story_quest_scene_id = 2;
+}
+
+message UpdateSideStoryQuestSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service SideStoryQuestService {
+  rpc MoveSideStoryQuestProgress(.apb.api.sidestoryquest.MoveSideStoryQuestRequest) returns (.apb.api.sidestoryquest.MoveSideStoryQuestResponse);
+  rpc UpdateSideStoryQuestSceneProgress(.apb.api.sidestoryquest.UpdateSideStoryQuestSceneProgressRequest) returns (.apb.api.sidestoryquest.UpdateSideStoryQuestSceneProgressResponse);
+}
+

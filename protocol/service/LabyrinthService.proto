@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+package apb.api.labyrinth;
+
+option java_package = "jp.co.apb.server.api.proto.labyrinth";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Labyrinth";
+
+message UpdateSeasonDataRequest {
+  int32 event_quest_chapter_id = 1;
+}
+
+message UpdateSeasonDataResponse {
+  repeated .apb.api.labyrinth.LabyrinthSeasonResult season_result = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message LabyrinthSeasonResult {
+  int32 event_quest_chapter_id = 1;
+  int32 head_quest_id = 2;
+  repeated .apb.api.labyrinth.LabyrinthReward season_reward = 3;
+  int32 head_stage_order = 4;
+}
+
+message LabyrinthReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message ReceiveStageClearRewardRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 stage_order = 2;
+}
+
+message ReceiveStageClearRewardResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveStageAccumulationRewardRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 stage_order = 2;
+  int32 quest_mission_clear_count = 3;
+}
+
+message ReceiveStageAccumulationRewardResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service LabyrinthService {
+  rpc UpdateSeasonData(.apb.api.labyrinth.UpdateSeasonDataRequest) returns (.apb.api.labyrinth.UpdateSeasonDataResponse);
+  rpc ReceiveStageClearReward(.apb.api.labyrinth.ReceiveStageClearRewardRequest) returns (.apb.api.labyrinth.ReceiveStageClearRewardResponse);
+  rpc ReceiveStageAccumulationReward(.apb.api.labyrinth.ReceiveStageAccumulationRewardRequest) returns (.apb.api.labyrinth.ReceiveStageAccumulationRewardResponse);
+}
+

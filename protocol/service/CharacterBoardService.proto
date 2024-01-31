@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.characterboard;
+
+option java_package = "jp.co.apb.server.api.proto.characterboard";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.CharacterBoard";
+
+message ReleasePanelRequest {
+  repeated int32 character_board_panel_id = 1;
+}
+
+message ReleasePanelResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service CharacterBoardService {
+  rpc ReleasePanel(.apb.api.characterboard.ReleasePanelRequest) returns (.apb.api.characterboard.ReleasePanelResponse);
+}
+

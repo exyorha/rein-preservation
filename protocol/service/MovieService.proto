@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.movie;
+
+option java_package = "jp.co.apb.server.api.proto.movie";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Movie";
+
+message SaveViewedMovieRequest {
+  repeated int32 movie_id = 1;
+}
+
+message SaveViewedMovieResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service MovieService {
+  rpc SaveViewedMovie(.apb.api.movie.SaveViewedMovieRequest) returns (.apb.api.movie.SaveViewedMovieResponse);
+}
+

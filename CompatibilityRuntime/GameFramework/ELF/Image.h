@@ -37,6 +37,8 @@ public:
         return m_phnum;
     }
 
+    void runConstructors();
+
 private:
     void createBackgroundMapping();
     void mapImageSegments();

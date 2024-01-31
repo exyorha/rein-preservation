@@ -1,0 +1,338 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+import "service/GiftService.proto";
+import "service/MissionService.proto";
+package apb.api.quest;
+
+option java_package = "jp.co.apb.server.api.proto.quest";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Quest";
+
+message UpdateMainFlowSceneProgressRequest {
+  int32 quest_scene_id = 1;
+}
+
+message UpdateMainFlowSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateReplayFlowSceneProgressRequest {
+  int32 quest_scene_id = 1;
+}
+
+message UpdateReplayFlowSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateMainQuestSceneProgressRequest {
+  int32 quest_scene_id = 1;
+}
+
+message UpdateMainQuestSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateExtraQuestSceneProgressRequest {
+  int32 quest_scene_id = 1;
+}
+
+message UpdateExtraQuestSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateEventQuestSceneProgressRequest {
+  int32 quest_scene_id = 1;
+}
+
+message UpdateEventQuestSceneProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message StartMainQuestRequest {
+  int32 quest_id = 1;
+  bool is_main_flow = 2;
+  int32 user_deck_number = 3;
+  bool is_battle_only = 4;
+  int32 max_auto_orbit_count = 5;
+  bool is_replay_flow = 6;
+  .apb.api.mission.CageMeasurableValues cage_measurable_values = 50;
+}
+
+message StartMainQuestResponse {
+  repeated .apb.api.quest.BattleDropReward battle_drop_reward = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RestartMainQuestRequest {
+  int32 quest_id = 1;
+  bool is_main_flow = 2;
+}
+
+message RestartMainQuestResponse {
+  repeated .apb.api.quest.BattleDropReward battle_drop_reward = 1;
+  bytes battle_binary = 2;
+  int32 deck_number = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message FinishMainQuestRequest {
+  int32 quest_id = 1;
+  bool is_retired = 2;
+  bool is_main_flow = 3;
+  bool is_annihilated = 4;
+  bool is_auto_orbit = 5;
+  int32 story_skip_type = 6;
+  bool is_replay_flow = 7;
+  string vt = 200;
+}
+
+message FinishMainQuestResponse {
+  repeated .apb.api.quest.QuestReward drop_reward = 1;
+  repeated .apb.api.quest.QuestReward first_clear_reward = 2;
+  repeated .apb.api.quest.QuestReward mission_clear_reward = 3;
+  repeated .apb.api.quest.QuestReward mission_clear_complete_reward = 4;
+  repeated .apb.api.quest.QuestReward auto_orbit_result = 5;
+  bool is_big_win = 6;
+  repeated int32 big_win_cleared_quest_mission_id_list = 7;
+  repeated .apb.api.quest.QuestReward replay_flow_first_clear_reward = 8;
+  repeated .apb.api.quest.QuestReward user_status_campaign_reward = 9;
+  .apb.api.quest.QuestAutoOrbitResult auto_orbit_reward = 10;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message StartExtraQuestRequest {
+  int32 quest_id = 1;
+  int32 user_deck_number = 2;
+}
+
+message StartExtraQuestResponse {
+  repeated .apb.api.quest.BattleDropReward battle_drop_reward = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RestartExtraQuestRequest {
+  int32 quest_id = 1;
+}
+
+message RestartExtraQuestResponse {
+  repeated .apb.api.quest.BattleDropReward battle_drop_reward = 1;
+  bytes battle_binary = 2;
+  int32 deck_number = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message FinishExtraQuestRequest {
+  int32 quest_id = 1;
+  bool is_retired = 2;
+  bool is_annihilated = 3;
+  int32 story_skip_type = 4;
+  string vt = 200;
+}
+
+message FinishExtraQuestResponse {
+  repeated .apb.api.quest.QuestReward drop_reward = 1;
+  repeated .apb.api.quest.QuestReward first_clear_reward = 2;
+  repeated .apb.api.quest.QuestReward mission_clear_reward = 3;
+  repeated .apb.api.quest.QuestReward mission_clear_complete_reward = 4;
+  bool is_big_win = 5;
+  repeated int32 big_win_cleared_quest_mission_id_list = 6;
+  repeated .apb.api.quest.QuestReward user_status_campaign_reward = 7;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message StartEventQuestRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 quest_id = 2;
+  int32 user_deck_number = 3;
+  bool is_battle_only = 4;
+  int32 max_auto_orbit_count = 5;
+}
+
+message StartEventQuestResponse {
+  repeated .apb.api.quest.BattleDropReward battle_drop_reward = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RestartEventQuestRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 quest_id = 2;
+}
+
+message RestartEventQuestResponse {
+  repeated .apb.api.quest.BattleDropReward battle_drop_reward = 1;
+  bytes battle_binary = 2;
+  int32 deck_number = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message FinishEventQuestRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 quest_id = 2;
+  bool is_retired = 3;
+  bool is_annihilated = 4;
+  bool is_auto_orbit = 5;
+  int32 story_skip_type = 6;
+  string vt = 200;
+}
+
+message FinishEventQuestResponse {
+  repeated .apb.api.quest.QuestReward drop_reward = 1;
+  repeated .apb.api.quest.QuestReward first_clear_reward = 2;
+  repeated .apb.api.quest.QuestReward mission_clear_reward = 3;
+  repeated .apb.api.quest.QuestReward mission_clear_complete_reward = 4;
+  repeated .apb.api.quest.QuestReward auto_orbit_result = 5;
+  bool is_big_win = 6;
+  repeated int32 big_win_cleared_quest_mission_id_list = 7;
+  repeated .apb.api.quest.QuestReward user_status_campaign_reward = 8;
+  .apb.api.quest.QuestAutoOrbitResult auto_orbit_reward = 9;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message BattleDropReward {
+  int32 quest_scene_id = 1;
+  int32 battle_drop_category_id = 2;
+  int32 battle_drop_effect_id = 3;
+}
+
+message QuestReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+  int32 reward_effect_id = 4;
+  bool is_auto_sale = 5;
+  oneof equipment_data {
+    .apb.api.gift.Parts parts = 6;
+  }
+}
+
+message QuestAutoOrbitResult {
+  repeated .apb.api.quest.QuestReward drop_reward = 1;
+  repeated .apb.api.quest.QuestReward user_status_campaign_reward = 2;
+}
+
+message FinishAutoOrbitResponse {
+  repeated .apb.api.quest.QuestReward auto_orbit_result = 1;
+  .apb.api.quest.QuestAutoOrbitResult auto_orbit_reward = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SetRouteRequest {
+  int32 main_quest_route_id = 1;
+}
+
+message SetRouteResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SetQuestSceneChoiceRequest {
+  int32 quest_scene_id = 1;
+  int32 choice_number = 2;
+  int32 quest_flow_type = 3;
+}
+
+message SetQuestSceneChoiceResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveTowerAccumulationRewardRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 target_mission_clear_count = 2;
+}
+
+message ReceiveTowerAccumulationRewardResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SkipQuestRequest {
+  int32 quest_id = 1;
+  int32 quest_type = 2;
+  int32 user_deck_number = 3;
+  int32 skip_count = 4;
+  repeated .apb.api.quest.UseEffectItem use_effect_item = 5;
+  int32 quest_chapter_id = 6;
+}
+
+message UseEffectItem {
+  int32 consumable_item_id = 1;
+  int32 count = 2;
+}
+
+message SkipQuestResponse {
+  repeated .apb.api.quest.QuestReward drop_reward = 1;
+  repeated .apb.api.quest.QuestReward user_status_campaign_reward = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SkipQuestBulkRequest {
+  repeated .apb.api.quest.SkipQuestInfo skip_quest_info = 1;
+  int32 user_deck_number = 2;
+  repeated .apb.api.quest.UseEffectItem use_effect_item = 3;
+}
+
+message SkipQuestInfo {
+  int32 quest_id = 1;
+  int32 quest_type = 2;
+  int32 quest_chapter_id = 3;
+  int32 skip_count = 4;
+}
+
+message SkipQuestBulkResponse {
+  repeated .apb.api.quest.QuestReward drop_reward = 1;
+  repeated .apb.api.quest.QuestReward user_status_campaign_reward = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message SetAutoSaleSettingRequest {
+  map<int32, string> auto_sale_setting_item = 1;
+}
+
+message SetAutoSaleSettingResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message StartGuerrillaFreeOpenResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ResetLimitContentQuestProgressRequest {
+  int32 event_quest_chapter_id = 1;
+  int32 quest_id = 2;
+}
+
+message ResetLimitContentQuestProgressResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ReceiveDailyQuestGroupCompleteRewardResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service QuestService {
+  rpc UpdateMainFlowSceneProgress(.apb.api.quest.UpdateMainFlowSceneProgressRequest) returns (.apb.api.quest.UpdateMainFlowSceneProgressResponse);
+  rpc UpdateReplayFlowSceneProgress(.apb.api.quest.UpdateReplayFlowSceneProgressRequest) returns (.apb.api.quest.UpdateReplayFlowSceneProgressResponse);
+  rpc UpdateMainQuestSceneProgress(.apb.api.quest.UpdateMainQuestSceneProgressRequest) returns (.apb.api.quest.UpdateMainQuestSceneProgressResponse);
+  rpc UpdateExtraQuestSceneProgress(.apb.api.quest.UpdateExtraQuestSceneProgressRequest) returns (.apb.api.quest.UpdateExtraQuestSceneProgressResponse);
+  rpc UpdateEventQuestSceneProgress(.apb.api.quest.UpdateEventQuestSceneProgressRequest) returns (.apb.api.quest.UpdateEventQuestSceneProgressResponse);
+  rpc StartMainQuest(.apb.api.quest.StartMainQuestRequest) returns (.apb.api.quest.StartMainQuestResponse);
+  rpc RestartMainQuest(.apb.api.quest.RestartMainQuestRequest) returns (.apb.api.quest.RestartMainQuestResponse);
+  rpc FinishMainQuest(.apb.api.quest.FinishMainQuestRequest) returns (.apb.api.quest.FinishMainQuestResponse);
+  rpc StartExtraQuest(.apb.api.quest.StartExtraQuestRequest) returns (.apb.api.quest.StartExtraQuestResponse);
+  rpc RestartExtraQuest(.apb.api.quest.RestartExtraQuestRequest) returns (.apb.api.quest.RestartExtraQuestResponse);
+  rpc FinishExtraQuest(.apb.api.quest.FinishExtraQuestRequest) returns (.apb.api.quest.FinishExtraQuestResponse);
+  rpc StartEventQuest(.apb.api.quest.StartEventQuestRequest) returns (.apb.api.quest.StartEventQuestResponse);
+  rpc RestartEventQuest(.apb.api.quest.RestartEventQuestRequest) returns (.apb.api.quest.RestartEventQuestResponse);
+  rpc FinishEventQuest(.apb.api.quest.FinishEventQuestRequest) returns (.apb.api.quest.FinishEventQuestResponse);
+  rpc FinishAutoOrbit(.google.protobuf.Empty) returns (.apb.api.quest.FinishAutoOrbitResponse);
+  rpc SetRoute(.apb.api.quest.SetRouteRequest) returns (.apb.api.quest.SetRouteResponse);
+  rpc SetQuestSceneChoice(.apb.api.quest.SetQuestSceneChoiceRequest) returns (.apb.api.quest.SetQuestSceneChoiceResponse);
+  rpc ReceiveTowerAccumulationReward(.apb.api.quest.ReceiveTowerAccumulationRewardRequest) returns (.apb.api.quest.ReceiveTowerAccumulationRewardResponse);
+  rpc SkipQuest(.apb.api.quest.SkipQuestRequest) returns (.apb.api.quest.SkipQuestResponse);
+  rpc SkipQuestBulk(.apb.api.quest.SkipQuestBulkRequest) returns (.apb.api.quest.SkipQuestBulkResponse);
+  rpc SetAutoSaleSetting(.apb.api.quest.SetAutoSaleSettingRequest) returns (.apb.api.quest.SetAutoSaleSettingResponse);
+  rpc StartGuerrillaFreeOpen(.google.protobuf.Empty) returns (.apb.api.quest.StartGuerrillaFreeOpenResponse);
+  rpc ResetLimitContentQuestProgress(.apb.api.quest.ResetLimitContentQuestProgressRequest) returns (.apb.api.quest.ResetLimitContentQuestProgressResponse);
+  rpc ReceiveDailyQuestGroupCompleteReward(.google.protobuf.Empty) returns (.apb.api.quest.ReceiveDailyQuestGroupCompleteRewardResponse);
+}
+

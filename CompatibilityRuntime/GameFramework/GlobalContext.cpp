@@ -13,6 +13,9 @@ GlobalContext::GlobalContext() : m_registerer(this) {
     auto directory = thisLibraryDirectory();
     m_armlib.emplace(directory / "armlib.so");
     m_il2cpp.emplace(directory / "libil2cpp.so");
+
+    m_armlib->runConstructors();
+    m_il2cpp->runConstructors();
 }
 
 GlobalContext::~GlobalContext() = default;

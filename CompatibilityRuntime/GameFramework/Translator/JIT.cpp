@@ -158,6 +158,13 @@ void JIT::stopDebuggerIfAttached(unsigned int signal) {
         m_gdbStub->stopped(signal);
 }
 
+void JIT::flushInstructionCache(uintptr_t addr, size_t size) {
+
+    std::unique_lock<std::mutex> locker(m_globalJITLock);
+
+    flushInstructionCacheLockedInternal(addr, size);
+}
+
 void JIT::flushInstructionCacheLockedInternal(uintptr_t addr, size_t size) {
     return m_dynarmic->InvalidateCacheRange(addr, size);
 }

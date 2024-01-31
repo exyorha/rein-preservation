@@ -1,0 +1,230 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+package apb.api.gacha;
+
+option java_package = "jp.co.apb.server.api.proto.gacha";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Gacha";
+
+message GetGachaListRequest {
+  repeated int32 gacha_label_type = 1;
+}
+
+message GetGachaListResponse {
+  repeated .apb.api.gacha.Gacha gacha = 1;
+  .apb.api.gacha.ConvertedGachaMedal converted_gacha_medal = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetGachaRequest {
+  repeated int32 gacha_id = 1;
+}
+
+message GetGachaResponse {
+  map<int32, .apb.api.gacha.Gacha> gacha = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RewardDrawRequest {
+  string placement_name = 1;
+  string reward_name = 2;
+  string reward_amount = 3;
+}
+
+message RewardDrawResponse {
+  repeated .apb.api.gacha.RewardGachaItem reward_gacha_result = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message DrawRequest {
+  int32 gacha_id = 1;
+  int32 gacha_price_phase_id = 2;
+  int32 exec_count = 3;
+  string consume_user_weapon_uuid = 4;
+}
+
+message DrawResponse {
+  .apb.api.gacha.Gacha next_gacha = 1;
+  repeated .apb.api.gacha.DrawGachaOddsItem gacha_result = 2;
+  repeated .apb.api.gacha.GachaBonus gacha_bonus = 3;
+  repeated .apb.api.gacha.MenuGachaBadgeInfo menu_gacha_badge_info = 4;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message Gacha {
+  int32 gacha_id = 1;
+  int32 gacha_label_type = 2;
+  int32 gacha_mode_type = 4;
+  int32 gacha_auto_reset_type = 5;
+  int32 gacha_auto_reset_period = 6;
+  .google.protobuf.Timestamp next_auto_reset_datetime = 7;
+  repeated .apb.api.gacha.GachaUnlockCondition gacha_unlock_condition = 8;
+  bool is_user_gacha_unlock = 9;
+  .google.protobuf.Timestamp start_datetime = 13;
+  .google.protobuf.Timestamp end_datetime = 14;
+  repeated .apb.api.gacha.GachaPricePhase gacha_price_phase = 10;
+  int32 related_main_quest_chapter_id = 19;
+  int32 related_event_quest_chapter_id = 21;
+  int32 promotion_movie_asset_id = 20;
+  int32 gacha_medal_id = 22;
+  int32 gacha_decoration_type = 23;
+  int32 sort_order = 24;
+  bool is_inactive = 25;
+  int32 information_id = 26;
+  oneof gacha_mode {
+    .apb.api.gacha.GachaModeBasic gacha_mode_basic = 16;
+    .apb.api.gacha.GachaModeStepupComposition gacha_mode_stepup_composition = 17;
+    .apb.api.gacha.GachaModeBoxComposition gacha_mode_box_composition = 18;
+  }
+}
+
+message GachaModeBasic {
+  string navi_character_comment_asset_name = 1;
+  string gacha_asset_name = 2;
+  repeated .apb.api.gacha.GachaOddsItem promotion_gacha_odds_item = 3;
+}
+
+message GachaModeStepupComposition {
+  int32 gacha_step_group_id = 1;
+  int32 step_number = 2;
+  int32 current_step_number = 3;
+  string navi_character_comment_asset_name = 4;
+  string gacha_asset_name = 5;
+  repeated .apb.api.gacha.GachaOddsItem promotion_gacha_odds_item = 6;
+  int32 current_loop_count = 7;
+}
+
+message GachaModeBoxComposition {
+  int32 gacha_box_group_id = 1;
+  int32 box_number = 2;
+  int32 current_box_number = 3;
+  bool is_current_box_resettable = 4;
+  string navi_character_comment_asset_name = 5;
+  string gacha_asset_name = 6;
+  int32 gacha_price_phase_id = 8;
+  repeated .apb.api.gacha.GachaOddsItem promotion_gacha_odds_item = 7;
+  bool is_already_drawn = 9;
+  bool is_resettable_by_drawing_all_targets = 10;
+  bool is_invalid_reset = 11;
+  bool is_hide_multiple_draw_button = 12;
+  int32 gacha_description_text_id = 13;
+}
+
+message GachaUnlockCondition {
+  int32 gacha_unlock_condition_type = 1;
+  int32 condition_value = 2;
+}
+
+message GachaPricePhase {
+  int32 gacha_price_phase_id = 1;
+  bool is_enabled = 13;
+  .google.protobuf.Timestamp end_datetime = 2;
+  int32 limit_exec_count = 3;
+  int32 user_exec_count = 4;
+  int32 gacha_badge_type = 14;
+  int32 price_type = 5;
+  int32 price_id = 6;
+  int32 price = 7;
+  int32 regular_price = 8;
+  int32 draw_count = 9;
+  int32 each_max_exec_count = 10;
+  repeated .apb.api.gacha.GachaBonus gacha_bonus = 11;
+  .apb.api.gacha.GachaOddsFixedRarity gacha_odds_fixed_rarity = 12;
+}
+
+message GachaOddsFixedRarity {
+  int32 fixed_rarity_type_lower_limit = 1;
+  int32 fixed_count = 2;
+}
+
+message GachaOddsItem {
+  .apb.api.gacha.GachaItem gacha_item = 1;
+  .apb.api.gacha.GachaItem gacha_item_bonus = 2;
+  int32 max_drawable_count = 3;
+  int32 drew_count = 4;
+  bool is_target = 5;
+}
+
+message DrawGachaOddsItem {
+  .apb.api.gacha.GachaItem gacha_item = 1;
+  .apb.api.gacha.GachaItem gacha_item_bonus = 2;
+  int32 duplication_bonus_grade = 3;
+  repeated .apb.api.gacha.GachaBonus duplication_bonus = 4;
+  .apb.api.gacha.GachaBonus medal_bonus = 5;
+  bool is_target = 6;
+}
+
+message GachaItem {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+  int32 promotion_order = 4;
+  bool is_new = 5;
+}
+
+message RewardGachaItem {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+  bool is_new = 4;
+}
+
+message GachaBonus {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message GachaOddsRatePerRarityType {
+  int32 rarity_type = 1;
+  string rate_string = 2;
+}
+
+message GachaOddsRate {
+  .apb.api.gacha.GachaOddsItem gacha_odds_item = 1;
+  string rate_string = 2;
+}
+
+message ResetBoxGachaRequest {
+  int32 gacha_id = 1;
+}
+
+message ResetBoxGachaResponse {
+  .apb.api.gacha.Gacha gacha = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetRewardGachaResponse {
+  bool available = 1;
+  int32 todays_current_draw_count = 2;
+  int32 daily_max_count = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ConsumableItemPossession {
+  int32 consumable_item_id = 1;
+  int32 count = 2;
+}
+
+message ConvertedGachaMedal {
+  repeated .apb.api.gacha.ConsumableItemPossession converted_medal_possession = 1;
+  .apb.api.gacha.ConsumableItemPossession obtain_possession = 2;
+}
+
+message MenuGachaBadgeInfo {
+  .google.protobuf.Timestamp display_start_datetime = 1;
+  .google.protobuf.Timestamp display_end_datetime = 2;
+}
+
+service GachaService {
+  rpc GetGachaList(.apb.api.gacha.GetGachaListRequest) returns (.apb.api.gacha.GetGachaListResponse);
+  rpc GetGacha(.apb.api.gacha.GetGachaRequest) returns (.apb.api.gacha.GetGachaResponse);
+  rpc Draw(.apb.api.gacha.DrawRequest) returns (.apb.api.gacha.DrawResponse);
+  rpc ResetBoxGacha(.apb.api.gacha.ResetBoxGachaRequest) returns (.apb.api.gacha.ResetBoxGachaResponse);
+  rpc GetRewardGacha(.google.protobuf.Empty) returns (.apb.api.gacha.GetRewardGachaResponse);
+  rpc RewardDraw(.apb.api.gacha.RewardDrawRequest) returns (.apb.api.gacha.RewardDrawResponse);
+}
+

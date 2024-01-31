@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+package apb.api.gimmick;
+
+option java_package = "jp.co.apb.server.api.proto.gimmick";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Gimmick";
+
+message UpdateSequenceRequest {
+  int32 gimmick_sequence_schedule_id = 1;
+  int32 gimmick_sequence_id = 2;
+}
+
+message UpdateSequenceResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateGimmickProgressRequest {
+  int32 gimmick_sequence_schedule_id = 1;
+  int32 gimmick_sequence_id = 2;
+  int32 gimmick_id = 3;
+  int32 gimmick_ornament_index = 4;
+  int32 progress_value_bit = 5;
+  int32 flow_type = 6;
+}
+
+message UpdateGimmickProgressResponse {
+  repeated .apb.api.gimmick.GimmickReward gimmick_ornament_reward = 1;
+  bool is_sequence_cleared = 2;
+  repeated .apb.api.gimmick.GimmickReward gimmick_sequence_clear_reward = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GimmickReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message InitSequenceScheduleResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UnlockRequest {
+  repeated .apb.api.gimmick.GimmickKey gimmick_key = 1;
+}
+
+message GimmickKey {
+  int32 gimmick_sequence_schedule_id = 1;
+  int32 gimmick_sequence_id = 2;
+  int32 gimmick_id = 3;
+}
+
+message UnlockResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service GimmickService {
+  rpc UpdateSequence(.apb.api.gimmick.UpdateSequenceRequest) returns (.apb.api.gimmick.UpdateSequenceResponse);
+  rpc UpdateGimmickProgress(.apb.api.gimmick.UpdateGimmickProgressRequest) returns (.apb.api.gimmick.UpdateGimmickProgressResponse);
+  rpc InitSequenceSchedule(.google.protobuf.Empty) returns (.apb.api.gimmick.InitSequenceScheduleResponse);
+  rpc Unlock(.apb.api.gimmick.UnlockRequest) returns (.apb.api.gimmick.UnlockResponse);
+}
+

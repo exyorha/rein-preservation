@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.weapon;
+
+option java_package = "jp.co.apb.server.api.proto.weapon";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Weapon";
+
+message SellRequest {
+  repeated string user_weapon_uuid = 1;
+}
+
+message SellResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message ProtectRequest {
+  repeated string user_weapon_uuid = 1;
+}
+
+message ProtectResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UnprotectRequest {
+  repeated string user_weapon_uuid = 1;
+}
+
+message UnprotectResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message EnhanceByWeaponRequest {
+  string user_weapon_uuid = 1;
+  repeated string material_user_weapon_uuids = 2;
+}
+
+message EnhanceByWeaponResponse {
+  bool is_great_success = 1;
+  repeated string surplus_enhance_weapon = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message EnhanceByMaterialRequest {
+  string user_weapon_uuid = 1;
+  map<int32, int32> materials = 2;
+}
+
+message EnhanceByMaterialResponse {
+  bool is_great_success = 1;
+  map<int32, int32> surplus_enhance_material = 2;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message EnhanceSkillRequest {
+  string user_weapon_uuid = 1;
+  int32 skill_id = 2;
+  int32 add_level_count = 3;
+}
+
+message EnhanceSkillResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message EnhanceAbilityRequest {
+  string user_weapon_uuid = 1;
+  int32 ability_id = 2;
+  int32 add_level_count = 3;
+}
+
+message EnhanceAbilityResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message LimitBreakByWeaponRequest {
+  string user_weapon_uuid = 1;
+  repeated string material_user_weapon_uuids = 2;
+}
+
+message LimitBreakByWeaponResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message LimitBreakByMaterialRequest {
+  string user_weapon_uuid = 1;
+  map<int32, int32> materials = 2;
+}
+
+message LimitBreakByMaterialResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message EvolveRequest {
+  string user_weapon_uuid = 1;
+}
+
+message EvolveResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message AwakenRequest {
+  string user_weapon_uuid = 1;
+}
+
+message AwakenResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service WeaponService {
+  rpc Sell(.apb.api.weapon.SellRequest) returns (.apb.api.weapon.SellResponse);
+  rpc Protect(.apb.api.weapon.ProtectRequest) returns (.apb.api.weapon.ProtectResponse);
+  rpc Unprotect(.apb.api.weapon.UnprotectRequest) returns (.apb.api.weapon.UnprotectResponse);
+  rpc EnhanceByWeapon(.apb.api.weapon.EnhanceByWeaponRequest) returns (.apb.api.weapon.EnhanceByWeaponResponse);
+  rpc EnhanceByMaterial(.apb.api.weapon.EnhanceByMaterialRequest) returns (.apb.api.weapon.EnhanceByMaterialResponse);
+  rpc EnhanceSkill(.apb.api.weapon.EnhanceSkillRequest) returns (.apb.api.weapon.EnhanceSkillResponse);
+  rpc EnhanceAbility(.apb.api.weapon.EnhanceAbilityRequest) returns (.apb.api.weapon.EnhanceAbilityResponse);
+  rpc LimitBreakByWeapon(.apb.api.weapon.LimitBreakByWeaponRequest) returns (.apb.api.weapon.LimitBreakByWeaponResponse);
+  rpc LimitBreakByMaterial(.apb.api.weapon.LimitBreakByMaterialRequest) returns (.apb.api.weapon.LimitBreakByMaterialResponse);
+  rpc Evolve(.apb.api.weapon.EvolveRequest) returns (.apb.api.weapon.EvolveResponse);
+  rpc Awaken(.apb.api.weapon.AwakenRequest) returns (.apb.api.weapon.AwakenResponse);
+}
+

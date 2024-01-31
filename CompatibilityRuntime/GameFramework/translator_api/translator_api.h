@@ -15,6 +15,11 @@ int IL2CPP_EXPORT translator_main(int argc, char **argv, TranslatorEngineMain en
 void IL2CPP_EXPORT translator_add_icall_interposer(const char *name, Il2CppMethodPointer interposer);
 void IL2CPP_EXPORT translator_remove_icall_interposer(const char *name);
 
+void IL2CPP_EXPORT translator_set_post_initialize_callback(void (*callback)(void));
+
+IL2CPP_EXPORT void * translator_get_il2cpp_base_address(void);
+void IL2CPP_EXPORT translator_flush_instruction_cache(void *baseAddress, size_t size);
+
 #if defined(__cplusplus)
 }
 #endif

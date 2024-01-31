@@ -23,6 +23,7 @@ public:
 
     uint32_t runToSVC (JITThreadContext &thread);
     void stopDebuggerIfAttached(unsigned int signal);
+    void flushInstructionCache(uintptr_t addr, size_t size);
     void flushInstructionCacheLockedInternal(uintptr_t addr, size_t size);
 
 private:

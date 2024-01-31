@@ -1,0 +1,281 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "service/DataService.proto";
+package apb.api.pvp;
+
+option java_package = "jp.co.apb.server.api.proto.pvp";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Pvp";
+
+message GetTopDataResponse {
+  int32 current_season_id = 1;
+  int32 pvp_point = 2;
+  int32 rank = 3;
+  .apb.api.pvp.WeeklyGradeResult weeklyGradeResult = 4;
+  .apb.api.pvp.SeasonRankResult seasonRankResult = 5;
+  .apb.api.pvp.WeeklyRankResult weekly_rank_result = 6;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message WeeklyGradeResult {
+  int32 target_season_id = 1;
+  int32 pvp_point = 2;
+  int32 pvp_grade_weekly_reward_group_id = 3;
+}
+
+message SeasonRankResult {
+  int32 target_season_id = 1;
+  int32 rank = 2;
+  int32 pvp_season_rank_reward_group_id = 3;
+}
+
+message WeeklyRankResult {
+  int32 target_season_id = 1;
+  int32 rank = 2;
+  int32 pvp_weekly_rank_reward_group_id = 3;
+}
+
+message GetMatchingListResponse {
+  repeated .apb.api.pvp.MatchingOpponent matching = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message UpdateMatchingListResponse {
+  repeated .apb.api.pvp.MatchingOpponent matching = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message MatchingOpponent {
+  int64 player_id = 1;
+  string name = 2;
+  int32 pvp_point = 3;
+  int32 rank = 4;
+  int32 deck_power = 5;
+  repeated int32 deck_main_weapon_attribute_type = 6;
+  int32 most_powerful_costume_id = 7;
+}
+
+message StartBattleRequest {
+  int64 opponent_player_id = 1;
+  int32 use_deck_number = 2;
+}
+
+message StartBattleResponse {
+  repeated .apb.api.pvp.DeckCharacter opponent_deck_character = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message DeckCharacter {
+  .apb.api.pvp.CostumeInfo costume = 1;
+  .apb.api.pvp.CompanionInfo companion = 2;
+  .apb.api.pvp.WeaponInfo main_weapon = 3;
+  repeated .apb.api.pvp.WeaponInfo sub_weapon = 4;
+  repeated .apb.api.pvp.PartsInfo parts = 5;
+  repeated .apb.api.pvp.CharacterBoardAbilityInfo character_board_abilities = 6;
+  repeated .apb.api.pvp.CharacterBoardStatusUpInfo character_board_status_ups = 7;
+  repeated .apb.api.pvp.CostumeLevelBonusStatusUpInfo costume_level_bonus_status_ups = 8;
+  repeated .apb.api.pvp.AwakenAbilityInfo awaken_abilities = 9;
+  repeated .apb.api.pvp.AwakenStatusUpInfo awaken_status_ups = 10;
+  .apb.api.pvp.ThoughtInfo thought = 11;
+  repeated .apb.api.pvp.StainedGlassStatusUpInfo stained_glass_status_ups = 12;
+  repeated .apb.api.pvp.CostumeLotteryEffectAbilityInfo costume_lottery_effect_abilities = 13;
+  repeated .apb.api.pvp.CostumeLotteryEffectStatusUpInfo costume_lottery_effect_status_ups = 14;
+}
+
+message CostumeInfo {
+  int32 costume_id = 1;
+  int32 limit_break_count = 2;
+  int32 level = 3;
+  int32 active_skill_level = 4;
+  int32 character_level = 5;
+  int32 costume_lottery_effect_unlocked_slot_count = 6;
+}
+
+message CompanionInfo {
+  int32 companion_id = 1;
+  int32 level = 2;
+}
+
+message ThoughtInfo {
+  int32 thought_id = 1;
+}
+
+message WeaponInfo {
+  int32 weapon_id = 1;
+  int32 limit_break_count = 2;
+  int32 level = 3;
+  repeated .apb.api.pvp.WeaponAbilityInfo weapon_ability = 4;
+  repeated .apb.api.pvp.WeaponSkillInfo weapon_skill = 5;
+  .apb.api.pvp.AwakenAbilityInfo weapon_awaken_ability = 6;
+  repeated .apb.api.pvp.AwakenStatusUpInfo weapon_awaken_status_ups = 7;
+}
+
+message WeaponAbilityInfo {
+  int32 ability_id = 1;
+  int32 level = 2;
+}
+
+message WeaponSkillInfo {
+  int32 skill_id = 1;
+  int32 level = 2;
+}
+
+message PartsInfo {
+  int32 parts_id = 1;
+  int32 level = 2;
+  int32 parts_main_status_id = 3;
+  repeated .apb.api.pvp.PartsSubStatusInfo sub_parts_status = 4;
+}
+
+message PartsSubStatusInfo {
+  int32 level = 1;
+  int32 status_kind_type = 2;
+  int32 status_calculation_type = 3;
+  int32 status_change_value = 4;
+}
+
+message CharacterBoardAbilityInfo {
+  int32 ability_id = 1;
+  int32 level = 2;
+}
+
+message CharacterBoardStatusUpInfo {
+  int32 status_calculation_type = 1;
+  int32 hp = 2;
+  int32 attack = 3;
+  int32 vitality = 4;
+  int32 agility = 5;
+  int32 critical_ratio = 6;
+  int32 critical_attack = 7;
+}
+
+message CostumeLevelBonusStatusUpInfo {
+  int32 status_calculation_type = 1;
+  int32 hp = 2;
+  int32 attack = 3;
+  int32 vitality = 4;
+  int32 agility = 5;
+  int32 critical_ratio = 6;
+  int32 critical_attack = 7;
+}
+
+message AwakenAbilityInfo {
+  int32 ability_id = 1;
+  int32 level = 2;
+}
+
+message AwakenStatusUpInfo {
+  int32 status_calculation_type = 1;
+  int32 hp = 2;
+  int32 attack = 3;
+  int32 vitality = 4;
+  int32 agility = 5;
+  int32 critical_ratio = 6;
+  int32 critical_attack = 7;
+}
+
+message StainedGlassStatusUpInfo {
+  int32 status_calculation_type = 1;
+  int32 hp = 2;
+  int32 attack = 3;
+  int32 vitality = 4;
+  int32 agility = 5;
+  int32 critical_ratio = 6;
+  int32 critical_attack = 7;
+}
+
+message CostumeLotteryEffectAbilityInfo {
+  int32 ability_id = 1;
+  int32 level = 2;
+}
+
+message CostumeLotteryEffectStatusUpInfo {
+  int32 status_calculation_type = 1;
+  int32 hp = 2;
+  int32 attack = 3;
+  int32 vitality = 4;
+  int32 agility = 5;
+  int32 critical_ratio = 6;
+  int32 critical_attack = 7;
+}
+
+message FinishBattleRequest {
+  int64 opponent_player_id = 1;
+  bool is_victory = 2;
+}
+
+message FinishBattleResponse {
+  int32 before_pvp_point = 1;
+  int32 before_rank = 2;
+  int32 after_pvp_point = 3;
+  int32 after_rank = 4;
+  int32 pvp_grade_one_match_reward_id = 5;
+  int32 pvp_grade_group_id = 6;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetRankingRequest {
+  int32 rank_from = 1;
+}
+
+message GetRankingResponse {
+  repeated .apb.api.pvp.RankingUser ranking_user = 1;
+  int32 user_count = 2;
+  int32 ranking_position = 3;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RankingUser {
+  int32 rank = 1;
+  int64 player_id = 2;
+  string name = 3;
+  int32 pvp_point = 4;
+  int32 deck_power = 5;
+  int32 favorite_costume_id = 6;
+}
+
+message GetSeasonResultResponse {
+  int32 attack_win_count = 1;
+  int32 attack_lose_count = 2;
+  int32 attack_pvp_point = 3;
+  int32 defense_win_rate_permil = 4;
+  int32 defense_pvp_point = 5;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetDefenseLogListResponse {
+  repeated .apb.api.pvp.BattleLog defense_log = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message BattleLog {
+  int64 player_id = 1;
+  string name = 2;
+  int32 pvp_point = 3;
+  int32 deck_power = 4;
+  repeated int32 deck_costume_id = 5;
+  bool is_victory = 6;
+  .google.protobuf.Timestamp battle_datetime = 7;
+  int32 fluctuated_pvp_point = 8;
+  int32 rank = 9;
+}
+
+message GetAttackLogListResponse {
+  repeated .apb.api.pvp.BattleLog attack_log = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service PvpService {
+  rpc GetTopData(.google.protobuf.Empty) returns (.apb.api.pvp.GetTopDataResponse);
+  rpc GetMatchingList(.google.protobuf.Empty) returns (.apb.api.pvp.GetMatchingListResponse);
+  rpc UpdateMatchingList(.google.protobuf.Empty) returns (.apb.api.pvp.UpdateMatchingListResponse);
+  rpc StartBattle(.apb.api.pvp.StartBattleRequest) returns (.apb.api.pvp.StartBattleResponse);
+  rpc FinishBattle(.apb.api.pvp.FinishBattleRequest) returns (.apb.api.pvp.FinishBattleResponse);
+  rpc GetRanking(.apb.api.pvp.GetRankingRequest) returns (.apb.api.pvp.GetRankingResponse);
+  rpc GetSeasonResult(.google.protobuf.Empty) returns (.apb.api.pvp.GetSeasonResultResponse);
+  rpc GetAttackLogList(.google.protobuf.Empty) returns (.apb.api.pvp.GetAttackLogListResponse);
+  rpc GetDefenseLogList(.google.protobuf.Empty) returns (.apb.api.pvp.GetDefenseLogListResponse);
+}
+

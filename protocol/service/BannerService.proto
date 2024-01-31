@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+import "service/MissionService.proto";
+package apb.api.banner;
+
+option java_package = "jp.co.apb.server.api.proto.banner";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Banner";
+
+message GetMamaBannerRequest {
+  .apb.api.mission.CageMeasurableValues cage_measurable_values = 50;
+}
+
+message GetMamaBannerResponse {
+  repeated .apb.api.banner.GachaBanner term_limited_gacha = 2;
+  .apb.api.banner.GachaBanner latest_chapter_gacha = 3;
+  bool is_exist_unread_pop = 4;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GachaBanner {
+  int32 gacha_label_type = 1;
+  string gacha_asset_name = 2;
+  int32 gacha_id = 3;
+}
+
+service BannerService {
+  rpc GetMamaBanner(.apb.api.banner.GetMamaBannerRequest) returns (.apb.api.banner.GetMamaBannerResponse);
+}
+

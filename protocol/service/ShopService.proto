@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "service/DataService.proto";
+package apb.api.shop;
+
+option java_package = "jp.co.apb.server.api.proto.shop";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.Shop";
+
+message BuyRequest {
+  int32 shop_id = 1;
+  map<int32, int32> shop_items = 2;
+}
+
+message BuyResponse {
+  repeated .apb.api.shop.Possession overflow_possession = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message RefreshRequest {
+  bool is_gem_used = 1;
+}
+
+message RefreshResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message GetCesaLimitResponse {
+  repeated .apb.api.shop.CesaLimit cesa_limit = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message CesaLimit {
+  int32 age = 1;
+  int32 limit = 2;
+}
+
+message CreatePurchaseTransactionRequest {
+  int32 shop_id = 1;
+  int32 shop_item_id = 2;
+  string product_id = 3;
+  string amazon_user_id = 4;
+}
+
+message CreatePurchaseTransactionResponse {
+  string purchase_transaction_id = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message PurchaseAppStoreProductRequest {
+  string purchase_transaction_id = 1;
+  string receipt_data = 2;
+  string receipt_transaction_id = 3;
+}
+
+message PurchaseAppStoreProductResponse {
+  repeated .apb.api.shop.Possession overflow_possession = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message PurchaseGooglePlayStoreProductRequest {
+  string purchase_transaction_id = 1;
+  string purchase_data = 2;
+  string data_signature = 3;
+}
+
+message PurchaseGooglePlayStoreProductResponse {
+  repeated .apb.api.shop.Possession overflow_possession = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message PurchaseAmazonAppStoreProductRequest {
+  string purchase_transaction_id = 1;
+  string amazon_user_id = 2;
+  string amazon_receipt_id = 3;
+}
+
+message PurchaseAmazonAppStoreProductResponse {
+  repeated .apb.api.shop.Possession overflow_possession = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message Possession {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+service ShopService {
+  rpc Buy(.apb.api.shop.BuyRequest) returns (.apb.api.shop.BuyResponse);
+  rpc RefreshUserData(.apb.api.shop.RefreshRequest) returns (.apb.api.shop.RefreshResponse);
+  rpc GetCesaLimit(.google.protobuf.Empty) returns (.apb.api.shop.GetCesaLimitResponse);
+  rpc CreatePurchaseTransaction(.apb.api.shop.CreatePurchaseTransactionRequest) returns (.apb.api.shop.CreatePurchaseTransactionResponse);
+  rpc PurchaseAppStoreProduct(.apb.api.shop.PurchaseAppStoreProductRequest) returns (.apb.api.shop.PurchaseAppStoreProductResponse);
+  rpc PurchaseGooglePlayStoreProduct(.apb.api.shop.PurchaseGooglePlayStoreProductRequest) returns (.apb.api.shop.PurchaseGooglePlayStoreProductResponse);
+  rpc PurchaseAmazonAppStoreProduct(.apb.api.shop.PurchaseAmazonAppStoreProductRequest) returns (.apb.api.shop.PurchaseAmazonAppStoreProductResponse);
+}
+

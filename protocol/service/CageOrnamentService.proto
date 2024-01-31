@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "service/DataService.proto";
+package apb.api.cageornament;
+
+option java_package = "jp.co.apb.server.api.proto.cageornament";
+option java_multiple_files = true;
+option csharp_namespace = "Art.Framework.ApiNetwork.Grpc.Api.CageOrnament";
+
+message ReceiveRewardRequest {
+  int32 cage_ornament_id = 1;
+}
+
+message ReceiveRewardResponse {
+  repeated .apb.api.cageornament.CageOrnamentReward cage_ornament_reward = 1;
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+message CageOrnamentReward {
+  int32 possession_type = 1;
+  int32 possession_id = 2;
+  int32 count = 3;
+}
+
+message RecordAccessRequest {
+  int32 cage_ornament_id = 1;
+}
+
+message RecordAccessResponse {
+  map<string, .apb.api.data.DiffData> diff_user_data = 99;
+}
+
+service CageOrnamentService {
+  rpc ReceiveReward(.apb.api.cageornament.ReceiveRewardRequest) returns (.apb.api.cageornament.ReceiveRewardResponse);
+  rpc RecordAccess(.apb.api.cageornament.RecordAccessRequest) returns (.apb.api.cageornament.RecordAccessResponse);
+}
+
