@@ -4,6 +4,7 @@
 #include <ELF/Image.h>
 
 #include <Translator/ThunkManager.h>
+#include <Translator/DiversionManager.h>
 #include <Translator/JIT.h>
 
 class GlobalContext {
@@ -16,6 +17,10 @@ public:
 
     inline ThunkManager &thunkManager() {
         return m_thunkManager;
+    }
+
+    inline DiversionManager &diversionManager() {
+        return m_diversionManager;
     }
 
     inline JIT &jit() {
@@ -69,6 +74,7 @@ private:
 
     GlobalContextRegisterer m_registerer;
     ThunkManager m_thunkManager;
+    DiversionManager m_diversionManager;
     JIT m_jit;
     std::optional<Image> m_armlib;
     std::optional<Image> m_il2cpp;

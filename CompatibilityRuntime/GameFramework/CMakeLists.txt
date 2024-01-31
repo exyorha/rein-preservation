@@ -34,16 +34,20 @@ add_library(GameAssembly SHARED
     GlobalContext.cpp
     GlobalContext.h
 
-    ICall/ARMArgumentPacker.cpp
-    ICall/ARMArgumentPacker.h
-    ICall/ICallInterposerManager.cpp
-    ICall/ICallInterposerManager.h
-    ICall/InternalCallThunk.cpp
-    ICall/InternalCallThunk.h
-    ICall/PreparedInternalCall.cpp
-    ICall/PreparedInternalCall.h
-    ICall/SavedICallContext.cpp
-    ICall/SavedICallContext.h
+    Interop/ARMArgumentPacker.cpp
+    Interop/ARMArgumentPacker.h
+    Interop/ICallInterposerManager.cpp
+    Interop/ICallInterposerManager.h
+    Interop/InternalCallThunk.cpp
+    Interop/InternalCallThunk.h
+    Interop/InteropMethodLocator.cpp
+    Interop/InteropMethodLocator.h
+    Interop/MethodDiversion.cpp
+    Interop/MethodDiversion.h
+    Interop/PreparedInternalCall.cpp
+    Interop/PreparedInternalCall.h
+    Interop/SavedICallContext.cpp
+    Interop/SavedICallContext.h
 
     il2cpp_api.cpp
 
@@ -55,6 +59,10 @@ add_library(GameAssembly SHARED
     SystemAPIThunking.cpp
     SystemAPIThunking.h
 
+    Translator/BumpAllocator.cpp
+    Translator/BumpAllocator.h
+    Translator/DiversionManager.cpp
+    Translator/DiversionManager.h
     Translator/JIT.cpp
     Translator/JIT.h
     Translator/JITThreadContext.cpp

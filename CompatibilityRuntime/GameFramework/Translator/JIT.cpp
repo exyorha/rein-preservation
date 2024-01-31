@@ -5,6 +5,8 @@
 #include <cinttypes>
 #include <signal.h>
 
+#include "GlobalContext.h"
+#include "dynarmic/interface/A64/config.h"
 #include "support.h"
 
 JIT::JIT() :
@@ -39,7 +41,7 @@ JIT::JIT() :
 
 JIT::~JIT() = default;
 
-uint32_t JIT::runToSVC(JITThreadContext &context) {
+JITExitReason JIT::runToSVC(JITThreadContext &context) {
     std::unique_lock<std::mutex> locker(m_globalJITLock);
 
 #if 0
@@ -90,11 +92,23 @@ uint32_t JIT::runToSVC(JITThreadContext &context) {
             auto exception = m_exitingOnException.value();
             m_exitingOnException.reset();
 
-            if(m_gdbStub.has_value()) {
-                printf("delivering the exception %u to the debugger, PC 0x%" PRIx64 "\n", exception, m_dynarmic->GetPC());
+            m_dynarmic->SetPC(m_pcAtFault.value());
+            m_pcAtFault.reset();
 
-                m_dynarmic->SetPC(m_pcAtFault.value());
-                m_pcAtFault.reset();
+            if(exception == Dynarmic::A64::Exception::NoExecuteFault) {
+
+                auto diversion = GlobalContext::get().diversionManager().getDiversion(
+                    reinterpret_cast<void *>(m_dynarmic->GetPC())
+                );
+
+                if(diversion) {
+                    context.tpidr_el0 = m_currentTPIDR_EL0;
+                    context.capture(*m_dynarmic);
+
+                    return JITExitReason(std::in_place_type_t<DiversionExit>(), diversion);
+                }
+            } else if(m_gdbStub.has_value()) {
+                printf("delivering the exception %u to the debugger, PC 0x%" PRIx64 "\n", exception, m_dynarmic->GetPC());
 
                 unsigned int signal;
 
@@ -139,16 +153,13 @@ uint32_t JIT::runToSVC(JITThreadContext &context) {
     context.tpidr_el0 = m_currentTPIDR_EL0;
     context.capture(*m_dynarmic);
 
-
-
     if(!m_exitingOnSVC.has_value())
         throw std::logic_error("exit SVC not set");
 
     auto svc = *m_exitingOnSVC;
     m_exitingOnSVC.reset();
 
-    return svc;
-
+    return JITExitReason(std::in_place_type_t<SVCExit>(), svc);
 }
 
 void JIT::stopDebuggerIfAttached(unsigned int signal) {
@@ -170,6 +181,9 @@ void JIT::flushInstructionCacheLockedInternal(uintptr_t addr, size_t size) {
 }
 
 std::optional<std::uint32_t> JIT::MemoryReadCode(Dynarmic::A64::VAddr vaddr) {
+    if(GlobalContext::get().diversionManager().isDivertedAddress(vaddr))
+        return {};
+
     return *reinterpret_cast<const uint32_t *>(vaddr);
 }
 

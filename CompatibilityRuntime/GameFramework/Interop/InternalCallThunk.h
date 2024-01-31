@@ -9,8 +9,8 @@
 
 #include <ffi.h>
 
-#include <ICall/PreparedInternalCall.h>
-#include <ICall/SavedICallContext.h>
+#include <Interop/PreparedInternalCall.h>
+#include <Interop/SavedICallContext.h>
 
 class InternalCallThunk {
 public:
@@ -21,6 +21,10 @@ public:
     InternalCallThunk &operator =(const InternalCallThunk &other) = delete;
 
     static void thunkCall();
+
+    inline Il2CppMethodPointer x86Method() const {
+        return m_x86Method;
+    }
 
 private:
 

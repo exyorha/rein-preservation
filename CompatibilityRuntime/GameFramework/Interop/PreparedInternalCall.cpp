@@ -1,5 +1,6 @@
-#include <ICall/PreparedInternalCall.h>
-#include <ICall/ICallInterposerManager.h>
+#include <Interop/PreparedInternalCall.h>
+#include <Interop/ICallInterposerManager.h>
+#include <Interop/InteropMethodLocator.h>
 
 #include <ffi.h>
 #include <il2cpp-api.h>
@@ -11,68 +12,16 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
 
     m_interposer = ICallInterposerManager::getInterposerForMethod(fullName);
 
-    auto methodNameDelim = fullName.find("::");
-    if(methodNameDelim == std::string::npos)
-        panic("icall method name has no class-method delimiter: %s\n", fullName.c_str());
+    InteropMethodLocatorParameters parameters;
+    parameters.mustBeInternalCall = true;
 
-    auto namespaceDelim = fullName.rfind('.');
-    if(namespaceDelim >= methodNameDelim)
-        panic("icall method name has no namespace-class delimiter: %s\n", fullName.c_str());
-
-    std::string namespaceName(fullName.substr(0, namespaceDelim));
-    std::string className(fullName.substr(namespaceDelim + 1, methodNameDelim - namespaceDelim - 1));
-    std::string methodName(fullName.substr(methodNameDelim + 2));
-
-    Il2CppClass *classDef = nullptr;
-
-    size_t assemblyCount;
-    auto assemblies = il2cpp_domain_get_assemblies(il2cpp_domain_get(), &assemblyCount);
-    for(size_t assemblyIndex = 0; assemblyIndex < assemblyCount; assemblyIndex++) {
-        auto image = il2cpp_assembly_get_image(assemblies[assemblyIndex]);
-
-        classDef = il2cpp_class_from_name(image, namespaceName.c_str(), className.c_str());
-        if(classDef)
-            break;
-    }
-
-    if(!classDef) {
-        panic("icall: unable to find the class in any assembly when calling '%s'\n", fullName.c_str());
-    }
-
-    void *iter = nullptr;
-    const MethodInfo *methodDef = nullptr;
-    const MethodInfo *itMethod;
-
-    while((itMethod = il2cpp_class_get_methods(classDef, &iter)) != nullptr) {
-        uint32_t iflags;
-        auto flags = il2cpp_method_get_flags(itMethod, &iflags);
-
-        if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-            continue;
-
-        auto name = il2cpp_method_get_name(itMethod);
-        if(name == methodName) {
-            if(methodDef) {
-                panic("icall: multiple icall methods named %s", fullName.c_str());
-            }
-
-            methodDef = itMethod;
-        }
-    }
-
-    if(!methodDef) {
-        panic("icall: unable to find the method in the class when calling '%s'\n", fullName.c_str());
-    }
+    auto methodDef = InteropMethodLocator::resolveMethod(fullName, parameters);
 
     uint32_t iflags;
     auto flags = il2cpp_method_get_flags(methodDef, &iflags);
 
-    if(!(iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-        panic("icall: the located method was not marked for internal call when calling '%s'\n", fullName.c_str());
-
-    printf("PreparedInternalCall: preparing a thunk called to call namespace %s class %s method %s; il2cpp class %p, method %p; flags 0x%08X, iflags 0x%08X\n",
-          namespaceName.c_str(), className.c_str(), methodName.c_str(),
-          classDef, methodDef,
+    printf("PreparedInternalCall: preparing a thunk to call %s; il2cpp method %p; flags 0x%08X, iflags 0x%08X\n",
+          fullName.c_str(), methodDef,
            flags, iflags);
 
     auto argumentCount = il2cpp_method_get_param_count(methodDef);

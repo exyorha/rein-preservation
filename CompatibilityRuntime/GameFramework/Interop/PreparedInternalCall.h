@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <variant>
 
-#include <ICall/ARMArgumentPacker.h>
+#include <Interop/ARMArgumentPacker.h>
 
 class JITThreadContext;
 class SavedICallContext;

@@ -2,6 +2,7 @@
 #include <ELF/Image.h>
 #include "SystemAPIThunking.h"
 #include "GlobalContext.h"
+#include "Translator/JITThreadContext.h"
 
 #include <elf.h>
 #include <signal.h>
@@ -98,6 +99,7 @@ static unsigned char nocallHandle;
 
 static void dummyThunk() {
     //printf("Crashlytics function was called\n");
+    JITThreadContext::get().gprs[0] = 0;
 }
 
 void *emulated_dlopen(const char *filename, int flags) {

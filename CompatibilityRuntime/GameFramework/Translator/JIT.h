@@ -13,6 +13,18 @@
 
 class JITThreadContext;
 
+struct SVCExit {
+    uint32_t svc;
+};
+
+struct Diversion;
+
+struct DiversionExit {
+    const Diversion *diversion;
+};
+
+using JITExitReason = std::variant<SVCExit, DiversionExit>;
+
 class JIT final : private Dynarmic::A64::UserCallbacks {
 public:
     JIT();
@@ -21,7 +33,7 @@ public:
     JIT(const JIT &other) = delete;
     JIT &operator =(const JIT &other) = delete;
 
-    uint32_t runToSVC (JITThreadContext &thread);
+    JITExitReason runToSVC (JITThreadContext &thread);
     void stopDebuggerIfAttached(unsigned int signal);
     void flushInstructionCache(uintptr_t addr, size_t size);
     void flushInstructionCacheLockedInternal(uintptr_t addr, size_t size);
@@ -55,10 +67,6 @@ private:
     void dumpMachineContext();
 
 private:
-    struct SVCExit {
-        uint32_t svc;
-    };
-
     std::mutex m_globalJITLock;
     std::optional<Dynarmic::A64::Jit> m_dynarmic;
     std::optional<uint32_t> m_exitingOnSVC;

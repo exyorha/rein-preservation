@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "Il2CppUtilities.h"
+
 struct PatchSite {
     uintptr_t patchVA;
     const unsigned char *patchContents;
@@ -201,6 +203,49 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
     return protectionManager.restorePermissions();
 }
 
+static void Subsystem_AdjustSDK_AdjustUtility_Initialize(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
+    printf("Subsystem.AdjustSDK.AdjustUtility.Initialize diversion called, interposed function: %p\n", original);
+}
+
+static void Subsystem_AdjustSDK_AdjustUtility_TrackEvent(Il2CppString *event, void (*original)(Il2CppString *event)) {
+    printf("Subsystem.AdjustSDK.AdjustUtility.TrackEvent diversion called, interposed function: %p, event: %p\n", original,
+           event);
+}
+
+static Il2CppString *Octo_Util_FileUtil_GetAndroidOctoRoot(Il2CppString *(*original)(void)) {
+    printf("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot diversion called\n");
+
+    return il2cpp_string_new("/home/reki/rein/octoroot");
+}
+
+static void Firebase_Crashlytics_Crashlytics_Log(Il2CppString *string, void (*original)(Il2CppString *string)) {
+    printf("Firebase-Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log diversion called, string: %s\n",
+           stringToUtf8(string).c_str());
+}
+
+static void postInitialize() {
+    printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
+
+    translator_divert_method("Assembly-CSharp.dll::com.adjust.sdk.Adjust::start",
+                             Subsystem_AdjustSDK_AdjustUtility_Initialize);
+
+    translator_divert_method("Assembly-CSharp.dll::Subsystem.AdjustSDK.AdjustUtility::TrackEvent",
+                             Subsystem_AdjustSDK_AdjustUtility_TrackEvent);
+
+    translator_divert_method("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot",
+                             Octo_Util_FileUtil_GetAndroidOctoRoot);
+
+    translator_divert_method("Firebase.Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log",
+                             Firebase_Crashlytics_Crashlytics_Log);
+
+#if 0
+    auto getEnabledInternal = reinterpret_cast<bool (*)(void)>(translator_resolve_native_icall("UnityEngine.Analytics.Analytics::get_enabledInternal"));
+    printf("getEnabledInternal: %p\n", getEnabledInternal);
+
+    printf("Analytics enabled: %d\n", getEnabledInternal());
+#endif
+}
+
 int main(int argc, char **argv) {
     const char *unityName = "UnityPlayer.so";
 
@@ -257,6 +302,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to apply the in-memory executable patches to the Unity player\n");
         return 1;
     }
+
+    translator_set_post_initialize_callback(postInitialize);
 
     return translator_main(argc, argv, PlayerMain);
 }

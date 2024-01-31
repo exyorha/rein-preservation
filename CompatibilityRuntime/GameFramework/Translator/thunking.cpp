@@ -7,36 +7,55 @@
 
 thread_local void *thunkUtilitySlot;
 
-void runARMCall(JITThreadContext &context) {
+static const uint16_t ARMCallEndSVC = 0xE0;
 
-    static const uint16_t ARMCallEndSVC = 0xE0;
+static bool processJITExit(JITThreadContext &context, const SVCExit &exit) {
+    if(exit.svc == ThunkManager::ARMToX86ThunkCallSVC) {
+        ThunkManager::X86ThunkTarget invokable;
+
+        auto key = GlobalContext::get().thunkManager().lookupARMToX86ThunkCall(reinterpret_cast<void *>(context.pc - 4), &invokable);
+        if(!key)
+            panic("ARMToX86ThunkCallSVC at an unknown thunk address");
+
+        auto savedLR = context.lr();
+
+        thunkUtilitySlot = key;
+        invokable();
+
+        context.pc = savedLR;
+
+        return true;
+    } else if(exit.svc == ARMCallEndSVC) {
+        return false;
+    } else {
+        panic("unknown SVC 0x%04X in armcall\n", exit.svc);
+    }
+}
+
+static bool processJITExit(JITThreadContext &context, const DiversionExit &diversion) {
+    auto savedLR = context.lr();
+
+    diversion.diversion->invoke();
+
+    context.pc = savedLR;
+
+    return true;
+}
+
+void runARMCall(JITThreadContext &context) {
 
     static const uint32_t stopSVC = UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMCallEndSVC) << 5);
 
-    uint32_t exitSVC;
-
     context.lr() = reinterpret_cast<uintptr_t>(&stopSVC);
 
+    bool keepRunning;
+
     do {
-        exitSVC = GlobalContext::get().jit().runToSVC(context);
-
-        if(exitSVC == ThunkManager::ARMToX86ThunkCallSVC) {
-            ThunkManager::X86ThunkTarget invokable;
-
-            auto key = GlobalContext::get().thunkManager().lookupARMToX86ThunkCall(reinterpret_cast<void *>(context.pc - 4), &invokable);
-            if(!key)
-                panic("ARMToX86ThunkCallSVC at an unknown thunk address");
-
-            auto savedLR = context.lr();
-
-            thunkUtilitySlot = key;
-            invokable();
-
-            context.pc = savedLR;
-        } else if(exitSVC != ARMCallEndSVC) {
-            panic("unknown SVC 0x%04X in armcall\n", exitSVC);
-        }
-    } while(exitSVC != ARMCallEndSVC);
+        auto exitReason = GlobalContext::get().jit().runToSVC(context);
+        keepRunning = std::visit([&context](const auto &reason) -> bool {
+            return processJITExit(context, reason);
+        }, exitReason);
+    } while(keepRunning);
 }
 
 

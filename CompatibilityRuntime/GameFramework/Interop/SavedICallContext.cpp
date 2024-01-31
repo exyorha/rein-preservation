@@ -1,6 +1,6 @@
 #include <Translator/JITThreadContext.h>
 
-#include <ICall/SavedICallContext.h>
+#include <Interop/SavedICallContext.h>
 
 #include <cstring>
 

@@ -1,5 +1,5 @@
-#include <ICall/SavedICallContext.h>
-#include <ICall/ARMArgumentPacker.h>
+#include <Interop/SavedICallContext.h>
+#include <Interop/ARMArgumentPacker.h>
 
 #include <Translator/JITThreadContext.h>
 
@@ -180,6 +180,10 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
 
     } else if(typeCategory == IL2CPP_TYPE_I8) {
         *ffi = &ffi_type_sint64;
+        return ValueCategory::Integer;
+
+    } else if(typeCategory == IL2CPP_TYPE_U8) {
+        *ffi = &ffi_type_uint64;
         return ValueCategory::Integer;
     } else if(typeCategory == IL2CPP_TYPE_VALUETYPE) {
         auto typeClass = il2cpp_type_get_class_or_element_class(type);

@@ -4,6 +4,8 @@
 #include <shared_mutex>
 #include <unordered_map>
 
+#include <Translator/BumpAllocator.h>
+
 class ThunkManager {
 public:
     static constexpr uint16_t ARMToX86ThunkCallSVC = 'T';
@@ -23,21 +25,6 @@ public:
     void *lookupX86ToARMThunkCall(X86ThunkTarget thunk);
 
 private:
-    class BumpAllocator {
-    public:
-        BumpAllocator();
-        ~BumpAllocator();
-
-        BumpAllocator(const BumpAllocator &other) = delete;
-        BumpAllocator &operator =(const BumpAllocator &other) = delete;
-
-        void *allocate(size_t size);
-
-    private:
-        static constexpr size_t ThunkBlockAllocationSize = 65536;
-        unsigned char *m_currentBlock;
-        unsigned char *m_currentBlockEnd;
-    };
 
     struct ARMThunk {
         uint32_t insn;
