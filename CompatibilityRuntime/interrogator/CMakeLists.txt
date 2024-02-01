@@ -6,7 +6,5 @@ foreach(executable IN ITEMS interrogator extract-descriptors)
     install(TARGETS ${executable} DESTINATION . COMPONENT GameAssembly)
 endforeach()
 
-pkg_check_modules(ProtocolBuffers REQUIRED IMPORTED_TARGET protobuf)
-
-target_link_libraries(extract-descriptors PRIVATE PkgConfig::ProtocolBuffers)
+target_link_libraries(extract-descriptors PRIVATE protobuf::libprotobuf)
 

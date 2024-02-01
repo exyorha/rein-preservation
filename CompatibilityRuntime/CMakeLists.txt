@@ -7,6 +7,9 @@ pkg_check_modules(FFI REQUIRED IMPORTED_TARGET libffi)
 
 find_package(Iconv REQUIRED)
 
+find_package(Protobuf CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
+
 set(prev ${CMAKE_POSITION_INDEPENDENT_CODE})
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
@@ -22,6 +25,7 @@ enable_language(ASM)
 add_subdirectory(armlib)
 add_subdirectory(UnityStub)
 add_subdirectory(GameFramework)
+add_subdirectory(GameServer)
 add_subdirectory(GameExecutable)
 
 add_subdirectory(interrogator)

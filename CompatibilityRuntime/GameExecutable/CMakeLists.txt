@@ -35,7 +35,7 @@ add_executable(GameExecutable
 )
 
 target_include_directories(GameExecutable PRIVATE .)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv GameServer)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

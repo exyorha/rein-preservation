@@ -30,6 +30,7 @@ void fetchX86CallFloatingPointArgument(int index, long double &out);
 void storeX86CallFloatResult(float result);
 void storeX86CallFloatResult(double result);
 void storeX86CallFloatResult(long double result);
+void storeX86CallStructureResult(const void *data, size_t size);
 
 void runARMCall(JITThreadContext &context);
 
@@ -273,6 +274,11 @@ auto storeX86CallResult(T result) -> typename std::enable_if<std::is_floating_po
 template<typename T>
 static inline auto storeX86CallResult(T result) -> typename std::enable_if<std::is_enum_v<T>>::type {
     storeX86CallResult(static_cast<typename std::underlying_type<T>::type>(result));
+}
+
+template<typename T>
+inline auto storeX86CallResult(T result) -> typename std::enable_if<std::is_class_v<T> && std::is_standard_layout_v<T> && sizeof(T) <= 64>::type {
+    storeX86CallStructureResult(&result, sizeof(result));
 }
 
 template<int Position>

@@ -96,6 +96,10 @@ static Il2CppString *AndroidJNI_CallStringMethod(intptr_t objectRef, intptr_t me
     auto &jni = JNIState::get();
     return jni.guard([&jni, objectRef, methodID, args]() -> Il2CppString * {
         auto object = jni.resolveNonNull<JNIObject>(objectRef);
+        if(methodID == 0) {
+            throw std::runtime_error("attempted to call a null method ID");
+        }
+
         auto &invokable = *reinterpret_cast<const MethodInvokable *>(methodID);
         auto function = std::get<JNIObjectMethod>(invokable);
 
@@ -122,8 +126,14 @@ static Il2CppString *AndroidJNI_CallStaticStringMethod(intptr_t classRef, intptr
 
     auto &jni = JNIState::get();
     return jni.guard([&jni, methodID, args]() -> Il2CppString * {
+        if(methodID == 0) {
+            throw std::runtime_error("attempted to call a null method ID");
+        }
+
         auto &invokable = *reinterpret_cast<const MethodInvokable *>(methodID);
-        auto function = std::get<JNIStaticObjectMethod>(invokable);
+        auto function = std::get<JNIStaticObjectMethod>(invokable);if(methodID == 0) {
+            throw std::runtime_error("attempted to call a null method ID");
+        }
 
         auto result = function(args);
 
@@ -148,6 +158,10 @@ static intptr_t AndroidJNI_CallStaticObjectMethod(intptr_t classRef, intptr_t me
 
     auto &jni = JNIState::get();
     return jni.guard([&jni, methodID, args]() -> intptr_t {
+        if(methodID == 0) {
+            throw std::runtime_error("attempted to call a null method ID");
+        }
+
         auto &invokable = *reinterpret_cast<const MethodInvokable *>(methodID);
         auto function = std::get<JNIStaticObjectMethod>(invokable);
 

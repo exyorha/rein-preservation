@@ -78,6 +78,12 @@ void storeX86CallPointerSizedResult(uintptr_t result) {
     context.gprs[0] = result;
 }
 
+void storeX86CallStructureResult(const void *data, size_t size) {
+    auto &context = JITThreadContext::get();
+
+    memcpy(&context.gprs[0], data, size);
+}
+
 uintptr_t fetchARMCallPointerSizedResult() {
 
     auto &context = JITThreadContext::get();

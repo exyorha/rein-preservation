@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <gameserver_api.h>
+
 #include "Il2CppUtilities.h"
 
 struct PatchSite {
@@ -21,6 +23,8 @@ struct PatchSite {
     const unsigned char *patchContents;
     size_t size;
 };
+
+static Gameserver *gameserverInstance;
 
 /*
  * These patches are only valid for this specific Unity version and variant.
@@ -203,13 +207,19 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
     return protectionManager.restorePermissions();
 }
 
-static void Subsystem_AdjustSDK_AdjustUtility_Initialize(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
-    printf("Subsystem.AdjustSDK.AdjustUtility.Initialize diversion called, interposed function: %p\n", original);
+static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
+    printf("com.adjust.sdk.Adjust::start diversion called, interposed function: %p\n", original);
 }
 
 static void Subsystem_AdjustSDK_AdjustUtility_TrackEvent(Il2CppString *event, void (*original)(Il2CppString *event)) {
     printf("Subsystem.AdjustSDK.AdjustUtility.TrackEvent diversion called, interposed function: %p, event: %p\n", original,
            event);
+}
+
+static Il2CppString *com_adjust_sdk_Adjust_getAdid(Il2CppString *(*original)(void)) {
+    printf("com.adjust.sdk.Adjust::getAdid diversion called\n");
+
+    return il2cpp_string_new("");
 }
 
 static Il2CppString *Octo_Util_FileUtil_GetAndroidOctoRoot(Il2CppString *(*original)(void)) {
@@ -223,14 +233,33 @@ static void Firebase_Crashlytics_Crashlytics_Log(Il2CppString *string, void (*or
            stringToUtf8(string).c_str());
 }
 
+static Il2CppArray *Dark_State_Machine_HandleNet_Encrypt(Il2CppObject *this_, Il2CppArray *data,
+                                                            Il2CppArray *(*original)(Il2CppObject *this_, Il2CppArray *data)) {
+
+    (void)this_;
+    (void)original;
+    return data;
+}
+
+static Il2CppArray *Dark_State_Machine_HandleNet_Decrypt(Il2CppObject *this_, Il2CppArray *data,
+                                                            Il2CppArray *(*original)(Il2CppObject *this_, Il2CppArray *data)) {
+
+    (void)this_;
+    (void)original;
+    return data;
+}
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
     translator_divert_method("Assembly-CSharp.dll::com.adjust.sdk.Adjust::start",
-                             Subsystem_AdjustSDK_AdjustUtility_Initialize);
+                             com_adjust_sdk_Adjust_start);
 
     translator_divert_method("Assembly-CSharp.dll::Subsystem.AdjustSDK.AdjustUtility::TrackEvent",
                              Subsystem_AdjustSDK_AdjustUtility_TrackEvent);
+
+    translator_divert_method("Assembly-CSharp.dll::com.adjust.sdk.Adjust::getAdid",
+                             com_adjust_sdk_Adjust_getAdid);
 
     translator_divert_method("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot",
                              Octo_Util_FileUtil_GetAndroidOctoRoot);
@@ -238,12 +267,59 @@ static void postInitialize() {
     translator_divert_method("Firebase.Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log",
                              Firebase_Crashlytics_Crashlytics_Log);
 
+    translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Encrypt",
+                             Dark_State_Machine_HandleNet_Encrypt);
+
+    translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Decrypt",
+                             Dark_State_Machine_HandleNet_Decrypt);
+
+
 #if 0
     auto getEnabledInternal = reinterpret_cast<bool (*)(void)>(translator_resolve_native_icall("UnityEngine.Analytics.Analytics::get_enabledInternal"));
     printf("getEnabledInternal: %p\n", getEnabledInternal);
 
     printf("Analytics enabled: %d\n", getEnabledInternal());
 #endif
+}
+
+static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
+    printf("gRPC redirection: creating a channel to %s, attributes %p, credentials %p, secure %d\n",
+           setup->target, setup->args, setup->creds, setup->secure);
+
+    setup->target = "127.0.0.1:8087";
+    setup->creds = nullptr;
+    setup->secure = 0;
+#if 0
+
+    if(!gameserverInstance) {
+        fprintf(stderr, "the game server is not running\n");
+        abort();
+    }
+
+    setup->channel = gameserver_open_in_process_api_channel(gameserverInstance, setup->args);
+
+    if(!setup->channel) {
+        fprintf(stderr, "gameserver_open_in_process_api_channel has failed\n");
+        abort();
+    }
+#endif
+}
+
+static int gameMain(int argc, char **argv) {
+    auto gameserver = makeGameServer();
+
+    if(!gameserver) {
+        fprintf(stderr, "failed to initialize the built-in game server\n");
+        return 1;
+    }
+
+    gameserverInstance = gameserver.get();
+
+    int result = PlayerMain(argc, argv);
+
+    gameserverInstance = nullptr;
+
+    return result;
 }
 
 int main(int argc, char **argv) {
@@ -304,6 +380,7 @@ int main(int argc, char **argv) {
     }
 
     translator_set_post_initialize_callback(postInitialize);
+    translator_set_grpc_redirection_callback(grpcRedirection);
 
-    return translator_main(argc, argv, PlayerMain);
+    return translator_main(argc, argv, gameMain);
 }
