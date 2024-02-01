@@ -41,6 +41,17 @@ static const unsigned char patch_1413347[] = { 0x03 };
 static const unsigned char patch_141334b[] = { 0xb8, 0x03, 0x00, 0x00, 0x00, 0xbe, 0x02, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90, 0xba, 0x01, 0x00, 0x00,
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
 
+/*
+ * Patches a check in ScreenManagerLinux::HandleResolutionChange to make it use the 'downscaled FBO' code path with the GLES renderer (two sites)
+ */
+static const unsigned char patch_1a857a3[] = { 11 };
+static const unsigned char patch_1a857ca[] = { 11 };
+/*
+ * Similar check in ScreenManagerLinux::SetResolutionImmediate.
+ */
+static const unsigned char patch_1a85b39[] = { 11 };
+static const unsigned char patch_1a85d01[] = { 11 };
+
 static const PatchSite UnityPlayerPatchSites[] = {
     { 0x13e3a0b, patch_13e3a0b, sizeof(patch_13e3a0b) },
     { 0x1408950, patch_1408950, sizeof(patch_1408950) },
@@ -50,6 +61,10 @@ static const PatchSite UnityPlayerPatchSites[] = {
     { 0x1413323, patch_1413323, sizeof(patch_1413323) },
     { 0x1413347, patch_1413347, sizeof(patch_1413347) },
     { 0x141334b, patch_141334b, sizeof(patch_141334b) },
+    { 0x1a857a3, patch_1a857a3, sizeof(patch_1a857a3) },
+    { 0x1a857ca, patch_1a857ca, sizeof(patch_1a857ca) },
+    { 0x1a85b39, patch_1a85b39, sizeof(patch_1a85b39) },
+    { 0x1a85d01, patch_1a85d01, sizeof(patch_1a85d01) },
 };
 
 
@@ -286,10 +301,11 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
     printf("gRPC redirection: creating a channel to %s, attributes %p, credentials %p, secure %d\n",
            setup->target, setup->args, setup->creds, setup->secure);
 
+#if 0
     setup->target = "127.0.0.1:8087";
     setup->creds = nullptr;
     setup->secure = 0;
-#if 0
+#else
 
     if(!gameserverInstance) {
         fprintf(stderr, "the game server is not running\n");
