@@ -29,6 +29,14 @@ public:
     uint32_t fpsr;
     uint32_t pstate;
 
+    inline uint64_t &fp() {
+        return gprs[29];
+    }
+
+    inline uint64_t fp() const {
+        return gprs[29];
+    }
+
     inline uint64_t &lr() {
         return gprs[30];
     }

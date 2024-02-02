@@ -19,6 +19,10 @@ struct Diversion {
     inline void invoke() const {
         handler(this);
     }
+
+    inline uintptr_t continueThunkAddress() const {
+        return reinterpret_cast<uintptr_t>(this);
+    }
 };
 
 class DiversionManager {

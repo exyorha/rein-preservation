@@ -37,4 +37,6 @@ int android_stat(const char *pathname, struct android_stat *statbuf);
 int android_lstat(const char *pathname, struct android_stat *statbuf);
 int android_fstat(int fd, struct android_stat *statbuf);
 
+int android_sysconf(int token);
+
 #endif

@@ -1,8 +1,10 @@
 #include <Interop/MethodDiversion.h>
 #include <Interop/ARMArgumentPacker.h>
+#include <Interop/InteropCallFrame.h>
 
 #include <Translator/DiversionManager.h>
 #include <Translator/JITThreadContext.h>
+#include <Translator/thunking.h>
 
 #include <il2cpp-tabledefs.h>
 
@@ -87,7 +89,8 @@ void MethodDiversion::diversionHandler(const Diversion *diversion) {
     std::vector<void *> args = this_->m_arguments.getPointers(context);
     auto returnPointer = this_->m_result.getPointer(context);
 
-    args.push_back(this_->m_closure.code());
+    void *closurePtr = this_->m_closure.code();
+    args.push_back(&closurePtr);
 
     ffi_call(
         &this_->m_cifForInterposerCall,
@@ -97,5 +100,18 @@ void MethodDiversion::diversionHandler(const Diversion *diversion) {
 }
 
 void MethodDiversion::continueCall(ffi_cif *cif, void *ret, void **args, void *userData) {
-    panic("MethodDiversion::continueCall stub!\n");
+    auto this_ = static_cast<MethodDiversion *>(userData);
+
+    {
+        InteropCallFrame callFrame(
+            this_->m_arguments,
+            this_->m_result,
+            args,
+            ret);
+
+        auto &context = JITThreadContext::get();
+        context.pc = this_->m_continueAddress;
+
+        runARMCall(context);
+    }
 }

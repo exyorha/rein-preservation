@@ -3,6 +3,7 @@
 
 #include <Translator/JITThreadContext.h>
 #include <Translator/thunking.h>
+#include <grpc/grpc_security.h>
 
 // GPR_EXPORT gpr_timespec GPR_CALLTYPE
 // gprsharp_convert_clock_type(gpr_timespec t, gpr_clock_type target_clock) ;
@@ -55,6 +56,19 @@ void grpcsharp_channel_create_call_raw_thunk(void) {
     memcpy(&deadline, &context.gprs[6], sizeof(deadline));
 
     storeX86CallResult(grpcsharp_channel_create_call(channel, parent_call, propagation_mask, cq, method, host, deadline));
+}
+
+
+//GPR_EXPORT grpc_auth_property_iterator GPR_CALLTYPE
+//  grpcsharp_auth_context_property_iterator(const grpc_auth_context* ctx);
+//  'grpc_auth_property_iterator' is large and is returned as a pointer in x8
+void grpcsharp_auth_context_property_iterator_raw_thunk(void) {
+    auto &context = JITThreadContext::get();
+
+    auto ctx = retrieveX86CallArgument<const grpc_auth_context *>(0);
+
+    auto pointerToInterator = reinterpret_cast<grpc_auth_property_iterator *>(context.gprs[8]);
+    *pointerToInterator  = grpcsharp_auth_context_property_iterator(ctx);
 }
 
 

@@ -182,3 +182,25 @@ int android_fstat(int fd, struct android_stat *statbuf) {
 
     return result;
 }
+
+int android_sysconf(int token) {
+    int translated;
+
+    /*
+     * Android has very different sysconf tokens.
+     */
+
+    if(token == 0x27) {
+        translated = _SC_PAGESIZE;
+    } else if(token == 0x61) {
+        translated = _SC_NPROCESSORS_ONLN;
+    } else {
+        /*
+         * Nothing good will come from failing this call, so just panic.
+         */
+        panic("android_sysconf: unknown token %d\n", token);
+    }
+
+    return sysconf(translated);
+}
+

@@ -247,6 +247,10 @@ static void Firebase_Crashlytics_Crashlytics_Log(Il2CppString *string, void (*or
     printf("Firebase-Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log diversion called, string: %s\n",
            stringToUtf8(string).c_str());
 }
+static void Firebase_Crashlytics_Crashlytics_SetUserId(Il2CppString *string, void (*original)(Il2CppString *string)) {
+    printf("Firebase-Crashlytics.dll::Firebase.Crashlytics.Crashlytics::SetUserId diversion called, string: %s\n",
+           stringToUtf8(string).c_str());
+}
 
 static Il2CppArray *Dark_State_Machine_HandleNet_Encrypt(Il2CppObject *this_, Il2CppArray *data,
                                                             Il2CppArray *(*original)(Il2CppObject *this_, Il2CppArray *data)) {
@@ -263,6 +267,19 @@ static Il2CppArray *Dark_State_Machine_HandleNet_Decrypt(Il2CppObject *this_, Il
     (void)original;
     return data;
 }
+
+/*
+ * Downsizes the gRPC thread pool
+static void Grpc_Core_Internal_GrpcThreadPool_ctor(Il2CppObject *this_, Il2CppObject *environment, int32_t poolSize, int32_t queueCount,
+                                                    bool inlineHandlers,
+                                                    void (*original)(Il2CppObject *this_, Il2CppObject *environment, int32_t poolSize, int32_t queueCount,
+                                                    bool inlineHandlers)) {
+    printf("Assembly-CSharp.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor: this %p, environment %p, pool size %d, queue count %d, inline handlers %d\n",
+            this_, environment, poolSize, queueCount, inlineHandlers);
+
+    original(this_, environment, 1, 1, true);
+}
+ */
 
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
@@ -282,13 +299,23 @@ static void postInitialize() {
     translator_divert_method("Firebase.Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log",
                              Firebase_Crashlytics_Crashlytics_Log);
 
+    translator_divert_method("Firebase.Crashlytics.dll::Firebase.Crashlytics.Crashlytics::SetUserId",
+                             Firebase_Crashlytics_Crashlytics_SetUserId);
+
+    /*
+     * It's easier to stub Encrypt/Decrypt out than to implement encryption hooks in the gRPC server.
+     */
     translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Encrypt",
                              Dark_State_Machine_HandleNet_Encrypt);
 
     translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Decrypt",
                              Dark_State_Machine_HandleNet_Decrypt);
 
-
+/*
+ * Downsizes the gRPC thread pool
+    translator_divert_method("Assembly-CSharp-firstpass.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor",
+                             Grpc_Core_Internal_GrpcThreadPool_ctor);
+*/
 #if 0
     auto getEnabledInternal = reinterpret_cast<bool (*)(void)>(translator_resolve_native_icall("UnityEngine.Analytics.Analytics::get_enabledInternal"));
     printf("getEnabledInternal: %p\n", getEnabledInternal);
@@ -301,7 +328,7 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
     printf("gRPC redirection: creating a channel to %s, attributes %p, credentials %p, secure %d\n",
            setup->target, setup->args, setup->creds, setup->secure);
 
-#if 0
+#if 1
     setup->target = "127.0.0.1:8087";
     setup->creds = nullptr;
     setup->secure = 0;

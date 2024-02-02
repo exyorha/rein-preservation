@@ -277,7 +277,7 @@ static inline auto storeX86CallResult(T result) -> typename std::enable_if<std::
 }
 
 template<typename T>
-inline auto storeX86CallResult(T result) -> typename std::enable_if<std::is_class_v<T> && std::is_standard_layout_v<T> && sizeof(T) <= 64>::type {
+inline auto storeX86CallResult(T result) -> typename std::enable_if<std::is_class_v<T> && std::is_standard_layout_v<T> && sizeof(T) <= 16>::type {
     storeX86CallStructureResult(&result, sizeof(result));
 }
 

@@ -67,7 +67,9 @@ ARMSingleArgument::ARMSingleArgument(ARMSingleArgument &&other) noexcept = defau
 
 ARMSingleArgument &ARMSingleArgument::operator =(ARMSingleArgument &&other) noexcept = default;
 
-ARMArgumentSet::ARMArgumentSet() = default;
+ARMArgumentSet::ARMArgumentSet() : m_argumentFrameSizeOnStack(0) {
+
+}
 
 ARMArgumentSet::~ARMArgumentSet() = default;
 
@@ -116,6 +118,8 @@ void ARMArgumentPacker::pack(const Il2CppType *argumentType) {
         if(m_integerArgumentSlot >= MaximumIntegerArguments) {
             m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMStackLocation>(), m_currentSPOffset);
             m_currentSPOffset += sizeof(uintptr_t); // will need fixing for arguments larger than a pointer
+
+            m_argumentSet.m_argumentFrameSizeOnStack = (m_currentSPOffset + 15) & ~15;
         } else {
             m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMIntegerLocation>(), m_integerArgumentSlot);
             m_integerArgumentSlot++;

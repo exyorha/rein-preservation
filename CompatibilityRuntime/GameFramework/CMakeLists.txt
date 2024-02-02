@@ -49,6 +49,8 @@ add_library(GameAssembly SHARED
     Interop/ICallInterposerManager.h
     Interop/InternalCallThunk.cpp
     Interop/InternalCallThunk.h
+    Interop/InteropCallFrame.cpp
+    Interop/InteropCallFrame.h
     Interop/InteropMethodLocator.cpp
     Interop/InteropMethodLocator.h
     Interop/MethodDiversion.cpp

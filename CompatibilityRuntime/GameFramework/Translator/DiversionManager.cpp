@@ -14,9 +14,9 @@ const Diversion *DiversionManager::divert(void *armCodePointer, DiversionHandler
 
     auto diversion = static_cast<Diversion *>(m_diversionAllocator.allocate(sizeof(Diversion)));
     diversion->code[0] = *sourceCodeLocation;
-    diversion->code[1] = UINT32_C(0x58000050); // LDR x16, tailAddress
+    diversion->code[1] = UINT32_C(0x58000070); // LDR x16, tailAddress
     diversion->code[2] = UINT32_C(0xD61F0200); // BR x16
-    diversion->code[3] = 0; // alignment padding
+    diversion->code[3] = 0;
     diversion->continueAddress = reinterpret_cast<uintptr_t>(sourceCodeLocation + 1);
     diversion->handler = handler;
     diversion->userdata = userdata;

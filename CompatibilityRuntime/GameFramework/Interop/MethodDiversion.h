@@ -18,6 +18,14 @@ public:
 
     static void diversionHandler(const Diversion *diversion);
 
+    inline uintptr_t continueAddress() const {
+        return m_continueAddress;
+    }
+
+    inline void setContinueAddress(uintptr_t continueAddress) {
+        m_continueAddress = continueAddress;
+    }
+
 private:
     class AllocatedClosure {
     public:
@@ -48,6 +56,7 @@ private:
     ARMSingleArgument m_result;
     ffi_cif m_cifForInterposerCall;
     ffi_cif m_cifForContinueCall;
+    uintptr_t m_continueAddress;
 };
 
 #endif

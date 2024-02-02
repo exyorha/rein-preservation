@@ -101,6 +101,9 @@ void IL2CPP_EXPORT translator_divert_method(const char *methodName, Il2CppMethod
 
     auto diversionData = std::make_unique<MethodDiversion>(method, interposer);
 
-    GlobalContext::get().diversionManager().divert(reinterpret_cast<void *>(implementation), MethodDiversion::diversionHandler, diversionData.release());
+    auto diversion =
+        GlobalContext::get().diversionManager().divert(reinterpret_cast<void *>(implementation), MethodDiversion::diversionHandler, diversionData.release());
+
+    static_cast<MethodDiversion *>(diversion->userdata)->setContinueAddress(diversion->continueThunkAddress());
 }
 

@@ -50,6 +50,13 @@ public:
         return getPointerToLocation(m_location, context);
     }
 
+    template<typename T>
+    void captureFromMachineContext(void *dest, T &context) const {
+        if(m_type != &ffi_type_void) {
+            memcpy(dest, getPointer(context), m_type->size);
+        }
+    }
+
 private:
     ARMArgumentLocation m_location;
     ffi_type *m_type;
@@ -73,6 +80,10 @@ public:
         return m_argumentTypes.size();
     }
 
+    inline size_t sizeOnARMSide() const {
+        return m_argumentLocations.size();
+    }
+
     inline ffi_type **types() {
         return m_argumentTypes.data();
     }
@@ -89,11 +100,27 @@ public:
         return pointers;
     }
 
+    inline size_t argumentFrameSizeOnStack() const {
+        return m_argumentFrameSizeOnStack;
+    }
+
+    template<typename T>
+    void applyOntoMachineContext(void **arguments, T &context) const {
+        auto ptr = arguments;
+        auto types = m_argumentTypes.data();
+
+        for(const auto &location: m_argumentLocations) {
+            memcpy(getPointerToLocation(location, context), *ptr++, (*types)->size);
+            types++;
+        }
+    }
+
 private:
     friend class ARMArgumentPacker;
 
     std::vector<ARMArgumentLocation> m_argumentLocations;
     std::vector<ffi_type *> m_argumentTypes;
+    size_t m_argumentFrameSizeOnStack;
 };
 
 class ARMArgumentPacker {
