@@ -13,6 +13,7 @@
 #include <link.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <array>
 
 #include <gameserver_api.h>
 
@@ -252,7 +253,7 @@ static void Firebase_Crashlytics_Crashlytics_SetUserId(Il2CppString *string, voi
            stringToUtf8(string).c_str());
 }
 
-static Il2CppArray *Dark_State_Machine_HandleNet_Encrypt(Il2CppObject *this_, Il2CppArray *data,
+static Il2CppArray *Dark_StateMachine_HandleNet_Encrypt(Il2CppObject *this_, Il2CppArray *data,
                                                             Il2CppArray *(*original)(Il2CppObject *this_, Il2CppArray *data)) {
 
     (void)this_;
@@ -260,12 +261,75 @@ static Il2CppArray *Dark_State_Machine_HandleNet_Encrypt(Il2CppObject *this_, Il
     return data;
 }
 
-static Il2CppArray *Dark_State_Machine_HandleNet_Decrypt(Il2CppObject *this_, Il2CppArray *data,
+static Il2CppArray *Dark_StateMachine_HandleNet_Decrypt(Il2CppObject *this_, Il2CppArray *data,
                                                             Il2CppArray *(*original)(Il2CppObject *this_, Il2CppArray *data)) {
 
     (void)this_;
     (void)original;
     return data;
+}
+
+static void SafetyNet_SafetyNet_Attest(Il2CppString *parameter1, Il2CppString *parameter2, Il2CppObject *attestListener,
+                                       void (*original)(Il2CppString *, Il2CppString *, Il2CppObject *)) {
+
+    printf("SafetyNet.Attest: '%s', '%s', listener: %p\n", stringToUtf8(parameter1).c_str(), stringToUtf8(parameter2).c_str(), attestListener);
+
+    if(!attestListener) {
+        fprintf(stderr, "SafetyNet.Attest: null listener\n");
+        return;
+    }
+
+    auto listenerClass = il2cpp_object_get_class(attestListener);
+    auto resultMethod = il2cpp_class_get_method_from_name(listenerClass, "onResult", 1);
+    if(!resultMethod) {
+        fprintf(stderr, "SafetyNet.Attest: could not find the onResult method in the passed listener");
+        return;
+    }
+
+    auto resultString = il2cpp_string_new("");
+
+    std::array<Il2CppObject *, 1> params;
+    params[0] = reinterpret_cast<Il2CppObject *>(resultString);
+
+    Il2CppException *exception = nullptr;
+    il2cpp_runtime_invoke_convert_args(resultMethod, attestListener, params.data(), params.size(), &exception);
+
+    if(exception) {
+        char buf[256];
+        il2cpp_format_exception(exception, buf, sizeof(buf));
+        fprintf(stderr, "SafetyNet.Attest: the callback has failed with exception: %.*s\n", static_cast<int>(sizeof(buf)), buf);
+        return;
+    }
+}
+
+static Il2CppString *DeviceUtil_DeviceUtil_GetAcs(Il2CppString (*original)(void)) {
+    printf("DeviceUtil.GetAcs\n");
+
+    return il2cpp_string_new("");
+}
+
+static bool DeviceUtil_DeviceUtil_GetPer(bool (*original)(void)) {
+    printf("DeviceUtil.GetPer\n");
+
+    return false;
+}
+
+static bool DeviceUtil_DeviceUtil_GetImu(bool (*original)(void)) {
+    printf("DeviceUtil.GetImu\n");
+
+    return false;
+}
+
+static bool DeviceUtil_DeviceUtil_GetIr(bool (*original)(void)) {
+    printf("DeviceUtil.GetIr\n");
+
+    return false;
+}
+
+static bool DeviceUtil_DeviceUtil_GetIda(bool (*original)(void)) {
+    printf("DeviceUtil.GetIda\n");
+
+    return false;
 }
 
 /*
@@ -306,11 +370,28 @@ static void postInitialize() {
      * It's easier to stub Encrypt/Decrypt out than to implement encryption hooks in the gRPC server.
      */
     translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Encrypt",
-                             Dark_State_Machine_HandleNet_Encrypt);
+                             Dark_StateMachine_HandleNet_Encrypt);
 
     translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Decrypt",
-                             Dark_State_Machine_HandleNet_Decrypt);
+                             Dark_StateMachine_HandleNet_Decrypt);
 
+    translator_divert_method("Assembly-CSharp.dll::SafetyNet.SafetyNet::Attest",
+                             SafetyNet_SafetyNet_Attest);
+
+    translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetAcs",
+                             DeviceUtil_DeviceUtil_GetAcs);
+
+    translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetPer",
+                             DeviceUtil_DeviceUtil_GetPer);
+
+    translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetImu",
+                             DeviceUtil_DeviceUtil_GetImu);
+
+    translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetIr",
+                             DeviceUtil_DeviceUtil_GetIr);
+
+    translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetIda",
+                             DeviceUtil_DeviceUtil_GetIda);
 /*
  * Downsizes the gRPC thread pool
     translator_divert_method("Assembly-CSharp-firstpass.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor",

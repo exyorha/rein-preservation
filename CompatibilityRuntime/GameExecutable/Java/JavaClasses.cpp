@@ -9,6 +9,7 @@
 #include <Java/JNIUnityPlayer.h>
 #include <Java/JNIUnityReflectionHelper.h>
 #include <Java/AdjustSdkAdjust.h>
+#include <Java/LiliumDefaultAttestCallback.h>
 
 void JNIGlobalState::init() {
     registerClass<JNIObject>();
@@ -22,4 +23,6 @@ void JNIGlobalState::init() {
     registerClass<JNIUnityPlayer>();
     registerClass<JNIUnityReflectionHelper>();
     registerClass<AdjustSdkAdjust>();
+
+    registerClass<LiliumDefaultAttestCallback>();
 }

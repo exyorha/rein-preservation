@@ -28,6 +28,8 @@ add_executable(GameExecutable
     Java/JNIUnityPlayer.h
     Java/JNIUnityReflectionHelper.cpp
     Java/JNIUnityReflectionHelper.h
+    Java/LiliumDefaultAttestCallback.cpp
+    Java/LiliumDefaultAttestCallback.h
 
     main.cpp
 

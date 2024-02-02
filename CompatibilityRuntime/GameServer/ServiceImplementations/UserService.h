@@ -12,6 +12,7 @@ public:
     UserService &operator =(const UserService &other) = delete;
 
     ::grpc::Status RegisterUser(::grpc::ServerContext* context, const ::apb::api::user::RegisterUserRequest* request, ::apb::api::user::RegisterUserResponse* response) override;
+    ::grpc::Status Auth(::grpc::ServerContext* context, const ::apb::api::user::AuthUserRequest* request, ::apb::api::user::AuthUserResponse* response) override;
     ::grpc::Status GetAndroidArgs(::grpc::ServerContext* context, const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response) override;
 
 };
