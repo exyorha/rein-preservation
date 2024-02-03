@@ -7,6 +7,9 @@
 #include "RPCProcessingThread.h"
 
 #include "ServiceImplementations/UserService.h"
+#include "ServiceImplementations/DataService.h"
+#include "ServiceImplementations/GamePlayService.h"
+#include "ServiceImplementations/QuestService.h"
 
 struct Gameserver {
 public:
@@ -20,6 +23,9 @@ public:
 
 private:
     UserService m_userService;
+    DataService m_dataService;
+    GamePlayService m_gamePlayService;
+    QuestService m_questService;
     std::optional<RPCProcessingThread> m_rpcThread;
     std::unique_ptr<grpc::Server> m_server;
 };

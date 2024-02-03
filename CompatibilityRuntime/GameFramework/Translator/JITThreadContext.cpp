@@ -7,7 +7,7 @@
 
 thread_local std::unique_ptr<JITThreadContext> JITThreadContext::m_jitThread;
 
-JITThreadContext::JITThreadContext() : sp(0), pc(0), fpcr(0), fpsr(0), pstate(UINT32_C(0x80000000)) {
+JITThreadContext::JITThreadContext() : sp(0), pc(0), fpcr(0), fpsr(0), pstate(UINT32_C(0x80000000)), stoppedWorld(false) {
     memset(&gprs, 0xBA, sizeof(gprs));
     memset(&vectors, 0xBA, sizeof(vectors));
 

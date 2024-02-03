@@ -31,6 +31,8 @@ InteropCallFrame::InteropCallFrame(
 InteropCallFrame::~InteropCallFrame() {
     auto &context = JITThreadContext::get();
 
+    printf("context x0: %lu, x0 at %p\n", context.gprs[0], &context.gprs[0]);
+
     /*
      * Capture the return.
      */

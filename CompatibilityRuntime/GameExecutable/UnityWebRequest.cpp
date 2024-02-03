@@ -3,6 +3,9 @@
 #include <cstdio>
 #include <string>
 
+#include "Octo.h"
+#include "OctoContentStorage.h"
+
 static std::string stringToUtf8(Il2CppString *url) {
 
     auto length = il2cpp_string_length(url);
@@ -39,6 +42,23 @@ static void *UnityWebRequest_SetUrl(
         }
 
         url = stringFromUtf8(conv);
+    } else if(conv.starts_with("file:///fakeoctopath/")) {
+        /*
+         * See Octo_Caching_OctoBaseCaching_GetStorageFilePath
+         */
+
+        auto resolved = contentStorageInstance->locateFile(conv.substr(21));
+        if(resolved.has_value()) {
+
+            conv.erase(7);
+            conv.append(*resolved);
+
+            printf("Octo asset request redirected to %s\n", conv.c_str());
+
+            url = stringFromUtf8(conv);
+        } else {
+            fprintf(stderr, "UnityWebRequest_SetUrl: could not resolve a request for the Octo file %s\n", conv.c_str());
+        }
     }
 
     return original(thisPointer, url);

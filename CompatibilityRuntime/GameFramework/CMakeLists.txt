@@ -45,6 +45,10 @@ add_library(GameAssembly SHARED
 
     Interop/ARMArgumentPacker.cpp
     Interop/ARMArgumentPacker.h
+    Interop/FFIStructureSynthesizer.cpp
+    Interop/FFIStructureSynthesizer.h
+    Interop/FFISynthesizedStructure.cpp
+    Interop/FFISynthesizedStructure.h
     Interop/ICallInterposerManager.cpp
     Interop/ICallInterposerManager.h
     Interop/InternalCallThunk.cpp
@@ -74,6 +78,8 @@ add_library(GameAssembly SHARED
     Translator/BumpAllocator.h
     Translator/DiversionManager.cpp
     Translator/DiversionManager.h
+    Translator/GCHooks.cpp
+    Translator/GCHooks.h
     Translator/JIT.cpp
     Translator/JIT.h
     Translator/JITThreadContext.cpp

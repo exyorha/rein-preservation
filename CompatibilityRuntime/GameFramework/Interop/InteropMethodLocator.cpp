@@ -52,11 +52,15 @@ const MethodInfo *InteropMethodLocator::resolveMethod(const std::string_view &na
     std::string_view namespaceClass = fullName.substr(0, methodNameDelim);
 
     auto namespaceDelim = namespaceClass.rfind('.');
-    if(namespaceDelim >= methodNameDelim)
-        panic("icall method name has no namespace-class delimiter: %s\n", std::string(namespaceClass).c_str());
+    std::string namespaceName;
+    std::string className;
+    if(namespaceDelim >= methodNameDelim) {
+        className = namespaceClass;
+    } else {
+        namespaceName = namespaceClass.substr(0, namespaceDelim);
+        className = namespaceClass.substr(namespaceDelim + 1, methodNameDelim - namespaceDelim - 1);
+    }
 
-    std::string namespaceName(namespaceClass.substr(0, namespaceDelim));
-    std::string className(namespaceClass.substr(namespaceDelim + 1, methodNameDelim - namespaceDelim - 1));
     std::string methodName(fullName.substr(methodNameDelim + 2));
 
     Il2CppClass *classDef = nullptr;

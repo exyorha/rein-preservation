@@ -63,6 +63,8 @@ public:
 
     std::array<uint64_t, 32> fakeTLS;
 
+    bool stoppedWorld;
+
 private:
     static constexpr size_t ThreadStackSize = 512 * 1024;
 

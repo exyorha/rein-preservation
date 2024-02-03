@@ -42,27 +42,20 @@ JIT::JIT() :
 JIT::~JIT() = default;
 
 JITExitReason JIT::runToSVC(JITThreadContext &context) {
+
+    if(context.stoppedWorld) {
+        return runToSVCWithGCLocked(context);
+    } else {
+        std::shared_lock<std::shared_mutex> lock(m_gcWorldLock);
+
+        return runToSVCWithGCLocked(context);
+    }
+}
+
+JITExitReason JIT::runToSVCWithGCLocked(JITThreadContext &context) {
+
     std::unique_lock<std::mutex> locker(m_globalJITLock);
 
-#if 0
-    struct SignalGuard {
-        SignalGuard() {
-            sigset_t armSignals;
-            sigemptyset(&armSignals);
-            sigaddset(&armSignals, SIGPWR);
-            sigaddset(&armSignals, SIGXCPU);
-            sigprocmask(SIG_BLOCK, &armSignals, &oldmask);
-        }
-
-        ~SignalGuard() {
-            sigprocmask(SIG_SETMASK, &oldmask, nullptr);
-        }
-
-    private:
-        sigset_t oldmask;
-
-    } signalGuard;
-#endif
     context.apply(*m_dynarmic);
     m_currentTPIDR_EL0 = context.tpidr_el0;
 
@@ -317,3 +310,22 @@ std::uint64_t JIT::GetTicksRemaining() {
 std::uint64_t JIT::GetCNTPCT() {
     return 0;
 }
+
+void JIT::stopWorld(JITThreadContext &context) {
+    if(context.stoppedWorld) {
+        panic("JIT::stopWorld: the thread calling has already stopped the world");
+    }
+
+    m_gcWorldLock.lock();
+    context.stoppedWorld = true;
+}
+
+void JIT::startWorld(JITThreadContext &context) {
+    if(!context.stoppedWorld) {
+        panic("JIT::stopWorld: the thread calling has not stopped the world");
+    }
+
+    context.stoppedWorld = false;
+    m_gcWorldLock.unlock();
+}
+

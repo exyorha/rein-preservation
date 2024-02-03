@@ -4,6 +4,7 @@
 #include <mutex>
 #include <optional>
 #include <variant>
+#include <shared_mutex>
 
 #include <dynarmic/interface/A64/config.h>
 #include <dynarmic/interface/A64/a64.h>
@@ -38,6 +39,9 @@ public:
     void flushInstructionCache(uintptr_t addr, size_t size);
     void flushInstructionCacheLockedInternal(uintptr_t addr, size_t size);
 
+    void stopWorld(JITThreadContext &thread);
+    void startWorld(JITThreadContext &thread);
+
 private:
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A64::VAddr vaddr) override;
 
@@ -67,7 +71,10 @@ private:
     void dumpMachineContext();
 
 private:
+    JITExitReason runToSVCWithGCLocked(JITThreadContext &context);
+
     std::mutex m_globalJITLock;
+    std::shared_mutex m_gcWorldLock;
     std::optional<Dynarmic::A64::Jit> m_dynarmic;
     std::optional<uint32_t> m_exitingOnSVC;
     std::optional<uint64_t> m_pcAtFault;

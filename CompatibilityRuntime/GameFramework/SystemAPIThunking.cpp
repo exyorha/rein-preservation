@@ -72,6 +72,7 @@ static int open_compat(const char *name, int flags, mode_t mode) {
 }
 
 static int fcntl_compat(int fd, int cmd, uintptr_t arg) {
+    printf("!!! fcntl_compat(%d, %d, 0x%016lX\n", fd, cmd, arg);
     return fcntl(fd, cmd, arg);
 }
 
@@ -168,6 +169,19 @@ static void swprintfRawThunk(void) {
 
 static void vsscanfRawThunk(void) {
     panic("vsscanfRawThunk\n");
+}
+
+/*
+ * Temporary compatibility hack pending the libc redesign
+ * The destructor may be called with the JIT thread context already torn down,
+ * and that will cause issues on the arm call
+ */
+static int pthread_key_create_comp(pthread_key_t *key, void (*destructor)(void *)) {
+    if(destructor) {
+        fprintf(stderr, "pthread_key_create_comp compatibility hack: the destructor set to null\n");
+    }
+
+    return pthread_key_create(key, nullptr);
 }
 
 static const std::unordered_map<std::string_view, SymbolProvidingFunction> systemAPI{
@@ -325,7 +339,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "pthread_getattr_np", &thunkX86<pthread_getattr_np> },
     { "pthread_getspecific", &thunkX86<pthread_getspecific> },
     { "pthread_join", &thunkX86<pthread_join> },
-    { "pthread_key_create", &thunkX86<pthread_key_create> },
+    { "pthread_key_create", &thunkX86<pthread_key_create_comp> },
     { "pthread_key_delete", &thunkX86<pthread_key_delete> },
     { "pthread_kill", &thunkX86<pthread_kill> },
     { "pthread_mutexattr_destroy", &thunkX86<pthread_mutexattr_destroy> },
@@ -560,6 +574,8 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "grpcsharp_test_override_method", &thunkX86<grpcsharp_test_override_method> },
 
 };
+
+struct dirent dir;
 
 void *resolveUndefinedARMSymbol(const std::string_view &name) {
 

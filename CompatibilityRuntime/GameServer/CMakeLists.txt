@@ -13,7 +13,21 @@ add_library(GameServer SHARED
     main.cpp
 
     service/DataService.proto
+    service/GachaService.proto
+    service/GamePlayService.proto
+    service/GiftService.proto
+    service/MissionService.proto
+    service/QuestService.proto
     service/UserService.proto
+
+    ServiceImplementations/DataService.cpp
+    ServiceImplementations/DataService.h
+
+    ServiceImplementations/GamePlayService.cpp
+    ServiceImplementations/GamePlayService.h
+
+    ServiceImplementations/QuestService.cpp
+    ServiceImplementations/QuestService.h
 
     ServiceImplementations/UserService.cpp
     ServiceImplementations/UserService.h

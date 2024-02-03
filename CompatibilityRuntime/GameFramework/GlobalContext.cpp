@@ -1,5 +1,7 @@
 #include "GlobalContext.h"
 
+#include <Translator/GCHooks.h>
+
 #include <stdexcept>
 
 #include <dlfcn.h>
@@ -13,6 +15,8 @@ GlobalContext::GlobalContext() : m_registerer(this) {
     auto directory = thisLibraryDirectory();
     m_armlib.emplace(directory / "armlib.so");
     m_il2cpp.emplace(directory / "libil2cpp.so");
+
+    installGCHooks(*m_il2cpp);
 
     m_armlib->runConstructors();
     m_il2cpp->runConstructors();

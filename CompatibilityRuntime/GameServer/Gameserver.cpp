@@ -43,6 +43,9 @@ void APIEncryptionInterceptor::Intercept(grpc::experimental::InterceptorBatchMet
 Gameserver::Gameserver()  {
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
+    grpcBuilder.RegisterService(&m_dataService);
+    grpcBuilder.RegisterService(&m_gamePlayService);
+    grpcBuilder.RegisterService(&m_questService);
 
     std::vector<std::unique_ptr<grpc::experimental::ServerInterceptorFactoryInterface>> interceptorCreators;
     interceptorCreators.emplace_back(std::make_unique<APIEncryptionInterceptorFactory>());

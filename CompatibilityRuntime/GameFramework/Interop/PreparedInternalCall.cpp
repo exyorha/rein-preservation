@@ -70,37 +70,6 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
 
 }
 
-#if 0
-else if(fullName == "UnityEngine.AndroidJNI::FindClass") {
-        auto url = static_cast<Il2CppString **>(argumentPointers.at(0));
-        printf("string at (probably) %p\n", *url);
-        auto length = il2cpp_string_length(*url);
-        auto chars = il2cpp_string_chars(*url);
-        printf("length %p, chars %u\n", chars, length);
-        std::string conv;
-        for(size_t index = 0; index < length; index++) {
-            conv.push_back(chars[index]);
-        }
-
-        printf("Java: %s: '%s'\n", fullName.c_str(), conv.c_str());
-    } else if(fullName == "UnityEngine.AndroidJNI::GetStaticMethodID" || fullName == "UnityEngine.AndroidJNI::GetMethodID" ||
-              fullName == "UnityEngine.AndroidJNI::GetFieldID" || fullName == "UnityEngine.AndroidJNI::GetStaticFieldID"
-    ) {
-        auto url = static_cast<Il2CppString **>(argumentPointers.at(1));
-        printf("string at (probably) %p\n", *url);
-        auto length = il2cpp_string_length(*url);
-        auto chars = il2cpp_string_chars(*url);
-        printf("length %p, chars %u\n", chars, length);
-        std::string conv;
-        for(size_t index = 0; index < length; index++) {
-            conv.push_back(chars[index]);
-        }
-
-        printf("Java: '%s': '%s'\n", fullName.c_str(), conv.c_str());
-
-    }
-#endif
-
 PreparedInternalCall::~PreparedInternalCall() = default;
 
 void PreparedInternalCall::invokeInternal(Il2CppMethodPointer method, JITThreadContext &context, SavedICallContext *contextWithInputArgs) const {
@@ -130,14 +99,4 @@ void PreparedInternalCall::invokeInternal(Il2CppMethodPointer method, JITThreadC
             returnPointer,
             args.data());
     }
-
-#if 0
-    if(fullName == "UnityEngine.AndroidJNI::FindClass" || fullName == "UnityEngine.AndroidJNI::NewGlobalRef") {
-        static unsigned char fake;
-        *reinterpret_cast<void **>(returnPointer) = &fake;
-        printf("Java: faked the class, R0 = %016" PRIx64 "\n", thread.gprs[0]);
-    } else if(fullName == "UnityEngine.AndroidJNI::ExceptionOccurred") {
-        printf("Java: exception occurred: %016" PRIx64 "\n", thread.gprs[0]);
-    }
-#endif
 }

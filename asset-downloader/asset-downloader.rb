@@ -103,6 +103,34 @@ class OctoAssetDownloader
         end
     end
 
+    def validate_asset(local_path, descriptor)
+        md5 =
+            File.open(local_path, "rb") do |inf|
+                if inf.size != descriptor.size
+                    warn "Asset size doesn't match the descriptor: #{local_path}, #{descriptor.size} in the descriptor, #{inf.size} actual"
+                end
+
+                running_md5sum = OpenSSL::Digest::MD5.new
+
+                while true
+                    chunk = inf.read(128*1024)
+                    break if chunk.nil? || chunk.empty?
+
+                    running_md5sum.update(chunk)
+                end
+
+                running_md5sum.hexdigest
+            end
+
+        matches = md5 == descriptor.md5
+
+        unless matches
+            warn "Asset MD5 doesn't match the descriptor: #{local_path}, #{md5} calculated, #{descriptor.md5} in the descriptor"
+        end
+
+        return matches, md5
+    end
+
     def acquire_file(descriptor, type)
         local_path = File.join(@content_path, type, descriptor.name.gsub(")", "/"))
 
@@ -111,28 +139,14 @@ class OctoAssetDownloader
         end
 
         if File.exist? local_path
-            md5 =
-                File.open(local_path, "rb") do |inf|
-                    if inf.size != descriptor.size
-                        raise "Asset size doesn't match the descriptor: #{local_path}, #{descriptor.size} in the descriptor, #{inf.size} actual"
-                    end
+            result, actual_md5 = validate_asset(local_path, descriptor)
 
-                    running_md5sum = OpenSSL::Digest::MD5.new
-
-                    while true
-                        chunk = inf.read(128*1024)
-                        break if chunk.nil? || chunk.empty?
-
-                        running_md5sum.update(chunk)
-                    end
-
-                    running_md5sum.hexdigest
-                end
-
-            if md5 != descriptor.md5
-                raise "Asset MD5 doesn't match the descriptor: #{local_path}, #{md5} calculated, #{descriptor.md5} in the descriptor"
+            if not validate_asset(local_path, descriptor)
+                File.rename local_path, "#{local_path}.old.#{md5}"
             end
-        else
+        end
+
+        if !File.exist?(local_path)
             puts "Downloading #{descriptor.name}"
 
             uri = dotnet_style_format(@uri_format, {

@@ -15,6 +15,10 @@ public:
     ::grpc::Status Auth(::grpc::ServerContext* context, const ::apb::api::user::AuthUserRequest* request, ::apb::api::user::AuthUserResponse* response) override;
     ::grpc::Status GetAndroidArgs(::grpc::ServerContext* context, const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response) override;
 
+    ::grpc::Status SetUserName(::grpc::ServerContext* context, const ::apb::api::user::SetUserNameRequest* request, ::apb::api::user::SetUserNameResponse* response) override;
+
+    ::grpc::Status GameStart(::grpc::ServerContext* context, const ::google::protobuf::Empty * request, ::apb::api::user::GameStartResponse* response) override;
+
 };
 
 #endif

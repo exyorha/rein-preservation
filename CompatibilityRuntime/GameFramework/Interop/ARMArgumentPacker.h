@@ -25,6 +25,7 @@ using ARMArgumentLocation = std::variant<std::monostate, ARMIntegerLocation, ARM
 
 class JITThreadContext;
 class SavedICallContext;
+class FFIStructureSynthesizer;
 
 void *getPointerToLocation(const ARMArgumentLocation &location, JITThreadContext &context);
 void *getPointerToLocation(const ARMArgumentLocation &location, SavedICallContext &context);
@@ -53,6 +54,7 @@ public:
     template<typename T>
     void captureFromMachineContext(void *dest, T &context) const {
         if(m_type != &ffi_type_void) {
+            printf("capture from %p to %p\n", getPointer(context), dest);
             memcpy(dest, getPointer(context), m_type->size);
         }
     }
@@ -159,6 +161,7 @@ private:
     size_t m_integerArgumentSlot;
     size_t m_vectorArgumentSlot;
     size_t m_currentSPOffset;
+    static FFIStructureSynthesizer m_structureSynthesizer;
 
 
 };

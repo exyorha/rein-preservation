@@ -1,6 +1,9 @@
 add_executable(GameExecutable
     AndroidJNI.cpp
 
+    FastAES.cpp
+    FastAES.h
+
     Il2CppUtilities.cpp
     Il2CppUtilities.h
 
@@ -33,11 +36,20 @@ add_executable(GameExecutable
 
     main.cpp
 
+    Octo.cpp
+    Octo.h
+    OctoContentStorage.cpp
+    OctoContentStorage.h
+
     UnityWebRequest.cpp
+
+    Octo/Proto/Database.proto
 )
 
-target_include_directories(GameExecutable PRIVATE .)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv GameServer)
+protobuf_generate(TARGET GameExecutable)
+
+target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv GameServer OpenSSL::Crypto protobuf::libprotobuf)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

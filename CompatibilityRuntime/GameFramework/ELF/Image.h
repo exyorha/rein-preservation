@@ -39,6 +39,11 @@ public:
 
     void runConstructors();
 
+    template<typename T = void>
+    inline T *displace(uintptr_t address) const {
+        return reinterpret_cast<T *>(address + m_mapping->displacement());
+    }
+
 private:
     void createBackgroundMapping();
     void mapImageSegments();
@@ -77,11 +82,6 @@ private:
         void *m_base;
         size_t m_size;
     };
-
-    template<typename T = void>
-    inline T *displace(uintptr_t address) const {
-        return reinterpret_cast<T *>(address + m_mapping->displacement());
-    }
 
     using InitFiniFunc = void (*)();
 

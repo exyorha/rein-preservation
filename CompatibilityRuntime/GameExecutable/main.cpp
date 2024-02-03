@@ -14,10 +14,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <array>
+#include <sstream>
 
 #include <gameserver_api.h>
 
 #include "Il2CppUtilities.h"
+#include "FastAES.h"
+#include "OctoContentStorage.h"
+#include "Octo.h"
 
 struct PatchSite {
     uintptr_t patchVA;
@@ -26,6 +30,7 @@ struct PatchSite {
 };
 
 static Gameserver *gameserverInstance;
+OctoContentStorage *contentStorageInstance;
 
 /*
  * These patches are only valid for this specific Unity version and variant.
@@ -332,6 +337,10 @@ static bool DeviceUtil_DeviceUtil_GetIda(bool (*original)(void)) {
     return false;
 }
 
+static void Adam_Framework_Resource_DarkOctoSetupper_StartSetup(bool arg1, bool arg2, void (*original)(bool arg1, bool arg2)) {
+    printf("StartSetup(%d, %d)\n", arg1, arg2);
+}
+
 /*
  * Downsizes the gRPC thread pool
 static void Grpc_Core_Internal_GrpcThreadPool_ctor(Il2CppObject *this_, Il2CppObject *environment, int32_t poolSize, int32_t queueCount,
@@ -344,6 +353,33 @@ static void Grpc_Core_Internal_GrpcThreadPool_ctor(Il2CppObject *this_, Il2CppOb
     original(this_, environment, 1, 1, true);
 }
  */
+
+static bool Dark_StateMachine_Title_Title_CanEnableForceLocalLoading(Il2CppObject *this_, bool (*original)(Il2CppObject *this_)) {
+    printf("Dark.StateMachine.Title.Title::CanEnableForceLocalLoading\n");
+
+    return true;
+}
+
+static void Adam_Framework_Resource_AssetBundleLookupTableOctoDatabase_InitializeDatabase(Il2CppObject *this_, void (*original)(Il2CppObject *this_)) {
+    printf("Adam.Framework.Resource.AssetBundleLookupTableOctoDatabase::InitializeDatabase\n");
+}
+
+static void Firebase_Analytics_FirebaseAnalytics_cctor(void (*original)()) {
+    printf("Firebase.Analytics.dll::Firebase.Analytics.FirebaseAnalytics::.cctor\n");
+}
+
+static void Firebase_Analytics_FirebaseAnalytics_SetAnalyticsCollectionEnabled(bool enabled, void (*original)(bool enabled)) {
+    printf("Firebase.Analytics.dll::Firebase.Analytics.FirebaseAnalytics::SetAnalyticsCollectionEnabled(%d)\n", enabled);
+}
+
+/*
+ * Since we never actually download anything, the storage is always enough.
+ */
+static bool Framework_Network_Download_AssetDownloader_IsStorageEnough(Il2CppObject *this_, int64_t size, void *original) {
+    printf("Framework.Network.Download.AssetDownloader.IsStorageEnough(%ld)\n", size);
+
+    return true;
+}
 
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
@@ -365,6 +401,12 @@ static void postInitialize() {
 
     translator_divert_method("Firebase.Crashlytics.dll::Firebase.Crashlytics.Crashlytics::SetUserId",
                              Firebase_Crashlytics_Crashlytics_SetUserId);
+
+    translator_divert_method("Firebase.Analytics.dll::Firebase.Analytics.FirebaseAnalytics::.cctor",
+                             Firebase_Analytics_FirebaseAnalytics_cctor);
+
+    translator_divert_method("Firebase.Analytics.dll::Firebase.Analytics.FirebaseAnalytics::SetAnalyticsCollectionEnabled",
+                             Firebase_Analytics_FirebaseAnalytics_SetAnalyticsCollectionEnabled);
 
     /*
      * It's easier to stub Encrypt/Decrypt out than to implement encryption hooks in the gRPC server.
@@ -392,6 +434,37 @@ static void postInitialize() {
 
     translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetIda",
                              DeviceUtil_DeviceUtil_GetIda);
+
+    /*
+     * We divert this method to avoid the dependency on the libFastAES.so
+     * native library, it's the only method needed from it.
+     */
+    translator_divert_method("FastAES.dll::FastAES::NativeDecrypt", FastAES_NativeDecrypt);
+
+
+#if 0
+    translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Resource.DarkOctoSetupper::StartSetup",
+                             Adam_Framework_Resource_DarkOctoSetupper_StartSetup);
+
+    translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.Title.Title::CanEnableForceLocalLoading",
+                             Dark_StateMachine_Title_Title_CanEnableForceLocalLoading);
+
+    translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Resource.AssetBundleLookupTableOctoDatabase::InitializeDatabase",
+                             Adam_Framework_Resource_AssetBundleLookupTableOctoDatabase_InitializeDatabase);
+#endif
+
+    translator_divert_method("Octo.dll::Octo.Caching.OctoAppCaching::IsInApp",
+                             Octo_Caching_OctoAppCaching_IsInApp);
+
+    translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::IsCached",
+                             Octo_Caching_OctoBaseCaching_IsCached);
+
+    translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::GetStorageFilePath",
+                             Octo_Caching_OctoBaseCaching_GetStorageFilePath);
+
+    translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
+                            Framework_Network_Download_AssetDownloader_IsStorageEnough);
+
 /*
  * Downsizes the gRPC thread pool
     translator_divert_method("Assembly-CSharp-firstpass.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor",
@@ -430,6 +503,9 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
 }
 
 static int gameMain(int argc, char **argv) {
+    OctoContentStorage storage("/home/reki/rein/content");
+    contentStorageInstance = &storage;
+
     auto gameserver = makeGameServer();
 
     if(!gameserver) {
@@ -441,6 +517,7 @@ static int gameMain(int argc, char **argv) {
 
     int result = PlayerMain(argc, argv);
 
+    contentStorageInstance = nullptr;
     gameserverInstance = nullptr;
 
     return result;

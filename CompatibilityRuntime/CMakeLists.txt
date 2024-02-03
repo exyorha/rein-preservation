@@ -9,6 +9,7 @@ find_package(Iconv REQUIRED)
 
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 set(prev ${CMAKE_POSITION_INDEPENDENT_CODE})
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)

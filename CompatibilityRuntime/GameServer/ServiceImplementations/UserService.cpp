@@ -35,3 +35,18 @@ UserService::~UserService() = default;
 
     return grpc::Status::OK;
 }
+
+::grpc::Status UserService::SetUserName(::grpc::ServerContext* context, const ::apb::api::user::SetUserNameRequest* request, ::apb::api::user::SetUserNameResponse* response)  {
+
+    printf("UserService::SetUserName: %s\n", request->DebugString().c_str());
+
+    return grpc::Status::OK;
+}
+
+::grpc::Status UserService::GameStart(::grpc::ServerContext* context, const ::google::protobuf::Empty * request,
+                                      ::apb::api::user::GameStartResponse* response) {
+
+    printf("UserService::GameStart\n");
+
+    return grpc::Status::OK;
+}

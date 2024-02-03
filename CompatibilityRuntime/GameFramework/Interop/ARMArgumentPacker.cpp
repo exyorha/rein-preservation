@@ -1,5 +1,6 @@
 #include <Interop/SavedICallContext.h>
 #include <Interop/ARMArgumentPacker.h>
+#include <Interop/FFIStructureSynthesizer.h>
 
 #include <Translator/JITThreadContext.h>
 
@@ -8,6 +9,9 @@
 #include <il2cpp-blob.h>
 #include <utility>
 #include <variant>
+#include <algorithm>
+
+FFIStructureSynthesizer ARMArgumentPacker::m_structureSynthesizer;
 
 template<typename T>
 static inline void *getPointerToSpecificLocation(const std::monostate &voidLocation, T &context) {
@@ -115,15 +119,52 @@ void ARMArgumentPacker::pack(const Il2CppType *argumentType) {
     auto category = getValueCategory(argumentType, &ffiType);
 
     if(category == ValueCategory::Integer) {
-        if(m_integerArgumentSlot >= MaximumIntegerArguments) {
+        if(ffiType->size == 0)
+            throw std::logic_error("attempted to pack an uninitialized FFI type");
+
+        auto alignmentForRegisterAllocation = std::clamp<unsigned int>(ffiType->alignment, 8, 16);
+
+        if(alignmentForRegisterAllocation == 16) {
+            /*
+             * Round up the integer slot number.
+             */
+            m_integerArgumentSlot = (m_integerArgumentSlot + 1) & ~1;
+        }
+
+        auto numberOfRegisters = (ffiType->size + 7) / 8;
+
+        if(numberOfRegisters > 2)
+            panic("implement indirection (passing an argument of length %u - should be allocated elsewhere and passed as a pointer)",
+                  ffiType->size);
+
+        if(m_integerArgumentSlot + numberOfRegisters <= MaximumIntegerArguments) {
+            /*
+             * Allocate into registers.
+             */
+
+            m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMIntegerLocation>(), m_integerArgumentSlot);
+            m_integerArgumentSlot += numberOfRegisters;
+        } else {
+            /*
+             * Allocate into stack.
+             */
+
+            // No more integer arguments can be allocated once we've allocated
+            // anything onto the stack.
+            m_integerArgumentSlot = MaximumIntegerArguments;
+
+            /*
+             * Align the stack.
+             */
+            m_currentSPOffset = (m_currentSPOffset + alignmentForRegisterAllocation - 1) & ~(alignmentForRegisterAllocation - 1);
+
             m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMStackLocation>(), m_currentSPOffset);
-            m_currentSPOffset += sizeof(uintptr_t); // will need fixing for arguments larger than a pointer
+
+            m_currentSPOffset = numberOfRegisters * sizeof(uint64_t);
 
             m_argumentSet.m_argumentFrameSizeOnStack = (m_currentSPOffset + 15) & ~15;
-        } else {
-            m_argumentSet.m_argumentLocations.emplace_back(std::in_place_type_t<ARMIntegerLocation>(), m_integerArgumentSlot);
-            m_integerArgumentSlot++;
         }
+
     } else if(category == ValueCategory::Vector) {
         if(m_vectorArgumentSlot >= MaximumVectorArguments) {
             panic("fetching vector args from stack is not implemented yet\n");
@@ -163,6 +204,10 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
         *ffi = &ffi_type_uint16;
         return ValueCategory::Integer;
 
+    } else if(typeCategory == IL2CPP_TYPE_CHAR) {
+        *ffi = &ffi_type_uint16;
+        return ValueCategory::Integer;
+
     } else if(typeCategory == IL2CPP_TYPE_U4) {
         *ffi = &ffi_type_uint32;
         return ValueCategory::Integer;
@@ -190,20 +235,18 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
         *ffi = &ffi_type_uint64;
         return ValueCategory::Integer;
     } else if(typeCategory == IL2CPP_TYPE_VALUETYPE) {
+
         auto typeClass = il2cpp_type_get_class_or_element_class(type);
-        uint32_t valueAlign;
-        auto valueSize = il2cpp_class_value_size(typeClass, &valueAlign);
+        *ffi = m_structureSynthesizer.createFFITypeForValueType(typeClass);
 
-        if(valueSize == 4 && valueAlign == 4) {
-            *ffi = &ffi_type_uint32;
-            return ValueCategory::Integer;
-        } else {
-
-            panic("value type passed by value; size: %u, align: %u\n", valueSize, valueAlign);
-        }
+        return ValueCategory::Integer;
 
     } else if(typeCategory == IL2CPP_TYPE_R4) {
         *ffi = &ffi_type_float;
+        return ValueCategory::Vector;
+
+    } else if(typeCategory == IL2CPP_TYPE_R8) {
+        *ffi = &ffi_type_double;
         return ValueCategory::Vector;
 
     } else {
