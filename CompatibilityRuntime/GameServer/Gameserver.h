@@ -10,6 +10,7 @@
 #include "ServiceImplementations/DataService.h"
 #include "ServiceImplementations/GamePlayService.h"
 #include "ServiceImplementations/QuestService.h"
+#include "ServiceImplementations/GimmickService.h"
 
 struct Gameserver {
 public:
@@ -26,6 +27,7 @@ private:
     DataService m_dataService;
     GamePlayService m_gamePlayService;
     QuestService m_questService;
+    GimmickService m_gimmickService;
     std::optional<RPCProcessingThread> m_rpcThread;
     std::unique_ptr<grpc::Server> m_server;
 };

@@ -190,7 +190,18 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
 
     printf("sorting out type: '%s', category: %d; pointer: %d, byref: %d\n", typeName, typeCategory, ptr, ref);
 
-    if(typeCategory == IL2CPP_TYPE_VOID) {
+    if(
+        ptr ||
+        ref ||
+        typeCategory == IL2CPP_TYPE_CLASS ||
+        typeCategory == IL2CPP_TYPE_STRING ||
+        typeCategory == IL2CPP_TYPE_SZARRAY ||
+        typeCategory == IL2CPP_TYPE_I || // intptr_t, technically not a pointer but it doesn't matter
+        typeCategory == IL2CPP_TYPE_OBJECT
+    ) {
+        *ffi = &ffi_type_pointer;
+        return ValueCategory::Integer;
+    } else if(typeCategory == IL2CPP_TYPE_VOID) {
         *ffi = &ffi_type_void;
         return ValueCategory::Void;
     } else if(typeCategory == IL2CPP_TYPE_BOOLEAN) {
@@ -212,17 +223,6 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
         *ffi = &ffi_type_uint32;
         return ValueCategory::Integer;
 
-    } else if(
-        ptr ||
-        ref ||
-        typeCategory == IL2CPP_TYPE_CLASS ||
-        typeCategory == IL2CPP_TYPE_STRING ||
-        typeCategory == IL2CPP_TYPE_SZARRAY ||
-        typeCategory == IL2CPP_TYPE_I || // intptr_t, technically not a pointer but it doesn't matter
-        typeCategory == IL2CPP_TYPE_OBJECT
-    ) {
-        *ffi = &ffi_type_pointer;
-        return ValueCategory::Integer;
     } else if(typeCategory == IL2CPP_TYPE_I4) {
         *ffi = &ffi_type_sint32;
         return ValueCategory::Integer;

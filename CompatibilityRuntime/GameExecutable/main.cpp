@@ -382,6 +382,12 @@ static bool Framework_Network_Download_AssetDownloader_IsStorageEnough(Il2CppObj
     return true;
 }
 
+static bool RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform(void *original) {
+    printf("RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitializePlatform\n");
+
+    return false;
+}
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -466,6 +472,8 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
 
+    translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
+                            RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
     InitializeInput();
 
 /*

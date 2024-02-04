@@ -16,6 +16,7 @@ add_library(GameServer SHARED
     service/GachaService.proto
     service/GamePlayService.proto
     service/GiftService.proto
+    service/GimmickService.proto
     service/MissionService.proto
     service/QuestService.proto
     service/UserService.proto
@@ -25,6 +26,9 @@ add_library(GameServer SHARED
 
     ServiceImplementations/GamePlayService.cpp
     ServiceImplementations/GamePlayService.h
+
+    ServiceImplementations/GimmickService.cpp
+    ServiceImplementations/GimmickService.h
 
     ServiceImplementations/QuestService.cpp
     ServiceImplementations/QuestService.h
