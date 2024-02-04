@@ -4,8 +4,12 @@
 
 #include <cstring>
 #include <system_error>
+#include <algorithm>
 
 thread_local std::unique_ptr<JITThreadContext> JITThreadContext::m_jitThread;
+
+std::mutex JITThreadContext::ThreadContextRegistration::m_contextListMutex;
+std::vector<JITThreadContext *> JITThreadContext::ThreadContextRegistration::m_contextList;
 
 JITThreadContext::JITThreadContext() : sp(0), pc(0), fpcr(0), fpsr(0), pstate(UINT32_C(0x80000000)), stoppedWorld(false) {
     memset(&gprs, 0xBA, sizeof(gprs));
@@ -19,9 +23,13 @@ JITThreadContext::JITThreadContext() : sp(0), pc(0), fpcr(0), fpsr(0), pstate(UI
 
     tpidr_el0 = reinterpret_cast<uint64_t>(&fakeTLS);
     memset(&fakeTLS, 0, sizeof(fakeTLS));
+
+    m_registration.emplace(this);
 }
 
 JITThreadContext::~JITThreadContext() {
+    m_registration.reset();
+
     munmap(m_threadStack, ThreadStackSize);
 }
 
@@ -68,4 +76,31 @@ uint64_t JITThreadContext::pop() {
 
     return value;
 }
+
+void JITThreadContext::collectThreadStack(GarbageCollectorThreadVisitor *visitor) {
+    auto stackBottom = reinterpret_cast<void *>(sp);
+    auto stackTop = reinterpret_cast<char *>(m_threadStack) + ThreadStackSize;
+
+    visitor->visit(stackBottom, stackTop, gprs);
+}
+
+JITThreadContext::ThreadContextRegistration::ThreadContextRegistration(JITThreadContext *registeredContext) : m_registeredContext(registeredContext) {
+    std::unique_lock<std::mutex> locker(m_contextListMutex);
+    m_contextList.emplace_back(m_registeredContext);
+}
+
+JITThreadContext::ThreadContextRegistration::~ThreadContextRegistration() {
+    std::unique_lock<std::mutex> locker(m_contextListMutex);
+    m_contextList.erase(std::remove(m_contextList.begin(), m_contextList.end(), m_registeredContext), m_contextList.end());
+}
+
+void JITThreadContext::ThreadContextRegistration::collectThreadStacks(GarbageCollectorThreadVisitor *visitor) {
+    std::unique_lock<std::mutex> locker(m_contextListMutex);
+
+    for(auto context: m_contextList) {
+        context->collectThreadStack(visitor);
+    }
+}
+
+
 

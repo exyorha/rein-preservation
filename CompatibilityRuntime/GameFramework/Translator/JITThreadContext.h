@@ -4,8 +4,24 @@
 #include <memory>
 #include <cstdint>
 #include <array>
+#include <mutex>
 
 #include <dynarmic/interface/A64/a64.h>
+
+class GarbageCollectorThreadVisitor {
+protected:
+    GarbageCollectorThreadVisitor() = default;
+    ~GarbageCollectorThreadVisitor() = default;
+
+    GarbageCollectorThreadVisitor(const GarbageCollectorThreadVisitor &other) = default;
+    GarbageCollectorThreadVisitor &operator =(const GarbageCollectorThreadVisitor &other) = default;
+
+    GarbageCollectorThreadVisitor(GarbageCollectorThreadVisitor &&other) noexcept = default;
+    GarbageCollectorThreadVisitor &operator =(GarbageCollectorThreadVisitor &&other) noexcept = default;
+
+public:
+    virtual void visit(void *stackBottom, void *stackTop, std::array<std::uint64_t, 31> &gprs) = 0;
+};
 
 class JITThreadContext {
 public:
@@ -65,11 +81,35 @@ public:
 
     bool stoppedWorld;
 
+    static inline void collectThreadStacks(GarbageCollectorThreadVisitor *visitor) {
+        ThreadContextRegistration::collectThreadStacks(visitor);
+    }
+
+    void collectThreadStack(GarbageCollectorThreadVisitor *visitor);
+
 private:
     static constexpr size_t ThreadStackSize = 512 * 1024;
 
+    class ThreadContextRegistration {
+    public:
+        explicit ThreadContextRegistration(JITThreadContext *registeredContext);
+        ~ThreadContextRegistration();
+
+        ThreadContextRegistration(const ThreadContextRegistration &other) = delete;
+        ThreadContextRegistration &operator =(const ThreadContextRegistration &other) = delete;
+
+        static void collectThreadStacks(GarbageCollectorThreadVisitor *visitor);
+
+    private:
+        JITThreadContext *m_registeredContext;
+
+        static std::mutex m_contextListMutex;
+        static std::vector<JITThreadContext *> m_contextList;
+    };
+
     static thread_local std::unique_ptr<JITThreadContext> m_jitThread;
     void *m_threadStack;
+    std::optional<ThreadContextRegistration> m_registration;
 };
 
 #endif
