@@ -54,7 +54,6 @@ public:
     template<typename T>
     void captureFromMachineContext(void *dest, T &context) const {
         if(m_type != &ffi_type_void) {
-            printf("capture from %p to %p\n", getPointer(context), dest);
             memcpy(dest, getPointer(context), m_type->size);
         }
     }

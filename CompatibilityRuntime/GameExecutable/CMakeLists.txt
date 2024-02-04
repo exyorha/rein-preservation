@@ -7,6 +7,9 @@ add_executable(GameExecutable
     Il2CppUtilities.cpp
     Il2CppUtilities.h
 
+    Input.cpp
+    Input.h
+
     Java/AdjustSdkAdjust.cpp
     Java/AdjustSdkAdjust.h
     Java/AndroidUtilLog.cpp

@@ -291,9 +291,6 @@ void JIT::CallSVC(std::uint32_t swi) {
 }
 
 void JIT::ExceptionRaised(Dynarmic::A64::VAddr pc, Dynarmic::A64::Exception exception) {
-
-    printf("ARM exception %d raised at PC 0x%" PRIx64 "\n", exception, pc);
-
     m_exitingOnException.emplace(exception);
     m_pcAtFault.emplace(pc);
     m_dynarmic->HaltExecution(Dynarmic::HaltReason::UserDefined2);

@@ -65,7 +65,7 @@ File.open(ARGV[1], "wb") do |outf|
             line.strip!
 
 
-            if line =~ /DO_API(_NO_RETURN)?\((.+?),\s*(.+?),\s*\((.*)\)\)/
+            if line =~ /DO_API(_NO_RETURN)?\((.+?),\s*(.+?)\s*,\s*\((.*)\)\)/
 
                 func = $3
 

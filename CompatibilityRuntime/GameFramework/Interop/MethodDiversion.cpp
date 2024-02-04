@@ -103,7 +103,6 @@ void MethodDiversion::continueCall(ffi_cif *cif, void *ret, void **args, void *u
     auto this_ = static_cast<MethodDiversion *>(userData);
 
     {
-        printf("return value needs to be put at %p\n", ret);
         InteropCallFrame callFrame(
             this_->m_arguments,
             this_->m_result,

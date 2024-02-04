@@ -22,6 +22,7 @@
 #include "FastAES.h"
 #include "OctoContentStorage.h"
 #include "Octo.h"
+#include "Input.h"
 
 struct PatchSite {
     uintptr_t patchVA;
@@ -464,6 +465,8 @@ static void postInitialize() {
 
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
+
+    InitializeInput();
 
 /*
  * Downsizes the gRPC thread pool
