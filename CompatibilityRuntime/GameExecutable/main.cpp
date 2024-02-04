@@ -24,6 +24,8 @@
 #include "Octo.h"
 #include "Input.h"
 
+#include <SDL2/SDL_video.h>
+
 struct PatchSite {
     uintptr_t patchVA;
     const unsigned char *patchContents;
@@ -595,4 +597,27 @@ int main(int argc, char **argv) {
     translator_set_grpc_redirection_callback(grpcRedirection);
 
     return translator_main(argc, argv, gameMain);
+}
+
+int SDLCALL SDL_GL_SetAttribute(SDL_GLattr attr, int value) {
+    typedef int (*SDLCALL Real)(SDL_GLattr attr, int value);
+
+    static Real SDL_GL_SetAttributeReal = nullptr;
+
+    if(!SDL_GL_SetAttributeReal) {
+        SDL_GL_SetAttributeReal = (Real)dlsym(RTLD_NEXT, "SDL_GL_SetAttribute");
+        if(!SDL_GL_SetAttributeReal) {
+            fprintf(stderr, "Unable to locate the real SDL_GL_SetAttribute\n");
+            abort();
+        }
+    }
+
+    printf("!!! SDL_GL_SetAttribute: %d, %d\n", attr, value);
+
+    if(attr == SDL_GL_CONTEXT_PROFILE_MASK) {
+        printf("Setting SDL_GL_CONTEXT_PROFILE_MASK, adding an SRGB setting\n");
+        SDL_GL_SetAttributeReal(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+    }
+
+    return SDL_GL_SetAttributeReal(attr, value);
 }

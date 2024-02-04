@@ -62,7 +62,7 @@ set_target_properties(GameExecutable PROPERTIES
 )
 
 if(UNIX)
-    target_link_options(GameExecutable PRIVATE -Wl,-z,now)
+    target_link_options(GameExecutable PRIVATE -Wl,-z,now,--export-dynamic-symbol=SDL_GL_SetAttribute)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)
