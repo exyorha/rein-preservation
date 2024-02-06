@@ -29,6 +29,7 @@ JIT::JIT() :
     config.recompile_on_fastmem_failure = false;
     config.global_monitor = &m_exclusiveMonitor;
     config.tpidr_el0 = &m_currentTPIDR_EL0;
+    config.code_cache_size = 256 * 1024 * 1024;
     if(debugging)
         config.check_halt_on_memory_access = true;
 

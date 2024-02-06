@@ -1,9 +1,32 @@
+#include "il2cpp-api-types.h"
 #include <il2cpp-api.h>
 #include <il2cpp-tabledefs.h>
 #include <translator_api.h>
 
 #include <cstdio>
 #include <cstdlib>
+
+static void dumpCustomAttributes(Il2CppArray *array) {
+    auto count = il2cpp_array_length(array);
+    Il2CppObject **elements = reinterpret_cast<Il2CppObject **>(reinterpret_cast<unsigned char *>(array) + il2cpp_array_object_header_size());
+
+    for(auto index = 0; index < count; index++) {
+        auto element = elements[index];
+        auto elementClass = il2cpp_object_get_class(element);
+
+        auto namespaceName = il2cpp_class_get_namespace(elementClass);
+        auto className = il2cpp_class_get_name(elementClass);
+
+        printf("      attribute %s.%s\n", namespaceName, className);
+    }
+}
+
+static void dumpCustomAttributes(Il2CppCustomAttrInfo *attrInfo) {
+    auto attrArray = il2cpp_custom_attrs_construct(attrInfo);
+    il2cpp_custom_attrs_free(attrInfo);
+
+    dumpCustomAttributes(attrArray);
+}
 
 int tool_main(int argc, char *argv[]) {
     il2cpp_set_data_dir("graft/NieR_Data/il2cpp_data");
@@ -40,7 +63,29 @@ int tool_main(int argc, char *argv[]) {
             bool classHeading = false;
 
             printf("  class no. %zu: %s#%s\n", classIndex, namespaceName, className);
+
+            dumpCustomAttributes(il2cpp_custom_attrs_from_class(classDesc));
+
             void *iter = nullptr;
+            FieldInfo *field;
+            while((field = il2cpp_class_get_fields(classDesc, &iter)) != nullptr) {
+                auto name = il2cpp_field_get_name(field);
+
+                uint32_t flags = il2cpp_field_get_flags(field);
+                auto offset = il2cpp_field_get_offset(field);
+                auto fieldType = il2cpp_field_get_type(field);
+                auto fieldTypeName = il2cpp_type_get_name(fieldType);
+
+                printf("    field: '%s', flags: 0x%08X, at %zu, '%s'\n", name, flags, offset, fieldTypeName);
+            }
+
+            iter = nullptr;
+            const PropertyInfo *property;
+            while((property = il2cpp_class_get_properties(classDesc, &iter)) != nullptr) {
+
+            }
+
+            iter = nullptr;
             const MethodInfo *method;
             while((method = il2cpp_class_get_methods(classDesc, &iter)) != nullptr) {
                 auto name = il2cpp_method_get_name(method);
@@ -59,6 +104,8 @@ int tool_main(int argc, char *argv[]) {
                // }
 
                 printf("    method: '%s', flags: 0x%08X, iflags: 0x%08X\n", name, flags, iflags);
+
+                dumpCustomAttributes(il2cpp_custom_attrs_from_method(method));
 
                 auto returnType = il2cpp_method_get_return_type(method);
                 auto returnTypeCategory = il2cpp_type_get_type(returnType);

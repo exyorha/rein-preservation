@@ -1,3 +1,6 @@
 [submodule "fakeassembly/dynarmic"]
 	path = CompatibilityRuntime/thirdparty/dynarmic
 	url = https://github.com/exyorha/dynarmic.git
+[submodule "CompatibilityRuntime/thirdparty/msgpack-c"]
+	path = CompatibilityRuntime/thirdparty/msgpack-c
+	url = https://github.com/msgpack/msgpack-c.git
