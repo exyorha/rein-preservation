@@ -141,8 +141,8 @@ class OctoAssetDownloader
         if File.exist? local_path
             result, actual_md5 = validate_asset(local_path, descriptor)
 
-            if not validate_asset(local_path, descriptor)
-                File.rename local_path, "#{local_path}.old.#{md5}"
+            if not result
+                File.rename local_path, "#{local_path}.old.#{actual_md5}"
             end
         end
 
@@ -182,11 +182,15 @@ class OctoAssetDownloader
                     if running_size != descriptor.size || md5 != descriptor.md5
                         raise "Calculated integrity parameters didn't match the descriptor: #{descriptor.inspect}; size received: #{running_size}, MD5 received: #{md5}"
                     end
-
-                    File.rename "#{local_path}.part", local_path
                 end
 
             end
+
+            time = Time.at(descriptor.generation / 1.0e6)
+
+            File.rename "#{local_path}.part", local_path
+
+            File.lutime time, time, local_path
         end
 
         return local_path
@@ -261,11 +265,9 @@ downloader.uri_format = database.urlFormat
 database.assetBundleList.each_with_index do |asset, index|
 #    next if index < first_index
 
-    puts "asset bundle #{index}: #{(index * 100.0 / database.assetBundleList.size).round(2)}% processed"
     path = downloader.acquire_file asset, 'assetbundle'
 end
 
 database.resourceList.each_with_index do |asset, index|
-    puts "resource file #{index}: #{(index * 100.0 / database.resourceList.size).round(2)}% processed"
     path = downloader.acquire_file asset, 'resources'
 end
