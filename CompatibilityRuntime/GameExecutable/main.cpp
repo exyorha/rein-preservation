@@ -519,7 +519,7 @@ static int gameMain(int argc, char **argv) {
     OctoContentStorage storage("/home/reki/rein/content");
     contentStorageInstance = &storage;
 
-    auto gameserver = makeGameServer();
+    auto gameserver = makeGameServer("individual.db", storage.masterDatabase().c_str());
 
     if(!gameserver) {
         fprintf(stderr, "failed to initialize the built-in game server\n");
@@ -528,7 +528,7 @@ static int gameMain(int argc, char **argv) {
 
     gameserverInstance = gameserver.get();
 
-    int result = PlayerMain(argc, argv);
+    int result = 0;//PlayerMain(argc, argv);
 
     contentStorageInstance = nullptr;
     gameserverInstance = nullptr;

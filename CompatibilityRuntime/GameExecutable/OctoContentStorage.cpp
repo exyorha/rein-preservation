@@ -1,5 +1,6 @@
 #include "OctoContentStorage.h"
 
+#include <filesystem>
 #include <optional>
 #include <fstream>
 
@@ -28,6 +29,35 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
     if(!latestVersion) {
         throw std::runtime_error("a suitable content list was not found in the content directory");
     }
+
+    std::optional<int64_t> latestMasterDatabaseVersion;
+    std::filesystem::path latestMasterDatabaseFile;
+
+    for(const auto &listEntry : std::filesystem::recursive_directory_iterator(root / "database")) {
+        if(!listEntry.is_regular_file())
+            continue;
+
+        const auto &path = listEntry.path();
+        if(path.filename() != "database.bin.e")
+            continue;
+
+        auto version = path.parent_path().filename().string();
+        int64_t versionNumber;
+
+        auto result = std::from_chars(version.data(), version.data() + version.size(), versionNumber);
+        if(result.ec != std::errc() || result.ptr != version.data() + version.size())
+            throw std::runtime_error("non-numeric master database version");
+
+        if(!latestMasterDatabaseVersion || *latestMasterDatabaseVersion < versionNumber) {
+            latestMasterDatabaseVersion = versionNumber;
+            latestMasterDatabaseFile = path;
+        }
+    }
+
+    if(!latestMasterDatabaseVersion)
+        throw std::runtime_error("did not find a suitable master database file");
+
+    m_masterDatabase = latestMasterDatabaseFile;
 
     {
         std::ifstream stream;

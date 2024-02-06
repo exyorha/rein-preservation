@@ -51,6 +51,7 @@ function(master_database_ext_create_target target type)
         VISIBILITY_INLINES_HIDDEN TRUE
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED TRUE
+        POSITION_INDEPENDENT_CODE TRUE
     )
 
 

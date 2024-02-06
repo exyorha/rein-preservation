@@ -4,10 +4,10 @@
 
 #include "Gameserver.h"
 
-Gameserver *gameserver_create(void) {
+Gameserver *gameserver_create(const char *individualDatabasePath, const char *masterDatabasePath) {
     try {
 
-        return new Gameserver();
+        return new Gameserver(individualDatabasePath, masterDatabasePath);
 
     } catch(const std::exception &e) {
         fprintf(stderr, "gameserver_create: failed to initialize a game server: %s\n", e.what());

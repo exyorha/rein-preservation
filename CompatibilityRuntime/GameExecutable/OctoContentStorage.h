@@ -22,6 +22,10 @@ public:
         const std::optional<std::string_view> &md5Sum = {},
         const std::optional<size_t> fileSize = {}) const;
 
+    inline const std::filesystem::path &masterDatabase() const {
+        return m_masterDatabase;
+    }
+
 private:
     struct RegisteredFile {
         const Octo::Proto::Data *entry;
@@ -29,6 +33,7 @@ private:
     };
 
     std::filesystem::path m_root;
+    std::filesystem::path m_masterDatabase;
     Octo::Proto::Database m_database;
     std::unordered_map<std::string, RegisteredFile> m_files;
 };

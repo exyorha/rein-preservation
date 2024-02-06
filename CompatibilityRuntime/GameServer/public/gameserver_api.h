@@ -9,7 +9,7 @@ struct Gameserver;
 extern "C" {
 #endif
 
-GAMESERVER_EXPORT Gameserver *gameserver_create(void);
+GAMESERVER_EXPORT Gameserver *gameserver_create(const char *individualDatabasePath, const char *masterDatabasePath);
 GAMESERVER_EXPORT void gameserver_destroy(Gameserver *gameserver);
 GAMESERVER_EXPORT void *gameserver_open_in_process_api_channel(Gameserver *gameserver, const void *args);
 
@@ -28,8 +28,9 @@ struct GameserverDeleter {
 };
 using GameserverPtr = std::unique_ptr<Gameserver, GameserverDeleter>;
 
-static inline GameserverPtr makeGameServer() {
-    return GameserverPtr(gameserver_create());
+template<typename... Args>
+static inline GameserverPtr makeGameServer(Args... args) {
+    return GameserverPtr(gameserver_create(args...));
 }
 #endif
 

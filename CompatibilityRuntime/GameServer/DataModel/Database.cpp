@@ -1,0 +1,167 @@
+#include "Database.h"
+
+#include <master_database_ext.h>
+
+#include <DataModel/Sqlite/Error.h>
+#include <DataModel/Sqlite/Statement.h>
+#include <DataModel/Sqlite/Transaction.h>
+#include <DataModel/Sqlite/Backup.h>
+
+#include <optional>
+
+const char* const Database::m_setupQueries[]{
+    "PRAGMA journal_mode = WAL",
+    "PRAGMA foreign_keys = ON",
+    "CREATE TABLE IF NOT EXISTS schema_version (id INTEGER NOT NULL PRIMARY KEY, version INTEGER NOT NULL)",
+    "INSERT OR IGNORE INTO schema_version (id, version) VALUES (1, 0)"
+};
+
+Database::Database(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
+    m_db(individualDatabasePath) {
+
+    printf("GameServer: initializing database: individual database: '%s', master database: '%s'\n", individualDatabasePath.c_str(),
+           masterDatabasePath.c_str());
+
+    struct ErrorHolder {
+        char *error = nullptr;
+
+        ~ErrorHolder() {
+            sqlite3_free(error);
+        }
+    } error;
+    auto ret = sqlite3_masterdatabaseext_init(m_db.handle(), &error.error, nullptr);
+    if(ret != SQLITE_OK) {
+        if(error.error) {
+            throw std::runtime_error("Failed to initialize the master database extension: " + std::string(error.error));
+        } else {
+            throw std::runtime_error("Failed to initialize the master database extension: " + std::to_string(ret));
+        }
+    }
+
+    {
+        auto statement = m_db.prepare("UPDATE masterdatabase_ctrl SET database_filename = ?");
+        statement->bind(1, masterDatabasePath.string());
+        statement->step();
+        statement->reset();
+    }
+
+    for (auto query : m_setupQueries) {
+        auto statement = m_db.prepare(query);
+        while (statement->step());
+    }
+
+    auto restoredFromBackup = restoreDatabaseBackup();
+
+    auto schemaQuery = m_db.prepare("SELECT version FROM schema_version WHERE id = 1");
+    int currentVersion = 0;
+    if (schemaQuery->step()) {
+        currentVersion = schemaQuery->columnInt(0);
+    }
+    schemaQuery.reset();
+
+    if (currentVersion < m_currentSchemaVersion) {
+        printf("Database requires schema update from %d to %d\n", currentVersion, m_currentSchemaVersion);
+
+        if (!restoredFromBackup)
+            createDatabaseBackup();
+
+        auto updateSchema = m_db.prepare("UPDATE schema_version SET version = ? WHERE id = 1");
+
+        while (currentVersion != m_currentSchemaVersion) {
+            const DatabaseMigration* migration = nullptr;
+
+            for(auto thisMigration = m_migrations; thisMigration->sql; thisMigration++) {
+                if (thisMigration->fromVersion == currentVersion && thisMigration->toVersion > thisMigration->fromVersion) {
+                    migration = thisMigration;
+                    break;
+                }
+            }
+
+            if (!migration)
+                throw std::logic_error("migration not found");
+
+            printf("Migrating database from schema revision %d to %d\n", migration->fromVersion, migration->toVersion);
+
+            sqlite::Transaction transaction(&m_db);
+
+            const char* query = migration->sql;
+            while (*query) {
+                auto statement = m_db.prepare(query, 0, &query);
+                if (statement)
+                    while (statement->step());
+            }
+
+            updateSchema->reset();
+            updateSchema->bind(1, migration->toVersion);
+            updateSchema->step();
+
+            transaction.commit();
+
+            currentVersion = migration->toVersion;
+        }
+
+        printf("Finished with migrations, removing backup\n");
+
+        removeDatabase(backupDatabasePath());
+
+    }
+    else if (currentVersion > m_currentSchemaVersion) {
+        fprintf(stderr, "Database is newer than expected: expected version %d, current version %d\n", m_currentSchemaVersion, currentVersion);
+    }
+}
+
+Database::~Database() = default;
+
+void Database::createDatabaseBackup() {
+    printf("Creating backup\n");
+    std::optional<sqlite::Database> backupDestinationDatabase;
+    backupDestinationDatabase.emplace(backupDatabasePath());
+    {
+        sqlite::Backup backup(*backupDestinationDatabase, "main", m_db, "main");
+        backup.step();
+    }
+    backupDestinationDatabase.reset();
+    printf("Backup created\n");
+}
+
+bool Database::restoreDatabaseBackup() {
+    std::optional<sqlite::Database> backupSourceDatabase;
+
+    try {
+        backupSourceDatabase.emplace(backupDatabasePath(), SQLITE_OPEN_READONLY);
+    }
+    catch (const sqlite::Error& e) {
+        if (e.code() == SQLITE_CANTOPEN) {
+            return false;
+        } else {
+            throw;
+        }
+    }
+
+    printf("Restoring database from backup\n");
+    {
+        sqlite::Backup backup(m_db, "main", *backupSourceDatabase, "main");
+        backup.step();
+    }
+    backupSourceDatabase.reset();
+    printf("Restored successfully\n");
+    removeDatabase(backupDatabasePath());
+
+    return true;
+}
+
+std::filesystem::path Database::backupDatabasePath() const {
+    std::filesystem::path dbPath = m_db.filename("main");
+
+    dbPath.replace_extension(".backup");
+
+    return dbPath;
+}
+
+void Database::removeDatabase(const std::filesystem::path& path) {
+    std::remove(path.c_str());
+    std::remove((path.string() + "-journal").c_str());
+    std::remove((path.string() + "-wal").c_str());
+    std::remove((path.string() + "-shm").c_str());
+}
+

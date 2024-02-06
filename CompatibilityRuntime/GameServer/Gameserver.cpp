@@ -2,56 +2,16 @@
 
 #include <grpc/grpc.h>
 #include <grpcpp/server_builder.h>
-#include <grpcpp/support/interceptor.h>
 
-class APIEncryptionInterceptorFactory final : public grpc::experimental::ServerInterceptorFactoryInterface {
-public:
-    APIEncryptionInterceptorFactory();
-    ~APIEncryptionInterceptorFactory() override;
 
-    grpc::experimental::Interceptor* CreateServerInterceptor(grpc::experimental::ServerRpcInfo* info) override;
-};
-
-class APIEncryptionInterceptor final : public grpc::experimental::Interceptor {
-public:
-    APIEncryptionInterceptor();
-    ~APIEncryptionInterceptor() override;
-
-    void Intercept(grpc::experimental::InterceptorBatchMethods* methods) override;
-};
-
-APIEncryptionInterceptorFactory::APIEncryptionInterceptorFactory() = default;
-
-APIEncryptionInterceptorFactory::~APIEncryptionInterceptorFactory() = default;
-
-grpc::experimental::Interceptor* APIEncryptionInterceptorFactory::CreateServerInterceptor(grpc::experimental::ServerRpcInfo* info) {
-    printf("!!! Creating an encryption interceptor for the inbound call to %s\n", info->method());
-
-    return new APIEncryptionInterceptor();
-}
-
-APIEncryptionInterceptor::APIEncryptionInterceptor() = default;
-
-APIEncryptionInterceptor::~APIEncryptionInterceptor() = default;
-
-void APIEncryptionInterceptor::Intercept(grpc::experimental::InterceptorBatchMethods* methods) {
-    printf("Called to intercept!\n");
-
-    methods->Proceed();
-}
-
-Gameserver::Gameserver()  {
+Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
+    m_db(individualDatabasePath, masterDatabasePath) {
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
     grpcBuilder.RegisterService(&m_dataService);
     grpcBuilder.RegisterService(&m_gamePlayService);
     grpcBuilder.RegisterService(&m_questService);
     grpcBuilder.RegisterService(&m_gimmickService);
-
-    std::vector<std::unique_ptr<grpc::experimental::ServerInterceptorFactoryInterface>> interceptorCreators;
-    interceptorCreators.emplace_back(std::make_unique<APIEncryptionInterceptorFactory>());
-
-    grpcBuilder.experimental().SetInterceptorCreators(std::move(interceptorCreators));
 
     //m_rpcThread.emplace(grpcBuilder.AddCompletionQueue(true));
 

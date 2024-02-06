@@ -12,9 +12,11 @@
 #include "ServiceImplementations/QuestService.h"
 #include "ServiceImplementations/GimmickService.h"
 
+#include "DataModel/Database.h"
+
 struct Gameserver {
 public:
-    Gameserver();
+    Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath);
     ~Gameserver();
 
     Gameserver(const Gameserver &other) = delete;
@@ -23,6 +25,7 @@ public:
     grpc_channel *openInProcessChannel(const grpc_channel_args *args);
 
 private:
+    Database m_db;
     UserService m_userService;
     DataService m_dataService;
     GamePlayService m_gamePlayService;
