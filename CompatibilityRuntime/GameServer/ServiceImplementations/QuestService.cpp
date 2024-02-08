@@ -243,21 +243,24 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
 void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::FinishMainQuestRequest* request,
                                               ::apb::api::quest::FinishMainQuestResponse* response) {
 
-    if(!request->is_main_flow())
-        throw std::runtime_error("only main flow is supported right now");
-
-    if(request->is_annihilated())
-        throw std::runtime_error("annihilation flag is not implemented");
-
-    if(request->is_auto_orbit())
-        throw std::runtime_error("auto orbit flag is not implemented");
+    /*
+     * 'Quit' quest:
+     *   - quest_id: <quest ID>
+     *   - is retired: true
+     *   - story skip type: 1
+     *   nothing else is set
+     * 'Resume' quest from saved data (when there's some sort of conflict/inconsistency):
+     *   - quest_id: <quest ID>
+     *   - is retired: true
+     *   - story skip type: 1
+     */
 
     if(request->is_retired()) {
 
         auto updateQuest = db().prepare(R"SQL(
             UPDATE i_user_quest SET
                 quest_state_type = ?
-            WHERE user_id = ? AND quest_id = ?
+            WHERE user_id = ? AND quest_id = ? AND quest_state_type = 1
         )SQL");
         int64_t quest_state_type = 0; // is this always correct???
 
@@ -267,6 +270,16 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
         updateQuest->exec();
 
     } else {
+
+        if(!request->is_main_flow())
+            throw std::runtime_error("only main flow is supported right now");
+
+        if(request->is_annihilated())
+            throw std::runtime_error("annihilation flag is not implemented");
+
+        if(request->is_auto_orbit())
+            throw std::runtime_error("auto orbit flag is not implemented");
+
         int64_t quest_state_type = QuestStateType_MainFlowComplete; // is this always correct???
 
         auto updateQuest = db().prepare(R"SQL(
@@ -274,7 +287,7 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
                 quest_state_type = ?,
                 clear_count = clear_count + 1,
                 last_clear_datetime = current_net_timestamp()
-            WHERE user_id = ? AND quest_id = ?
+            WHERE user_id = ? AND quest_id = ? AND quest_state_type = 1
         )SQL");
 
         // TODO: daily clear management
@@ -283,12 +296,112 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
         updateQuest->bind(2, userId);
         updateQuest->bind(3, request->quest_id());
         updateQuest->exec();
+
+        setMainQuestFlowStatus(userId, QuestFlowType_MainFlow);
     }
 
     setMainQuestProgressStatus(userId, 0, 0, QuestFlowType_NoFlow);
-    setMainQuestFlowStatus(userId, QuestFlowType_MainFlow);
 
     // TODO: IUserMainQuestMainFlowStatus should be set to the 'next scene', possibly in the next quest
+
+    updateMainQuestProgress(userId);
+}
+
+void QuestService::updateMainQuestProgress(int64_t userId) {
+    /*
+     * Get the selected route, if any.
+     */
+
+    int64_t route = 0;
+
+    auto getCurrentRoute = db().prepare("SELECT current_main_quest_route_id FROM i_user_main_quest_main_flow_status WHERE user_id = ?");
+    getCurrentRoute->bind(1, userId);
+    if(getCurrentRoute->step())
+        route = getCurrentRoute->columnInt64(0);
+
+    printf("Current route: %ld\n", route);
+
+    if(route != 0) {
+        /*
+         * Get all quests of the route, in order.
+         * TODO: correct difficulty type???
+         */
+
+        auto allQuestsInOrder = db().prepare(R"SQL(
+            SELECT
+                m_main_quest_sequence.quest_id
+            FROM
+                m_main_quest_route,
+                m_main_quest_season ON m_main_quest_season.main_quest_season_id = m_main_quest_route.main_quest_season_id,
+                m_main_quest_chapter ON m_main_quest_chapter.main_quest_route_id = m_main_quest_route.main_quest_route_id,
+                m_main_quest_sequence_group ON m_main_quest_sequence_group.main_quest_sequence_group_id = m_main_quest_chapter.main_quest_sequence_group_id,
+                m_main_quest_sequence ON m_main_quest_sequence.main_quest_sequence_id = m_main_quest_sequence_group.main_quest_sequence_id
+            WHERE
+                m_main_quest_route.main_quest_route_id = ? AND
+                start_datetime < current_net_timestamp() AND
+                difficulty_type = 1
+            ORDER BY
+                m_main_quest_route.sort_order,
+                m_main_quest_chapter.sort_order,
+                m_main_quest_sequence.sort_order
+        )SQL");
+        allQuestsInOrder->bind(1, route);
+
+        int64_t foundIncompleteQuest = 0;
+
+        auto checkIfThisQuestComplete = db().prepare("SELECT quest_state_type FROM i_user_quest WHERE user_id = ? AND quest_id = ?");
+        checkIfThisQuestComplete->bind(1, userId);
+
+        while(allQuestsInOrder->step()) {
+            auto questId = allQuestsInOrder->columnInt64(0);
+
+            checkIfThisQuestComplete->bind(2, questId);
+            int32_t stateType = 0;
+
+            if(checkIfThisQuestComplete->step()) {
+                stateType = checkIfThisQuestComplete->columnInt(0);
+            }
+            checkIfThisQuestComplete->reset();
+
+            printf("route quest %ld has state_type %d\n", questId, stateType);
+
+            if(stateType < 2) {
+                /*
+                 * The quest is not complete.
+                 */
+                foundIncompleteQuest = questId;
+                break;
+            }
+        }
+
+        allQuestsInOrder->reset();
+
+        if(foundIncompleteQuest != 0) {
+            printf("setting the main quest flow to start from %ld\n", foundIncompleteQuest);
+
+            int64_t firstScene = 0 ;
+            auto getFirstScene = db().prepare("SELECT quest_scene_id FROM m_quest_scene WHERE quest_id = ? ORDER BY sort_order LIMIT 1");
+            getFirstScene->bind(1, foundIncompleteQuest);
+            if(getFirstScene->step())
+                firstScene = getFirstScene->columnInt64(0);
+
+            printf("first scene: %ld\n", firstScene);
+
+            if(firstScene != 0) {
+
+                /*
+                 * TODO: 'last quest scene' is probably 'end of route!'
+                 */
+
+                auto updateNextScene = db().prepare("UPDATE i_user_main_quest_main_flow_status SET current_quest_scene_id = ?, head_quest_scene_id = ? WHERE user_id = ?");
+                updateNextScene->bind(1, firstScene);
+                updateNextScene->bind(2, firstScene);
+                updateNextScene->bind(3, userId);
+                updateNextScene->exec();
+            }
+        }
+    }
+
 }
 
 ::grpc::Status QuestService::UpdateMainQuestSceneProgress(::grpc::ServerContext* context,

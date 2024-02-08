@@ -52,6 +52,8 @@ private:
     void UpdateMainQuestSceneProgressImpl(int64_t userId,
                                           const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
                                           ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response);
+
+    void updateMainQuestProgress(int64_t userId);
 };
 
 #endif
