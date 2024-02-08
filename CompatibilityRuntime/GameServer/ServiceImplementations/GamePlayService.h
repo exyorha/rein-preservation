@@ -3,9 +3,11 @@
 
 #include <service/GamePlayService.grpc.pb.h>
 
-class GamePlayService final : public apb::api::gameplay::GamePlayService::Service {
+#include <ServiceImplementations/CommonService.h>
+
+class GamePlayService final : public apb::api::gameplay::GamePlayService::Service, public CommonService {
 public:
-    GamePlayService();
+    explicit GamePlayService(Database &db);
     ~GamePlayService();
 
     GamePlayService(const GamePlayService &other) = delete;

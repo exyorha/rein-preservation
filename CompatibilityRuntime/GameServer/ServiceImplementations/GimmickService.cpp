@@ -2,7 +2,9 @@
 
 #include <cstdio>
 
-GimmickService::GimmickService() = default;
+GimmickService::GimmickService(Database &db) : CommonService(db) {
+
+}
 
 GimmickService::~GimmickService() = default;
 

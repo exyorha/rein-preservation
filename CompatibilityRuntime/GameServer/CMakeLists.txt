@@ -5,8 +5,20 @@ add_library(GameServer SHARED
 
     ${CMAKE_CURRENT_BINARY_DIR}/include/gameserver_export.h
 
+    DataModel/ChangesetCapturingScope.cpp
+    DataModel/ChangesetCapturingScope.h
+
+    DataModel/CurrentNETTimestampFunction.cpp
+    DataModel/CurrentNETTimestampFunction.h
+
     DataModel/Database.cpp
     DataModel/Database.h
+
+    DataModel/DatabaseJSONRepresentation.cpp
+    DataModel/DatabaseJSONRepresentation.h
+
+    DataModel/TableChangesetWriter.cpp
+    DataModel/TableChangesetWriter.h
 
     DataModel/Sqlite/AggregateFunction.h
 
@@ -31,6 +43,9 @@ add_library(GameServer SHARED
 
     DataModel/Sqlite/ScalarFunction.h
 
+    DataModel/Sqlite/Session.cpp
+    DataModel/Sqlite/Session.h
+
     DataModel/Sqlite/Statement.cpp
     DataModel/Sqlite/Statement.h
 
@@ -44,8 +59,9 @@ add_library(GameServer SHARED
 
     Gameserver.cpp
     Gameserver.h
-    RPCProcessingThread.cpp
-    RPCProcessingThread.h
+
+    JSONWriter.cpp
+    JSONWriter.h
 
     main.cpp
 
@@ -57,6 +73,9 @@ add_library(GameServer SHARED
     service/MissionService.proto
     service/QuestService.proto
     service/UserService.proto
+
+    ServiceImplementations/CommonService.cpp
+    ServiceImplementations/CommonService.h
 
     ServiceImplementations/DataService.cpp
     ServiceImplementations/DataService.h
@@ -94,7 +113,8 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE gRPC::grpc++ protobuf::libprotobuf SQLite::SQLite3 master_database_ext_static)
+target_link_libraries(GameServer PRIVATE gRPC::grpc++ protobuf::libprotobuf sqlite3 master_database_ext_static
+    PkgConfig::YAJL)
 
 if(UNIX)
     target_link_options(GameServer PRIVATE
@@ -114,9 +134,10 @@ file(GLOB migrations CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} migr
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp
-    COMMAND ${RUBY} compile_migrations.rb ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp ${migrations}
+    COMMAND ${RUBY} compile_migrations.rb ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp init.sql ${migrations}
     DEPENDS compile_migrations.rb
     DEPENDS ${migrations}
+    DEPENDS init.sql
     VERBATIM
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 

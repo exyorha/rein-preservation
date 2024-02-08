@@ -37,7 +37,8 @@ function(master_database_ext_create_target target type)
     endif()
 
     target_include_directories(${target} PUBLIC public ${CMAKE_CURRENT_BINARY_DIR}/${target}_include)
-    target_include_directories(${target} PRIVATE ${SQLite3_INCLUDE_DIRS})
+    target_include_directories(${target} PRIVATE $<TARGET_PROPERTY:sqlite3,INCLUDE_DIRECTORIES>)
+    target_compile_definitions(${target} PRIVATE $<TARGET_PROPERTY:sqlite3,COMPILE_DEFINITIONS>)
 
     if(UNIX AND ${type} STREQUAL "SHARED")
         target_link_options(${target} PRIVATE -Wl,-z,defs,-z,now)

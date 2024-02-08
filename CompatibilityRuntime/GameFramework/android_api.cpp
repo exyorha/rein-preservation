@@ -57,12 +57,11 @@ void emulated_cxa_finalize(void * d) {
 }
 
 int emulated_dladdr(const void *addr, android_Dl_info *info) {
-    printf("emulated_dladdr: %p, %p\n", addr, info);
     return 0;
 }
 
 int emulated_dlclose(void *handle) {
-    printf("emulated_dlcose: %p\n", handle);
+    printf("emulated_dlclose: %p\n", handle);
     return 0;
 }
 
@@ -89,8 +88,6 @@ int emulated_dl_iterate_phdr(int (*callback)(struct android_dl_phdr_info *info, 
     info.dlpi_name = "libil2cpp.so";
     info.dlpi_phdr = image.phdr();
     info.dlpi_phnum = image.phnum();
-
-    printf("emulated_dl_iterate_phdr(%p, %p)\n", callback, data);
 
     return callback(&info, sizeof(info), data);
 }

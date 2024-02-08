@@ -29,6 +29,12 @@ namespace sqlite {
         Error::raiseError(status, m_owningContext);
     }
 
+    void Statement::exec() {
+        while(step());
+
+        reset();
+    }
+
     void Statement::bind(int index, const std::vector<unsigned char> &data) {
         int status = sqlite3_bind_blob64(m_handle, index, &data[0], data.size(), SQLITE_TRANSIENT);
         if (status != SQLITE_OK)

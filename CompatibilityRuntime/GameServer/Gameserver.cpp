@@ -3,17 +3,21 @@
 #include <grpc/grpc.h>
 #include <grpcpp/server_builder.h>
 
-
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
-    m_db(individualDatabasePath, masterDatabasePath) {
+    m_db(individualDatabasePath, masterDatabasePath),
+    m_userService(m_db),
+    m_dataService(m_db),
+    m_gamePlayService(m_db),
+    m_questService(m_db),
+    m_gimmickService(m_db) {
+
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
     grpcBuilder.RegisterService(&m_dataService);
     grpcBuilder.RegisterService(&m_gamePlayService);
     grpcBuilder.RegisterService(&m_questService);
     grpcBuilder.RegisterService(&m_gimmickService);
-
-    //m_rpcThread.emplace(grpcBuilder.AddCompletionQueue(true));
+    grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
     grpcBuilder.AddListeningPort("127.0.0.1:8087", grpc::InsecureServerCredentials());
 

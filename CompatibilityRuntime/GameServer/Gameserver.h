@@ -4,8 +4,6 @@
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
 
-#include "RPCProcessingThread.h"
-
 #include "ServiceImplementations/UserService.h"
 #include "ServiceImplementations/DataService.h"
 #include "ServiceImplementations/GamePlayService.h"
@@ -31,7 +29,6 @@ private:
     GamePlayService m_gamePlayService;
     QuestService m_questService;
     GimmickService m_gimmickService;
-    std::optional<RPCProcessingThread> m_rpcThread;
     std::unique_ptr<grpc::Server> m_server;
 };
 

@@ -9,9 +9,6 @@ struct MD5Value {
 
 class OctoContentStorage;
 
-bool Octo_Caching_OctoAppCaching_IsInApp(Il2CppObject *this_, Il2CppString *string, uint64_t integer, MD5Value md5,
-                                         bool (*original)(Il2CppObject *this_, Il2CppString *string, uint64_t integer, MD5Value md5));
-
 int32_t Octo_Caching_OctoBaseCaching_IsCached(Il2CppObject *this_, Il2CppString *fileName, Il2CppString *md5, int64_t fileSize, void *original);
 
 Il2CppString *Octo_Caching_OctoBaseCaching_GetStorageFilePath(Il2CppObject *this_, Il2CppString *fileName, Il2CppString *md5,

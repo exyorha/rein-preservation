@@ -3,9 +3,11 @@
 
 #include <service/GimmickService.grpc.pb.h>
 
-class GimmickService final : public apb::api::gimmick::GimmickService::Service {
+#include <ServiceImplementations/CommonService.h>
+
+class GimmickService final : public apb::api::gimmick::GimmickService::Service, public CommonService {
 public:
-    GimmickService();
+    explicit GimmickService(Database &db);
     ~GimmickService();
 
     GimmickService(const GimmickService &other) = delete;

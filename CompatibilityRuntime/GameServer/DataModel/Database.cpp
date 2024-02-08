@@ -7,7 +7,10 @@
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Backup.h>
 
+#include <DataModel/CurrentNETTimestampFunction.h>
+
 #include <optional>
+#include <cstring>
 
 const char* const Database::m_setupQueries[]{
     "PRAGMA journal_mode = WAL",
@@ -45,10 +48,42 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
         statement->reset();
     }
 
-    for (auto query : m_setupQueries) {
-        auto statement = m_db.prepare(query);
-        while (statement->step());
+    m_db.createFunction(std::make_unique<CurrentNETTimestampFunction>());
+
+    sqlite3_trace_v2(m_db.handle(), SQLITE_TRACE_STMT, statementProfileCallback, this);
+
+    const char* query = m_initSQL;
+    while (*query) {
+        while(isspace(*query))
+            query++;
+
+        if(!*query)
+            break;
+
+        std::string_view view(query);
+        static const std::string_view runMigrationsQuery = "RUN MIGRATIONS;";
+
+        if(view.starts_with(runMigrationsQuery)) {
+            query += runMigrationsQuery.size();
+
+            runMigrations();
+        } else {
+            auto statement = m_db.prepare(query, 0, &query);
+            while (statement->step());
+        }
     }
+
+    auto path = masterDatabasePath.parent_path();
+    auto version = path.filename().string();
+    path = path.parent_path();
+    auto type = path.filename().string();
+
+    std::stringstream fullVersion;
+    fullVersion << type << "/" << version;
+    m_masterDatabaseVersion = fullVersion.str();
+}
+
+void Database::runMigrations() {
 
     auto restoredFromBackup = restoreDatabaseBackup();
 
@@ -111,6 +146,37 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
 }
 
 Database::~Database() = default;
+
+int Database::statementProfileCallback(unsigned int type, void *context, void *statementParam, void *sqlParam) {
+    if(type == SQLITE_TRACE_STMT) {
+        auto statement = static_cast<sqlite3_stmt *>(statementParam);
+        auto sql = static_cast<const char *>(sqlParam);
+
+        if(strncmp(sql, "--", 2) == 0) {
+            printf("SQL: %s\n", sql);
+        } else {
+            struct ManagedString {
+                char *ptr = nullptr;
+
+                ~ManagedString() {
+                    sqlite3_free(ptr);
+                }
+            } expandedSql;
+
+            expandedSql.ptr = sqlite3_expanded_sql(statement);
+            if(expandedSql.ptr) {
+
+                printf("SQL: %s\n", expandedSql.ptr);
+            } else {
+
+                printf("SQL: %s\n", sql);
+            }
+        }
+
+    }
+
+    return 0;
+}
 
 void Database::createDatabaseBackup() {
     printf("Creating backup\n");

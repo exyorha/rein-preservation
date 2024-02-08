@@ -79,7 +79,7 @@ namespace sqlite {
 
         // sqlite3 now owns collation
 
-        collation.release();
+        (void)collation.release();
     }
 
     int Database::callbackCollationCompare(void *handle, int string1Len, const void *string1, int string2Len, const void *string2) {

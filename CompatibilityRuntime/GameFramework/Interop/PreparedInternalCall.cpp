@@ -20,9 +20,11 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
     uint32_t iflags;
     auto flags = il2cpp_method_get_flags(methodDef, &iflags);
 
+#if 0
     printf("PreparedInternalCall: preparing a thunk to call %s; il2cpp method %p; flags 0x%08X, iflags 0x%08X\n",
           fullName.c_str(), methodDef,
            flags, iflags);
+#endif
 
     auto argumentCount = il2cpp_method_get_param_count(methodDef);
 
@@ -37,13 +39,16 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
     ARMArgumentPacker resultPacker(1);
 
     if(hasThis) {
+#if 0
         printf("the method is not static, getting the this pointer\n");
-
+#endif
         argumentPacker.packPointer();
 
     }
 
+#if 0
     printf("  %u arguments\n", argumentCount);
+#endif
     for(unsigned int argumentIndex = 0; argumentIndex < argumentCount; argumentIndex++) {
         argumentPacker.pack(il2cpp_method_get_param(methodDef, argumentIndex));
 

@@ -27,6 +27,7 @@ namespace sqlite {
         }
 
         bool step();
+        void exec();
 
         inline int bindParameterCount() const { return sqlite3_bind_parameter_count(m_handle); }
         inline int bindParameterIndex(const char *parameter) const { return sqlite3_bind_parameter_index(m_handle, parameter); }

@@ -3,9 +3,11 @@
 
 #include <service/QuestService.grpc.pb.h>
 
-class QuestService final : public apb::api::quest::QuestService::Service {
+#include <ServiceImplementations/CommonService.h>
+
+class QuestService final : public apb::api::quest::QuestService::Service, public CommonService {
 public:
-    QuestService();
+    explicit QuestService(Database &db);
     ~QuestService();
 
     QuestService(const QuestService &other) = delete;
@@ -18,10 +20,38 @@ public:
     ::grpc::Status StartMainQuest(::grpc::ServerContext* context,
                                   const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response) override;
 
-    ::grpc::Status FinishMainQuest(::grpc::ServerContext* context, const ::apb::api::quest::FinishMainQuestRequest* request, ::apb::api::quest::FinishMainQuestResponse* response) override;
+    ::grpc::Status FinishMainQuest(::grpc::ServerContext* context, const ::apb::api::quest::FinishMainQuestRequest* request,
+                                   ::apb::api::quest::FinishMainQuestResponse* response) override;
 
     ::grpc::Status UpdateMainQuestSceneProgress(::grpc::ServerContext* context, const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) override;
 
+private:
+
+    enum QuestStateType : int32_t {
+        QuestStateType_MainFlowInProgress = 1, // Verified
+        QuestStateType_MainFlowComplete = 2 // Verified
+    };
+
+    enum QuestFlowType : int32_t {
+        QuestFlowType_NoFlow = 0, // Verified
+        QuestFlowType_MainFlow = 1, // Verified
+    };
+
+    void setMainQuestProgressStatus(int64_t userId, int32_t currentQuestSceneId, int32_t headQuestSceneId, QuestFlowType currentQuestFlowType);
+    void setMainQuestFlowStatus(int64_t userId, QuestFlowType flowType);
+
+    void UpdateMainFlowSceneProgressImpl(int64_t userId,
+                                         const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
+                                         ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response);
+
+    void StartMainQuestImpl(int64_t userId, const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response);
+
+    void FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::FinishMainQuestRequest* request,
+                             ::apb::api::quest::FinishMainQuestResponse* response);
+
+    void UpdateMainQuestSceneProgressImpl(int64_t userId,
+                                          const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
+                                          ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response);
 };
 
 #endif

@@ -4371,13 +4371,13 @@ CREATE VIRTUAL TABLE m_webview_panel_mission_page USING masterdatabase (
 );
 
 CREATE TABLE i_user (
-  user_id bigint PRIMARY KEY NOT NULL,
-  player_id bigint,
-  os_type integer,
-  platform_type integer,
-  user_restriction_type integer,
-  register_datetime timestamp,
-  game_start_datetime timestamp,
+  user_id INTEGER PRIMARY KEY NOT NULL,
+  player_id bigint NOT NULL DEFAULT 1,
+  os_type integer NOT NULL DEFAULT 2,
+  platform_type integer NOT NULL DEFAULT 2,
+  user_restriction_type integer NOT NULL DEFAULT 1,
+  register_datetime timestamp NOT NULL,
+  game_start_datetime timestamp NOT NULL DEFAULT 28800000,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -4387,7 +4387,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_apple (
-  user_id bigint PRIMARY KEY NOT NULL,
+  user_id INTEGER PRIMARY KEY NOT NULL,
   apple_id text,
   latest_version bigint NOT NULL  DEFAULT 1
 );
@@ -4398,7 +4398,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_auto_sale_setting_detail (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   possession_auto_sale_item_type integer NOT NULL,
   possession_auto_sale_item_value text,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4413,7 +4413,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_beginner_campaign (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   beginner_campaign_id integer NOT NULL,
   campaign_register_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4427,7 +4427,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_big_hunt_max_score (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   big_hunt_boss_id integer NOT NULL,
   max_score bigint,
   max_score_update_datetime timestamp,
@@ -4442,7 +4442,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_big_hunt_progress_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_big_hunt_boss_quest_id integer,
   current_big_hunt_quest_id integer,
   current_quest_scene_id integer,
@@ -4457,7 +4457,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_big_hunt_schedule_max_score (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   big_hunt_schedule_id integer NOT NULL,
   big_hunt_boss_id integer,
   max_score bigint,
@@ -4474,7 +4474,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_big_hunt_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   big_hunt_boss_quest_id integer,
   daily_challenge_count integer,
   latest_challenge_datetime timestamp,
@@ -4488,7 +4488,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_big_hunt_weekly_max_score (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   big_hunt_weekly_version bigint NOT NULL,
   attribute_type integer,
   max_score bigint,
@@ -4504,7 +4504,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_big_hunt_weekly_status (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   big_hunt_weekly_version bigint NOT NULL,
   is_received_weekly_reward boolean,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4519,7 +4519,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_cage_ornament_reward (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   cage_ornament_id integer NOT NULL,
   acquisition_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4534,7 +4534,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
   level integer,
   exp integer,
@@ -4550,7 +4550,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_board (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_board_id integer NOT NULL,
   panel_release_bit1 integer,
   panel_release_bit2 integer,
@@ -4568,7 +4568,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_board_ability (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
   ability_id integer NOT NULL,
   level integer,
@@ -4584,7 +4584,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_board_complete_reward (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_board_complete_reward_id integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, character_board_complete_reward_id)
@@ -4598,7 +4598,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_board_status_up (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
   status_calculation_type integer,
   hp integer,
@@ -4619,7 +4619,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_costume_level_bonus (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
   status_calculation_type integer,
   hp integer,
@@ -4640,7 +4640,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_rebirth (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
   rebirth_count integer,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4655,7 +4655,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_character_viewer_field (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   character_viewer_field_id integer NOT NULL,
   release_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4670,7 +4670,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_comeback_campaign (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   comeback_campaign_id integer NOT NULL,
   comeback_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4685,7 +4685,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_companion (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_companion_uuid text NOT NULL PRIMARY KEY,
   companion_id integer,
   headup_display_view_id integer,
@@ -4702,7 +4702,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_consumable_item (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   consumable_item_id integer NOT NULL,
   count integer,
   first_acquisition_datetime timestamp,
@@ -4718,7 +4718,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_contents_story (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   contents_story_id integer NOT NULL,
   play_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4733,7 +4733,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   costume_id integer,
   limit_break_count integer,
@@ -4753,7 +4753,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_active_skill (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   level integer,
   acquisition_datetime timestamp,
@@ -4768,7 +4768,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_awaken_status_up (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   status_calculation_type integer,
   hp integer,
@@ -4788,7 +4788,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_level_bonus_release_status (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   costume_id integer NOT NULL,
   last_released_bonus_level integer,
   confirmed_bonus_level integer,
@@ -4804,7 +4804,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_lottery_effect (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   slot_number integer,
   odds_number integer,
@@ -4819,7 +4819,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_lottery_effect_ability (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   slot_number integer,
   ability_id integer,
@@ -4835,7 +4835,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_lottery_effect_pending (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   slot_number integer,
   odds_number integer,
@@ -4850,7 +4850,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_costume_lottery_effect_status_up (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_costume_uuid text NOT NULL PRIMARY KEY,
   status_calculation_type integer,
   hp integer,
@@ -4870,7 +4870,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   deck_type integer NOT NULL,
   user_deck_number integer NOT NULL,
   user_deck_character_uuid01 text,
@@ -4890,7 +4890,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck_character (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_deck_character_uuid text NOT NULL PRIMARY KEY,
   user_costume_uuid text,
   main_user_weapon_uuid text,
@@ -4908,7 +4908,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck_character_dressup_costume (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_deck_character_uuid text NOT NULL PRIMARY KEY,
   dressup_costume_id integer,
   latest_version bigint NOT NULL DEFAULT 1
@@ -4922,7 +4922,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck_limit_content_restricted (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   event_quest_chapter_id integer NOT NULL,
   quest_id integer NOT NULL,
   deck_restricted_uuid text,
@@ -4940,7 +4940,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck_parts_group (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_deck_character_uuid text NOT NULL,
   user_parts_uuid text NOT NULL,
   sort_order integer,
@@ -4956,7 +4956,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck_sub_weapon_group (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_deck_character_uuid text NOT NULL,
   user_weapon_uuid text NOT NULL,
   sort_order integer,
@@ -4972,7 +4972,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_deck_type_note (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   deck_type integer NOT NULL,
   max_deck_power integer,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4987,7 +4987,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_dokan (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   dokan_id integer NOT NULL,
   display_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5002,7 +5002,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_event_quest_daily_group_complete_reward (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   last_reward_receive_event_quest_daily_group_id integer,
   last_reward_receive_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1
@@ -5016,7 +5016,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_event_quest_guerrilla_free_open (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   start_datetime timestamp,
   open_minutes integer,
   daily_opened_count integer,
@@ -5031,7 +5031,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_event_quest_labyrinth_season (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   event_quest_chapter_id integer,
   last_join_season_number integer,
   last_season_reward_received_season_number integer,
@@ -5046,7 +5046,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_event_quest_labyrinth_stage (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   event_quest_chapter_id integer,
   stage_order integer,
   is_received_stage_clear_reward boolean,
@@ -5062,7 +5062,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_event_quest_progress_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_event_quest_chapter_id integer,
   current_quest_id integer,
   current_quest_scene_id integer,
@@ -5078,7 +5078,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_event_quest_tower_accumulation_reward (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   event_quest_chapter_id integer NOT NULL,
   latest_reward_receive_quest_mission_clear_count integer,
   latest_version bigin NOT NULL DEFAULT 1
@@ -5093,7 +5093,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_explore (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   is_use_explore_ticket boolean,
   playing_explore_id integer,
   latest_play_datetime timestamp,
@@ -5108,7 +5108,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_explore_score (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   explore_id integer NOT NULL,
   max_score integer,
   max_score_update_datetime timestamp,
@@ -5125,7 +5125,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_extra_quest_progress_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_quest_id integer,
   current_quest_scene_id integer,
   head_quest_scene_id integer,
@@ -5140,7 +5140,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_facebook (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   facebook_id bigint,
   latest_version bigint NOT NULL DEFAULT 1
 );
@@ -5153,13 +5153,13 @@ BEGIN
 END;
 
 CREATE TABLE i_user_gem (
-  user_id bigint NOT NULL PRIMARY KEY,
-  paid_gem integer,
-  free_gem integer
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  paid_gem integer NOT NULL DEFAULT 0,
+  free_gem integer NOT NULL DEFAULT 0
 );
 
 CREATE TABLE i_user_gimmick (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
   gimmick_id integer NOT NULL,
@@ -5179,7 +5179,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_gimmick_ornament_progress (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
   gimmick_id integer NOT NULL,
@@ -5200,7 +5200,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_gimmick_sequence (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
   is_gimmick_sequence_cleared boolean,
@@ -5219,7 +5219,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_gimmick_unlock (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
   gimmick_id integer NOT NULL,
@@ -5238,7 +5238,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_important_item (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   important_item_id integer NOT NULL,
   count integer,
   first_acquisition_datetime timestamp,
@@ -5256,7 +5256,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_limited_open (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   limited_open_target_type integer NOT NULL,
   target_id integer NOT NULL,
   open_datetime timestamp,
@@ -5275,12 +5275,12 @@ BEGIN
 END;
 
 CREATE TABLE i_user_login (
-  user_id bigint NOT NULL PRIMARY KEY,
-  total_login_count integer,
-  continual_login_count integer,
-  max_continual_login_count integer,
-  last_login_datetime timestamp,
-  last_comeback_login_datetime timestamp,
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  total_login_count integer NOT NULL DEFAULT 0,
+  continual_login_count integer NOT NULL DEFAULT 0,
+  max_continual_login_count integer NOT NULL DEFAULT 0,
+  last_login_datetime timestamp NOT NULL DEFAULT 28800000,
+  last_comeback_login_datetime timestamp NOT NULL DEFAULT 28800000,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5292,7 +5292,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_login_bonus (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   login_bonus_id integer NOT NULL,
   current_page_number integer,
   current_stamp_number integer,
@@ -5311,7 +5311,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_main_quest_flow_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_quest_flow_type integer,
   latest_version bigint NOT NULL DEFAULT 1
 );
@@ -5324,11 +5324,11 @@ BEGIN
 END;
 
 CREATE TABLE i_user_main_quest_main_flow_status (
-  user_id bigint NOT NULL PRIMARY KEY,
-  current_main_quest_route_id integer,
-  current_quest_scene_id integer,
-  head_quest_scene_id integer,
-  is_reached_last_quest_scene boolean,
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  current_main_quest_route_id integer NOT NULL DEFAULT 1,
+  current_quest_scene_id integer NOT NULL DEFAULT 0,
+  head_quest_scene_id integer NOT NULL DEFAULT 0,
+  is_reached_last_quest_scene boolean NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5340,7 +5340,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_main_quest_progress_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_quest_scene_id integer,
   head_quest_scene_id integer,
   current_quest_flow_type integer,
@@ -5355,7 +5355,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_main_quest_replay_flow_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_head_quest_scene_id integer,
   current_quest_scene_id integer,
   latest_version bigint NOT NULL DEFAULT 1
@@ -5369,7 +5369,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_main_quest_season_route (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   main_quest_season_id integer,
   main_quest_route_id integer,
   latest_version bigint NOT NULL DEFAULT 1
@@ -5383,7 +5383,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_material (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   material_id integer NOT NULL,
   count integer,
   first_acquisition_datetime timestamp,
@@ -5401,7 +5401,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_mission (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   mission_id integer NOT NULL,
   start_datetime timestamp,
   progress_value integer,
@@ -5421,7 +5421,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_mission_completion_progress (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   mission_id integer NOT NULL,
   progress_value bigint,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5438,7 +5438,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_mission_pass_point (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   mission_pass_id integer NOT NULL,
   point integer NOT NULL,
   premium_reward_received_level integer,
@@ -5457,7 +5457,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_movie (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   movie_id integer NOT NULL,
   latest_viewed_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5474,7 +5474,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_navi_cut_in (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   navi_cut_in_id integer NOT NULL,
   play_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5491,7 +5491,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_omikuji (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   omikuji_id integer NOT NULL,
   latest_draw_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1
@@ -5507,7 +5507,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_parts (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_parts_uuid text NOT NULL PRIMARY KEY,
   parts_id integer,
   level integer,
@@ -5527,7 +5527,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_parts_group_note (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   parts_group_id integer NOT NULL,
   first_acquisition_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5544,7 +5544,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_parts_preset (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_parts_preset_number integer NOT NULL,
   user_parts_uuid01 text,
   user_parts_uuid02 text,
@@ -5565,7 +5565,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_parts_preset_tag (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_parts_preset_tag_number integer NOT NULL,
   name text,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5582,7 +5582,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_parts_status_sub (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_parts_uuid text NOT NULL,
   status_index integer NOT NULL,
   parts_status_sub_lottery_id integer,
@@ -5604,7 +5604,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_portal_cage_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   is_current_progress boolean,
   drop_item_start_datetime timestamp,
   current_drop_item_count integer,
@@ -5619,7 +5619,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_possession_auto_convert (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   possession_type integer NOT NULL,
   possession_id integer NOT NULL,
   from_count integer,
@@ -5641,7 +5641,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_premium_item (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   premium_item_id integer NOT NULL,
   acquisition_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5658,13 +5658,13 @@ BEGIN
 END;
 
 CREATE TABLE i_user_profile (
-  user_id bigint NOT NULL PRIMARY KEY,
-  name text,
-  name_update_datetime timestamp,
-  message text,
-  message_update_datetime timestamp,
-  favorite_costume_id integer,
-  favorite_costume_id_update_datetime timestamp,
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  name text NOT NULL DEFAULT '',
+  name_update_datetime timestamp NOT NULL DEFAULT 28800000,
+  message text NOT NULL DEFAULT '',
+  message_update_datetime timestamp NOT NULL DEFAULT 28800000,
+  favorite_costume_id integer NOT NULL DEFAULT 0,
+  favorite_costume_id_update_datetime timestamp NOT NULL DEFAULT 28800000,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5675,8 +5675,26 @@ BEGIN
     WHERE i_user_profile.rowid = NEW.rowid;
 END;
 
+CREATE TRIGGER i_user_profile_update_name
+AFTER UPDATE OF name ON i_user_profile FOR EACH ROW
+BEGIN
+  UPDATE i_user_profile SET name_update_datetime = current_net_timestamp() WHERE rowid = NEW.rowid;
+END;
+
+CREATE TRIGGER i_user_profile_update_message
+AFTER UPDATE OF message ON i_user_profile FOR EACH ROW
+BEGIN
+  UPDATE i_user_profile SET message_update_datetime = current_net_timestamp() WHERE rowid = NEW.rowid;
+END;
+
+CREATE TRIGGER i_user_profile_update_favorite_costume
+AFTER UPDATE OF favorite_costume_id ON i_user_profile FOR EACH ROW
+BEGIN
+  UPDATE i_user_profile SET favorite_costume_id_update_datetime = current_net_timestamp() WHERE rowid = NEW.rowid;
+END;
+
 CREATE TABLE i_user_pvp_defense_deck (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   user_deck_number integer,
   latest_version bigint NOT NULL DEFAULT 1
 );
@@ -5689,7 +5707,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_pvp_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   stamina_milli_value integer,
   stamina_update_datetime timestamp,
   latest_reward_receive_pvp_season_id integer,
@@ -5707,7 +5725,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_pvp_weekly_result (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   pvp_weekly_version bigint NOT NULL,
   pvp_season_id integer,
   group_id integer,
@@ -5726,15 +5744,15 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   quest_id integer NOT NULL,
-  quest_state_type integer,
-  is_battle_only boolean,
-  latest_start_datetime timestamp,
-  clear_count integer,
-  daily_clear_count integer,
-  last_clear_datetime timestamp,
-  shortest_clear_frames integer,
+  quest_state_type integer NOT NULL DEFAULT 0,
+  is_battle_only boolean NOT NULL DEFAULT 0,
+  latest_start_datetime timestamp NOT NULL DEFAULT 28800000,
+  clear_count integer NOT NULL DEFAULT 0,
+  daily_clear_count integer NOT NULL DEFAULT 0,
+  last_clear_datetime timestamp NOT NULL DEFAULT 28800000,
+  shortest_clear_frames integer NOT NULL DEFAULT 2147483647,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, quest_id)
 );
@@ -5748,7 +5766,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest_auto_orbit (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   quest_type integer,
   chapter_id integer,
   quest_id integer,
@@ -5767,7 +5785,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest_limit_content_status (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   quest_id integer NOT NULL,
   limit_content_quest_status_type integer,
   event_quest_chapter_id integer,
@@ -5784,7 +5802,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest_mission (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   quest_id integer NOT NULL,
   quest_mission_id integer NOT NULL,
   progress_value integer,
@@ -5803,7 +5821,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest_replay_flow_reward_group (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   quest_replay_flow_reward_group_id integer NOT NULL,
   receive_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5819,7 +5837,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest_scene_choice (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   quest_scene_choice_grouping_id integer NOT NULL,
   quest_scene_choice_effect_id integer,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5835,7 +5853,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_quest_scene_choice_history (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   quest_scene_choice_effect_id integer NOT NULL,
   choice_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5851,8 +5869,8 @@ BEGIN
 END;
 
 CREATE TABLE i_user_setting (
-  user_id bigint NOT NULL PRIMARY KEY,
-  is_notify_purchase_alert boolean,
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  is_notify_purchase_alert boolean NOT NULL DEFAULT 1,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5864,7 +5882,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_shop_item (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   shop_item_id integer NOT NULL,
   bought_count integer,
   latest_bought_count_changed_datetime timestamp,
@@ -5882,7 +5900,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_shop_replaceable (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   lineup_update_count integer,
   latest_lineup_update_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1
@@ -5896,7 +5914,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_shop_replaceable_lineup (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   slot_number integer NOT NULL,
   shop_item_id integer,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -5912,7 +5930,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_side_story_quest (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   side_story_quest_id integer NOT NULL,
   head_side_story_quest_scene_id integer,
   side_story_quest_state_type integer,
@@ -5929,7 +5947,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_side_story_quest_scene_progress_status (
-  user_id bigint NOT NULL PRIMARY KEY,
+  user_id INTEGER NOT NULL PRIMARY KEY,
   current_side_story_quest_id integer,
   current_side_story_quest_scene_id integer,
   latest_version bigint NOT NULL DEFAULT 1
@@ -5943,11 +5961,11 @@ BEGIN
 END;
 
 CREATE TABLE i_user_status (
-  user_id bigint NOT NULL PRIMARY KEY,
-  level integer,
-  exp integer,
-  stamina_milli_value integer,
-  stamina_update_datetime timestamp,
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  level integer NOT NULL DEFAULT 1,
+  exp integer NOT NULL DEFAULT 0,
+  stamina_milli_value integer NOT NULL DEFAULT 50000,
+  stamina_update_datetime timestamp NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5958,8 +5976,20 @@ BEGIN
     WHERE i_user_status.rowid = NEW.rowid;
 END;
 
+CREATE TRIGGER i_user_status_update_stamina_datetime
+AFTER UPDATE OF stamina_milli_value ON i_user_status
+BEGIN
+  UPDATE i_user_status SET stamina_update_datetime = current_net_timestamp() WHERE rowid = NEW.rowid;
+END;
+
+CREATE TRIGGER i_user_status_initialize_stamina_datetime
+AFTER INSERT ON i_user_status FOR EACH ROW
+BEGIN
+  UPDATE i_user_status SET stamina_update_datetime = current_net_timestamp() WHERE rowid = NEW.rowid;
+END;
+
 CREATE TABLE i_user_thought (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_thought_uuid text NOT NULL PRIMARY KEY,
   thought_id integer,
   acquisition_datetime timestamp,
@@ -5975,7 +6005,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_triple_deck (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   deck_type integer NOT NULL,
   user_deck_number integer NOT NULL,
   name text,
@@ -5995,7 +6025,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_tutorial_progress (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   tutorial_type integer NOT NULL,
   progress_phase integer,
   choice_id integer,
@@ -6012,7 +6042,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_weapon (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_weapon_uuid text NOT NULL PRIMARY KEY,
   weapon_id integer,
   level integer,
@@ -6032,7 +6062,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_weapon_ability (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_weapon_uuid text NOT NULL,
   slot_number integer NOT NULL,
   level integer,
@@ -6049,7 +6079,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_weapon_awaken (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_weapon_uuid text NOT NULL PRIMARY KEY,
   latest_version bigint NOT NULL DEFAULT 1
 );
@@ -6063,7 +6093,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_weapon_note (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   weapon_id integer NOT NULL PRIMARY KEY,
   max_level integer,
   max_limit_break_count integer,
@@ -6080,7 +6110,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_weapon_skill (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   user_weapon_uuid text NOT NULL,
   slot_number integer NOT NULL,
   level integer,
@@ -6098,7 +6128,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_weapon_story (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   weapon_id integer NOT NULL PRIMARY KEY,
   released_max_story_index integer,
   latest_version bigint NOT NULL DEFAULT 1
@@ -6114,7 +6144,7 @@ BEGIN
 END;
 
 CREATE TABLE i_user_webview_panel_mission (
-  user_id bigint NOT NULL,
+  user_id INTEGER NOT NULL,
   webview_panel_mission_page_id integer NOT NULL,
   reward_receive_datetime timestamp,
   latest_version bigint NOT NULL DEFAULT 1

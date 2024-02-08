@@ -1,7 +1,18 @@
 require 'openssl'
 
-if ARGV.empty?
-    warn "Usage: compile_migrations <OUTPUT> [INPUT SQL FILES]..."
+def write_sql(outf, input_filename)
+    contents = File.binread(input_filename)
+
+    delim = ("SQL" + OpenSSL::Digest::MD5.hexdigest(contents)).slice(0, 16)
+
+    outf.write "R\"#{delim}("
+    outf.write contents
+    outf.write ")#{delim}\""
+end
+
+
+if ARGV.size < 2
+    warn "Usage: compile_migrations <OUTPUT> <INPUT SQL INIT FILE> [INPUT SQL MIGRATION FILES]..."
     exit 1
 end
 
@@ -9,6 +20,14 @@ output = ARGV.shift
 
 File.open(output, "wb") do |outf|
     outf.puts "#include <DataModel/Database.h>"
+
+    outf.write "const char *const Database::m_initSQL = "
+
+    init_file = ARGV.shift
+
+    write_sql outf, init_file
+
+    outf.puts ";"
 
     outf.puts "const Database::DatabaseMigration Database::m_migrations[] = {";
 
@@ -24,15 +43,11 @@ File.open(output, "wb") do |outf|
         from_version = Integer($1)
         to_version = Integer($2)
 
-        contents = File.binread(input_file)
+        outf.write "  { .fromVersion = #{from_version}, .toVersion = #{to_version}, .sql = "
 
-        delim = ("SQL" + OpenSSL::Digest::MD5.hexdigest(contents)).slice(0, 16)
+        write_sql outf, input_file
 
-        outf.write "  { .fromVersion = #{from_version}, .toVersion = #{to_version}, .sql = R\"#{delim}("
-
-        outf.write contents
-
-        outf.puts ")#{delim}\" },"
+        outf.puts " },"
 
         if to_version > highest_version
             highest_version = to_version

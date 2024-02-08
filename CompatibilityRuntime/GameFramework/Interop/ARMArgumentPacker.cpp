@@ -188,7 +188,9 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
     auto ptr = il2cpp_type_is_pointer_type(type);
     auto ref = il2cpp_type_is_byref(type);
 
+#if 0
     printf("sorting out type: '%s', category: %d; pointer: %d, byref: %d\n", typeName, typeCategory, ptr, ref);
+#endif
 
     if(
         ptr ||

@@ -7,7 +7,12 @@
 
 namespace sqlite {
     class ScalarFunction : public Function {
+    protected:
+        ScalarFunction() = default;
+
     public:
+        ~ScalarFunction() = default;
+
         virtual void evaluate(Context &context, const std::vector<Value> &arguments) = 0;
     };
 }

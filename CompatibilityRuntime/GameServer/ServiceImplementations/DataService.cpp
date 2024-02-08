@@ -1,6 +1,13 @@
 #include "DataService.h"
 
-DataService::DataService() = default;
+#include <DataModel/Sqlite/Statement.h>
+#include <DataModel/DatabaseJSONRepresentation.h>
+
+#include "JSONWriter.h"
+
+DataService::DataService(Database &db) : CommonService(db) {
+
+}
 
 DataService::~DataService() = default;
 
@@ -8,176 +15,125 @@ DataService::~DataService() = default;
                                                        const ::google::protobuf::Empty* request,
                                                        ::apb::api::data::MasterDataGetLatestVersionResponse* response) {
 
-    printf("DataService::GetLatestMasterDataVersion\n");
+    return inCall("DataService::GetLatestMasterDataVersion", context, request, response, &DataService::GetLatestMasterDataVersionImpl);
+}
 
-    response->set_latest_master_data_version("prd-us/20240130174048");
 
-    return grpc::Status::OK;
+void DataService::GetLatestMasterDataVersionImpl(const ::google::protobuf::Empty* request,
+                                                 ::apb::api::data::MasterDataGetLatestVersionResponse* response) {
+
+    response->set_latest_master_data_version(dataModel().masterDatabaseVersion());
 }
 
 ::grpc::Status DataService::GetUserDataName(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                               ::apb::api::data::UserDataGetNameResponse* response) {
+                                            ::apb::api::data::UserDataGetNameResponse* response) {
 
-    printf("DataService::GetUserDataName\n");
+    return inCall("DataService::GetUserDataName", context, request, response, &DataService::GetUserDataNameImpl);
+}
+
+void DataService::GetUserDataNameImpl(const ::google::protobuf::Empty* request, ::apb::api::data::UserDataGetNameResponse* response) {
+
+
 
     for(const auto &name: getUserDataName()) {
         response->add_table_name(name);
     }
-
-    for(const auto &name: getUserDataName2()) {
-        response->add_table_name(name);
-    }
-
-    return grpc::Status::OK;
 }
 
 
 ::grpc::Status DataService::GetUserDataNameV2(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                 ::apb::api::data::UserDataGetNameResponseV2* response) {
+                                              ::apb::api::data::UserDataGetNameResponseV2* response) {
 
-    printf("DataService::GetUserDataNameV2\n");
+    return inCall("DataService::GetUserDataNameV2", context, request, response, &DataService::GetUserDataNameV2Impl);
+}
+
+void DataService::GetUserDataNameV2Impl(const ::google::protobuf::Empty* request,
+                                        ::apb::api::data::UserDataGetNameResponseV2* response) {
+
+    /*
+     * The live server supplies *two* table name lists. The first list
+     * contains all tables but few tables contained on the second list,
+     * and the second list contains the following tables:
+     *
+     * "IUserQuest",
+     * "IUserQuestMission",
+     * "IUserMission".
+     *
+     * The meaning of this is unknown.
+     */
 
     auto list = response->add_table_name_list();
 
     for(const auto &name: getUserDataName()) {
         list->add_table_name(name);
     }
-
-    list = response->add_table_name_list();
-
-    for(const auto &name: getUserDataName2()) {
-        list->add_table_name(name);
-    }
-
-    return grpc::Status::OK;
 }
 
 std::vector<std::string> DataService::getUserDataName() const {
-    return {
-        "IUserLoginBonus",
-        "IUserSideStoryQuestSceneProgressStatus",
-        "IUserLimitedOpen",
-        "IUserBigHuntMaxScore",
-        "IUserDeck",
-        "IUserMainQuestFlowStatus",
-        "IUserCompanion",
-        "IUserCharacterRebirth",
-        "IUserWeaponSkill",
-        "IUserWeapon",
-        "IUserQuestSceneChoice",
-        "IUserWebviewPanelMission",
-        "IUserStatus",
-        "IUserDeckLimitContentRestricted",
-        "IUserTutorialProgress",
-        "IUserEventQuestGuerrillaFreeOpen",
-        "IUserCostumeLotteryEffect",
-        "IUserExploreScore",
-        "IUserDeckSubWeaponGroup",
-        "IUserExplore",
-        "IUserEventQuestTowerAccumulationReward",
-        "IUserShopItem",
-        "IUserDokan",
-        "IUserOmikuji",
-        "IUserWeaponAbility",
-        "IUserConsumableItem",
-        "IUserMainQuestReplayFlowStatus",
-        "IUserWeaponAwaken",
-        "IUserParts",
-        "IUserEventQuestDailyGroupCompleteReward",
-        "IUserMainQuestProgressStatus",
-        "IUserCostumeLotteryEffectAbility",
-        "IUserAutoSaleSettingDetail",
-        "IUserGimmickSequence",
-        "IUserQuestLimitContentStatus",
-        "IUserGem",
-        "IUserCostumeLevelBonusReleaseStatus",
-        "IUserTripleDeck",
-        "IUserComebackCampaign",
-        "IUserCharacterBoardCompleteReward",
-        "IUserCharacterCostumeLevelBonus",
-        "IUserCostumeLotteryEffectStatusUp",
-        "IUserCostumeAwakenStatusUp",
-        "IUserContentsStory",
-        "IUserEventQuestProgressStatus",
-        "IUserNaviCutIn",
-        "IUserQuestSceneChoiceHistory",
-        "IUserMissionCompletionProgress",
-        "IUserMovie",
-        "IUserGimmickUnlock",
-        "IUserBigHuntWeeklyStatus",
-        "IUserEventQuestLabyrinthSeason",
-        "IUserGimmickOrnamentProgress",
-        "IUserSideStoryQuest",
-        "IUserLogin",
-        "IUserBigHuntStatus",
-        "IUserDeckPartsGroup",
-        "IUserSetting",
-        "IUserPartsStatusSub",
-        "IUserPremiumItem",
-        "IUserMainQuestMainFlowStatus",
-        "IUserCharacterViewerField",
-        "IUser",
-        "IUserCharacterBoard",
-        "IUserBeginnerCampaign",
-        "IUserBigHuntProgressStatus",
-        "IUserCostume",
-        "IUserPartsPreset",
-        "IUserCharacterBoardStatusUp",
-        "IUserFacebook",
-        "IUserWeaponNote",
-        "IUserMissionPassPoint",
-        "IUserCageOrnamentReward",
-        "IUserPortalCageStatus",
-        "IUserCostumeActiveSkill",
-        "IUserWeaponStory",
-        "IUserPartsGroupNote",
-        "IUserBigHuntScheduleMaxScore",
-        "IUserQuestAutoOrbit",
-        "IUserImportantItem",
-        "IUserDeckCharacter",
-        "IUserPossessionAutoConvert",
-        "IUserPartsPresetTag",
-        "IUserMaterial",
-        "IUserMainQuestSeasonRoute",
-        "IUserDeckCharacterDressupCostume",
-        "IUserDeckTypeNote",
-        "IUserCharacterBoardAbility",
-        "IUserPvpDefenseDeck",
-        "IUserExtraQuestProgressStatus",
-        "IUserBigHuntWeeklyMaxScore",
-        "IUserEventQuestLabyrinthStage",
-        "IUserGimmick",
-        "IUserShopReplaceableLineup",
-        "IUserApple",
-        "IUserThought",
-        "IUserProfile",
-        "IUserShopReplaceable",
-        "IUserQuestReplayFlowRewardGroup",
-        "IUserCostumeLotteryEffectPending",
-        "IUserCharacter",
-        "IUserPvpStatus",
-        "IUserPvpWeeklyResult"
-    };
-}
+    std::vector<std::string> names;
 
-std::vector<std::string> DataService::getUserDataName2() const {
-    return {
-        /*
-        * List2
-        */
-        "IUserQuest",
-        "IUserQuestMission",
-        "IUserMission",
-    };
+    auto statement = db().prepare("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND name LIKE 'i_%'");
+    while(statement->step()) {
+        names.emplace_back(tableNameToEntityName(statement->columnText(0)));
+    }
+
+    return names;
 }
 
 ::grpc::Status DataService::GetUserData(::grpc::ServerContext* context,
                                         const ::apb::api::data::UserDataGetRequest* request,
                                         ::apb::api::data::UserDataGetResponse* response) {
 
-    printf("DataService::GetUserData: %s\n", request->DebugString().c_str());
+    return inAuthenticatedCall("DataService::GetUserData", context, request, response, &DataService::GetUserDataImpl);
+}
+
+
+void DataService::GetUserDataImpl(int64_t userId,
+                                  const ::apb::api::data::UserDataGetRequest* request,
+                                  ::apb::api::data::UserDataGetResponse* response) {
+
+    JSONWriter json;
 
     for(const auto &tableName: request->table_name()) {
+        json.writeArrayOpen();
+
+        std::stringstream query;
+        query << "SELECT * FROM " << entityNameToTableNameChecked(tableName) << " WHERE user_id = ?";
+        auto statement = db().prepare(query.str());
+        statement->bind(1, userId);
+
+        auto colCount = statement->columnCount();
+
+        std::optional<std::vector<std::string>> columnNames;
+
+        while(statement->step()) {
+            json.writeMapOpen();
+
+            if(!columnNames.has_value()) {
+                columnNames.emplace();
+
+                columnNames->reserve(colCount);
+
+                for(int colIndex = 0; colIndex < colCount; colIndex++) {
+                    auto columnName = statement->columnName(colIndex);
+
+                    columnNames->emplace_back(columnNameToEntityFieldName(columnName));
+                }
+            }
+
+            for(int colIndex = 0; colIndex < colCount; colIndex++) {
+                const auto &columnName = (*columnNames)[colIndex];
+
+                json.writeString(columnName);
+
+                writeSQLiteColumnValue(json, *statement, colIndex);
+            }
+
+            json.writeMapClose();
+        }
+
+        json.writeArrayClose();
+#if 0
         std::string_view content;
 
         if(tableName == "IUserProfile") {
@@ -195,10 +151,12 @@ std::vector<std::string> DataService::getUserDataName2() const {
         } else {
             content = "[]";
         }
+#endif
 
-        response->mutable_user_data_json()->emplace(tableName, content);
+        response->mutable_user_data_json()->emplace(tableName, json.output());
+
+        json.clear();
+        json.reset();
     }
-
-    return grpc::Status::OK;
 }
 

@@ -462,9 +462,6 @@ static void postInitialize() {
                              Adam_Framework_Resource_AssetBundleLookupTableOctoDatabase_InitializeDatabase);
 #endif
 
-    translator_divert_method("Octo.dll::Octo.Caching.OctoAppCaching::IsInApp",
-                             Octo_Caching_OctoAppCaching_IsInApp);
-
     translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::IsCached",
                              Octo_Caching_OctoBaseCaching_IsCached);
 
@@ -528,7 +525,7 @@ static int gameMain(int argc, char **argv) {
 
     gameserverInstance = gameserver.get();
 
-    int result = 0;//PlayerMain(argc, argv);
+    int result = PlayerMain(argc, argv);
 
     contentStorageInstance = nullptr;
     gameserverInstance = nullptr;

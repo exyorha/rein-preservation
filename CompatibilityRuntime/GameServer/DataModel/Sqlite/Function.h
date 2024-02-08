@@ -6,8 +6,11 @@ namespace sqlite {
     class Value;
 
     class Function {
+    protected:
+        Function() = default;
+
     public:
-        virtual ~Function();
+        virtual ~Function() = default;
 
         Function(const Function &other) = delete;
         Function &operator =(const Function &other) = delete;
