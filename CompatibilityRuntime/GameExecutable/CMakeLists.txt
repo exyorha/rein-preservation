@@ -4,6 +4,29 @@ add_executable(GameExecutable
     FastAES.cpp
     FastAES.h
 
+    GLES/GLESImplementation.cpp
+    GLES/GLESImplementation.h
+    GLES/GLESImplementationNative.cpp
+    GLES/GLESImplementationNative.h
+    GLES/RealSDLSymbols.cpp
+    GLES/RealSDLSymbols.h
+    GLES/SDLWrapper.cpp
+    GLES/SDLWrapper.h
+
+    GLES/ANGLE/ANGLELibrary.cpp
+    GLES/ANGLE/ANGLELibrary.h
+    GLES/ANGLE/EGLWindowSurface.cpp
+    GLES/ANGLE/EGLWindowSurface.h
+    GLES/ANGLE/GLESImplementationANGLE.cpp
+    GLES/ANGLE/GLESImplementationANGLE.h
+    GLES/ANGLE/InitializedEGLContext.cpp
+    GLES/ANGLE/InitializedEGLContext.h
+    GLES/ANGLE/InitializedEGLDisplay.cpp
+    GLES/ANGLE/InitializedEGLDisplay.h
+    GLES/ANGLE/SDLWrapperAttributeSet.cpp
+    GLES/ANGLE/SDLWrapperAttributeSet.h
+
+
     Il2CppUtilities.cpp
     Il2CppUtilities.h
 
@@ -62,7 +85,7 @@ set_target_properties(GameExecutable PROPERTIES
 )
 
 if(UNIX)
-    target_link_options(GameExecutable PRIVATE -Wl,-z,now,--export-dynamic-symbol=SDL_GL_SetAttribute)
+    target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*")
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)
