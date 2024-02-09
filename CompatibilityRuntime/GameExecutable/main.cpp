@@ -18,6 +18,7 @@
 
 #include <gameserver_api.h>
 
+#include "GLES/Shim/GLESContextShim.h"
 #include "Il2CppUtilities.h"
 #include "FastAES.h"
 #include "OctoContentStorage.h"
@@ -530,6 +531,8 @@ static int gameMain(int argc, char **argv) {
     for(int index = 1; index < argc; index++) {
         if(strcmp(argv[index], "-angle") == 0) {
             gles = GLESImplementationType::ANGLE;
+        } else if(strcmp(argv[index], "-always-emulate-astc") == 0) {
+            GLESContextShim::AlwaysEmulateASTC = true;
         }
     }
 

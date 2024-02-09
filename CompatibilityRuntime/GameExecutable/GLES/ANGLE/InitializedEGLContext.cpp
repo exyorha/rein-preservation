@@ -22,3 +22,7 @@ InitializedEGLContext::InitializedEGLContext(const ANGLELibrary &angle, EGLDispl
 InitializedEGLContext::~InitializedEGLContext() {
     m_angle.eglDestroyContext(m_display, m_context);
 }
+
+void *InitializedEGLContext::getProcAddress(const char *name) noexcept {
+    return m_angle.getProcAddress(name);
+}

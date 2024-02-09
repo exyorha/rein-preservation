@@ -4,6 +4,8 @@ add_executable(GameExecutable
     FastAES.cpp
     FastAES.h
 
+    GLES/BaseGLESContext.cpp
+    GLES/BaseGLESContext.h
     GLES/GLESImplementation.cpp
     GLES/GLESImplementation.h
     GLES/GLESImplementationNative.cpp
@@ -26,6 +28,17 @@ add_executable(GameExecutable
     GLES/ANGLE/SDLWrapperAttributeSet.cpp
     GLES/ANGLE/SDLWrapperAttributeSet.h
 
+    GLES/Shim/GLESContextShim.cpp
+    GLES/Shim/GLESContextShim.h
+    GLES/Shim/ShimExtensionString.cpp
+    GLES/Shim/ShimExtensionString.h
+    GLES/Shim/ShimNextContextSymbols.cpp
+    GLES/Shim/ShimNextContextSymbols.h
+
+    GLES/TextureEmulation/EmulatedTextureFormat.cpp
+    GLES/TextureEmulation/EmulatedTextureFormat.h
+    GLES/TextureEmulation/astc_dec/astc_decomp.cpp
+    GLES/TextureEmulation/astc_dec/astc_decomp.h
 
     Il2CppUtilities.cpp
     Il2CppUtilities.h

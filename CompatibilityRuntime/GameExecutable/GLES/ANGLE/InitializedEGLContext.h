@@ -2,11 +2,12 @@
 #define GLES_ANGLE_INITIALIZED_EGL_CONTEXT_H
 
 #include <GLES/ANGLE/ANGLELibrary.h>
+#include <GLES/BaseGLESContext.h>
 
-class InitializedEGLContext {
+class InitializedEGLContext final : public BaseGLESContext {
 public:
     InitializedEGLContext(const ANGLELibrary &angle, EGLDisplay display, EGLConfig config, EGLContext shareContext);
-    ~InitializedEGLContext();
+    ~InitializedEGLContext() override;
 
     InitializedEGLContext(const InitializedEGLContext &other) = delete;
     InitializedEGLContext &operator =(const InitializedEGLContext &other) = delete;
@@ -18,6 +19,8 @@ public:
     inline operator EGLContext() const {
         return m_context;
     }
+
+    void *getProcAddress(const char *name) noexcept override;
 
 private:
     const ANGLELibrary &m_angle;

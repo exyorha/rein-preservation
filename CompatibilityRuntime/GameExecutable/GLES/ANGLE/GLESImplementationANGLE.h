@@ -21,16 +21,11 @@ public:
 protected:
     void DestroyWindowImpl(SDL_Window *window) noexcept override;
 
-public:
-    SDL_GLContext CreateContext(SDL_Window *window) noexcept override;
-
-protected:
-    void DeleteContextImpl(SDL_GLContext context) noexcept override;
+    std::unique_ptr<BaseGLESContext> CreateContextImpl(SDL_Window *window) override;
 
     int MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept override;
 
 public:
-    void *GetProcAddress(const char *proc) noexcept override;
     SDL_bool ExtensionSupported(const char *extension) noexcept override;
 
     int GetAttribute(SDL_GLattr attr, int *value) noexcept override;

@@ -1,6 +1,7 @@
 #ifndef GLES_GLES_IMPLEMENTATION_NATIVE_H
 #define GLES_GLES_IMPLEMENTATION_NATIVE_H
 
+#include <GLES/BaseGLESContext.h>
 #include <GLES/GLESImplementation.h>
 
 class GLESImplementationNative final : public GLESImplementation {
@@ -12,14 +13,9 @@ public:
 protected:
     void DestroyWindowImpl(SDL_Window *window) noexcept override;
 
-public:
-    SDL_GLContext CreateContext(SDL_Window *window) noexcept override;
-
-protected:
-    void DeleteContextImpl(SDL_GLContext context) noexcept override;
+    std::unique_ptr<BaseGLESContext> CreateContextImpl(SDL_Window *window) override;
 
 public:
-    void *GetProcAddress(const char *proc) noexcept override;
     SDL_bool ExtensionSupported(const char *extension) noexcept override;
 
 protected:
@@ -36,6 +32,29 @@ public:
 
     int LoadLibrary(const char *path) noexcept override;
     void UnloadLibrary() noexcept override;
+
+private:
+    class NativeWrapperContext final : public BaseGLESContext {
+    public:
+        explicit NativeWrapperContext(SDL_GLContext nativeContext);
+        ~NativeWrapperContext() override;
+
+        inline SDL_GLContext context() const {
+            return m_context;
+        }
+
+        static inline SDL_GLContext unwrap(SDL_GLContext handle) {
+            if(!handle)
+                return nullptr;
+
+            return static_cast<NativeWrapperContext *>(handle)->context();
+        }
+
+        void *getProcAddress(const char *name) noexcept override;
+
+    private:
+        SDL_GLContext m_context;
+    };
 
 };
 

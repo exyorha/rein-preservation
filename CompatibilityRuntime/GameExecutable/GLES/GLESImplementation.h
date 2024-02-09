@@ -3,6 +3,10 @@
 
 #include <SDL2/SDL_video.h>
 
+#include <memory>
+
+class BaseGLESContext;
+
 class GLESImplementation {
 protected:
     GLESImplementation();
@@ -19,11 +23,11 @@ protected:
     virtual void DestroyWindowImpl(SDL_Window *window) noexcept = 0;
 
 public:
-    virtual SDL_GLContext CreateContext(SDL_Window *window) noexcept = 0;
+    SDL_GLContext CreateContext(SDL_Window *window) noexcept;
     void DeleteContext(SDL_GLContext context) noexcept;
 
 protected:
-    virtual void DeleteContextImpl(SDL_GLContext context) noexcept = 0;
+    virtual std::unique_ptr<BaseGLESContext> CreateContextImpl(SDL_Window *window) = 0;
 
 public:
 
@@ -34,9 +38,10 @@ public:
 protected:
     virtual int MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept = 0;
 
-public:
+    BaseGLESContext *currentImplementationContext() const noexcept;
 
-    virtual void *GetProcAddress(const char *proc) noexcept = 0;
+public:
+    void *GetProcAddress(const char *proc) noexcept;
     virtual SDL_bool ExtensionSupported(const char *extension) noexcept = 0;
 
     virtual int GetAttribute(SDL_GLattr attr, int *value) noexcept = 0;

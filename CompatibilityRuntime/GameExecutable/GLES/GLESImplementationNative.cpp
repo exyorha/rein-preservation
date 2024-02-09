@@ -1,3 +1,4 @@
+#include "GLES/BaseGLESContext.h"
 #include <GLES/GLESImplementationNative.h>
 #include <GLES/RealSDLSymbols.h>
 #include <SDL2/SDL_video.h>
@@ -14,17 +15,14 @@ void GLESImplementationNative::DestroyWindowImpl(SDL_Window *window) noexcept {
     RealSDLSymbols::getSingleton().realDestroyWindow(window);
 }
 
-SDL_GLContext GLESImplementationNative::CreateContext(SDL_Window *window) noexcept {
+std::unique_ptr<BaseGLESContext> GLESImplementationNative::CreateContextImpl(SDL_Window *window) {
     SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, SDL_TRUE);
-    return RealSDLSymbols::getSingleton().realGL_CreateContext(window);
-}
 
-void GLESImplementationNative::DeleteContextImpl(SDL_GLContext context) noexcept {
-    return RealSDLSymbols::getSingleton().realGL_DeleteContext(context);
-}
+    auto context = RealSDLSymbols::getSingleton().realGL_CreateContext(window);
+    if(!context)
+        return {};
 
-void *GLESImplementationNative::GetProcAddress(const char *proc) noexcept {
-    return RealSDLSymbols::getSingleton().realGL_GetProcAddress(proc);
+    return std::make_unique<NativeWrapperContext>(context);
 }
 
 SDL_bool GLESImplementationNative::ExtensionSupported(const char *extension) noexcept {
@@ -32,7 +30,7 @@ SDL_bool GLESImplementationNative::ExtensionSupported(const char *extension) noe
 }
 
 int GLESImplementationNative::MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept {
-    return RealSDLSymbols::getSingleton().realGL_MakeCurrent(window, context);
+    return RealSDLSymbols::getSingleton().realGL_MakeCurrent(window, NativeWrapperContext::unwrap(context));
 }
 
 int GLESImplementationNative::GetAttribute(SDL_GLattr attr, int *value) noexcept {
@@ -65,4 +63,16 @@ int GLESImplementationNative::LoadLibrary(const char *path) noexcept {
 
 void GLESImplementationNative::UnloadLibrary() noexcept {
     return RealSDLSymbols::getSingleton().realGL_UnloadLibrary();
+}
+
+GLESImplementationNative::NativeWrapperContext::NativeWrapperContext(SDL_GLContext nativeContext) : m_context(nativeContext) {
+
+}
+
+GLESImplementationNative::NativeWrapperContext::~NativeWrapperContext() {
+    RealSDLSymbols::getSingleton().realGL_DeleteContext(m_context);
+}
+
+void *GLESImplementationNative::NativeWrapperContext::getProcAddress(const char *name) noexcept {
+    return RealSDLSymbols::getSingleton().realGL_GetProcAddress(name);
 }

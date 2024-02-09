@@ -27,52 +27,44 @@ void GLESImplementationANGLE::DestroyWindowImpl(SDL_Window *window) noexcept {
     RealSDLSymbols::getSingleton().realDestroyWindow(window);
 }
 
-SDL_GLContext GLESImplementationANGLE::CreateContext(SDL_Window *window) noexcept {
+std::unique_ptr<BaseGLESContext> GLESImplementationANGLE::CreateContextImpl(SDL_Window *window) {
 
-    try {
-        printf("SDL_GL_CreateContext called!\n");
+    printf("SDL_GL_CreateContext called!\n");
 
-        const auto &sdl = RealSDLSymbols::getSingleton();
+    const auto &sdl = RealSDLSymbols::getSingleton();
 
-        SDL_SysWMinfo wmInfo;
-        memset(&wmInfo, 0, sizeof(wmInfo));
-        wmInfo.version.major = 2;
-        wmInfo.version.minor = 0;
+    SDL_SysWMinfo wmInfo;
+    memset(&wmInfo, 0, sizeof(wmInfo));
+    wmInfo.version.major = 2;
+    wmInfo.version.minor = 0;
 
-        if(!sdl.realGetWindowWMInfo(window, &wmInfo))
-            throw std::runtime_error("SDL_GetWindowWMInfo (real) has failed");
+    if(!sdl.realGetWindowWMInfo(window, &wmInfo))
+        throw std::runtime_error("SDL_GetWindowWMInfo (real) has failed");
 
-        if(!m_display.has_value()) {
-            m_display.emplace(m_angle, wmInfo);
-        } else if(!m_display->isCompatibleWith(wmInfo)) {
-            throw std::runtime_error("the already existing EGL display is not compatible with the newly requested window");
-        }
-
-        auto config = m_currentAttributes.chooseConfig(m_angle, *m_display);
-
-        auto surface = EGLWindowSurface::getSurfaceOfWindow(window);
-        if(!surface) {
-            surface = new EGLWindowSurface(m_angle, *m_display, config, wmInfo, m_currentAttributes);
-            EGLWindowSurface::setSurfaceOfWindow(window, surface);
-        }
-
-        EGLContext shareContext = EGL_NO_CONTEXT;
-
-        if(m_currentAttributes.attributes[SDL_GL_SHARE_WITH_CURRENT_CONTEXT] && GetCurrentContext()) {
-            shareContext = *static_cast<InitializedEGLContext *>(GetCurrentContext());
-        }
-
-        return new InitializedEGLContext(m_angle, *m_display, config, shareContext);
-
-    } catch(const std::exception &e) {
-        fprintf(stderr, "GLESImplementationANGLE::CreateContext: failed: %s\n", e.what());
-        return nullptr;
+    if(!m_display.has_value()) {
+        m_display.emplace(m_angle, wmInfo);
+    } else if(!m_display->isCompatibleWith(wmInfo)) {
+        throw std::runtime_error("the already existing EGL display is not compatible with the newly requested window");
     }
+
+    auto config = m_currentAttributes.chooseConfig(m_angle, *m_display);
+
+    auto surface = EGLWindowSurface::getSurfaceOfWindow(window);
+    if(!surface) {
+        surface = new EGLWindowSurface(m_angle, *m_display, config, wmInfo, m_currentAttributes);
+        EGLWindowSurface::setSurfaceOfWindow(window, surface);
+    }
+
+    EGLContext shareContext = EGL_NO_CONTEXT;
+
+    auto current = currentImplementationContext();
+    if(m_currentAttributes.attributes[SDL_GL_SHARE_WITH_CURRENT_CONTEXT] && current) {
+        shareContext = *static_cast<InitializedEGLContext *>(current);
+    }
+
+    return std::make_unique<InitializedEGLContext>(m_angle, *m_display, config, shareContext);
 }
 
-void GLESImplementationANGLE::DeleteContextImpl(SDL_GLContext context) noexcept {
-    delete static_cast<InitializedEGLContext *>(context);
-}
 
 int GLESImplementationANGLE::MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept {
     try {
@@ -100,10 +92,6 @@ int GLESImplementationANGLE::MakeCurrentImpl(SDL_Window *window, SDL_GLContext c
         fprintf(stderr, "GLESImplementationANGLE::MakeCurrent: failed: %s\n", e.what());
         return -1;
     }
-}
-
-void *GLESImplementationANGLE::GetProcAddress(const char *proc) noexcept {
-    return m_angle.getProcAddress(proc);
 }
 
 int GLESImplementationANGLE::GetSwapInterval() noexcept {
