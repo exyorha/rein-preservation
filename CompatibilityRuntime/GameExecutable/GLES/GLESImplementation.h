@@ -13,14 +13,28 @@ protected:
 
 public:
     virtual SDL_Window *CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) noexcept = 0;
-    virtual void DestroyWindow(SDL_Window *window) noexcept = 0;
+    void DestroyWindow(SDL_Window *window) noexcept;
 
+protected:
+    virtual void DestroyWindowImpl(SDL_Window *window) noexcept = 0;
+
+public:
     virtual SDL_GLContext CreateContext(SDL_Window *window) noexcept = 0;
-    virtual void DeleteContext(SDL_GLContext context) noexcept = 0;
+    void DeleteContext(SDL_GLContext context) noexcept;
 
-    virtual SDL_GLContext GetCurrentContext() noexcept = 0;
-    virtual SDL_Window *GetCurrentWindow() noexcept = 0;
-    virtual int MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept = 0;
+protected:
+    virtual void DeleteContextImpl(SDL_GLContext context) noexcept = 0;
+
+public:
+
+    SDL_GLContext GetCurrentContext() noexcept;
+    SDL_Window *GetCurrentWindow() noexcept;
+    int MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept;
+
+protected:
+    virtual int MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept = 0;
+
+public:
 
     virtual void *GetProcAddress(const char *proc) noexcept = 0;
     virtual SDL_bool ExtensionSupported(const char *extension) noexcept = 0;
@@ -35,6 +49,11 @@ public:
 
     virtual int LoadLibrary(const char *path) noexcept = 0;
     virtual void UnloadLibrary() noexcept = 0;
+
+private:
+
+    static thread_local SDL_Window *m_currentWindow;
+    static thread_local SDL_GLContext m_currentContext;
 
 };
 

@@ -17,15 +17,19 @@ public:
     ~GLESImplementationANGLE();
 
     SDL_Window *CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) noexcept override;
-    void DestroyWindow(SDL_Window *window) noexcept override;
 
+protected:
+    void DestroyWindowImpl(SDL_Window *window) noexcept override;
+
+public:
     SDL_GLContext CreateContext(SDL_Window *window) noexcept override;
-    void DeleteContext(SDL_GLContext context) noexcept override;
 
-    SDL_GLContext GetCurrentContext() noexcept override;
-    SDL_Window *GetCurrentWindow() noexcept override;
-    int MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept override;
+protected:
+    void DeleteContextImpl(SDL_GLContext context) noexcept override;
 
+    int MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept override;
+
+public:
     void *GetProcAddress(const char *proc) noexcept override;
     SDL_bool ExtensionSupported(const char *extension) noexcept override;
 
@@ -45,8 +49,6 @@ private:
     SDLWrapperAttributeSet m_currentAttributes;
     std::optional<InitializedEGLDisplay> m_display;
 
-    static thread_local SDL_Window *m_currentWindow;
-    static thread_local InitializedEGLContext *m_currentContext;
 };
 
 #endif

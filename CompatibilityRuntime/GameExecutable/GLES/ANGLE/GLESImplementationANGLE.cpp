@@ -6,9 +6,6 @@
 
 #include <stdexcept>
 
-thread_local SDL_Window *GLESImplementationANGLE::m_currentWindow;
-thread_local InitializedEGLContext *GLESImplementationANGLE::m_currentContext;
-
 GLESImplementationANGLE::GLESImplementationANGLE() = default;
 
 GLESImplementationANGLE::~GLESImplementationANGLE() = default;
@@ -19,16 +16,12 @@ SDL_Window *GLESImplementationANGLE::CreateWindow(const char *title, int x, int 
     return RealSDLSymbols::getSingleton().realCreateWindow(title, x, y, w, h, flags);
 }
 
-void GLESImplementationANGLE::DestroyWindow(SDL_Window *window) noexcept {
+void GLESImplementationANGLE::DestroyWindowImpl(SDL_Window *window) noexcept {
     auto surface = EGLWindowSurface::getSurfaceOfWindow(window);
 
     if(surface) {
         EGLWindowSurface::setSurfaceOfWindow(window, nullptr);
         delete surface;
-    }
-
-    if(m_currentWindow == window) {
-        m_currentWindow = nullptr;
     }
 
     RealSDLSymbols::getSingleton().realDestroyWindow(window);
@@ -65,8 +58,8 @@ SDL_GLContext GLESImplementationANGLE::CreateContext(SDL_Window *window) noexcep
 
         EGLContext shareContext = EGL_NO_CONTEXT;
 
-        if(m_currentAttributes.attributes[SDL_GL_SHARE_WITH_CURRENT_CONTEXT] && m_currentContext) {
-            shareContext = *m_currentContext;
+        if(m_currentAttributes.attributes[SDL_GL_SHARE_WITH_CURRENT_CONTEXT] && GetCurrentContext()) {
+            shareContext = *static_cast<InitializedEGLContext *>(GetCurrentContext());
         }
 
         return new InitializedEGLContext(m_angle, *m_display, config, shareContext);
@@ -77,37 +70,15 @@ SDL_GLContext GLESImplementationANGLE::CreateContext(SDL_Window *window) noexcep
     }
 }
 
-void GLESImplementationANGLE::DeleteContext(SDL_GLContext context) noexcept {
-    if(context == nullptr)
-        return;
-
-    if(context == m_currentContext) {
-        m_currentContext = nullptr;
-    }
-
+void GLESImplementationANGLE::DeleteContextImpl(SDL_GLContext context) noexcept {
     delete static_cast<InitializedEGLContext *>(context);
 }
 
-SDL_GLContext GLESImplementationANGLE::GetCurrentContext() noexcept {
-    return m_currentContext;
-}
-
-SDL_Window *GLESImplementationANGLE::GetCurrentWindow() noexcept {
-    return m_currentWindow;
-}
-
-int GLESImplementationANGLE::MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept {
+int GLESImplementationANGLE::MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept {
     try {
         if(!context) {
-            window = nullptr;
-
-            if(m_currentContext) {
-                m_currentContext = nullptr;
-                m_currentWindow = nullptr;
-
-                if(!m_angle.eglMakeCurrent(*m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
-                    throw std::runtime_error("EGL_MakeCurrent has failed");
-            }
+            if(!m_angle.eglMakeCurrent(*m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
+                throw std::runtime_error("EGL_MakeCurrent has failed");
         } else {
             EGLWindowSurface *surface = nullptr;
             if(window) {
@@ -122,9 +93,6 @@ int GLESImplementationANGLE::MakeCurrent(SDL_Window *window, SDL_GLContext conte
 
             if(!m_angle.eglMakeCurrent(*m_display, *surface, *surface, *eglContext))
                 throw std::runtime_error("EGL_MakeCurrent has failed");
-
-            m_currentWindow = window;
-            m_currentContext = eglContext;
         }
 
         return 0;

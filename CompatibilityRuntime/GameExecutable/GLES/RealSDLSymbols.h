@@ -43,11 +43,11 @@ public:
     using SDL_GL_GetAttribute_Type = int (*SDLCALL)(SDL_GLattr attr, int *value);
     SDL_GL_GetAttribute_Type realGL_GetAttribute;
 
-    using SDL_GL_GetCurrentContext_Type = SDL_GLContext (*SDLCALL)(void);
-    SDL_GL_GetCurrentContext_Type realGL_GetCurrentContext;
+    //using SDL_GL_GetCurrentContext_Type = SDL_GLContext (*SDLCALL)(void);
+    //SDL_GL_GetCurrentContext_Type realGL_GetCurrentContext;
 
-    using SDL_GL_GetCurrentWindow_Type = SDL_Window *(*SDLCALL)(void);
-    SDL_GL_GetCurrentWindow_Type realGL_GetCurrentWindow;
+    //using SDL_GL_GetCurrentWindow_Type = SDL_Window *(*SDLCALL)(void);
+    //SDL_GL_GetCurrentWindow_Type realGL_GetCurrentWindow;
 
     // SDL_GL_GetDrawableSize - we don't intercept because the original
     // function does exactly what we want

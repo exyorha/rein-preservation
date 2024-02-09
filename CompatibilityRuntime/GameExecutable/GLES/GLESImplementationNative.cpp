@@ -10,7 +10,7 @@ SDL_Window *GLESImplementationNative::CreateWindow(const char *title, int x, int
     return RealSDLSymbols::getSingleton().realCreateWindow(title, x, y, w, h, flags);
 }
 
-void GLESImplementationNative::DestroyWindow(SDL_Window *window) noexcept {
+void GLESImplementationNative::DestroyWindowImpl(SDL_Window *window) noexcept {
     RealSDLSymbols::getSingleton().realDestroyWindow(window);
 }
 
@@ -19,7 +19,7 @@ SDL_GLContext GLESImplementationNative::CreateContext(SDL_Window *window) noexce
     return RealSDLSymbols::getSingleton().realGL_CreateContext(window);
 }
 
-void GLESImplementationNative::DeleteContext(SDL_GLContext context) noexcept {
+void GLESImplementationNative::DeleteContextImpl(SDL_GLContext context) noexcept {
     return RealSDLSymbols::getSingleton().realGL_DeleteContext(context);
 }
 
@@ -31,15 +31,7 @@ SDL_bool GLESImplementationNative::ExtensionSupported(const char *extension) noe
     return RealSDLSymbols::getSingleton().realGL_ExtensionSupported(extension);
 }
 
-SDL_Window *GLESImplementationNative::GetCurrentWindow() noexcept {
-    return RealSDLSymbols::getSingleton().realGL_GetCurrentWindow();
-}
-
-SDL_GLContext GLESImplementationNative::GetCurrentContext() noexcept {
-    return RealSDLSymbols::getSingleton().realGL_GetCurrentContext();
-}
-
-int GLESImplementationNative::MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept {
+int GLESImplementationNative::MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept {
     return RealSDLSymbols::getSingleton().realGL_MakeCurrent(window, context);
 }
 

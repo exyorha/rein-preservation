@@ -9,18 +9,23 @@ public:
     ~GLESImplementationNative();
 
     SDL_Window *CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) noexcept override;
-    void DestroyWindow(SDL_Window *window) noexcept override;
+protected:
+    void DestroyWindowImpl(SDL_Window *window) noexcept override;
 
+public:
     SDL_GLContext CreateContext(SDL_Window *window) noexcept override;
-    void DeleteContext(SDL_GLContext context) noexcept override;
 
+protected:
+    void DeleteContextImpl(SDL_GLContext context) noexcept override;
+
+public:
     void *GetProcAddress(const char *proc) noexcept override;
     SDL_bool ExtensionSupported(const char *extension) noexcept override;
 
-    SDL_Window *GetCurrentWindow() noexcept override;
-    SDL_GLContext GetCurrentContext() noexcept override;
-    int MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept override;
+protected:
+    int MakeCurrentImpl(SDL_Window *window, SDL_GLContext context) noexcept override;
 
+public:
     int GetAttribute(SDL_GLattr attr, int *value) noexcept override;
     void ResetAttributes() noexcept override;
     int SetAttribute(SDL_GLattr attr, int value) noexcept override;
