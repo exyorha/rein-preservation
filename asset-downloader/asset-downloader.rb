@@ -79,10 +79,14 @@ class OctoAssetDownloader
 
         FileUtils.mkpath @lists_path
 
-        @uri_format
+        @up_to_date = false
     end
 
-    def load_list
+    def up_to_date?
+        @up_to_date
+    end
+
+    def load_list(update = false)
         highest_version = nil
 
         Dir[File.join(@lists_path, "*.pb")].each do |list_filename|
@@ -93,14 +97,15 @@ class OctoAssetDownloader
             end
         end
 
-        if highest_version.nil?
-            puts "No local list, downloading"
-            return download_list()
+        if highest_version.nil? || update
+            list = download_list()
         else
-            puts "Using the pre-existing list of the revision level #{highest_version}"
-
-            return Octo::Proto::Database.decode(File.binread(File.join(@lists_path, "#{highest_version}.pb")))
+            list = Octo::Proto::Database.decode(File.binread(File.join(@lists_path, "#{highest_version}.pb")))
         end
+
+        @up_to_date = !highest_version.nil? && list.revision == highest_version
+
+        list
     end
 
     def validate_asset(local_path, descriptor)
@@ -256,9 +261,13 @@ downloader = OctoAssetDownloader.new({
     base_url: 'https://resources-api.app.nierreincarnation.com/'
 }, File.expand_path("../../content", __FILE__))
 
-database = downloader.load_list
+database = downloader.load_list(!ARGV.empty?)
 
 puts "Loaded the database of the revision level #{database.revision}, containing #{database.assetBundleList.size} assets and #{database.resourceList.size} resources."
+
+if downloader.up_to_date?
+    puts "the asset list is up to date."
+end
 
 downloader.uri_format = database.urlFormat
 
