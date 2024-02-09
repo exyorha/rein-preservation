@@ -1,16 +1,19 @@
 #include <GLES/Shim/GLESContextShim.h>
 
 #include <GLES/TextureEmulation/EmulatedTextureFormat.h>
+#include <GLES2/gl2ext.h>
 
 #include <SDL2/SDL_video.h>
 
 #include <array>
 
-bool GLESContextShim::AlwaysEmulateASTC = false;
-bool GLESContextShim::m_warnedAboutEmulatingTextures = false;
+#include <GLES/TextureEmulation/stb_dxt.h>
 
-GLESContextShim::GLESContextShim(std::unique_ptr<BaseGLESContext> &&nextContext) :m_nextContext(std::move(nextContext)),
-    m_emulatedASTC(false) {
+bool GLESContextShim::AlwaysEmulateASTC = false;
+bool GLESContextShim::NeverRecompressASTC = false;
+
+GLESContextShim::GLESContextShim(std::unique_ptr<BaseGLESContext> &&nextContext) : m_nextContext(std::move(nextContext)),
+    m_emulatedASTC(false), m_recompressASTC(false), m_warnedAboutEmulatingTextures(false) {
 
 }
 
@@ -76,6 +79,12 @@ void GLESContextShim::lateInitialize() {
         if(AlwaysEmulateASTC)
             m_emulatedASTC = true;
 
+        if(m_emulatedASTC) {
+            m_recompressASTC = !NeverRecompressASTC &&
+                (m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc") || m_extensionString->hasExtension("GL_ANGLE_texture_compression_dxt5")) &&
+                m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc_srgb");
+        }
+
         if(m_extensionString->hasExtension("GL_EXT_sRGB_write_control")) {
             /*
              * It appears that the game expects a strictly non-sRGB
@@ -136,6 +145,14 @@ std::vector<unsigned char> GLESContextShim::decompressTexture(const EmulatedText
         "\n"
         "This warning will only be shown once per session.\n"
         "\n", emulationPtr->internalFormat);
+
+        if(m_recompressASTC) {
+            fprintf(stderr,
+                    "\n"
+                    "VISUAL QUALITY WARNING:\n"
+                    "GLESContextShim: the emulated ASTC textures are being recompressed into BC texture encodng. This can be disabled with a launch option, if the VRAM budget allows. Uncompressed emulated ASTC textures should be expected to require 9x the VRAM of the original, while BC-recompressed should only require 2.25x.\n"
+                    "\n");
+        }
 
         m_warnedAboutEmulatingTextures = true;
     }
@@ -200,10 +217,31 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexImage2D(GLenum target, GLi
         return shim->m_nextSymbols->glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
     }
 
-    auto outputRaster = decompressTexture(emulation, width, height, data);
+    auto outputRaster = shim->decompressTexture(emulation, width, height, data);
 
-    shim->m_nextSymbols->glTexImage2D(target, level, emulation->substitutedInternalFormat, width, height, 0,
-                                                  GL_RGBA, GL_UNSIGNED_BYTE, outputRaster.data());
+    if(shim->m_recompressASTC) {
+        auto compressed = compressToDXT5(width, height, outputRaster.data());
+
+        GLenum format;
+        if(emulation->isSRGB) {
+            format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+        } else {
+            format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+        }
+
+        shim->m_nextSymbols->glCompressedTexImage2D(target, level, format, width, height, 0,
+                                                       compressed.size(), compressed.data());
+
+    } else {
+        GLenum internalFormat;
+        if(emulation->isSRGB) {
+            internalFormat = GL_SRGB8_ALPHA8;
+        } else {
+            internalFormat = GL_RGBA8;
+        }
+        shim->m_nextSymbols->glTexImage2D(target, level, internalFormat, width, height, 0,
+                                                    GL_RGBA, GL_UNSIGNED_BYTE, outputRaster.data());
+    }
 }
 
 
@@ -222,10 +260,26 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage2D(GLenum target, 
         return shim->m_nextSymbols->glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
     }
 
-    auto outputRaster = decompressTexture(emulation, width, height, data);
+    auto outputRaster = shim->decompressTexture(emulation, width, height, data);
 
-    shim->m_nextSymbols->glTexSubImage2D(target, level, xoffset, yoffset, width, height,
-                                                    GL_RGBA, GL_UNSIGNED_BYTE, outputRaster.data());
+    if(shim->m_recompressASTC) {
+        auto compressed = compressToDXT5(width, height, outputRaster.data());
+
+        GLenum format;
+        if(emulation->isSRGB) {
+            format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+        } else {
+            format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+        }
+
+        shim->m_nextSymbols->glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format,
+                                                       compressed.size(), compressed.data());
+
+    } else {
+
+        shim->m_nextSymbols->glTexSubImage2D(target, level, xoffset, yoffset, width, height,
+                                                        GL_RGBA, GL_UNSIGNED_BYTE, outputRaster.data());
+    }
 }
 
 void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
@@ -247,35 +301,77 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage3D(GLenum target, 
     getCurrentShim()->m_nextSymbols->glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
-void GL_APIENTRY GLESContextShim::shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
+GLenum GLESContextShim::subsituteStorageInternalFormat(GLenum internalformat) const {
 
     GLenum lowerInternalFormat = internalformat;
 
-    auto shim = getCurrentShim();
-
-    if(shim->m_emulatedASTC) {
+    if(m_emulatedASTC) {
         auto emulation = getEmulatedTextureFormat(internalformat);
         if(emulation) {
-            lowerInternalFormat = emulation->substitutedInternalFormat;
+            if(m_recompressASTC) {
+                if(emulation->isSRGB) {
+                    lowerInternalFormat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+                } else {
+                    lowerInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                }
+            } else {
+                if(emulation->isSRGB) {
+                    lowerInternalFormat = GL_SRGB8_ALPHA8;
+                } else {
+                    lowerInternalFormat = GL_RGBA8;
+                }
+            }
         }
     }
 
-    getCurrentShim()->m_nextSymbols->glTexStorage2D(target, levels, lowerInternalFormat, width, height);
+    return lowerInternalFormat;
+
+}
+
+void GL_APIENTRY GLESContextShim::shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
+
+    auto shim = getCurrentShim();
+    shim->m_nextSymbols->glTexStorage2D(target, levels, shim->subsituteStorageInternalFormat(internalformat), width, height);
 
 }
 
 void GL_APIENTRY GLESContextShim::shim_glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) {
 
-    GLenum lowerInternalFormat = internalformat;
-
     auto shim = getCurrentShim();
+    shim->m_nextSymbols->glTexStorage3D(target, levels, shim->subsituteStorageInternalFormat(internalformat), width, height, depth);
+}
 
-    if(shim->m_emulatedASTC) {
-        auto emulation = getEmulatedTextureFormat(internalformat);
-        if(emulation) {
-            lowerInternalFormat = emulation->substitutedInternalFormat;
+std::vector<unsigned char> GLESContextShim::compressToDXT5(GLsizei width, GLsizei height, const unsigned char *rgbaData) {
+    unsigned int outputWidthInBlocks = (width + 3) / 4;
+    unsigned int outputHeightInBlocks = (height + 3) / 4;
+
+    std::vector<unsigned char> output(outputWidthInBlocks * outputHeightInBlocks * 16);
+
+    auto outputPtr = output.data();
+
+    auto inputRow = rgbaData;
+
+    for(unsigned int blockY = 0; blockY < outputHeightInBlocks; blockY++) {
+        auto input = inputRow;
+
+        for(unsigned int blockX = 0; blockX < outputWidthInBlocks; blockX++) {
+            std::array<unsigned char, 4*4*4> blockPixels;
+
+            unsigned int rowsInThisBlock = std::min<unsigned int>(4, height - blockY * 4);
+            unsigned int columnBytesInThisBlock = 4 * std::min<unsigned int>(4, width - blockX * 4);
+
+            for(unsigned int blockPixelY = 0; blockPixelY < rowsInThisBlock; blockPixelY++) {
+                memcpy(blockPixels.data() + 16 * blockPixelY, input + blockPixelY * width * 4, columnBytesInThisBlock);
+            }
+
+            stb_compress_dxt_block(outputPtr, blockPixels.data(), 1, STB_DXT_HIGHQUAL);
+
+            input += 4 * 4;
+            outputPtr += 16;
         }
+
+        inputRow += 4 * 4 * width;
     }
 
-    shim->m_nextSymbols->glTexStorage3D(target, levels, lowerInternalFormat, width, height, depth);
+    return output;
 }

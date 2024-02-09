@@ -31,6 +31,7 @@ public:
     void *getProcAddress(const char *name) noexcept override;
 
     static bool AlwaysEmulateASTC;
+    static bool NeverRecompressASTC;
 
 private:
     void lateInitialize();
@@ -52,13 +53,17 @@ private:
     static void GL_APIENTRY shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
     static void GL_APIENTRY shim_glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 
-    static std::vector<unsigned char> decompressTexture(const EmulatedTextureFormat *emulation, GLsizei width, GLsizei height, const void *data);
+    GLenum subsituteStorageInternalFormat(GLenum internalformat) const;
+
+    std::vector<unsigned char> decompressTexture(const EmulatedTextureFormat *emulation, GLsizei width, GLsizei height, const void *data);
+    static std::vector<unsigned char> compressToDXT5(GLsizei width, GLsizei height, const unsigned char *rgbaData);
 
     std::unique_ptr<BaseGLESContext> m_nextContext;
     std::optional<ShimNextContextSymbols> m_nextSymbols;
     std::optional<ShimExtensionString> m_extensionString;
     bool m_emulatedASTC;
-    static bool m_warnedAboutEmulatingTextures;
+    bool m_recompressASTC;
+    bool m_warnedAboutEmulatingTextures;
 };
 
 #endif

@@ -533,6 +533,8 @@ static int gameMain(int argc, char **argv) {
             gles = GLESImplementationType::ANGLE;
         } else if(strcmp(argv[index], "-always-emulate-astc") == 0) {
             GLESContextShim::AlwaysEmulateASTC = true;
+        } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
+            GLESContextShim::NeverRecompressASTC = true;
         }
     }
 

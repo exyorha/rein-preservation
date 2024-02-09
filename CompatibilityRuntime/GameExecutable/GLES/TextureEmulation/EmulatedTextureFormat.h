@@ -9,7 +9,6 @@ using DecodeSingleTextureBlock = void (*)(const EmulatedTextureFormat *format, c
 
 struct EmulatedTextureFormat {
     uint16_t internalFormat; // format as requested by the game engine
-    uint16_t substitutedInternalFormat; // format that should be passed to the host OpenGL
     uint8_t blockSizeX;
     uint8_t blockSizeY;
     uint8_t blockSizeBytes;

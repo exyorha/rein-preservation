@@ -39,6 +39,8 @@ add_executable(GameExecutable
     GLES/TextureEmulation/EmulatedTextureFormat.h
     GLES/TextureEmulation/astc_dec/astc_decomp.cpp
     GLES/TextureEmulation/astc_dec/astc_decomp.h
+    GLES/TextureEmulation/stb_dxt.cpp
+    GLES/TextureEmulation/stb_dxt.h
 
     Il2CppUtilities.cpp
     Il2CppUtilities.h
