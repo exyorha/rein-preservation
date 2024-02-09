@@ -84,15 +84,17 @@ exactly as its specified in the Octo database by the following simple
 algorithm presented in Ruby code:
 
     def generate_masking_bytes(string)
-        mask_length = string.size * 2
+        string_utf16_codepoints = string.encode("UTF-16LE").unpack("v*")
+
+        mask_length = string_utf16_codepoints.size * 2
 
         i = 0
         j = mask_length - 1
 
         mask_bytes = Array.new(mask_length)
 
-        string.each_char do |ch|
-            byte = ch.ord
+        string_utf16_codepoints.each do |codepoint|
+            byte = codepoint & 0xFF
 
             mask_bytes[i] = byte
             mask_bytes[j] = byte ^ 0xFF

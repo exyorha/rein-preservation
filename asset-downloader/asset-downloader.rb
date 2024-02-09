@@ -108,24 +108,71 @@ class OctoAssetDownloader
         list
     end
 
-    def validate_asset(local_path, descriptor)
-        md5 =
-            File.open(local_path, "rb") do |inf|
-                if inf.size != descriptor.size
-                    warn "Asset size doesn't match the descriptor: #{local_path}, #{descriptor.size} in the descriptor, #{inf.size} actual"
-                end
+    def calculate_asset_md5(inf, initial = nil)
+        running_md5sum = OpenSSL::Digest::MD5.new
 
-                running_md5sum = OpenSSL::Digest::MD5.new
+        unless initial.nil?
+            running_md5sum.update initial
+        end
 
-                while true
-                    chunk = inf.read(128*1024)
-                    break if chunk.nil? || chunk.empty?
+        while true
+            chunk = inf.read(128*1024)
+            break if chunk.nil? || chunk.empty?
 
-                    running_md5sum.update(chunk)
-                end
+            running_md5sum.update(chunk)
+        end
 
-                running_md5sum.hexdigest
+        running_md5sum.hexdigest
+    end
+
+    def validate_asset(local_path, descriptor, is_assetbundle = false)
+        md5 = nil
+
+        File.open(local_path, "rb") do |inf|
+            if inf.size != descriptor.size
+                warn "Asset size doesn't match the descriptor: #{local_path}, #{descriptor.size} in the descriptor, #{inf.size} actual"
             end
+
+            if is_assetbundle
+                header = inf.read(256)
+                if header[0] == '1' || header[0] == '2'
+                    # The asset is masked, so it can be verified directly.
+                    md5 = calculate_asset_md5 inf, header
+                else
+                    # The asset is not masked, and we need to re-mask it to validate.
+                    masking_bytes = generate_masking_bytes(descriptor.name)
+
+                    # We check mode 1 first (256 first bytes only), since it's
+                    # used for all but the smallest assets, and we waste the
+                    # least amount of CPU time that way.
+
+                    masked_header = do_unmask(header, masking_bytes)
+                    masked_header[0] = '1'
+                    md5 = calculate_asset_md5(inf, masked_header)
+
+                    if md5 != descriptor.md5
+                        # Was this asset shipped plaintext?
+                        inf.rewind
+                        md5 = calculate_asset_md5 inf
+                    end
+
+                    if md5 != descriptor.md5
+                        # Still no. Try masking the whole file.
+
+                        inf.seek header.size
+                        header << inf.read
+
+                        masked = do_unmask(header, masking_bytes)
+                        masked[0] = '2'
+
+                        md5 = OpenSSL::Digest::MD5.hexdigest(masked)
+                    end
+                end
+            else
+                md5 = calculate_asset_md5(inf)
+            end
+
+        end
 
         matches = md5 == descriptor.md5
 
@@ -144,11 +191,13 @@ class OctoAssetDownloader
         end
 
         if File.exist? local_path
-            result, actual_md5 = validate_asset(local_path, descriptor)
+            result, actual_md5 = validate_asset(local_path, descriptor, type == 'assetbundle')
 
             if not result
-                File.rename local_path, "#{local_path}.old.#{actual_md5}"
+                raise "#{local_path} doesn't validate"
             end
+            #    File.rename local_path, "#{local_path}.old.#{actual_md5}"
+            #end
         end
 
         if !File.exist?(local_path)
@@ -191,17 +240,24 @@ class OctoAssetDownloader
 
             end
 
-            time = Time.at(descriptor.generation / 1.0e6)
-
             File.rename "#{local_path}.part", local_path
 
-            File.lutime time, time, local_path
+            set_modtime_from_descriptor local_path, descriptor
+        end
+
+        if type == 'assetbundle'
+            unmask_asset_if_needed local_path, descriptor
         end
 
         return local_path
     end
 
     private
+
+    def set_modtime_from_descriptor(local_path, descriptor)
+        time = Time.at(descriptor.generation / 1.0e6)
+        File.lutime time, time, local_path
+    end
 
     def dotnet_style_format(fmt, replacements = {})
         fmt.gsub(/\{(.+?)\}/) do |match|
@@ -250,6 +306,96 @@ class OctoAssetDownloader
         decrypted << aes.final
 
         decrypted
+    end
+
+    def unmask_asset_if_needed(localpath, descriptor)
+        File.open(localpath, 'rb') do |inf|
+            header = inf.read(256);
+
+            if header[0] == 'U'
+                # Already unmasked
+                return
+            end
+
+            masking_bytes = generate_masking_bytes(descriptor.name)
+
+            # The file needs unmasking.
+            File.open(localpath + ".unmasked", "wb") do |outf|
+                if header[0] == '1'
+                    # In mode 1, only the first 256 bytes are masked. We already have read them
+
+                elsif header[0] == '2'
+                    # In mode 2, the whole file is masked, but the file is generally short.
+
+                    header << inf.read
+
+                else
+                    raise "unknown masking scheme, the first few bytes are #{header[0...16].inspect}"
+                end
+
+                unmasked_header = do_unmask(header, masking_bytes)
+                unmasked_header[0] = 'U'
+                unless unmasked_header.start_with? "UnityFS"
+                    raise "#{localpath} didn't seem to unmask correctly"
+                end
+
+                outf.write unmasked_header
+
+                # Now, copy the plaintext tail, if any exists.
+                IO.copy_stream inf, outf
+            end
+
+            validates, md5 = validate_asset(localpath + ".unmasked", descriptor, true)
+            unless validates
+                raise "unmasked #{localpath} doesn't validate"
+            end
+
+            File.rename(localpath + ".unmasked", localpath)
+
+            set_modtime_from_descriptor(localpath, descriptor)
+
+            puts "#{localpath} has been unmasked"
+        end
+    end
+
+    def generate_masking_bytes(string)
+        string_utf16_codepoints = string.encode("UTF-16LE").unpack("v*")
+
+        mask_length = string_utf16_codepoints.size * 2
+
+        i = 0
+        j = mask_length - 1
+
+        mask_bytes = Array.new(mask_length)
+
+        string_utf16_codepoints.each do |codepoint|
+            byte = codepoint & 0xFF
+
+            mask_bytes[i] = byte
+            mask_bytes[j] = byte ^ 0xFF
+
+            i += 2
+            j -= 2
+        end
+
+        mask_of_mask = 0xBB
+        mask_bytes.each do |byte|
+            mask_of_mask = (((mask_of_mask & 1) << 7) | (mask_of_mask >> 1)) ^ byte
+        end
+
+        mask_bytes.map! do |byte|
+            byte ^ mask_of_mask
+        end
+
+        mask_bytes
+    end
+
+    def do_unmask(data, bytes)
+        content = data.unpack("C*")
+
+        Array.new(content.size) do |index|
+            content[index] ^ bytes[index % bytes.size]
+        end.pack("C*")
     end
 end
 
