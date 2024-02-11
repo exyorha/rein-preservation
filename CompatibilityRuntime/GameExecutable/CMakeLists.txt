@@ -82,6 +82,9 @@ add_executable(GameExecutable
     OctoContentStorage.cpp
     OctoContentStorage.h
 
+    UnityPatches.cpp
+    UnityPatches.h
+
     UnityWebRequest.cpp
 
     Octo/Proto/Database.proto
