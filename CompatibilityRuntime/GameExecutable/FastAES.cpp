@@ -89,23 +89,9 @@ Il2CppArray *FastAES_NativeDecrypt(Il2CppObject *decryptor,
 
     outputLength += finalLen;
 
-    printf("%d bytes of data produced\n", outputLength);
-
     auto outputArray = il2cpp_array_new(il2cpp_class_get_element_class(il2cpp_object_get_class(reinterpret_cast<Il2CppObject *>(inputData))),
                                                                        outputLength);
     memcpy(reinterpret_cast<unsigned char *>(outputArray) + arrayHeaderSize, output.data(), outputLength);
-
-#if 0
-    il2cpp_array_new();
-
-    printf("FastAES_NativeDecrypt: paddingMode: %d, array1 length: %u, integer1: %d, integer2: %d, array2 length: %u, array3 length: %u\n",
-           paddingMode,
-           il2cpp_array_length(array1),
-           integer1,
-           integer2,
-           il2cpp_array_length(array2),
-           il2cpp_array_length(array3));
-#endif
 
     return outputArray;
 }

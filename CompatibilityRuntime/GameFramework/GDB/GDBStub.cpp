@@ -227,7 +227,7 @@ bool GDBStub::processPacket(const std::string &packet) {
             } else if(query == "Offsets") {
                 std::stringstream offsets;
                 offsets << "TextSeg=";
-                offsets << std::hex << GlobalContext::get().il2cpp().displacement();
+                offsets << std::hex << GlobalContext::get().armlib().displacement();
                 m_packetLayer.sendPacket(offsets.str());
 
             } else {
@@ -367,7 +367,7 @@ std::optional<std::string_view> GDBStub::readLibraries(const std::string_view &a
     if(!m_libraries.has_value()) {
 
         std::stringstream libraryDesc;
-        const auto &il2cpp = GlobalContext::get().il2cpp();
+        const auto &il2cpp = GlobalContext::get().armlib();
         libraryDesc <<
             "<library-list>\n"
                 "<library name=\"" << il2cpp.path() << "\" />\n"
@@ -386,7 +386,7 @@ std::optional<std::string_view> GDBStub::readExecFile(const std::string_view &an
 
     if(!m_execFilename.has_value()) {
 
-        m_execFilename = GlobalContext::get().il2cpp().path();
+        m_execFilename = GlobalContext::get().armlib().path();
     }
 
     return *m_execFilename;

@@ -113,6 +113,11 @@ void *emulated_dlopen(const char *filename, int flags) {
 void *emulated_dlsym(void *handle, const char *sym) {
     printf("emulated_dlsym(%p, %s)\n", handle, sym);
 
+    void *value;
+    if(GlobalContext::get().armlib().getSymbol(sym, value)) {
+        return value;
+    }
+
     if(handle == &nocallHandle) {
         return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(dummyThunk), dummyThunk);
     }
@@ -173,6 +178,17 @@ int android_fstat(int fd, struct android_stat *statbuf) {
     struct stat native;
 
     auto result = ::fstat(fd, &native);
+    if(result >= 0) {
+        translateStat(&native, statbuf);
+    }
+
+    return result;
+}
+
+int android_fstatat(int fd, const char *path, struct android_stat *statbuf, int flag) {
+    struct stat native;
+
+    auto result = ::fstatat(fd, path, &native, flag);
     if(result >= 0) {
         translateStat(&native, statbuf);
     }

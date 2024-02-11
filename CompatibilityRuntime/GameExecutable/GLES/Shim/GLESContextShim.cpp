@@ -24,8 +24,6 @@ void *GLESContextShim::getProcAddress(const char *name) noexcept {
 
         lateInitialize();
 
-        printf("GLESContextShim: getting '%s'\n", name);
-
         if(strcmp(name, "glGetString") == 0) {
             return reinterpret_cast<void *>(shim_glGetString);
 

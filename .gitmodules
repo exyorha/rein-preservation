@@ -4,3 +4,6 @@
 [submodule "CompatibilityRuntime/thirdparty/msgpack-c"]
 	path = CompatibilityRuntime/thirdparty/msgpack-c
 	url = https://github.com/msgpack/msgpack-c.git
+[submodule "CompatibilityRuntime/bionic/bionic"]
+	path = CompatibilityRuntime/bionic/bionic
+	url = https://github.com/exyorha/crbionic.git

@@ -12,6 +12,12 @@ add_library(GameAssembly SHARED
     android_api.cpp
     android_api.h
 
+    Bionic/BionicABITypes.h
+    Bionic/BionicCallouts.cpp
+    Bionic/BionicCallouts.h
+    Bionic/BionicThreading.cpp
+    Bionic/BionicThreading.h
+
     ELF/ElfModule.cpp
     ELF/ElfModule.h
     ELF/Image.cpp
@@ -89,6 +95,8 @@ add_library(GameAssembly SHARED
     Translator/ThunkManager.cpp
     Translator/ThunkManager.h
     Translator/thunkutils.S
+    Translator/WorldStoppingScope.cpp
+    Translator/WorldStoppingScope.h
 
     translator_api/translator_api.h
 )
