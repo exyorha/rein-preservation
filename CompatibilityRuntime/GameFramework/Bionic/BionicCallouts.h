@@ -1,6 +1,7 @@
 #ifndef BIONIC_BIONIC_CALLOUTS_H
 #define BIONIC_BIONIC_CALLOUTS_H
 
+#include "Bionic/BionicThreading.h"
 #include <Bionic/BionicABITypes.h>
 #include <Translator/thunking.h>
 
@@ -18,13 +19,8 @@ static inline void bionic_init_libc(BionicKernelArgumentBlock* args) {
 }
 
 // Called to set the bionic errno.
-// TODO: we can do it faster by mucking with TLS.
-using BionicSetErrnoType = void (*)(int errorNumber);
-
-extern BionicSetErrnoType arm_bionic_set_errno;
-
 static inline void bionic_set_errno(int error) {
-    armcall(arm_bionic_set_errno, error);
+    JITThreadContext::get().bionicTLS[BIONIC_TLS_SLOT_ERRNO] = error;
 }
 
 // Called before the JIT thread context is torn down to tear down the Bionic
