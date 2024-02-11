@@ -398,6 +398,15 @@ static void Adam_Framework_Notification_Notification_SetupNotification(void *ori
     printf("Adam.Framework.Notification.Notification::SetupNotification\n");
 }
 
+/*
+ * Do not allow disabling logging; keep logging enabled.
+ */
+static void UnityEngine_Logger_set_logEnabled(Il2CppObject *instance, bool enabled, void (*original)(Il2CppObject *instance, bool enabled)) {
+    enabled = true;
+
+    original(instance, enabled);
+}
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -484,6 +493,9 @@ static void postInitialize() {
 
     translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Notification.Notification::SetupNotification",
                              Adam_Framework_Notification_Notification_SetupNotification);
+
+    translator_divert_method("UnityEngine.CoreModule.dll::UnityEngine.Logger::set_logEnabled",
+                             UnityEngine_Logger_set_logEnabled);
 
     InitializeInput();
 
