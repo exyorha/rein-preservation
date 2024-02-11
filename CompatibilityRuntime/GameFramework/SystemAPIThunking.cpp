@@ -344,6 +344,14 @@ int plat_renameat(int olddirfd, const char *oldpath, int newdirfd, const char *n
     return result;
 }
 
+int plat_unlinkat(int dirfd, const char *pathname, int flags) {
+    auto result = unlinkat(dirfd, pathname, flags);
+    if(result < 0)
+        bionic_set_errno(errno);
+
+    return result;
+}
+
 int plat_system_property_get(const char *name, char *value) {
     auto result = android_system_property_get(name, value);
     if(result < 0)
@@ -403,6 +411,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "___getpid", &thunkX86<getpid> },
     { "readlinkat", &thunkX86<plat_readlinkat> },
     { "renameat", &thunkX86<plat_renameat> },
+    { "unlinkat", &thunkX86<plat_unlinkat> },
     { "___faccessat", &thunkX86<plat_faccessat> },
     { "uname", &thunkX86<plat_uname> },
     { "clock_getres", &thunkX86<plat_clock_getres> },

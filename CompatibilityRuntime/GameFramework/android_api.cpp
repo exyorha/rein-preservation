@@ -92,20 +92,10 @@ int emulated_dl_iterate_phdr(int (*callback)(struct android_dl_phdr_info *info, 
     return callback(&info, sizeof(info), data);
 }
 
-static unsigned char nocallHandle;
-
-static void dummyThunk() {
-    //printf("Crashlytics function was called\n");
-    JITThreadContext::get().gprs[0] = 0;
-}
-
 void *emulated_dlopen(const char *filename, int flags) {
     static unsigned char pseudohandle;
 
     printf("emulated_dlopen(%s, %d)\n", filename, flags);
-
-    if(std::string_view(filename).find("FirebaseCppApp") != std::string_view::npos)
-        return &nocallHandle;
 
     return &pseudohandle;
 }
@@ -118,10 +108,6 @@ void *emulated_dlsym(void *handle, const char *sym) {
         return value;
     }
 
-    if(handle == &nocallHandle) {
-        return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(dummyThunk), dummyThunk);
-    }
-
     return resolveUndefinedARMSymbol(sym);
 }
 
@@ -130,7 +116,7 @@ void android_FD_SET_chk(int fd, fd_set *set, size_t size) {
 }
 
 int android_system_property_get(const char *name, char *value) {
-    printf("android_system_property_get(%s)\n", name);
+    //printf("android_system_property_get(%s)\n", name);
     *value = 0;
 
     return 0;

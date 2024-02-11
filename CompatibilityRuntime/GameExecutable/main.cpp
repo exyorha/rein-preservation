@@ -391,6 +391,13 @@ static bool RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform(v
     return false;
 }
 
+/*
+ * Stubbing out this avoids initializing the whole Firebase stuff, including the native library.
+ */
+static void Adam_Framework_Notification_Notification_SetupNotification(void *original) {
+    printf("Adam.Framework.Notification.Notification::SetupNotification\n");
+}
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -474,6 +481,10 @@ static void postInitialize() {
 
     translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
                             RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
+
+    translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Notification.Notification::SetupNotification",
+                             Adam_Framework_Notification_Notification_SetupNotification);
+
     InitializeInput();
 
 /*
