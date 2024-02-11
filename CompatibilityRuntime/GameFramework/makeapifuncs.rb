@@ -70,7 +70,7 @@ File.open(ARGV[1], "wb") do |outf|
                 func = $3
 
                 if func == "il2cpp_add_internal_call" || $3 == "il2cpp_resolve_icall" || $3 == "il2cpp_init" ||
-                    $3 == "il2cpp_init_utf16"
+                    $3 == "il2cpp_init_utf16" || $3 == "il2cpp_gc_wbarrier_set_field"
                    next
                 end
 

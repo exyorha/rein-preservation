@@ -125,6 +125,7 @@ static void Adam_Framework_Resource_DarkOctoSetupper_StartSetup(bool arg1, bool 
 
 /*
  * Downsizes the gRPC thread pool
+ */
 static void Grpc_Core_Internal_GrpcThreadPool_ctor(Il2CppObject *this_, Il2CppObject *environment, int32_t poolSize, int32_t queueCount,
                                                     bool inlineHandlers,
                                                     void (*original)(Il2CppObject *this_, Il2CppObject *environment, int32_t poolSize, int32_t queueCount,
@@ -134,7 +135,6 @@ static void Grpc_Core_Internal_GrpcThreadPool_ctor(Il2CppObject *this_, Il2CppOb
 
     original(this_, environment, 1, 1, true);
 }
- */
 
 static bool Dark_StateMachine_Title_Title_CanEnableForceLocalLoading(Il2CppObject *this_, bool (*original)(Il2CppObject *this_)) {
     printf("Dark.StateMachine.Title.Title::CanEnableForceLocalLoading\n");
@@ -183,6 +183,13 @@ static void UnityEngine_Logger_set_logEnabled(Il2CppObject *instance, bool enabl
     enabled = true;
 
     original(instance, enabled);
+}
+
+/*
+ * Avoids a JNI callout to java/util/TimeZone.
+ */
+static Il2CppString *Dark_Localization_LocalizeTime_GetLocalTimeZoneId(Il2CppString *(*original)()) {
+    return stringFromUtf8("Etc/UTC");
 }
 
 static void postInitialize() {
@@ -255,14 +262,17 @@ static void postInitialize() {
     translator_divert_method("UnityEngine.CoreModule.dll::UnityEngine.Logger::set_logEnabled",
                              UnityEngine_Logger_set_logEnabled);
 
+    translator_divert_method("LocalizeTime.dll::Dark.Localization.LocalizeTime::GetLocalTimeZoneId",
+                             Dark_Localization_LocalizeTime_GetLocalTimeZoneId);
+
     InitializeInput();
     InitializeOcto();
 
 /*
  * Downsizes the gRPC thread pool
+ */
     translator_divert_method("Assembly-CSharp-firstpass.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor",
                              Grpc_Core_Internal_GrpcThreadPool_ctor);
-*/
 #if 0
     auto getEnabledInternal = reinterpret_cast<bool (*)(void)>(translator_resolve_native_icall("UnityEngine.Analytics.Analytics::get_enabledInternal"));
     printf("getEnabledInternal: %p\n", getEnabledInternal);

@@ -107,3 +107,11 @@ void IL2CPP_EXPORT translator_divert_method(const char *methodName, Il2CppMethod
     static_cast<MethodDiversion *>(diversion->userdata)->setContinueAddress(diversion->continueThunkAddress());
 }
 
+
+/*
+ * This is exactly what ARM code does.
+ */
+void il2cpp_gc_wbarrier_set_field(Il2CppObject * obj, void **targetAddress, void *object) {
+    (void)obj;
+    *targetAddress = object;
+}

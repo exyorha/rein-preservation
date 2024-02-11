@@ -114,6 +114,41 @@ set_target_properties(GameAssembly PROPERTIES
     PREFIX ""
 )
 
+if(FALSE)
+set(bdwgc_root ${PROJECT_SOURCE_DIR}/thirdparty/bdwgc)
+if(CYGWIN OR WIN32)
+    set(bdwgc_sources
+        win32_threads.c
+    )
+else()
+    set(bdwgc_sources
+        pthread_start.c pthread_stop_world.c pthread_support.c
+    )
+
+    if(APPLE)
+        list(APPEND bdwgc_sources darwin_stop_world.c)
+    endif()
+
+
+endif()
+
+list(TRANSFORM bdwgc_sources PREPEND "${bdwgc_root}/")
+add_library(bdwgc_portion STATIC
+    ${bdwgc_sources}
+)
+target_compile_definitions(bdwgc_portion PRIVATE
+    -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION -DGC_BUILTIN_ATOMIC -DGC_THREADS -D_REENTRANT -DGC_USESIGRT_SIGNALS
+    -DNO_HANDLE_FORK
+)
+target_include_directories(bdwgc_portion PUBLIC "${bdwgc_root}/include")
+
+if(WIN32)
+    target_compile_definitions(bdwgc_portion PRIVATE
+        -D_CRT_SECURE_NO_DEPRECATE
+    )
+endif()
+endif()
+
 if(UNIX)
     target_link_options(GameAssembly PRIVATE
         -Wl,-z,defs
