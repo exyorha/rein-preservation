@@ -146,6 +146,4 @@ add_custom_command(
     VERBATIM
 )
 
-add_dependencies(GameAssembly armlib)
-
 install(TARGETS GameAssembly DESTINATION . COMPONENT GameAssembly)

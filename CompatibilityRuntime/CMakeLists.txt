@@ -48,7 +48,6 @@ set(MSGPACK_USE_BOOST FALSE CACHE BOOL "Use Boost libraried" FORCE)
 set(MSGPACK_BUILD_DOCS FALSE CACHE BOOL "Build Doxygen documentation" FORCE)
 add_subdirectory(thirdparty/msgpack-c)
 
-add_subdirectory(armlib)
 add_subdirectory(UnityStub)
 add_subdirectory(GameFramework)
 add_subdirectory(master_database_ext)
