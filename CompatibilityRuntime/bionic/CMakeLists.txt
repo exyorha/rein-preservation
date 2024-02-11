@@ -9,7 +9,6 @@ enable_language(ASM)
 
 add_library(compatibility-runtime-platform-stubs SHARED
     compatibility-runtime-platform-stubs/compatibility-runtime-platform-stubs.S
-    compatibility-runtime-platform-stubs/compatibility-runtime-platform-stubs.h
 )
 target_include_directories(compatibility-runtime-platform-stubs PUBLIC compatibility-runtime-platform-stubs)
 target_link_options(compatibility-runtime-platform-stubs PUBLIC -nostdlib -nostartfiles)
@@ -666,6 +665,8 @@ target_link_options(bionic PRIVATE
     -Wl,-z,defs
     -Wl,--build-id=none
     -Wl,--hash-style=sysv
+    -Wl,-Bsymbolic
+    -Wl,-z,norelro
 )
 
 target_link_libraries(bionic PRIVATE
