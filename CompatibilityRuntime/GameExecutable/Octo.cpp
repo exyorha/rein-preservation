@@ -1,11 +1,15 @@
 #include "Octo.h"
 #include "OctoContentStorage.h"
 #include "Il2CppUtilities.h"
+#include "translator_api.h"
 
 #include <cstdio>
 #include <cinttypes>
 
-int32_t Octo_Caching_OctoBaseCaching_IsCached(Il2CppObject *this_, Il2CppString *fileName, Il2CppString *md5, int64_t fileSize, void *original) {
+using GetPersistentDataPathPtr = Il2CppString *(*)();
+static GetPersistentDataPathPtr getPersistentDataPath;
+
+static int32_t Octo_Caching_OctoBaseCaching_IsCached(Il2CppObject *this_, Il2CppString *fileName, Il2CppString *md5, int64_t fileSize, void *original) {
 
     auto fileNameUtf8 = stringToUtf8(fileName);
     auto md5Utf8 = stringToUtf8(md5);
@@ -22,7 +26,7 @@ int32_t Octo_Caching_OctoBaseCaching_IsCached(Il2CppObject *this_, Il2CppString 
 }
 
 
-Il2CppString *Octo_Caching_OctoBaseCaching_GetStorageFilePath(Il2CppObject *this_, Il2CppString *fileName, Il2CppString *md5, void *original) {
+static Il2CppString *Octo_Caching_OctoBaseCaching_GetStorageFilePath(Il2CppObject *this_, Il2CppString *fileName, Il2CppString *md5, void *original) {
 
     auto fileNameUtf8 = stringToUtf8(fileName);
     auto md5Utf8 = stringToUtf8(md5);
@@ -34,6 +38,27 @@ Il2CppString *Octo_Caching_OctoBaseCaching_GetStorageFilePath(Il2CppObject *this
         return nullptr;
     }
 
-    auto newpathString = result->string();
-    return il2cpp_string_new_len(newpathString.data(), newpathString.size());
+    return stringFromUtf8(result->string());
+}
+
+static Il2CppString *Octo_Util_FileUtil_GetAndroidOctoRoot(Il2CppString *(*original)(void)) {
+    auto dataPath = stringToUtf8(getPersistentDataPath());
+    dataPath.append("/octo");
+
+    return stringFromUtf8(dataPath);
+}
+
+void InitializeOcto() {
+
+    translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::IsCached",
+                             Octo_Caching_OctoBaseCaching_IsCached);
+
+    translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::GetStorageFilePath",
+                             Octo_Caching_OctoBaseCaching_GetStorageFilePath);
+
+    translator_divert_method("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot",
+                             Octo_Util_FileUtil_GetAndroidOctoRoot);
+
+    getPersistentDataPath = reinterpret_cast<GetPersistentDataPathPtr>(translator_resolve_native_icall("UnityEngine.Application::get_persistentDataPath()"));
+
 }

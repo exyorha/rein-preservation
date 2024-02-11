@@ -247,12 +247,6 @@ static Il2CppString *com_adjust_sdk_Adjust_getAdid(Il2CppString *(*original)(voi
     return il2cpp_string_new("");
 }
 
-static Il2CppString *Octo_Util_FileUtil_GetAndroidOctoRoot(Il2CppString *(*original)(void)) {
-    printf("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot diversion called\n");
-
-    return il2cpp_string_new("/home/reki/rein/octoroot");
-}
-
 static void Firebase_Crashlytics_Crashlytics_Log(Il2CppString *string, void (*original)(Il2CppString *string)) {
     printf("Firebase-Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log diversion called, string: %s\n",
            stringToUtf8(string).c_str());
@@ -419,9 +413,6 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::com.adjust.sdk.Adjust::getAdid",
                              com_adjust_sdk_Adjust_getAdid);
 
-    translator_divert_method("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot",
-                             Octo_Util_FileUtil_GetAndroidOctoRoot);
-
     translator_divert_method("Firebase.Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log",
                              Firebase_Crashlytics_Crashlytics_Log);
 
@@ -468,23 +459,6 @@ static void postInitialize() {
     translator_divert_method("FastAES.dll::FastAES::NativeDecrypt", FastAES_NativeDecrypt);
 
 
-#if 0
-    translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Resource.DarkOctoSetupper::StartSetup",
-                             Adam_Framework_Resource_DarkOctoSetupper_StartSetup);
-
-    translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.Title.Title::CanEnableForceLocalLoading",
-                             Dark_StateMachine_Title_Title_CanEnableForceLocalLoading);
-
-    translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Resource.AssetBundleLookupTableOctoDatabase::InitializeDatabase",
-                             Adam_Framework_Resource_AssetBundleLookupTableOctoDatabase_InitializeDatabase);
-#endif
-
-    translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::IsCached",
-                             Octo_Caching_OctoBaseCaching_IsCached);
-
-    translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::GetStorageFilePath",
-                             Octo_Caching_OctoBaseCaching_GetStorageFilePath);
-
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
 
@@ -498,6 +472,7 @@ static void postInitialize() {
                              UnityEngine_Logger_set_logEnabled);
 
     InitializeInput();
+    InitializeOcto();
 
 /*
  * Downsizes the gRPC thread pool
