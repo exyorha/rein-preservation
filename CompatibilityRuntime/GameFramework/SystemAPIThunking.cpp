@@ -33,6 +33,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     /*
      * Syscalls.
      */
+#ifndef _WIN32
     { "__openat", &thunkX86<plat_openat> },
     { "gettimeofday", &thunkX86<plat_gettimeofday> },
     { "mmap", &thunkX86<plat_mmap> },
@@ -56,7 +57,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "mkdirat", &thunkX86<plat_mkdirat> },
     { "lseek", &thunkX86<plat_lseek> },
     { "nanosleep", &thunkX86<plat_nanosleep> },
-
+#endif
     /*
      * Android-specific API that we delegate out to x86 code.
      */
@@ -217,7 +218,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
 };
 
 static void stubCall(void) {
-    const char *name = static_cast<const char *>(thunkUtilitySlot);
+    const char *name = static_cast<const char *>(readThunkUtilitySlot());
 
     panic("Unimplemented system API function called: '%s'\n", name);
 }

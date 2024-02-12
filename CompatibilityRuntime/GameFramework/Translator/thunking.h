@@ -36,7 +36,21 @@ void runARMCall(JITThreadContext &context);
 
 extern "C" {
     intptr_t getOffsetOfThunkUtilitySlot();
+#if defined(_WIN32)
+    void *readThunkUtilitySlot();
+    void writeThunkUtilitySlot(void *value);
+#else
     extern thread_local void *thunkUtilitySlot;
+
+    static inline void *readThunkUtilitySlot() {
+        return thunkUtilitySlot;
+    }
+
+    static inline void writeThunkUtilitySlot(void *value) {
+        thunkUtilitySlot = thunkUtilitySlot;
+    }
+
+#endif
 }
 
 
@@ -188,7 +202,7 @@ static inline auto retrieveX86CallPointer(int position) -> typename std::enable_
 
 template<typename ResultType, typename... Args>
 ResultType x86CallThunk(Args... args) {
-    auto armFunction = reinterpret_cast<ResultType (*)(Args...)>(thunkUtilitySlot);
+    auto armFunction = reinterpret_cast<ResultType (*)(Args...)>(readThunkUtilitySlot());
 
     return armcall(armFunction, args...);
 }
@@ -334,7 +348,7 @@ void x86call(ReturnType (*x86FunctionPointer)(Args... args)) {
 
 template<typename ReturnType, typename... Args>
 void x86call() {
-    return x86call(reinterpret_cast<ReturnType (*)(Args...)>(thunkUtilitySlot));
+    return x86call(reinterpret_cast<ReturnType (*)(Args...)>(readThunkUtilitySlot()));
 }
 
 template<typename ReturnType, typename... Args>

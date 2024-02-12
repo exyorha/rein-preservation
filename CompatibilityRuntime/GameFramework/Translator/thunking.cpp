@@ -5,7 +5,55 @@
 
 #include <cinttypes>
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <winternl.h>
+#include <Windows/WindowsError.h>
+
+class WindowsTLSSlot {
+public:
+    WindowsTLSSlot();
+    ~WindowsTLSSlot();
+
+    WindowsTLSSlot(const WindowsTLSSlot &other) = delete;
+    WindowsTLSSlot &operator =(const WindowsTLSSlot &other) = delete;
+
+    inline void set(void *value) {
+        TlsSetValue(m_slot, value);
+    }
+
+    inline void *get() {
+        return TlsGetValue(m_slot);
+    }
+
+    inline DWORD slot() const {
+        return m_slot;
+    }
+
+private:
+    DWORD m_slot;
+};
+
+WindowsTLSSlot::WindowsTLSSlot() {
+
+    m_slot = TlsAlloc();
+    if(m_slot == TLS_OUT_OF_INDEXES)
+        WindowsError::throwLastError();
+
+    if(m_slot >= 64)
+        throw std::runtime_error("too many TLS slots already allocated");
+}
+
+WindowsTLSSlot::~WindowsTLSSlot() {
+    TlsFree(m_slot);
+}
+
+static WindowsTLSSlot thunkUtilitySlot;
+
+#else
+
 thread_local void *thunkUtilitySlot;
+#endif
 
 static const uint16_t ARMCallEndSVC = 0xE0;
 
@@ -19,7 +67,7 @@ static bool processJITExit(JITThreadContext &context, const SVCExit &exit) {
 
         auto savedLR = context.lr();
 
-        thunkUtilitySlot = key;
+        writeThunkUtilitySlot(key);
         invokable();
 
         context.pc = savedLR;
@@ -154,3 +202,19 @@ void fetchX86CallFloatingPointArgument(int position, long double &out) {
         panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
     }
 }
+
+#if defined(_WIN32)
+intptr_t getOffsetOfThunkUtilitySlot() {
+    return offsetof(TEB, TlsSlots) + thunkUtilitySlot.slot() * sizeof(uintptr_t);
+}
+
+void *readThunkUtilitySlot() {
+    return thunkUtilitySlot.get();
+}
+
+void writeThunkUtilitySlot(void *value) {
+    thunkUtilitySlot.set(value);
+}
+
+#endif
+

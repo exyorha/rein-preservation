@@ -87,9 +87,13 @@ ThunkManager::X86ThunkTarget ThunkManager::allocateX86ToARMThunkCall(void *key, 
             // NOTE: while a shorter instruction (with a 32-bit offst) can be
             // encoded here, it won't result in a shorter *thunk*, since it'll
             // require padding bytes
-            // mov fs:[<placeholder 64-bit offset>], rax
-            // TODO: for Windows (would Windows be ever implemented, must be 'gs' here - 0x65 prefix
-            0x64, 0x48, 0xA3, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE,
+            // mov <fs:gs>:[<placeholder 64-bit offset>], rax
+#if defined(_WIN32)
+            0x65, // gs:
+#else
+            0x64, // fs:
+#endif
+            0x48, 0xA3, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE,
             // jmp [rip + target]
             0xFF, 0x25, 0x08, 0x00, 0x00, 0x00
             // Follows in the thunk structure:

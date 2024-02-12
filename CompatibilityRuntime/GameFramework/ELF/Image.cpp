@@ -50,7 +50,7 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
         throw std::runtime_error("unable to map the PHDR into one of the segments");
 
     printf("----- ARM image %s is occupying the memory range from %p to %p\n",
-           path.c_str(),
+           path.string().c_str(),
            m_mapping->actualBase(), static_cast<unsigned char *>(m_mapping->actualBase()) + m_mapping->size());
 
     m_module.reset();
@@ -157,8 +157,12 @@ void Image::mapImageSegments() {
                 auto mapped = displace(alignedVaddr);
                 if(!VirtualAlloc(mapped, mappedSize, MEM_COMMIT, PAGE_READWRITE))
                     WindowsError::throwLastError();
-
-                m_module->readFileData(mapped, alignedOffset, mappedSize);
+#if 0
+                DWORD oldProtect;
+                if(!VirtualProtect(mapped, mappedSize, PAGE_READWRITE, &oldProtect))
+                    WindowsError::throwLastError();
+#endif
+                m_module->readFileData(mapped, mappedSize, alignedOffset);
 #else
 
                 auto result = mmap(
@@ -432,7 +436,7 @@ Image::ImageMapping::ImageMapping(void *preferredBase, size_t size) : m_preferre
 #if defined(_WIN32)
     (void)preferredBase;
 
-    m_base = VirtualAlloc(nullptr, size, MEM_RESERVE, 0);
+    m_base = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
     if(m_base == nullptr)
         WindowsError::throwLastError();
 #else

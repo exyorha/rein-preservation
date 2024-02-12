@@ -14,7 +14,7 @@ InternalCallThunk::InternalCallThunk(const char *name, Il2CppMethodPointer x86Me
 InternalCallThunk::~InternalCallThunk() = default;
 
 void InternalCallThunk::thunkCall() {
-    static_cast<InternalCallThunk *>(thunkUtilitySlot)->execute();
+    static_cast<InternalCallThunk *>(readThunkUtilitySlot())->execute();
 }
 
 const PreparedInternalCall *InternalCallThunk::prepareInternalCall(std::string &&name, std::optional<SavedICallContext> &savedContext) {

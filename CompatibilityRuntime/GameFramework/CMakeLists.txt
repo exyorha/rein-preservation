@@ -185,6 +185,13 @@ if(UNIX)
     set_target_properties(GameAssembly PROPERTIES LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
 endif()
 
+if(MINGW)
+    target_link_options(GameAssembly PRIVATE
+        -Wl,-Bstatic -static-libgcc
+    )
+endif()
+
+
 GENERATE_EXPORT_HEADER(
     GameAssembly
     BASE_NAME il2cpp

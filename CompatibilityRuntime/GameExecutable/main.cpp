@@ -1,6 +1,7 @@
 #include <unity_stub.h>
 #include <translator_api.h>
 
+#ifndef _WIN32
 #include "GLES/Shim/GLESContextShim.h"
 #include "Il2CppUtilities.h"
 #include "FastAES.h"
@@ -10,16 +11,21 @@
 #include "UnityPatches.h"
 
 #include <GLES/SDLWrapper.h>
+#endif
 
+#ifndef _WIN32
 OctoContentStorage *contentStorageInstance;
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
-    printf("com.adjust.sdk.Adjust::start diversion called, interposed function: %p\n", original);
+    printf("com.adjust.sdk.Adjust::start\n");
+}
+
+static void com_adjust_sdk_Adjust_OnApplicationPause(Il2CppObject *this_, bool paused, void *original) {
+    printf("com.adjust.sdk.Adjust::OnApplicationPause: paused: %d\n", paused);
 }
 
 static void Subsystem_AdjustSDK_AdjustUtility_TrackEvent(Il2CppString *event, void (*original)(Il2CppString *event)) {
-    printf("Subsystem.AdjustSDK.AdjustUtility.TrackEvent diversion called, interposed function: %p, event: %p\n", original,
-           event);
+    printf("Subsystem.AdjustSDK.AdjustUtility.TrackEvent: event: %s\n", stringToUtf8(event).c_str());
 }
 
 static Il2CppString *com_adjust_sdk_Adjust_getAdid(Il2CppString *(*original)(void)) {
@@ -29,11 +35,11 @@ static Il2CppString *com_adjust_sdk_Adjust_getAdid(Il2CppString *(*original)(voi
 }
 
 static void Firebase_Crashlytics_Crashlytics_Log(Il2CppString *string, void (*original)(Il2CppString *string)) {
-    printf("Firebase-Crashlytics.dll::Firebase.Crashlytics.Crashlytics::Log diversion called, string: %s\n",
+    printf("Firebase.Crashlytics.Crashlytics::Log: %s\n",
            stringToUtf8(string).c_str());
 }
 static void Firebase_Crashlytics_Crashlytics_SetUserId(Il2CppString *string, void (*original)(Il2CppString *string)) {
-    printf("Firebase-Crashlytics.dll::Firebase.Crashlytics.Crashlytics::SetUserId diversion called, string: %s\n",
+    printf("Firebase.Crashlytics.Crashlytics::SetUserId: %s\n",
            stringToUtf8(string).c_str());
 }
 
@@ -116,10 +122,6 @@ static bool DeviceUtil_DeviceUtil_GetIda(bool (*original)(void)) {
     return false;
 }
 
-static void Adam_Framework_Resource_DarkOctoSetupper_StartSetup(bool arg1, bool arg2, void (*original)(bool arg1, bool arg2)) {
-    printf("StartSetup(%d, %d)\n", arg1, arg2);
-}
-
 /*
  * Downsizes the gRPC thread pool
  */
@@ -131,16 +133,6 @@ static void Grpc_Core_Internal_GrpcThreadPool_ctor(Il2CppObject *this_, Il2CppOb
             this_, environment, poolSize, queueCount, inlineHandlers);
 
     original(this_, environment, 1, 1, true);
-}
-
-static bool Dark_StateMachine_Title_Title_CanEnableForceLocalLoading(Il2CppObject *this_, bool (*original)(Il2CppObject *this_)) {
-    printf("Dark.StateMachine.Title.Title::CanEnableForceLocalLoading\n");
-
-    return true;
-}
-
-static void Adam_Framework_Resource_AssetBundleLookupTableOctoDatabase_InitializeDatabase(Il2CppObject *this_, void (*original)(Il2CppObject *this_)) {
-    printf("Adam.Framework.Resource.AssetBundleLookupTableOctoDatabase::InitializeDatabase\n");
 }
 
 static void Firebase_Analytics_FirebaseAnalytics_cctor(void (*original)()) {
@@ -194,6 +186,11 @@ static void postInitialize() {
 
     translator_divert_method("Assembly-CSharp.dll::com.adjust.sdk.Adjust::start",
                              com_adjust_sdk_Adjust_start);
+
+#if 0
+    translator_divert_method("Assembly-CSharp.dll::com.adjust.sdk.Adjust::OnApplicationPause",
+                             com_adjust_sdk_Adjust_OnApplicationPause);
+#endif
 
     translator_divert_method("Assembly-CSharp.dll::Subsystem.AdjustSDK.AdjustUtility::TrackEvent",
                              Subsystem_AdjustSDK_AdjustUtility_TrackEvent);
@@ -301,8 +298,10 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
     }
 #endif
 }
+#endif
 
 static int gameMain(int argc, char **argv) {
+#ifndef _WIN32
     OctoContentStorage storage("/home/reki/rein/content");
     contentStorageInstance = &storage;
 
@@ -319,20 +318,24 @@ static int gameMain(int argc, char **argv) {
     }
 
     initializeGLES(gles);
-
+#endif
     int result = PlayerMain(argc, argv);
 
+#ifndef _WIN32
     contentStorageInstance = nullptr;
+#endif
 
     return result;
 }
 
 int main(int argc, char **argv) {
+#ifndef _WIN32
     if(!applyUnityPatches())
         return 1;
 
     translator_set_post_initialize_callback(postInitialize);
     translator_set_grpc_redirection_callback(grpcRedirection);
+#endif
 
     return translator_main(argc, argv, gameMain);
 }

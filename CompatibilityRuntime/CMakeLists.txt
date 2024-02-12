@@ -24,19 +24,14 @@ target_link_libraries(ffi INTERFACE ${FFI_LIBRARY})
 target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 
 if(NOT WIN32)
+    find_package(Protobuf CONFIG REQUIRED)
     find_package(gRPC CONFIG REQUIRED)
+    find_package(Iconv REQUIRED)
+    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+
 endif()
 
 add_subdirectory(GameFramework)
 
-if(NOT WIN32)
-    find_package(Iconv REQUIRED)
-    find_package(Protobuf CONFIG REQUIRED)
+add_subdirectory(GameExecutable)
 
-    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
-
-
-    add_subdirectory(GameExecutable)
-
-    add_subdirectory(interrogator)
-endif()

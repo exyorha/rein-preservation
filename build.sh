@@ -45,6 +45,8 @@ ln -sf ../GameServer-build/compile_commands.json GameServer
 cmake --build GameServer-build
 cmake --install GameServer-build --component GameServer
 
+#exit 0
+
 mkdir -p windows-build-deps dl
 
 windows_boost_version=boost_1_84_0
@@ -70,7 +72,7 @@ make -C windows-build-deps/libffi-build install
 mkdir -p windows-build-root-path
 
 cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
     -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
@@ -79,3 +81,4 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -G "Ninja"
 
 cmake --build CompatibilityRuntime-mingw-build
+cmake --install CompatibilityRuntime-mingw-build --component GameAssembly
