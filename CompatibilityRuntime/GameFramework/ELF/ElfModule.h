@@ -7,7 +7,9 @@
 
 #include <ELF/musl-elf.h>
 
+#ifndef _WIN32
 #include "FileDescriptor.h"
+#endif
 
 class ElfModule {
 protected:
@@ -29,10 +31,11 @@ public:
 
     virtual void readFileData(void *data, size_t size, off_t offset) = 0;
 
+#ifndef _WIN32
     virtual int getFileDescriptor() const = 0;
+#endif
 
     static std::unique_ptr<ElfModule> createFromFile(const std::filesystem::path &filename);
-    static std::unique_ptr<ElfModule> createFromFileDescriptor(FileDescriptor &&fd);
 };
 
 template<typename T>
@@ -71,7 +74,10 @@ public:
     using Ehdr = Traits::Ehdr;
     using Phdr = Traits::Phdr;
 
+#ifdef _WIN32
+#else
     ElfModuleImpl(const unsigned char *ident, FileDescriptor &&fd);
+#endif
     ~ElfModuleImpl() override;
 
     uint8_t moduleClass() const override;
@@ -83,12 +89,16 @@ public:
     Elf64_Phdr phent(size_t index) const override;
 
     void readFileData(void *data, size_t size, off_t offset) override;
+#ifndef _WIN32
     int getFileDescriptor() const override;
+#endif
 
 private:
     Ehdr m_ehdr;
     std::vector<Phdr> m_phdr;
+#ifndef _WIN32
     FileDescriptor m_fd;
+#endif
 };
 
 #endif

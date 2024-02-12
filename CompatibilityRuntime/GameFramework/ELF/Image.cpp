@@ -9,12 +9,18 @@
 #include <cstring>
 
 #include <system_error>
-#include <sys/mman.h>
 
 #include "support.h"
 #include <Translator/thunking.h>
 #include "SystemAPIThunking.h"
 #include "GlobalContext.h"
+
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#endif
+
 
 Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFromFile(path)),
     m_dynamic(nullptr),

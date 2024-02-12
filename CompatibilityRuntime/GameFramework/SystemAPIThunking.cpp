@@ -3,32 +3,10 @@
 #include <Translator/thunking.h>
 #include <Bionic/BionicCallouts.h>
 #include <Bionic/BionicThreading.h>
+#include <Bionic/BionicSyscalls.h>
+#include <Bionic/BionicAndroidAPI.h>
+#include <Bionic/BionicDynamicLoaderAPI.h>
 
-#include <cstdint>
-#include <cstdio>
-#include <string>
-#include <stdexcept>
-#include <cmath>
-
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <dirent.h>
-#include <syslog.h>
-#include <netdb.h>
-#include <locale.h>
-#include <malloc.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <signal.h>
-#include <semaphore.h>
-#include <termios.h>
-#include <sys/utsname.h>
-
-#include "android_api.h"
 #include "grpc_csharp_ext.h"
 #include "grpc_special_thunks.h"
 #include "grpc_channel_redirection.h"
@@ -49,207 +27,10 @@ static void *thunkX86Raw() {
     return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(x86Function), x86Function);
 }
 
-int plat_openat(int fd, const char* path, int oflag, int mode) {
-    auto result = openat(fd, path, oflag, mode);
-    if(result < 0) {
-        bionic_set_errno(errno);
-    }
-
-    return result;
-}
-
-int plat_gettimeofday(struct timeval *tp, void *tzp) {
-    auto result = gettimeofday(tp, tzp);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
-    auto result = mmap(addr, len, prot, flags, fildes, off);
-    if(result == MAP_FAILED)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_mprotect(void *addr, size_t len, int prot) {
-    auto result = mprotect(addr, len, prot);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_munmap(void *addr, size_t len) {
-    auto result = munmap(addr, len);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_fstat(int fd, struct android_stat *statbuf) {
-    auto result = android_fstat(fd, statbuf);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_fstatat(int fd, const char *path, struct android_stat *statbuf, int flag) {
-    auto result = android_fstatat(fd, path, statbuf, flag);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_dup(int fd) {
-    auto result = dup(fd);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_close(int fd) {
-    auto result = close(fd);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_clock_gettime(clockid_t clockid, struct timespec *tp) {
-    auto result = clock_gettime(clockid, tp);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_clock_getres(clockid_t clockid, struct timespec *tp) {
-    auto result = clock_getres(clockid, tp);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-ssize_t plat_read(int fd, void *dest, size_t size) {
-    auto result = read(fd, dest, size);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-ssize_t plat_write(int fd, const void *dest, size_t size) {
-    auto result = write(fd, dest, size);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-ssize_t plat_readlinkat(int dirfd, const char *pathname,
-                        char *buf, size_t bufsiz) {
-
-    auto result = readlinkat(dirfd, pathname, buf, bufsiz);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_faccessat(int fd, const char *path, int amode, int flag) {
-    auto result = faccessat(fd, path, amode, flag);
-
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_uname(bionic_utsname *name) {
-    utsname host;
-    auto result = uname(&host);
-    if(result < 0)
-        bionic_set_errno(errno);
-    else {
-        strncpy(name->sysname, host.sysname, sizeof(name->sysname));
-        strncpy(name->nodename, host.nodename, sizeof(name->nodename));
-        strncpy(name->release, host.release, sizeof(name->release));
-        strncpy(name->version, host.version, sizeof(name->version));
-        strncpy(name->machine, host.machine, sizeof(name->machine));
-        strncpy(name->release, host.release, sizeof(name->release));
-    }
-
-    return result;
-}
-
-int plat_renameat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath) {
-    auto result = renameat(olddirfd, oldpath, newdirfd, newpath);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_unlinkat(int dirfd, const char *pathname, int flags) {
-    auto result = unlinkat(dirfd, pathname, flags);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_system_property_get(const char *name, char *value) {
-    auto result = android_system_property_get(name, value);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_mkdirat(int dirfd, const char *pathname, bionic_mode_t mode) {
-    auto result = mkdirat(dirfd, pathname, mode);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-off_t plat_lseek(int fildes, off_t offset, int whence) {
-    auto result = lseek(fildes, offset, whence);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-
-}
-
-int plat_nanosleep(const struct timespec *rqtp, struct timespec *rmtp) {
-    auto result = nanosleep(rqtp, rmtp);
-
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    return result;
-}
-
-int plat_write_log(int priority, const char* tag, const char* msg) {
-    printf("Android log: prio %d, tag '%s': %s\n", priority, tag, msg);
-
-    return 0;
-}
-
 static const std::unordered_map<std::string_view, SymbolProvidingFunction> systemAPI{
-/*
- * NEW SET FOR BIONIC. Syscalls
- */
+    /*
+     * Syscalls.
+     */
     { "__openat", &thunkX86<plat_openat> },
     { "gettimeofday", &thunkX86<plat_gettimeofday> },
     { "mmap", &thunkX86<plat_mmap> },
@@ -324,11 +105,6 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "dl_iterate_phdr", &thunkX86<emulated_dl_iterate_phdr> },
     { "dlopen", &thunkX86<emulated_dlopen> },
     { "dlsym", &thunkX86<emulated_dlsym> },
-
-/*
- * END OF THE NEW SET
- */
-
 
     { "grpcsharp_metadata_array_destroy_full", &thunkX86<grpcsharp_metadata_array_destroy_full> },
     { "grpcsharp_metadata_array_create", &thunkX86<grpcsharp_metadata_array_create> },
@@ -435,8 +211,6 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "grpcsharp_sizeof_grpc_event", &thunkX86<grpcsharp_sizeof_grpc_event> },
     { "grpcsharp_test_override_method", &thunkX86<grpcsharp_test_override_method> },
 };
-
-struct dirent dir;
 
 static void stubCall(void) {
     const char *name = static_cast<const char *>(thunkUtilitySlot);

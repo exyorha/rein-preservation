@@ -9,12 +9,15 @@ add_library(GameAssembly SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/include/il2cpp_export.h
     ${CMAKE_CURRENT_BINARY_DIR}/apifuncs.cpp
 
-    android_api.cpp
-    android_api.h
-
     Bionic/BionicABITypes.h
+    Bionic/BionicAndroidAPI.cpp
+    Bionic/BionicAndroidAPI.h
     Bionic/BionicCallouts.cpp
     Bionic/BionicCallouts.h
+    Bionic/BionicDynamicLoaderAPI.cpp
+    Bionic/BionicDynamicLoaderAPI.h
+    Bionic/BionicSyscalls.cpp
+    Bionic/BionicSyscalls.h
     Bionic/BionicThreading.cpp
     Bionic/BionicThreading.h
 
@@ -110,6 +113,10 @@ if(NOT WIN32)
         grpc_special_thunks.h
     )
 
+endif()
+
+if(WIN32)
+    target_compile_definitions(GameAssembly PRIVATE -DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
 endif()
 
 set_target_properties(GameAssembly PROPERTIES

@@ -18,11 +18,6 @@ std::unique_ptr<ElfModule> ElfModule::createFromFile(const std::filesystem::path
 
     FileDescriptor fd(rawFd);
 
-    return createFromFileDescriptor(std::move(fd));
-}
-
-std::unique_ptr<ElfModule> ElfModule::createFromFileDescriptor(FileDescriptor &&fd) {
-
     unsigned char ident[EI_NIDENT];
     auto result = read(fd, ident, sizeof(ident));
     if(result < 0)
