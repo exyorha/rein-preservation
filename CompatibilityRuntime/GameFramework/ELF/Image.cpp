@@ -326,20 +326,12 @@ bool Image::getSymbol(const char *name, void *&value) const {
                 return false;
             }
 
-            if(symbol.st_shndx == SHN_ABS) {
-                value = reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.st_value));
-            } else {
-                value = displace<void>(symbol.st_value);
-            }
+            value = displace<void>(symbol.st_value);
 
             return true;
         }
     }
 
-    return false;
-
-
-    printf("Image::getSymbol(%s) not implemented!\n", name);
     return false;
 }
 
@@ -412,9 +404,7 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
         throw std::logic_error("the symbol index is out of range");
 
     const auto &symbol = m_symbolTable[symbolIndex];
-    if(symbol.st_shndx == SHN_ABS) {
-        return reinterpret_cast<void *>(symbol.st_value);
-    } else if(symbol.st_shndx == SHN_UNDEF) {
+    if(symbol.st_shndx == SHN_UNDEF) {
         auto name = m_stringTable + symbol.st_name;
 
         const Image *armlibToCheck = nullptr;
