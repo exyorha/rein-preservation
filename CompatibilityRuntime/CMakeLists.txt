@@ -16,17 +16,26 @@ find_program(RUBY ruby REQUIRED)
 
 enable_language(ASM)
 
-if(NOT WIN32)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(FFI REQUIRED IMPORTED_TARGET libffi)
+find_library(FFI_LIBRARY ffi REQUIRED)
+find_path(FFI_INCLUDEPATH ffi.h REQUIRED)
 
+add_library(ffi INTERFACE)
+target_link_libraries(ffi INTERFACE ${FFI_LIBRARY})
+target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
+
+if(NOT WIN32)
+    find_package(gRPC CONFIG REQUIRED)
+endif()
+
+add_subdirectory(GameFramework)
+
+if(NOT WIN32)
     find_package(Iconv REQUIRED)
     find_package(Protobuf CONFIG REQUIRED)
-    find_package(gRPC CONFIG REQUIRED)
 
     find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
-    add_subdirectory(GameFramework)
+
     add_subdirectory(GameExecutable)
 
     add_subdirectory(interrogator)

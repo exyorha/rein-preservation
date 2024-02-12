@@ -104,7 +104,11 @@ add_library(GameAssembly SHARED
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
     ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
 target_include_directories(GameAssembly PRIVATE .)
-target_link_libraries(GameAssembly PRIVATE dynarmic PkgConfig::FFI gRPC::grpc)
+target_link_libraries(GameAssembly PRIVATE dynarmic ffi)
+
+if(NOT WIN32)
+    target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
+endif()
 
 set_target_properties(GameAssembly PROPERTIES
     C_VISIBILITY_PRESET hidden

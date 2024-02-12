@@ -1,4 +1,30 @@
+#!/bin/bash
 set -e
+
+download_and_unpack_windows_dependency() {
+    local url="$1"
+    local basename="$(basename -- "$url")"
+    local stem="$(basename -s ".7z" -- "$(basename -s ".tar.gz" -- "$url")")"
+
+    echo "$url" "$basename" "$stem"
+
+    if [ ! -d "windows-build-deps/${stem}" ]; then
+        if [ ! -f "dl/${basename}" ]; then
+            wget -O "dl/${basename}.part" "${url}"
+            mv "dl/${basename}.part" "dl/${basename}"
+        fi
+
+        mkdir -p windows-build-deps/part
+
+        if [[ $basename = *.7z ]]; then
+            7z -owindows-build-deps/part x "dl/${basename}"
+        else
+            tar xf "dl/${basename}" -C windows-build-deps/part
+        fi
+        mv "windows-build-deps/part/${stem}" "windows-build-deps"
+    fi
+}
+
 cmake \
     -S CompatibilityRuntime \
     -B CompatibilityRuntime-build -G "Kate - Ninja" \
@@ -19,22 +45,27 @@ ln -sf ../GameServer-build/compile_commands.json GameServer
 cmake --build GameServer-build
 cmake --install GameServer-build --component GameServer
 
-exit 0
-
 mkdir -p windows-build-deps dl
 
 windows_boost_version=boost_1_84_0
+windows_ffi_version=libffi-3.4.4
 
-if [ ! -d "windows-build-deps/${windows_boost_version}" ]; then
-    if [ ! -f "dl/${windows_boost_version}.7z" ]; then
-        wget -O "dl/${windows_boost_version}.7z.part" https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z
-        mv "dl/${windows_boost_version}.7z.part" "dl/${windows_boost_version}.7z"
-    fi
+download_and_unpack_windows_dependency "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z"
+download_and_unpack_windows_dependency "https://github.com/libffi/libffi/releases/download/v3.4.4/${windows_ffi_version}.tar.gz"
 
-    mkdir -p windows-build-deps/part
-    7z -owindows-build-deps/part x "dl/${windows_boost_version}.7z"
-    mv "windows-build-deps/part/${windows_boost_version}" "windows-build-deps/${windows_boost_version}"
+mkdir -p windows-build-deps/libffi-build
+
+winprefix="$(realpath -- windows-build-root-path)"
+
+if [ ! -f windows-build-deps/libffi-build/config.status ]; then
+    (cd windows-build-deps/libffi-build && ../${windows_ffi_version}/configure \
+        --build="$(gcc -dumpmachine)" \
+        --host=x86_64-w64-mingw32 \
+        --prefix="${winprefix}" \
+        --enable-static --disable-shared --with-pic --disable-docs)
 fi
+
+make -C windows-build-deps/libffi-build install
 
 mkdir -p windows-build-root-path
 
