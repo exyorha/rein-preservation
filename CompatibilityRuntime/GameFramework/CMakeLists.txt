@@ -70,6 +70,7 @@ add_library(GameAssembly SHARED
     Interop/SavedICallContext.cpp
     Interop/SavedICallContext.h
 
+    il2cpp-api-internal.h
     il2cpp_api.cpp
 
     signal_compatibility.cpp

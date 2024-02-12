@@ -11,6 +11,7 @@
 #include <ELF/Image.h>
 
 #include "GlobalContext.h"
+#include "il2cpp-api-internal.h"
 
 static void (*postInitializeCallback)(void);
 
@@ -49,11 +50,7 @@ void translator_set_post_initialize_callback(void (*callback)(void)) {
 
 int il2cpp_init(const char* domain_name) {
 
-    typedef int(*FunctionPointer)(const char* domain_name);
-
-    static FunctionPointer arm_il2cpp_init = reinterpret_cast<FunctionPointer>(GlobalContext::get().il2cpp().getSymbolChecked("il2cpp_init"));
-
-    auto result = armcall(arm_il2cpp_init, domain_name);
+    auto result = internal_il2cpp_init(domain_name);
     if(result != 0 && postInitializeCallback) {
         postInitializeCallback();
     }
@@ -63,11 +60,7 @@ int il2cpp_init(const char* domain_name) {
 
 int il2cpp_init_utf16(const Il2CppChar * domain_name) {
 
-    typedef int(*FunctionPointer)(const Il2CppChar * domain_name);
-
-    static FunctionPointer arm_il2cpp_init_utf16 = reinterpret_cast<FunctionPointer>(GlobalContext::get().il2cpp().getSymbolChecked("il2cpp_init_utf16"));
-
-    auto result = armcall(arm_il2cpp_init_utf16, domain_name);
+    auto result = internal_il2cpp_init_utf16(domain_name);
     if(result != 0 && postInitializeCallback) {
         postInitializeCallback();
     }
@@ -96,8 +89,6 @@ void IL2CPP_EXPORT translator_divert_method(const char *methodName, Il2CppMethod
     parameters.hasExplicitAssemblyName = true;
     auto method = InteropMethodLocator::resolveMethod(methodName, parameters);
     auto implementation = *reinterpret_cast<const Il2CppMethodPointer *>(method);
-
-    printf("translator_divert_method(%s): method found: %p, ARM implementation at %p\n", methodName, method, implementation);
 
     auto diversionData = std::make_unique<MethodDiversion>(method, interposer);
 

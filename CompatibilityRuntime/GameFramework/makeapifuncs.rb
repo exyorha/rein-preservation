@@ -58,6 +58,7 @@ File.open(ARGV[1], "wb") do |outf|
     outf.puts "#include <ELF/Image.h>"
     outf.puts "#include <Translator/thunking.h>"
     outf.puts "#include \"GlobalContext.h\""
+    outf.puts "#include \"il2cpp-api-internal.h\""
     outf.puts ""
 
     File.open(ARGV[0], "rb") do |inf|
@@ -68,10 +69,14 @@ File.open(ARGV[1], "wb") do |outf|
             if line =~ /DO_API(_NO_RETURN)?\((.+?),\s*(.+?)\s*,\s*\((.*)\)\)/
 
                 func = $3
+                internal = false
 
-                if func == "il2cpp_add_internal_call" || $3 == "il2cpp_resolve_icall" || $3 == "il2cpp_init" ||
-                    $3 == "il2cpp_init_utf16" || $3 == "il2cpp_gc_wbarrier_set_field"
+                if func == "il2cpp_add_internal_call" || func == "il2cpp_resolve_icall" || func == "il2cpp_gc_wbarrier_set_field"
                    next
+                end
+
+                if func == "il2cpp_init" || func == "il2cpp_init_utf16"
+                    func = "internal_#{func}"
                 end
 
                 args = split_arg_list($4)
