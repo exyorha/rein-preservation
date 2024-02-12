@@ -4,7 +4,6 @@
 #include "GlobalContext.h"
 #include "Translator/JITThreadContext.h"
 
-#include <elf.h>
 #include <signal.h>
 
 #include <cstdio>
@@ -38,23 +37,6 @@ struct android_stat {
   unsigned int __unused5;
 
 };
-
-void android_log_print_raw_thunk(void) {
-    printf("android_log_print_raw_thunk\n");
-}
-
-void android_set_abort_message(const char *message) {
-    printf("android_set_abort_message(%s)\n", message);
-}
-
-int emulated_cxa_atexit(void (*func) (void *), void * arg, void * dso_handle) {
-    printf("emulated_cxa_atexit: %p, %p, %p\n", func, arg, dso_handle);
-    return 0;
-}
-
-void emulated_cxa_finalize(void * d) {
-    printf("emulated_cxa_finalize: %p\n", d);
-}
 
 int emulated_dladdr(const void *addr, android_Dl_info *info) {
     return 0;
@@ -109,10 +91,6 @@ void *emulated_dlsym(void *handle, const char *sym) {
     }
 
     return resolveUndefinedARMSymbol(sym);
-}
-
-void android_FD_SET_chk(int fd, fd_set *set, size_t size) {
-    printf("android_FD_SET_chk(%d, %p, %zu)\n", fd, set, size);
 }
 
 int android_system_property_get(const char *name, char *value) {
@@ -181,25 +159,3 @@ int android_fstatat(int fd, const char *path, struct android_stat *statbuf, int 
 
     return result;
 }
-
-int android_sysconf(int token) {
-    int translated;
-
-    /*
-     * Android has very different sysconf tokens.
-     */
-
-    if(token == 0x27) {
-        translated = _SC_PAGESIZE;
-    } else if(token == 0x61) {
-        translated = _SC_NPROCESSORS_ONLN;
-    } else {
-        /*
-         * Nothing good will come from failing this call, so just panic.
-         */
-        panic("android_sysconf: unknown token %d\n", token);
-    }
-
-    return sysconf(translated);
-}
-

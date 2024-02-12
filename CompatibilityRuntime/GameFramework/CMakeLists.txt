@@ -22,32 +22,15 @@ add_library(GameAssembly SHARED
     ELF/ElfModule.h
     ELF/Image.cpp
     ELF/Image.h
+    ELF/musl-elf.h
 
     FileDescriptor.cpp
     FileDescriptor.h
 
     translator_main.cpp
 
-    GDB/DebugMemoryAccess.cpp
-    GDB/DebugMemoryAccess.h
-    GDB/GDBPacketFormatter.cpp
-    GDB/GDBPacketFormatter.h
-    GDB/GDBPacketLayer.cpp
-    GDB/GDBPacketLayer.h
-    GDB/GDBPacketParser.cpp
-    GDB/GDBPacketParser.h
-    GDB/GDBStub.cpp
-    GDB/GDBStub.h
-
     GlobalContext.cpp
     GlobalContext.h
-
-    grpc_channel_redirection.cpp
-    grpc_channel_redirection.h
-    grpc_csharp_ext.c
-    grpc_csharp_ext.h
-    grpc_special_thunks.cpp
-    grpc_special_thunks.h
 
     Interop/ARMArgumentPacker.cpp
     Interop/ARMArgumentPacker.h
@@ -73,8 +56,6 @@ add_library(GameAssembly SHARED
     il2cpp-api-internal.h
     il2cpp_api.cpp
 
-    signal_compatibility.cpp
-    signal_compatibility.h
     support.h
     support.cpp
 
@@ -108,6 +89,27 @@ target_link_libraries(GameAssembly PRIVATE dynarmic ffi)
 
 if(NOT WIN32)
     target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
+
+    target_sources(GameAssembly PRIVATE
+        GDB/DebugMemoryAccess.cpp
+        GDB/DebugMemoryAccess.h
+        GDB/GDBPacketFormatter.cpp
+        GDB/GDBPacketFormatter.h
+        GDB/GDBPacketLayer.cpp
+        GDB/GDBPacketLayer.h
+        GDB/GDBPacketParser.cpp
+        GDB/GDBPacketParser.h
+        GDB/GDBStub.cpp
+        GDB/GDBStub.h
+
+        grpc_channel_redirection.cpp
+        grpc_channel_redirection.h
+        grpc_csharp_ext.c
+        grpc_csharp_ext.h
+        grpc_special_thunks.cpp
+        grpc_special_thunks.h
+    )
+
 endif()
 
 set_target_properties(GameAssembly PROPERTIES

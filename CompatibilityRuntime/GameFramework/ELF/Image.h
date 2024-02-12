@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <memory>
 
-#include <elf.h>
+#include <ELF/musl-elf.h>
 
 class ElfModule;
 

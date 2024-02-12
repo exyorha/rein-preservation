@@ -6,7 +6,7 @@
 #include <stdexcept>
 
 #include <sys/random.h>
-#include <elf.h>
+#include <ELF/musl-elf.h>
 #include <dlfcn.h>
 
 #include "SystemAPIThunking.h"

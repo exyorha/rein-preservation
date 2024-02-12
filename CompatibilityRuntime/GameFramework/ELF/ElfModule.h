@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <vector>
 
-#include <elf.h>
+#include <ELF/musl-elf.h>
 
 #include "FileDescriptor.h"
 

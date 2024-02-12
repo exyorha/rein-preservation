@@ -2,7 +2,7 @@
 #define BIONIC_BIONIC_ABI_TYPES_H
 
 #include <cstdint>
-#include <elf.h>
+#include <ELF/musl-elf.h>
 
 struct BionicKernelArgumentBlock {
     int32_t argc;

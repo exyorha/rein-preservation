@@ -2,7 +2,6 @@
 #include <ELF/ElfModule.h>
 
 #include <algorithm>
-#include <elf.h>
 #include <mutex>
 #include <cstdio>
 #include <cstdlib>
