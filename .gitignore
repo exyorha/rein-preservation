@@ -3,5 +3,5 @@
 /GameServer-*build
 __pycache__
 /dl
-/windows-build-deps
+/windows-build-*
 
