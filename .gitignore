@@ -1,5 +1,6 @@
 /content
-/CompatibilityRuntime-build
-/LogAES-buildarm*
-/replacement-apk-files
+/CompatibilityRuntime-*build
 __pycache__
+/dl
+/windows-build-deps
+
