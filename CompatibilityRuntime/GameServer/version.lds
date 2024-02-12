@@ -1,4 +1,0 @@
-{
-    global: gameserver_*;
-    local: *;
-};

@@ -1,6 +1,5 @@
 #include <unity_stub.h>
 #include <translator_api.h>
-#include <gameserver_api.h>
 
 #include "GLES/Shim/GLESContextShim.h"
 #include "Il2CppUtilities.h"
@@ -12,9 +11,7 @@
 
 #include <GLES/SDLWrapper.h>
 
-static Gameserver *gameserverInstance;
 OctoContentStorage *contentStorageInstance;
-
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
     printf("com.adjust.sdk.Adjust::start diversion called, interposed function: %p\n", original);
@@ -309,15 +306,6 @@ static int gameMain(int argc, char **argv) {
     OctoContentStorage storage("/home/reki/rein/content");
     contentStorageInstance = &storage;
 
-    auto gameserver = makeGameServer("individual.db", storage.masterDatabase().c_str());
-
-    if(!gameserver) {
-        fprintf(stderr, "failed to initialize the built-in game server\n");
-        return 1;
-    }
-
-    gameserverInstance = gameserver.get();
-
     GLESImplementationType gles = GLESImplementationType::Native;
 
     for(int index = 1; index < argc; index++) {
@@ -335,7 +323,6 @@ static int gameMain(int argc, char **argv) {
     int result = PlayerMain(argc, argv);
 
     contentStorageInstance = nullptr;
-    gameserverInstance = nullptr;
 
     return result;
 }

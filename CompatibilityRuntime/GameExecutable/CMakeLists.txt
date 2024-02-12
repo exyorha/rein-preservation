@@ -93,7 +93,7 @@ add_executable(GameExecutable
 protobuf_generate(TARGET GameExecutable)
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv GameServer OpenSSL::Crypto protobuf::libprotobuf)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Iconv::Iconv OpenSSL::Crypto protobuf::libprotobuf)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

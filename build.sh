@@ -9,6 +9,18 @@ ln -sf ../CompatibilityRuntime-build/compile_commands.json CompatibilityRuntime
 cmake --build CompatibilityRuntime-build
 cmake --install CompatibilityRuntime-build --component GameAssembly
 
+cmake \
+    -S GameServer \
+    -B GameServer-build -G "Kate - Ninja" \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)"
+ln -sf ../GameServer-build/compile_commands.json GameServer
+cmake --build GameServer-build
+cmake --install GameServer-build --component GameServer
+
+exit 0
+
 mkdir -p windows-build-deps dl
 
 windows_boost_version=boost_1_84_0

@@ -22,7 +22,7 @@ public:
     Gameserver(const Gameserver &other) = delete;
     Gameserver &operator =(const Gameserver &other) = delete;
 
-    grpc_channel *openInProcessChannel(const grpc_channel_args *args);
+    void wait();
 
 private:
     Database m_db;

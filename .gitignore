@@ -1,5 +1,6 @@
 /content
 /CompatibilityRuntime-*build
+/GameServer-*build
 __pycache__
 /dl
 /windows-build-deps

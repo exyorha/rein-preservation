@@ -1,10 +1,41 @@
+cmake_minimum_required(VERSION 3.20)
+project(GameServer)
+
 include(GenerateExportHeader)
 
-add_library(GameServer SHARED
-    public/gameserver_api.h
+find_package(Protobuf CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LZ4 REQUIRED IMPORTED_TARGET liblz4)
+pkg_check_modules(YAJL REQUIRED IMPORTED_TARGET yajl)
 
-    ${CMAKE_CURRENT_BINARY_DIR}/include/gameserver_export.h
+find_program(RUBY ruby REQUIRED)
 
+add_library(sqlite3 STATIC
+    thirdparty/sqlite3/sqlite3.c
+    thirdparty/sqlite3/sqlite3.h
+    thirdparty/sqlite3/sqlite3ext.h
+)
+target_include_directories(sqlite3 PUBLIC thirdparty/sqlite3)
+target_compile_definitions(sqlite3 PUBLIC -DSQLITE_ENABLE_SESSION -DSQLITE_ENABLE_PREUPDATE_HOOK)
+
+set_target_properties(sqlite3 PROPERTIES
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN TRUE
+)
+add_executable(sqlite3-cli thirdparty/sqlite3/shell.c)
+target_link_libraries(sqlite3-cli PRIVATE sqlite3)
+set_target_properties(sqlite3-cli PROPERTIES OUTPUT_NAME sqlite3)
+
+set(MSGPACK_CXX20 TRUE CACHE BOOL "Using c++20 compiler" FORCE)
+set(MSGPACK_USE_BOOST FALSE CACHE BOOL "Use Boost libraried" FORCE)
+set(MSGPACK_BUILD_DOCS FALSE CACHE BOOL "Build Doxygen documentation" FORCE)
+add_subdirectory(thirdparty/msgpack-c)
+
+add_subdirectory(master_database_ext)
+
+add_executable(GameServer
     DataModel/ChangesetCapturingScope.cpp
     DataModel/ChangesetCapturingScope.h
 
@@ -101,7 +132,6 @@ add_library(GameServer SHARED
 
     ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp
 )
-target_include_directories(GameServer PUBLIC public ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_include_directories(GameServer PRIVATE ${CMAKE_CURRENT_BINARY_DIR} .)
 
 protobuf_generate(TARGET GameServer)
@@ -113,29 +143,12 @@ protobuf_generate(
 )
 
 set_target_properties(GameServer PROPERTIES
-    C_VISIBILITY_PRESET hidden
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN TRUE
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
 )
 
 target_link_libraries(GameServer PRIVATE gRPC::grpc++ protobuf::libprotobuf sqlite3 master_database_ext_static
     PkgConfig::YAJL)
-
-if(UNIX)
-    target_link_options(GameServer PRIVATE
-        -Wl,-z,defs
-        "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/version.lds"
-        -Wl,--relax
-        -Wl,-Bsymbolic
-        -Wl,-z,now
-    )
-    target_compile_options(GameServer PRIVATE
-        -ftls-model=initial-exec
-    )
-    set_target_properties(GameServer PROPERTIES LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.lds")
-endif()
 
 file(GLOB migrations CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} migrations/*.sql)
 
@@ -148,10 +161,5 @@ add_custom_command(
     VERBATIM
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-GENERATE_EXPORT_HEADER(
-    GameServer
-    BASE_NAME GameServer
-    EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/include/gameserver_export.h
-)
+install(TARGETS GameServer DESTINATION . COMPONENT GameServer)
 
-install(TARGETS GameServer DESTINATION . COMPONENT GameAssembly)

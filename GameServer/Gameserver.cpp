@@ -35,14 +35,6 @@ Gameserver::~Gameserver() {
     m_server->Shutdown();
 }
 
-/*
- * Obviously, this is not the right way to do this. But what is the right way?
- */
-
-grpc_channel* grpc_inproc_channel_create(grpc_server* server,
-                                        const grpc_channel_args* args,
-                                        void* reserved);
-
-grpc_channel *Gameserver::openInProcessChannel(const grpc_channel_args *args) {
-    return grpc_inproc_channel_create(m_server->c_server(), args, nullptr);
+void Gameserver::wait() {
+    m_server->Wait();
 }

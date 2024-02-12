@@ -2,7 +2,7 @@
 	path = CompatibilityRuntime/thirdparty/dynarmic
 	url = https://github.com/exyorha/dynarmic.git
 [submodule "CompatibilityRuntime/thirdparty/msgpack-c"]
-	path = CompatibilityRuntime/thirdparty/msgpack-c
+	path = GameServer/thirdparty/msgpack-c
 	url = https://github.com/msgpack/msgpack-c.git
 [submodule "CompatibilityRuntime/bionic/bionic"]
 	path = CompatibilityRuntime/bionic/bionic
