@@ -2,7 +2,13 @@
 
 #include <Bionic/BionicCallouts.h>
 
+#ifdef _WIN32
+#include <Windows/WindowsError.h>
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
+
 
 #include <cstring>
 #include <system_error>
@@ -28,9 +34,16 @@ JITThreadContext::JITThreadContext(void *providedStack, size_t providedStackSize
         m_threadStackAllocated = true;
         m_threadStackSize = 128 * 1024;
 
+#ifdef _WIN32
+        m_threadStack = VirtualAlloc(nullptr, m_threadStackSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        if(m_threadStack == nullptr)
+            WindowsError::throwLastError();
+#else
+
         m_threadStack = mmap(nullptr, m_threadStackSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0);
         if(m_threadStack == MAP_FAILED)
             throw std::system_error(errno, std::generic_category());
+#endif
     }
 
     sp = reinterpret_cast<uintptr_t>(m_threadStack) + m_threadStackSize;
@@ -59,7 +72,11 @@ JITThreadContext::~JITThreadContext() {
     m_registration.reset();
 
     if(m_threadStackAllocated) {
+#ifdef _WIN32
+        VirtualFree(m_threadStack, 0, MEM_RELEASE);
+#else
         munmap(m_threadStack, m_threadStackSize);
+#endif
     }
 }
 
@@ -127,7 +144,11 @@ void JITThreadContext::collectThreadStack(GarbageCollectorThreadVisitor *visitor
 void JITThreadContext::exitHostThread(void *result) {
     m_threadResult = result;
 
+#if defined(_WIN32)
+    ExitThread(0);
+#else
     pthread_exit(nullptr);
+#endif
 }
 
 JITThreadContext::ThreadContextRegistration::ThreadContextRegistration(JITThreadContext *registeredContext) : m_registeredContext(registeredContext) {

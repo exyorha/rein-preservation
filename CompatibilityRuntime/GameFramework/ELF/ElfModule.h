@@ -7,9 +7,19 @@
 
 #include <ELF/musl-elf.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <Windows/WindowsHandle.h>
+#else
 #include "FileDescriptor.h"
 #endif
+
+#ifdef _WIN32
+using ElfHandleType = WindowsHandle;
+#else
+using ElfHandleType = FileDescriptor;
+#endif
+
+void elfCheckedRead(const ElfHandleType &handle, void *dest, size_t size);
 
 class ElfModule {
 protected:
@@ -74,10 +84,7 @@ public:
     using Ehdr = Traits::Ehdr;
     using Phdr = Traits::Phdr;
 
-#ifdef _WIN32
-#else
-    ElfModuleImpl(const unsigned char *ident, FileDescriptor &&fd);
-#endif
+    ElfModuleImpl(const unsigned char *ident, ElfHandleType &&handle);
     ~ElfModuleImpl() override;
 
     uint8_t moduleClass() const override;
@@ -96,9 +103,7 @@ public:
 private:
     Ehdr m_ehdr;
     std::vector<Phdr> m_phdr;
-#ifndef _WIN32
-    FileDescriptor m_fd;
-#endif
+    ElfHandleType m_handle;
 };
 
 #endif

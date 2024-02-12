@@ -16,7 +16,6 @@ add_library(GameAssembly SHARED
     Bionic/BionicCallouts.h
     Bionic/BionicDynamicLoaderAPI.cpp
     Bionic/BionicDynamicLoaderAPI.h
-    Bionic/BionicSyscalls.cpp
     Bionic/BionicSyscalls.h
     Bionic/BionicThreading.cpp
     Bionic/BionicThreading.h
@@ -79,7 +78,6 @@ add_library(GameAssembly SHARED
     Translator/thunking.h
     Translator/ThunkManager.cpp
     Translator/ThunkManager.h
-    Translator/thunkutils.S
     Translator/WorldStoppingScope.cpp
     Translator/WorldStoppingScope.h
 
@@ -94,6 +92,8 @@ if(NOT WIN32)
     target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
 
     target_sources(GameAssembly PRIVATE
+        Bionic/BionicSyscalls.cpp
+
         GDB/DebugMemoryAccess.cpp
         GDB/DebugMemoryAccess.h
         GDB/GDBPacketFormatter.cpp
@@ -111,12 +111,20 @@ if(NOT WIN32)
         grpc_csharp_ext.h
         grpc_special_thunks.cpp
         grpc_special_thunks.h
+
+        Translator/thunkutils.S
     )
 
 endif()
 
 if(WIN32)
     target_compile_definitions(GameAssembly PRIVATE -DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
+    target_sources(GameAssembly PRIVATE
+        Windows/WindowsError.cpp
+        Windows/WindowsError.h
+        Windows/WindowsHandle.cpp
+        Windows/WindowsHandle.h
+    )
 endif()
 
 set_target_properties(GameAssembly PROPERTIES

@@ -7,24 +7,52 @@
 #include <system_error>
 #include <type_traits>
 
+#if defined(_WIN32)
+#include <Windows/WindowsError.h>
+#endif
+
+
 ElfModule::ElfModule() = default;
 
 ElfModule::~ElfModule() = default;
 
+void elfCheckedRead(const ElfHandleType &handle, void *dest, size_t size) {
+#if defined(_WIN32)
+    DWORD bytesRead;
+    if(!ReadFile(handle.get(), dest, static_cast<DWORD>(size), &bytesRead, nullptr))
+        WindowsError::throwLastError();
+
+    if(bytesRead != size)
+        throw std::runtime_error("short read");
+
+#else
+    auto result = read(handle, dest, size);
+    if(result < 0)
+        throw std::system_error(errno, std::generic_category());
+
+    if(result != size)
+        throw std::runtime_error("short read");
+#endif
+}
+
 std::unique_ptr<ElfModule> ElfModule::createFromFile(const std::filesystem::path &filename) {
+#if defined(_WIN32)
+
+    auto rawHandle = CreateFile(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if(rawHandle == INVALID_HANDLE_VALUE)
+        WindowsError::throwLastError();
+
+    WindowsHandle fd(rawHandle);
+#else
     int rawFd = open(filename.c_str(), O_RDONLY | O_CLOEXEC | O_NOCTTY);
     if(rawFd < 0)
         throw std::system_error(errno, std::generic_category());
 
     FileDescriptor fd(rawFd);
+#endif
 
     unsigned char ident[EI_NIDENT];
-    auto result = read(fd, ident, sizeof(ident));
-    if(result < 0)
-        throw std::system_error(errno, std::generic_category());
-
-    if(result != sizeof(ident))
-        throw std::logic_error("short read reading the ELF signature");
+    elfCheckedRead(fd, ident, sizeof(ident));
 
     if(ident[EI_MAG0] != ELFMAG0 ||
         ident[EI_MAG1] != ELFMAG1 ||
@@ -64,17 +92,12 @@ std::unique_ptr<ElfModule> ElfModule::createFromFile(const std::filesystem::path
 }
 
 template<typename T>
-ElfModuleImpl<T>::ElfModuleImpl(const unsigned char *ident, FileDescriptor &&fd) : m_fd(std::move(fd)) {
+ElfModuleImpl<T>::ElfModuleImpl(const unsigned char *ident, ElfHandleType &&handle) : m_handle(std::move(handle)) {
     static_assert(offsetof(decltype(m_ehdr), e_ident) == 0, "Ehdr should start with e_ident");
 
     memcpy(m_ehdr.e_ident, ident, EI_NIDENT);
 
-    auto result = read(m_fd, reinterpret_cast<unsigned char *>(&m_ehdr) + EI_NIDENT, sizeof(m_ehdr) - EI_NIDENT);
-    if(result < 0)
-        throw std::system_error(errno, std::generic_category());
-
-    if(result != sizeof(m_ehdr) - EI_NIDENT)
-        throw std::logic_error("short read reading the ELF header");
+    elfCheckedRead(m_handle, reinterpret_cast<unsigned char *>(&m_ehdr) + EI_NIDENT, sizeof(m_ehdr) - EI_NIDENT);
 
     if(m_ehdr.e_version != EV_CURRENT)
         throw std::logic_error("unsupported ELF version");
@@ -92,12 +115,30 @@ ElfModuleImpl<T>::ElfModuleImpl(const unsigned char *ident, FileDescriptor &&fd)
 
 template<typename T>
 void ElfModuleImpl<T>::readFileData(void *data, size_t size, off_t offset) {
-    auto result = pread(m_fd, data, size, offset);
+#if defined(_WIN32)
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(overlapped));
+
+    auto offset64 = static_cast<uint64_t>(offset);
+
+    overlapped.Offset = static_cast<DWORD>(offset64);
+    overlapped.OffsetHigh = static_cast<DWORD>(offset64 >> 32);
+
+    DWORD bytesRead;
+    if(!ReadFile(m_handle.get(), data, static_cast<DWORD>(size), &bytesRead, &overlapped))
+        WindowsError::throwLastError();
+
+    if(bytesRead != size)
+        throw std::runtime_error("short read");
+
+#else
+    auto result = pread(m_handle, data, size, offset);
     if(result < 0)
         throw std::system_error(errno, std::generic_category());
 
     if(result != size)
         throw std::logic_error("short read reading the ELF file data");
+#endif
 }
 
 template<typename T>
@@ -133,10 +174,12 @@ Elf64_Phdr ElfModuleImpl<T>::phent(size_t index) const {
     return Traits::normalizePHDR(m_phdr.at(index));
 }
 
+#ifndef _WIN32
 template<typename T>
 int ElfModuleImpl<T>::getFileDescriptor() const {
-    return m_fd;
+    return m_handle;
 }
+#endif
 
 template class ElfModuleImpl<uint32_t>;
 template class ElfModuleImpl<uint64_t>;

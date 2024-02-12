@@ -35,9 +35,11 @@ JIT::JIT() :
 
     m_dynarmic.emplace(config);
 
+#ifndef _WIN32
     if(debugging) {
         m_gdbStub.emplace(debugging, *m_dynarmic);
     }
+#endif
 }
 
 JIT::~JIT() = default;
@@ -65,6 +67,7 @@ JITExitReason JIT::runToSVCWithGCLocked(JITThreadContext &context) {
     Dynarmic::HaltReason haltReason;
     do {
 
+#ifndef _WIN32
         if(m_gdbStub.has_value()) {
             m_gdbStub->beforeEnteringJIT();
         }
@@ -73,7 +76,9 @@ JITExitReason JIT::runToSVCWithGCLocked(JITThreadContext &context) {
 
             haltReason = m_dynarmic->Step();
 
-        } else {
+        } else
+#endif
+        {
 
             haltReason = m_dynarmic->Run();
         }
@@ -101,22 +106,26 @@ JITExitReason JIT::runToSVCWithGCLocked(JITThreadContext &context) {
 
                     return JITExitReason(std::in_place_type_t<DiversionExit>(), diversion);
                 }
-            } else if(m_gdbStub.has_value()) {
-                printf("delivering the exception %u to the debugger, PC 0x%" PRIx64 "\n", exception, m_dynarmic->GetPC());
+            } else
+#ifndef _WIN32
+                if(m_gdbStub.has_value()) {
+                    printf("delivering the exception %u to the debugger, PC 0x%" PRIx64 "\n", exception, m_dynarmic->GetPC());
 
-                unsigned int signal;
+                    unsigned int signal;
 
-                if(exception == Dynarmic::A64::Exception::Breakpoint) {
-                    signal = SIGTRAP;
-                } else if(exception == Dynarmic::A64::Exception::NoExecuteFault) {
-                    signal = SIGSEGV;
-                } else {
-                    signal = SIGILL;
-                }
+                    if(exception == Dynarmic::A64::Exception::Breakpoint) {
+                        signal = SIGTRAP;
+                    } else if(exception == Dynarmic::A64::Exception::NoExecuteFault) {
+                        signal = SIGSEGV;
+                    } else {
+                        signal = SIGILL;
+                    }
 
-                m_gdbStub->stopped(signal);
+                    m_gdbStub->stopped(signal);
 
-            } else {
+                } else
+#endif
+            {
                 printf("The ARM exception %u has occurred.\n", exception);
                 dumpMachineContext();
                 panic("ARM exception\n");
@@ -127,17 +136,22 @@ JITExitReason JIT::runToSVCWithGCLocked(JITThreadContext &context) {
              * Unmapped memory access.
              */
 
+#ifndef _WIN32
             if(m_gdbStub.has_value()) {
                 printf("delivering the memory fault to the debugger, PC 0x%" PRIx64 "\n", m_dynarmic->GetPC());
 
                 m_gdbStub->stopped(SIGSEGV);
-            } else {
+            } else
+#endif
+            {
                 dumpMachineContext();
                 panic("unmapped memory access\n");
             }
         } else if(Dynarmic::Has(haltReason, Dynarmic::HaltReason::Step)) {
+#ifndef _WIN32
             if(m_gdbStub.has_value())
                 m_gdbStub->stepped();
+#endif
         } else if(haltReason != Dynarmic::HaltReason::UserDefined1) {
             panic("JIT has exited on a condition other than SVC call: 0x%04X; ARM PC: 0x%016" PRIx64 "\n", haltReason, context.pc);
         }
@@ -157,10 +171,12 @@ JITExitReason JIT::runToSVCWithGCLocked(JITThreadContext &context) {
 }
 
 void JIT::stopDebuggerIfAttached(unsigned int signal) {
+#ifndef _WIN32
     std::unique_lock<std::mutex> locker(m_globalJITLock);
 
     if(m_gdbStub.has_value())
         m_gdbStub->stopped(signal);
+#endif
 }
 
 void JIT::flushInstructionCache(uintptr_t addr, size_t size) {

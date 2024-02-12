@@ -10,7 +10,9 @@
 #include <dynarmic/interface/A64/a64.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#ifndef _WIN32
 #include <GDB/GDBStub.h>
+#endif
 
 class JITThreadContext;
 
@@ -80,7 +82,9 @@ private:
     std::optional<uint64_t> m_pcAtFault;
     std::optional<Dynarmic::A64::Exception> m_exitingOnException;
     Dynarmic::ExclusiveMonitor m_exclusiveMonitor;
+#ifndef _WIN32
     std::optional<GDBStub> m_gdbStub;
+#endif
     uint64_t m_currentTPIDR_EL0;
 };
 

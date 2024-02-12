@@ -7,9 +7,11 @@
 #include <Bionic/BionicAndroidAPI.h>
 #include <Bionic/BionicDynamicLoaderAPI.h>
 
+#ifndef _WIN32
 #include "grpc_csharp_ext.h"
 #include "grpc_special_thunks.h"
 #include "grpc_channel_redirection.h"
+#endif
 
 using namespace std::string_view_literals;
 
@@ -106,6 +108,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "dlopen", &thunkX86<emulated_dlopen> },
     { "dlsym", &thunkX86<emulated_dlsym> },
 
+#ifndef _WIN32
     { "grpcsharp_metadata_array_destroy_full", &thunkX86<grpcsharp_metadata_array_destroy_full> },
     { "grpcsharp_metadata_array_create", &thunkX86<grpcsharp_metadata_array_create> },
     { "grpcsharp_metadata_array_add", &thunkX86<grpcsharp_metadata_array_add> },
@@ -210,6 +213,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "grpcsharp_test_nop", &thunkX86<grpcsharp_test_nop> },
     { "grpcsharp_sizeof_grpc_event", &thunkX86<grpcsharp_sizeof_grpc_event> },
     { "grpcsharp_test_override_method", &thunkX86<grpcsharp_test_override_method> },
+#endif
 };
 
 static void stubCall(void) {
