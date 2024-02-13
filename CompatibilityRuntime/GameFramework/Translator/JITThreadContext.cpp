@@ -219,11 +219,20 @@ void JITThreadContext::detach() {
 }
 
 void JITThreadContext::threadStateTeardown() noexcept {
-    printf("running the thread destruction of %p\n", this);
+    if(m_jitThread.get() != this) {
+        /*
+         * This happens on Windows process shutdown.
+         */
+        printf("JITThreadContext::threadStateTeardown: we're on thread %p, but called to destroy %p, doing nothing\n",
+               m_jitThread.get(), this);
+    } else {
 
-    bionic_teardown_thread();
+        printf("running the thread destruction of %p\n", this);
 
-    printf("running the thread destruction of %p done\n", this);
+        bionic_teardown_thread();
+
+        printf("running the thread destruction of %p done\n", this);
+    }
 }
 
 void JITThreadContext::clearCurrentThreadContext() noexcept {

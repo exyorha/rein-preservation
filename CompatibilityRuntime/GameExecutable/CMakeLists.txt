@@ -1,12 +1,51 @@
 add_executable(GameExecutable
+    AndroidJNI.cpp
+
     main.cpp
 
+    UnityPatches.cpp
+    UnityPatches.h
+
+    Il2CppUtilities.cpp
+    Il2CppUtilities.h
+
+    Input.cpp
+    Input.h
+
+    Java/AdjustSdkAdjust.cpp
+    Java/AdjustSdkAdjust.h
+    Java/AndroidUtilLog.cpp
+    Java/AndroidUtilLog.h
+    Java/JavaClasses.cpp
+    Java/JNIAccessibleObject.cpp
+    Java/JNIAccessibleObject.h
+    Java/JNIClass.cpp
+    Java/JNIClass.h
+    Java/JNIField.cpp
+    Java/JNIGlobalState.cpp
+    Java/JNIGlobalState.h
+    Java/JNIObject.cpp
+    Java/JNIObject.h
+    Java/JNIState.cpp
+    Java/JNIState.h
+    Java/JNIString.cpp
+    Java/JNIString.h
+    Java/JNIThrowable.cpp
+    Java/JNIThrowable.h
+    Java/JNIUnityPlayer.cpp
+    Java/JNIUnityPlayer.h
+    Java/JNIUnityReflectionHelper.cpp
+    Java/JNIUnityReflectionHelper.h
+    Java/LiliumDefaultAttestCallback.cpp
+    Java/LiliumDefaultAttestCallback.h
+    Java/UniWebViewInterface.cpp
+    Java/UniWebViewInterface.h
+
+    UnityWebRequest.cpp
 )
 
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
-        AndroidJNI.cpp
-
         FastAES.cpp
         FastAES.h
 
@@ -48,50 +87,11 @@ if(NOT WIN32)
         GLES/TextureEmulation/stb_dxt.cpp
         GLES/TextureEmulation/stb_dxt.h
 
-        Il2CppUtilities.cpp
-        Il2CppUtilities.h
-
-        Input.cpp
-        Input.h
-
-        Java/AdjustSdkAdjust.cpp
-        Java/AdjustSdkAdjust.h
-        Java/AndroidUtilLog.cpp
-        Java/AndroidUtilLog.h
-        Java/JavaClasses.cpp
-        Java/JNIAccessibleObject.cpp
-        Java/JNIAccessibleObject.h
-        Java/JNIClass.cpp
-        Java/JNIClass.h
-        Java/JNIField.cpp
-        Java/JNIGlobalState.cpp
-        Java/JNIGlobalState.h
-        Java/JNIObject.cpp
-        Java/JNIObject.h
-        Java/JNIState.cpp
-        Java/JNIState.h
-        Java/JNIString.cpp
-        Java/JNIString.h
-        Java/JNIThrowable.cpp
-        Java/JNIThrowable.h
-        Java/JNIUnityPlayer.cpp
-        Java/JNIUnityPlayer.h
-        Java/JNIUnityReflectionHelper.cpp
-        Java/JNIUnityReflectionHelper.h
-        Java/LiliumDefaultAttestCallback.cpp
-        Java/LiliumDefaultAttestCallback.h
-        Java/UniWebViewInterface.cpp
-        Java/UniWebViewInterface.h
 
         Octo.cpp
         Octo.h
         OctoContentStorage.cpp
         OctoContentStorage.h
-
-        UnityPatches.cpp
-        UnityPatches.h
-
-        UnityWebRequest.cpp
 
         Octo/Proto/Database.proto
 
@@ -101,7 +101,18 @@ if(NOT WIN32)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(GameExecutable PRIVATE Iconv::Iconv OpenSSL::Crypto protobuf::libprotobuf)
+    target_link_libraries(GameExecutable PRIVATE OpenSSL::Crypto protobuf::libprotobuf)
+endif()
+
+if(WIN32)
+    target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
+endif()
+
+if(WIN32)
+    target_sources(GameExecutable PRIVATE Il2CppUtilitiesWindows.cpp)
+else()
+    target_sources(GameExecutable PRIVATE Il2CppUtilitiesIconv.cpp)
+    target_link_libraries(GameExecutable PRIVATE Iconv::Iconv)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})

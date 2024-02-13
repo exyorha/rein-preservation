@@ -4,7 +4,6 @@
 #include <string>
 
 #include "Octo.h"
-#include "OctoContentStorage.h"
 #include "Il2CppUtilities.h"
 
 static void *UnityWebRequest_SetUrl(
@@ -25,7 +24,22 @@ static void *UnityWebRequest_SetUrl(
             conv.erase(bang, 1);
         }
 
+        url = nullptr;
+    }
+
+    if(conv.starts_with("file://") && conv[7] != '/') {
+        // Happens on Windows, needs an extra slash
+        conv.insert(conv.begin() + 7, '/');
+
+        url = nullptr;
+
+        printf("file URL fixed: '%s'\n", conv.c_str());
+    }
+
+    if(!url) {
+
         url = stringFromUtf8(conv);
+
     }
 
     return original(thisPointer, url);

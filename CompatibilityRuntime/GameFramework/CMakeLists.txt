@@ -18,6 +18,7 @@ add_library(GameAssembly SHARED
     Bionic/BionicDynamicLoaderAPI.h
     Bionic/BionicSyscalls.cpp
     Bionic/BionicSyscalls.h
+    Bionic/BionicSyscallTranslation.cpp
     Bionic/BionicThreading.cpp
     Bionic/BionicThreading.h
 
@@ -95,6 +96,8 @@ if(NOT WIN32)
     target_sources(GameAssembly PRIVATE
 
         Bionic/BionicMmapLinuxHost.cpp
+        Bionic/BionicSyscallsLinuxHost.cpp
+        Bionic/BionicSyscallTranslationLinuxHost.cpp
 
         GDB/DebugMemoryAccess.cpp
         GDB/DebugMemoryAccess.h
@@ -123,7 +126,11 @@ if(WIN32)
     target_compile_definitions(GameAssembly PRIVATE -DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
     target_sources(GameAssembly PRIVATE
         Bionic/BionicMmapWindowsHost.cpp
+        Bionic/BionicSyscallsWindowsHost.cpp
+        Bionic/BionicSyscallTranslationWindowsHost.cpp
 
+        Windows/StringConversions.cpp
+        Windows/StringConversions.h
         Windows/WindowsError.cpp
         Windows/WindowsError.h
         Windows/WindowsHandle.cpp

@@ -33,21 +33,22 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     /*
      * Syscalls.
      */
-#ifndef _WIN32
-    { "__openat", &thunkX86<plat_openat> },
+    { "___open", &thunkX86<plat_open> },
     { "fstat", &thunkX86<plat_fstat> },
-    { "fstatat", &thunkX86<plat_fstatat> },
     { "dup", &thunkX86<plat_dup> },
     { "___close", &thunkX86<plat_close> },
     { "read", &thunkX86<plat_read> },
     { "write", &thunkX86<plat_write> },
-    { "readlinkat", &thunkX86<plat_readlinkat> },
-    { "renameat", &thunkX86<plat_renameat> },
-    { "unlinkat", &thunkX86<plat_unlinkat> },
-    { "___faccessat", &thunkX86<plat_faccessat> },
-    { "mkdirat", &thunkX86<plat_mkdirat> },
     { "lseek", &thunkX86<plat_lseek> },
-#endif
+    { "readlink", &thunkX86<plat_readlink> },
+    { "stat", &thunkX86<plat_stat> },
+    { "lstat", &thunkX86<plat_lstat> },
+    { "access", &thunkX86<plat_access> },
+    { "__getcwd", &thunkX86<plat_getcwd> },
+    { "rename", &thunkX86<plat_rename> },
+    { "unlink", &thunkX86<plat_unlink> },
+    { "mkdir", &thunkX86<plat_mkdir> },
+    { "rmdir", &thunkX86<plat_rmdir> },
 
     { "mmap", &thunkX86<plat_mmap> },
     { "mprotect", &thunkX86<plat_mprotect> },

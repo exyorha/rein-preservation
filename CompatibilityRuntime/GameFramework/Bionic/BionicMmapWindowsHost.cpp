@@ -2,7 +2,11 @@
 #include <Bionic/BionicCallouts.h>
 
 #include <windows.h>
+#include <Windows/WindowsHandle.h>
+#include <io.h>
 
+#include "Bionic/BionicABITypes.h"
+#include "GlobalContext.h"
 #include "support.h"
 
 static uint32_t queryAllocationGranulary();
@@ -32,13 +36,21 @@ static DWORD convertProtection(int prot) {
 }
 
 void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_off_t off) {
-    if(len == 0) {
+    if(len == 0 || (flags & (BIONIC_MAP_PRIVATE | BIONIC_MAP_SHARED)) == 0) {
         bionic_set_errno(BIONIC_EINVAL);
         return BIONIC_MAP_FAILED;
     }
 
-    if(addr != nullptr) {
-        panic("plat_mmap: mmap with a specified base address\n");
+    if(addr != nullptr && prot == BIONIC_PROT_NONE &&
+        (flags & (BIONIC_MAP_ANONYMOUS | BIONIC_MAP_FIXED)) == (BIONIC_MAP_ANONYMOUS | BIONIC_MAP_FIXED)) {
+        printf("plat_mmap: Boehm GC guard page request, doing nothing\n");
+
+        return addr;
+    }
+
+    if(addr) {
+        printf("plat_mmap: mmap with a specified base address: addr %p, len %zu, prot %d, flags %d, fildes %d, off %ld\n",
+                addr, len, prot, flags, fildes, off);
     }
 
     if(flags & BIONIC_MAP_FIXED) {
@@ -46,7 +58,20 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
     }
 
     if(flags & BIONIC_MAP_ANONYMOUS) {
-        auto allocated = VirtualAlloc(nullptr, len, MEM_RESERVE | MEM_COMMIT, convertProtection(prot));
+        void *allocated = nullptr;
+
+        if(addr != nullptr) {
+            allocated = VirtualAlloc(addr, len, MEM_RESERVE | MEM_COMMIT, convertProtection(prot));
+            if(allocated) {
+                printf("plat_mmap: a VirtualAlloc with a specified base address was satisfied\n");
+            } else {
+                printf("plat_mmap: a VirtualAlloc with a specified base address was NOT satisfied, requesting system's pick\n");
+            }
+        }
+
+        if(!allocated)
+            allocated = VirtualAlloc(nullptr, len, MEM_RESERVE | MEM_COMMIT, convertProtection(prot));
+
         if(!allocated) {
             fprintf(stderr, "plat_mmap(MAP_ANONYMOUS): VirtualAlloc failed with %u\n", GetLastError());
             bionic_set_errno(BIONIC_ENOMEM);
@@ -55,7 +80,81 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 
          return allocated;
     } else {
-        panic("plat_mmap: file mmap\n");
+        /*
+         * Currently, any file mappings are mapped as MAP_SHARED, PROT_READ (only) mappings.
+         * This should be sufficient.
+         */
+        auto fileHandle = reinterpret_cast<HANDLE>(_get_osfhandle(fildes));
+        if(fileHandle == INVALID_HANDLE_VALUE) {
+            bionic_set_errno(translateErrno(errno));
+            return BIONIC_MAP_FAILED;
+        }
+
+        if(off & (AllocationGranularity - 1)) {
+            fprintf(stderr, "plat_mmap(MAP_FILE): offset is not a multiple of Windows allocation granularity\n");
+            bionic_set_errno(BIONIC_EINVAL);
+            return BIONIC_MAP_FAILED;
+        }
+
+        LARGE_INTEGER fileSizeLI;
+        if(!GetFileSizeEx(fileHandle, &fileSizeLI)) {
+            fprintf(stderr, "plat_mmap(MAP_FILE): GetFileSizeEx failed with %u\n", GetLastError());
+            bionic_set_errno(BIONIC_ENOMEM);
+            return BIONIC_MAP_FAILED;
+        }
+
+        auto fileSize = fileSizeLI.QuadPart;
+
+        if(off < 0) {
+            bionic_set_errno(BIONIC_EINVAL);
+            return BIONIC_MAP_FAILED;
+        }
+
+        uint64_t requiredFileSizeToSatifyRequest = off + len;
+
+        /*
+         * The application unhelpfully rounds up the mapping sizes to the page size,
+         * however, that offends Windows if the file is shorter.
+         */
+        if(requiredFileSizeToSatifyRequest > ((fileSize + GlobalContext::PageSize - 1) & ~(GlobalContext::PageSize - 1))) {
+            /*
+             * Requesting more than 'the rest of the last page' of extra size is an error.
+             */
+            bionic_set_errno(BIONIC_EINVAL);
+            return BIONIC_MAP_FAILED;
+        }
+
+        requiredFileSizeToSatifyRequest = std::min<uint64_t>(requiredFileSizeToSatifyRequest, fileSize);
+        len = requiredFileSizeToSatifyRequest - off;
+
+        printf("CreateFileMapping: handle %p, flags: %u; offset: %ld, len: %zu, actual file size: %lu bytes\n", fileHandle, flags,
+               off, len, fileSize);
+        HANDLE rawMapping = CreateFileMapping(fileHandle, nullptr, PAGE_READONLY,
+                                                static_cast<DWORD>(requiredFileSizeToSatifyRequest >> 32),
+                                                static_cast<DWORD>(requiredFileSizeToSatifyRequest),
+                                                nullptr);
+        if(!rawMapping) {
+            fprintf(stderr, "plat_mmap(MAP_FILE): CreateFileMapping failed with %u\n", GetLastError());
+            bionic_set_errno(BIONIC_ENOMEM);
+            return BIONIC_MAP_FAILED;
+        }
+
+        WindowsHandle mapping(rawMapping);
+
+        printf("setting offset: %ld, length: %zu\n", off, len);
+        auto viewBase = MapViewOfFileEx(rawMapping, FILE_MAP_READ,
+                                      static_cast<DWORD>(static_cast<uint64_t>(off) >> 32),
+                                      static_cast<DWORD>(static_cast<uint64_t>(off)),
+                                      len,
+                                      addr);
+
+        if(viewBase == nullptr) {
+            fprintf(stderr, "plat_mmap(MAP_FILE): MapViewOfFile failed with %u\n", GetLastError());
+            bionic_set_errno(BIONIC_ENOMEM);
+            return BIONIC_MAP_FAILED;
+        }
+
+        return viewBase;
     }
 }
 
@@ -127,14 +226,39 @@ int plat_munmap(void *addr, size_t len) {
         return -1;
     }
 
-    if(!VirtualFree(addr, len, MEM_DECOMMIT)) {
-        fprintf(stderr, "plat_munmap: VirtualFree failed with %u\n", GetLastError());
+    MEMORY_BASIC_INFORMATION info;
+    auto resultLength = VirtualQuery(addr, &info, sizeof(info));
+    if(resultLength != sizeof(MEMORY_BASIC_INFORMATION)) {
+        fprintf(stderr, "plat_munmap: VirtualQuery failed\n");
         bionic_set_errno(BIONIC_ENOMEM);
 
         return -1;
     }
 
-    releaseReservedOnlyPages(addr, len);
+    if(info.State != MEM_FREE && info.Type == MEM_MAPPED) {
+        /*
+         * This belongs to a mapped file. Just free the whole thing, since
+         * that's what's usually asked.
+         */
 
-    return 0;
+        if(!UnmapViewOfFile(info.AllocationBase)) {
+            fprintf(stderr, "plat_munmap: UnmapViewOfFile failed with %u\n", GetLastError());
+            bionic_set_errno(BIONIC_ENOMEM);
+        }
+
+        return 0;
+    } else {
+
+
+        if(!VirtualFree(addr, len, MEM_DECOMMIT)) {
+            fprintf(stderr, "plat_munmap: VirtualFree failed with %u\n", GetLastError());
+            bionic_set_errno(BIONIC_ENOMEM);
+
+            return -1;
+        }
+
+        releaseReservedOnlyPages(addr, len);
+
+        return 0;
+    }
 }

@@ -11,9 +11,16 @@
 #include <errno.h>
 #include <algorithm>
 #include <vector>
+#include <filesystem>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/mman.h>
-#include <cinttypes>
 #include <link.h>
+#endif
+
+#include <cinttypes>
 
 struct PatchSite {
     uintptr_t patchVA;
@@ -24,6 +31,30 @@ struct PatchSite {
 /*
  * These patches are only valid for this specific Unity version and variant.
  */
+#ifdef _WIN32
+#define EXPECTED_UNITY_VERSION "2019.4.29f1 'win64_development_il2cpp' variant"
+#define EXPECTED_UNITY_CRC32 UINT32_C(0xfe4782a0)
+
+
+/*
+ * Kills the platform compatibility check in SerializedFile::ReadMetadata<1>: 'always compatible'.
+ */
+static const unsigned char patch_11d0e1c[]{
+    0x90, 0x90
+};
+
+/*
+ * Kills the platform compatibility check in SerializedFile::ReadMetadata<0>: 'always compatible'.
+ */
+static const unsigned char patch_11d1dda[]{
+    0x90, 0x90
+};
+
+static const PatchSite UnityPlayerPatchSites[] = {
+    { 0x11d0e1c, patch_11d0e1c, sizeof(patch_11d0e1c) },
+    { 0x11d1dda, patch_11d1dda, sizeof(patch_11d1dda) },
+};
+#else
 #define EXPECTED_UNITY_VERSION "2019.4.29f1 'linux64_withgfx_development_il2cpp' variant"
 #define EXPECTED_UNITY_CRC32 UINT32_C(0xecae9fda)
 static const unsigned char patch_13e3a0b[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
@@ -61,7 +92,9 @@ static const PatchSite UnityPlayerPatchSites[] = {
     { 0x1a85b39, patch_1a85b39, sizeof(patch_1a85b39) },
     { 0x1a85d01, patch_1a85d01, sizeof(patch_1a85d01) },
 };
+#endif
 
+#ifndef _WIN32
 static bool stringsEqualIgnoreCaseAsciiOnly(const char *a, const char *b) {
     char chB;
 
@@ -82,6 +115,7 @@ static bool stringsEqualIgnoreCaseAsciiOnly(const char *a, const char *b) {
     return *b == 0;
 
 }
+#endif
 
 static uint32_t crc32Small(const unsigned char *data, size_t size, uint32_t previous = 0) {
     static const uint32_t table[]{
@@ -104,7 +138,7 @@ static uint32_t crc32Small(const unsigned char *data, size_t size, uint32_t prev
     return ~crc;
 }
 
-static bool calculateFileCRC32(const char *filename, uint32_t &outputCRC) {
+static bool calculateFileCRC32(const std::filesystem::path &filename, uint32_t &outputCRC) {
     struct FileDescriptorHolder {
         int fd = -1;
 
@@ -125,7 +159,11 @@ static bool calculateFileCRC32(const char *filename, uint32_t &outputCRC) {
 
     } bufHolder;
 
-    fdHolder.fd = open(filename, O_RDONLY | O_CLOEXEC | O_NOCTTY);
+#ifdef _WIN32
+    fdHolder.fd = _wopen(filename.c_str(), O_RDONLY | O_BINARY);
+#else
+    fdHolder.fd = open(filename.c_str(), O_RDONLY | O_CLOEXEC | O_NOCTTY);
+#endif
     if(fdHolder.fd < 0)
         return false;
 
@@ -158,6 +196,7 @@ static bool calculateFileCRC32(const char *filename, uint32_t &outputCRC) {
 }
 
 static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t displacement) {
+#ifndef _WIN32
     auto result = sysconf(_SC_PAGE_SIZE);
     if(result < 0)
         return false;
@@ -197,9 +236,19 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
     private:
         std::vector<uintptr_t> m_pagesWithAdjustedPermissions;
     } protectionManager(pageSize);
+#endif
 
     auto patchLimit = patches + patchCount;
     for(auto patch = patches; patch < patchLimit; patch++) {
+#ifdef _WIN32
+
+        size_t bytesWritten;
+
+        if(!WriteProcessMemory(GetCurrentProcess(),
+            reinterpret_cast<void *>(patch->patchVA + displacement), patch->patchContents, patch->size, &bytesWritten))
+            return false;
+
+#else
         auto address = patch->patchVA + displacement;
 
         uintptr_t startingPage = address & ~(pageSize - 1);
@@ -211,14 +260,51 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
         }
 
         memcpy(reinterpret_cast<void *>(patch->patchVA + displacement), patch->patchContents, patch->size);
+#endif
     }
 
+#ifdef _WIN32
+    return true;
+#else
     return protectionManager.restorePermissions();
+#endif
 }
 
 
 bool applyUnityPatches() {
 
+    uint32_t crc = 0;
+    void *unityBaseAddress;
+
+#ifdef _WIN32
+    auto unityModule = GetModuleHandle(L"UnityPlayer.dll");
+    if(unityModule == nullptr) {
+        fprintf(stderr, "Unable to locate the loaded UnityPlayer.\n");
+        return false;
+    }
+
+    unityBaseAddress = reinterpret_cast<void *>(unityModule);
+
+    std::vector<wchar_t> unityPathChars(PATH_MAX);
+    DWORD outLength;
+    DWORD error;
+
+    do {
+        outLength = GetModuleFileName(unityModule, unityPathChars.data(), unityPathChars.size());
+        if(outLength == 0) {
+            fprintf(stderr, "GetModuleFileName failed\n");
+            return false;
+        }
+
+        if(error == ERROR_INSUFFICIENT_BUFFER) {
+            unityPathChars.resize(unityPathChars.size() * 2);
+        }
+
+    } while(error == ERROR_INSUFFICIENT_BUFFER);
+
+    const std::filesystem::path &unityPath = unityPathChars.data();
+
+#else
     const char *unityName = "UnityPlayer.so";
 
     Dl_info info;
@@ -240,17 +326,20 @@ bool applyUnityPatches() {
         return false;
     }
 
-    uint32_t crc;
-    if(!calculateFileCRC32(info.dli_fname, crc)) {
+    unityBaseAddress = reinterpret_cast<void *>(info.dli_fbase);
+
+    const std::filesystem::path &unityPath = info.dli_fname;
+
+#endif
+    if(!calculateFileCRC32(unityPath, crc)) {
         fprintf(stderr, "Failed to calculate the checksum of '%s': %s\n",
-                info.dli_fname, strerror(errno));
+                unityPath.string().c_str(), strerror(errno));
         return false;
     }
 
     if(crc != EXPECTED_UNITY_CRC32) {
-        fprintf(stderr, "The CRC-32 of the Unity player runtime, '%s',\n"
-                        "which was calculated to be 0x%08" PRIx32 ", didn't match the expected value,\n"
-                        "0x%08" PRIx32 ".\n"
+        fprintf(stderr, "The CRC-32 of the Unity player runtime, which was calculated to be 0x%08" PRIx32 "\n"
+                        "didn't match the expected value, 0x%08" PRIx32 ".\n"
                         "\n"
                         "We currently rely on patching the Unity binary to be able to use the OpenGL ES\n"
                         "renderer on the desktop, and to be able to use the assets targeting Android\n"
@@ -260,7 +349,6 @@ bool applyUnityPatches() {
                         "Any other version would be incompatible unless the patches are adjusted.\n"
                         "\n"
                         "Use the compatible version listed above, or defeat this check at your own peril.\n",
-                info.dli_fname,
                 crc, EXPECTED_UNITY_CRC32, EXPECTED_UNITY_VERSION);
 
         return false;
@@ -269,7 +357,7 @@ bool applyUnityPatches() {
     if(!applyPatches(
         UnityPlayerPatchSites,
         sizeof(UnityPlayerPatchSites) / sizeof(UnityPlayerPatchSites[0]),
-        reinterpret_cast<intptr_t>(info.dli_fbase))) {
+        reinterpret_cast<intptr_t>(unityBaseAddress))) {
 
         fprintf(stderr, "Failed to apply the in-memory executable patches to the Unity player\n");
         return false;

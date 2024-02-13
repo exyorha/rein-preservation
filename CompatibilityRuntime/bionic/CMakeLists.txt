@@ -68,7 +68,7 @@ set(libc_sources
     #bionic/__pread_chk.cpp
     bionic/__read_chk.cpp
     bionic/__readlink_chk.cpp
-    bionic/__readlinkat_chk.cpp
+    #bionic/__readlinkat_chk.cpp
     bionic/__recvfrom_chk.cpp
     bionic/__stpcpy_chk.cpp
     bionic/__stpncpy_chk.cpp
@@ -87,7 +87,7 @@ set(libc_sources
     bionic/abort.cpp
     bionic/accept.cpp
     bionic/accept4.cpp
-    bionic/access.cpp
+    #bionic/access.cpp
     bionic/assert.cpp
     bionic/atof.cpp
     bionic/bionic_systrace.cpp
@@ -115,7 +115,7 @@ set(libc_sources
     bionic/error.cpp
     bionic/eventfd_read.cpp
     bionic/eventfd_write.cpp
-    bionic/faccessat.cpp
+    #bionic/faccessat.cpp
     #bionic/fchmod.cpp
     #bionic/fchmodat.cpp
     bionic/ffs.cpp
@@ -141,18 +141,18 @@ set(libc_sources
     bionic/libgen.cpp
     #bionic/link.cpp
     bionic/locale.cpp
-    bionic/lstat.cpp
+    #bionic/lstat.cpp
     bionic/malloc_info.cpp
     bionic/mbrtoc16.cpp
     bionic/mbrtoc32.cpp
     bionic/mbstate.cpp
     bionic/mempcpy.cpp
-    bionic/mkdir.cpp
+    #bionic/mkdir.cpp
     #bionic/mkfifo.cpp
     #bionic/mknod.cpp
     bionic/mntent.cpp
     bionic/NetdClientDispatch.cpp
-    bionic/open.cpp
+    #bionic/open.cpp
     #bionic/pathconf.cpp
     #bionic/pause.cpp
     bionic/pipe.cpp
@@ -165,11 +165,11 @@ set(libc_sources
     #bionic/pty.cpp
     bionic/raise.cpp
     bionic/rand.cpp
-    bionic/readlink.cpp
+    #bionic/readlink.cpp
     #bionic/reboot.cpp
     bionic/recv.cpp
-    bionic/rename.cpp
-    bionic/rmdir.cpp
+    #bionic/rename.cpp
+    #bionic/rmdir.cpp
     bionic/scandir.cpp
     #bionic/sched_getaffinity.cpp
     #bionic/sched_getcpu.cpp
@@ -195,7 +195,7 @@ set(libc_sources
     #bionic/sigwait.cpp
     #bionic/sigwaitinfo.cpp
     bionic/socket.cpp
-    bionic/stat.cpp
+    #bionic/stat.cpp
     #bionic/statvfs.cpp
     bionic/strerror.cpp
     bionic/strerror_r.cpp
@@ -213,7 +213,7 @@ set(libc_sources
     bionic/thread_private.cpp
     bionic/tmpfile.cpp
     #bionic/umount.cpp
-    bionic/unlink.cpp
+    #bionic/unlink.cpp
     #bionic/utimes.cpp
     #bionic/wait.cpp
     bionic/wchar.cpp

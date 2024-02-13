@@ -1,20 +1,27 @@
 #include <unity_stub.h>
 #include <translator_api.h>
 
+#include <cstdio>
+#include <array>
+#include <random>
+#include <algorithm>
+
+#include "UnityPatches.h"
+#include "Il2CppUtilities.h"
+#include "Input.h"
+
 #ifndef _WIN32
 #include "GLES/Shim/GLESContextShim.h"
-#include "Il2CppUtilities.h"
 #include "FastAES.h"
 #include "OctoContentStorage.h"
 #include "Octo.h"
-#include "Input.h"
-#include "UnityPatches.h"
 
 #include <GLES/SDLWrapper.h>
 #endif
 
 #ifndef _WIN32
 OctoContentStorage *contentStorageInstance;
+#endif
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
     printf("com.adjust.sdk.Adjust::start\n");
@@ -174,6 +181,32 @@ static void UnityEngine_Logger_set_logEnabled(Il2CppObject *instance, bool enabl
     original(instance, enabled);
 }
 
+#ifdef _WIN32
+/*
+ * To make things easier on Windows, replace the system random provider.
+ * The default one uses /dev/urandom.
+ */
+static void System_Security_Cryptography_RNGCryptoServiceProvider_Check(Il2CppObject *this_, void *original) {
+    printf("System.Security.Cryptography.RNGCryptoServiceProvider::Check\n");
+}
+
+static void System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(Il2CppObject *this_, Il2CppArray *out, void *original) {
+    (void)this_;
+    (void)original;
+
+
+    int32_t dataLength = il2cpp_array_length(out);
+    auto arrayHeaderSize = il2cpp_array_object_header_size();
+    auto data = reinterpret_cast<uint8_t *>(out) + arrayHeaderSize;
+
+    printf("System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes(%p, %d)\n", data, dataLength);
+
+    using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char>;
+    std::generate(data, data + dataLength, random_bytes_engine());
+
+}
+#endif
+
 /*
  * Avoids a JNI callout to java/util/TimeZone.
  */
@@ -237,12 +270,13 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetIda",
                              DeviceUtil_DeviceUtil_GetIda);
 
+#ifndef _WIN32
     /*
      * We divert this method to avoid the dependency on the libFastAES.so
      * native library, it's the only method needed from it.
      */
     translator_divert_method("FastAES.dll::FastAES::NativeDecrypt", FastAES_NativeDecrypt);
-
+#endif
 
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
@@ -259,9 +293,22 @@ static void postInitialize() {
     translator_divert_method("LocalizeTime.dll::Dark.Localization.LocalizeTime::GetLocalTimeZoneId",
                              Dark_Localization_LocalizeTime_GetLocalTimeZoneId);
 
-    InitializeInput();
-    InitializeOcto();
+#ifdef _WIN32
+    /*
+     * To make things easier on Windows, replace the system random provider.
+     * The default one uses /dev/urandom.
+     */
+    translator_divert_method("mscorlib.dll::System.Security.Cryptography.RNGCryptoServiceProvider::Check",
+                             System_Security_Cryptography_RNGCryptoServiceProvider_Check);
 
+    translator_divert_method("mscorlib.dll::System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes",
+                             System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes);
+#endif
+
+    InitializeInput();
+#ifndef _WIN32
+    InitializeOcto();
+#endif
 /*
  * Downsizes the gRPC thread pool
  */
@@ -275,6 +322,7 @@ static void postInitialize() {
 #endif
 }
 
+#ifndef _WIN32
 static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
     printf("gRPC redirection: creating a channel to %s, attributes %p, credentials %p, secure %d\n",
            setup->target, setup->args, setup->creds, setup->secure);
@@ -329,11 +377,11 @@ static int gameMain(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-#ifndef _WIN32
     if(!applyUnityPatches())
         return 1;
 
     translator_set_post_initialize_callback(postInitialize);
+#ifndef _WIN32
     translator_set_grpc_redirection_callback(grpcRedirection);
 #endif
 

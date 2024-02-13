@@ -10,8 +10,11 @@ _compatibility_runtime_stub:
 .globl bind
 bind = _compatibility_runtime_stub
 
-.globl fstatat
-fstatat = _compatibility_runtime_stub
+.globl stat
+stat = _compatibility_runtime_stub
+
+.globl lstat
+lstat = _compatibility_runtime_stub
 
 .globl fchdir
 fchdir = _compatibility_runtime_stub
@@ -37,9 +40,6 @@ ___close = _compatibility_runtime_stub
 .globl __getdents64
 __getdents64 = _compatibility_runtime_stub
 
-.globl ___faccessat
-___faccessat = _compatibility_runtime_stub
-
 .globl __accept4
 __accept4 = _compatibility_runtime_stub
 
@@ -49,8 +49,8 @@ __connect = _compatibility_runtime_stub
 .globl __socket
 __socket = _compatibility_runtime_stub
 
-.globl __openat
-__openat = _compatibility_runtime_stub
+.globl ___open
+___open = _compatibility_runtime_stub
 
 .globl pipe2
 pipe2 = _compatibility_runtime_stub
@@ -70,8 +70,8 @@ mmap = _compatibility_runtime_stub
 .globl munmap
 munmap = _compatibility_runtime_stub
 
-.globl readlinkat
-readlinkat = _compatibility_runtime_stub
+.globl readlink
+readlink = _compatibility_runtime_stub
 
 .globl clock_getres
 clock_getres = _compatibility_runtime_stub
@@ -100,14 +100,14 @@ __rt_sigaction = _compatibility_runtime_stub
 .globl __rt_sigsuspend
 __rt_sigsuspend = _compatibility_runtime_stub
 
-.globl mkdirat
-mkdirat = _compatibility_runtime_stub
+.globl mkdir
+mkdir = _compatibility_runtime_stub
 
-.globl renameat
-renameat = _compatibility_runtime_stub
+.globl rmdir
+rmdir = _compatibility_runtime_stub
 
-.globl unlinkat
-unlinkat = _compatibility_runtime_stub
+.globl unlink
+unlink = _compatibility_runtime_stub
 
 .globl pthread_mutex_init
 pthread_mutex_init = _compatibility_runtime_stub
