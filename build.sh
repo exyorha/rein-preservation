@@ -51,25 +51,60 @@ mkdir -p windows-build-deps dl
 
 windows_boost_version=boost_1_84_0
 windows_ffi_version=libffi-3.4.4
+windows_abseil_version=abseil-cpp-20240116.1
+windows_protobuf_version=protobuf-25.2
 
 download_and_unpack_windows_dependency "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z"
 download_and_unpack_windows_dependency "https://github.com/libffi/libffi/releases/download/v3.4.4/${windows_ffi_version}.tar.gz"
+download_and_unpack_windows_dependency "https://github.com/abseil/abseil-cpp/releases/download/20240116.1/${windows_abseil_version}.tar.gz"
+download_and_unpack_windows_dependency "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/${windows_protobuf_version}.tar.gz"
 
 mkdir -p windows-build-deps/libffi-build
 
 winprefix="$(realpath -- windows-build-root-path)"
 
-if [ ! -f windows-build-deps/libffi-build/config.status ]; then
-    (cd windows-build-deps/libffi-build && ../${windows_ffi_version}/configure \
-        --build="$(gcc -dumpmachine)" \
-        --host=x86_64-w64-mingw32 \
-        --prefix="${winprefix}" \
-        --enable-static --disable-shared --with-pic --disable-docs)
+mkdir -p "$winprefix"
+
+if [ ! -f "${winprefix}/ffi_installed" ]; then
+
+    if [ ! -f windows-build-deps/libffi-build/config.status ]; then
+        (cd windows-build-deps/libffi-build && ../${windows_ffi_version}/configure \
+            --build="$(gcc -dumpmachine)" \
+            --host=x86_64-w64-mingw32 \
+            --prefix="${winprefix}" \
+            --enable-static --disable-shared --with-pic --disable-docs)
+    fi
+
+    make -C windows-build-deps/libffi-build install
+
+    touch "${winprefix}/ffi_installed"
 fi
 
-make -C windows-build-deps/libffi-build install
+if [ ! -f "${winprefix}/absl_installed" ]; then
 
-mkdir -p windows-build-root-path
+    cmake -S "windows-build-deps/${windows_abseil_version}" -B "windows-build-deps/abseil_build" \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${winprefix}" \
+        -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
+        -DCMAKE_FIND_ROOT_PATH="${winprefix}" \
+        -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+
+    cmake --build "windows-build-deps/abseil_build" --parallel --target install
+
+    touch "${winprefix}/absl_installed"
+fi
+
+if [ ! -f "${winprefix}/protobuf_installed" ]; then
+    cmake -S "windows-build-deps/${windows_protobuf_version}" -B "windows-build-deps/protobuf_build" \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${winprefix}" \
+        -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
+        -DCMAKE_FIND_ROOT_PATH="${winprefix}" \
+        -DBUILD_SHARED_LIBS=OFF -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_ABSL_PROVIDER=package \
+        -Dprotobuf_BUILD_PROTOC_BINARIES=OFF
+
+    cmake --build "windows-build-deps/protobuf_build" --parallel --target install
+
+    touch "${winprefix}/protobuf_installed"
+fi
 
 cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \

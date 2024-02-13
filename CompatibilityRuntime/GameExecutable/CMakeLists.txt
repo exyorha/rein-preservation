@@ -3,9 +3,6 @@ add_executable(GameExecutable
 
     main.cpp
 
-    UnityPatches.cpp
-    UnityPatches.h
-
     Il2CppUtilities.cpp
     Il2CppUtilities.h
 
@@ -41,8 +38,21 @@ add_executable(GameExecutable
     Java/UniWebViewInterface.cpp
     Java/UniWebViewInterface.h
 
+    Octo.cpp
+    Octo.h
+    OctoContentStorage.cpp
+    OctoContentStorage.h
+
+    Octo/Proto/Database.proto
+
+    UnityPatches.cpp
+    UnityPatches.h
+
     UnityWebRequest.cpp
+
 )
+
+protobuf_generate(TARGET GameExecutable)
 
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
@@ -86,22 +96,12 @@ if(NOT WIN32)
         GLES/TextureEmulation/astc_dec/astc_decomp.h
         GLES/TextureEmulation/stb_dxt.cpp
         GLES/TextureEmulation/stb_dxt.h
-
-
-        Octo.cpp
-        Octo.h
-        OctoContentStorage.cpp
-        OctoContentStorage.h
-
-        Octo/Proto/Database.proto
-
     )
 
-    protobuf_generate(TARGET GameExecutable)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(GameExecutable PRIVATE OpenSSL::Crypto protobuf::libprotobuf)
+    target_link_libraries(GameExecutable PRIVATE OpenSSL::Crypto)
 endif()
 
 if(WIN32)
@@ -116,7 +116,7 @@ else()
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly protobuf::libprotobuf)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

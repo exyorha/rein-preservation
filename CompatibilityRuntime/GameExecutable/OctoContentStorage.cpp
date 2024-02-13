@@ -18,7 +18,7 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
         if(!path.has_extension() || path.extension() != ".pb" || !path.has_stem())
             continue;
 
-        int version = std::atoi(path.stem().c_str());
+        int version = std::atoi(path.stem().string().c_str());
 
         if(!latestVersion.has_value() || *latestVersion < version) {
             latestVersion.emplace(version);

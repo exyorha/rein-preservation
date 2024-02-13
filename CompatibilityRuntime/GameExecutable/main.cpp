@@ -9,19 +9,17 @@
 #include "UnityPatches.h"
 #include "Il2CppUtilities.h"
 #include "Input.h"
+#include "OctoContentStorage.h"
+#include "Octo.h"
 
 #ifndef _WIN32
 #include "GLES/Shim/GLESContextShim.h"
 #include "FastAES.h"
-#include "OctoContentStorage.h"
-#include "Octo.h"
 
 #include <GLES/SDLWrapper.h>
 #endif
 
-#ifndef _WIN32
 OctoContentStorage *contentStorageInstance;
-#endif
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
     printf("com.adjust.sdk.Adjust::start\n");
@@ -306,9 +304,7 @@ static void postInitialize() {
 #endif
 
     InitializeInput();
-#ifndef _WIN32
     InitializeOcto();
-#endif
 /*
  * Downsizes the gRPC thread pool
  */
@@ -349,10 +345,10 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
 #endif
 
 static int gameMain(int argc, char **argv) {
-#ifndef _WIN32
     OctoContentStorage storage("/home/reki/rein/content");
     contentStorageInstance = &storage;
 
+#ifndef _WIN32
     GLESImplementationType gles = GLESImplementationType::Native;
 
     for(int index = 1; index < argc; index++) {
@@ -369,9 +365,7 @@ static int gameMain(int argc, char **argv) {
 #endif
     int result = PlayerMain(argc, argv);
 
-#ifndef _WIN32
     contentStorageInstance = nullptr;
-#endif
 
     return result;
 }
