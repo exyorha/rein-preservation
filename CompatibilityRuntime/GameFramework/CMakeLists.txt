@@ -94,6 +94,8 @@ if(NOT WIN32)
 
     target_sources(GameAssembly PRIVATE
 
+        Bionic/BionicMmapLinuxHost.cpp
+
         GDB/DebugMemoryAccess.cpp
         GDB/DebugMemoryAccess.h
         GDB/GDBPacketFormatter.cpp
@@ -120,6 +122,8 @@ endif()
 if(WIN32)
     target_compile_definitions(GameAssembly PRIVATE -DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
     target_sources(GameAssembly PRIVATE
+        Bionic/BionicMmapWindowsHost.cpp
+
         Windows/WindowsError.cpp
         Windows/WindowsError.h
         Windows/WindowsHandle.cpp

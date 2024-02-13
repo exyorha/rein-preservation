@@ -4,6 +4,7 @@ add_library(UnityStub SHARED
 )
 
 target_include_directories(UnityStub PUBLIC include)
+target_compile_definitions(UnityStub PRIVATE -DUNITY_STUB_BUILD)
 set_target_properties(UnityStub PROPERTIES
     OUTPUT_NAME UnityPlayer
     PREFIX ""

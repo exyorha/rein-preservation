@@ -100,12 +100,6 @@ __rt_sigaction = _compatibility_runtime_stub
 .globl __rt_sigsuspend
 __rt_sigsuspend = _compatibility_runtime_stub
 
-.globl ___getpid
-___getpid = _compatibility_runtime_stub
-
-.globl getuid
-getuid = _compatibility_runtime_stub
-
 .globl mkdirat
 mkdirat = _compatibility_runtime_stub
 

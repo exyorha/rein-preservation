@@ -35,24 +35,23 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
      */
 #ifndef _WIN32
     { "__openat", &thunkX86<plat_openat> },
-    { "mmap", &thunkX86<plat_mmap> },
-    { "mprotect", &thunkX86<plat_mprotect> },
-    { "munmap", &thunkX86<plat_munmap> },
     { "fstat", &thunkX86<plat_fstat> },
     { "fstatat", &thunkX86<plat_fstatat> },
     { "dup", &thunkX86<plat_dup> },
     { "___close", &thunkX86<plat_close> },
     { "read", &thunkX86<plat_read> },
     { "write", &thunkX86<plat_write> },
-    { "___getpid", &thunkX86<getpid> },
     { "readlinkat", &thunkX86<plat_readlinkat> },
     { "renameat", &thunkX86<plat_renameat> },
     { "unlinkat", &thunkX86<plat_unlinkat> },
     { "___faccessat", &thunkX86<plat_faccessat> },
-    { "uname", &thunkX86<plat_uname> },
     { "mkdirat", &thunkX86<plat_mkdirat> },
     { "lseek", &thunkX86<plat_lseek> },
 #endif
+
+    { "mmap", &thunkX86<plat_mmap> },
+    { "mprotect", &thunkX86<plat_mprotect> },
+    { "munmap", &thunkX86<plat_munmap> },
 
     { "clock_gettime", &thunkX86<plat_clock_gettime> },
     { "nanosleep", &thunkX86<plat_nanosleep> },

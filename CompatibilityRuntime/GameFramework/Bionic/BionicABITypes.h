@@ -46,15 +46,6 @@ struct BionicKernelArgumentBlock {
     void **abort_message_ptr;
 };
 
-struct bionic_utsname {
-    char  sysname   [65];
-    char  nodename  [65];
-    char  release   [65];
-    char  version   [65];
-    char  machine   [65];
-    char  domainname[65];
-};
-
 struct bionic_stat {
   bionic_dev_t st_dev;
   bionic_ino_t st_ino;
@@ -88,5 +79,28 @@ struct bionic_timeval {
 };
 
 struct bionic_Dl_info;
+
+#define BIONIC_PROT_READ 0x1
+#define BIONIC_PROT_WRITE 0x2
+#define BIONIC_PROT_EXEC 0x4
+#define BIONIC_PROT_SEM 0x8
+#define BIONIC_PROT_NONE 0x0
+#define BIONIC_PROT_GROWSDOWN 0x01000000
+#define BIONIC_PROT_GROWSUP 0x02000000
+
+#define BIONIC_MAP_SHARED 0x01
+#define BIONIC_MAP_PRIVATE 0x02
+#define BIONIC_MAP_TYPE 0x0f
+#define BIONIC_MAP_FIXED 0x10
+#define BIONIC_MAP_ANONYMOUS 0x20
+#define BIONIC_MAP_UNINITIALIZED 0x0
+
+#define BIONIC_MAP_FAILED ((void *)-1)
+
+enum : int32_t {
+#define __BIONIC_ERRDEF(name,value,msg) BIONIC_ ## name = value,
+#include "BionicErrdefs.h"
+#undef __BIONIC_ERRDEF
+};
 
 #endif

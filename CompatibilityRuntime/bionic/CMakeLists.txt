@@ -256,6 +256,7 @@ set(libc_sources
     arch-arm64/generic/bionic/strncmp.S
     arch-arm64/generic/bionic/strnlen.S
     arch-arm64/generic/bionic/memcpy.S
+    arch-arm64/generic/bionic/wmemmove.S
 
 #libc_pthread_src_files
     bionic/pthread_atfork.cpp
@@ -291,7 +292,7 @@ set(libc_sources
 
 set(cxa_src_sources
 # libc_cxa_src_files
-    #bionic/__cxa_guard.cpp
+    bionic/__cxa_guard.cpp
     bionic/__cxa_pure_virtual.cpp
     bionic/new.cpp
 )

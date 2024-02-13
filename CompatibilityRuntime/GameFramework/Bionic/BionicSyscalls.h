@@ -25,6 +25,6 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 int plat_mprotect(void *addr, size_t len, int prot);
 int plat_munmap(void *addr, size_t len);
 
-int plat_uname(bionic_utsname *name);
+int translateErrno(int error);
 
 #endif
