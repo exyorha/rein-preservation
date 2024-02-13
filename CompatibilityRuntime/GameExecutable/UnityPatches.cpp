@@ -15,6 +15,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include "WindowsHelpers.h"
 #else
 #include <sys/mman.h>
 #include <link.h>
@@ -285,24 +286,7 @@ bool applyUnityPatches() {
 
     unityBaseAddress = reinterpret_cast<void *>(unityModule);
 
-    std::vector<wchar_t> unityPathChars(PATH_MAX);
-    DWORD outLength;
-    DWORD error;
-
-    do {
-        outLength = GetModuleFileName(unityModule, unityPathChars.data(), unityPathChars.size());
-        if(outLength == 0) {
-            fprintf(stderr, "GetModuleFileName failed\n");
-            return false;
-        }
-
-        if(error == ERROR_INSUFFICIENT_BUFFER) {
-            unityPathChars.resize(unityPathChars.size() * 2);
-        }
-
-    } while(error == ERROR_INSUFFICIENT_BUFFER);
-
-    const std::filesystem::path &unityPath = unityPathChars.data();
+    auto unityPath = getPathToModule(unityModule);
 
 #else
     const char *unityName = "UnityPlayer.so";

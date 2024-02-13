@@ -25,6 +25,8 @@ target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 
 find_package(Protobuf CONFIG REQUIRED)
 
+find_package(gRPC CONFIG REQUIRED)
+
 if(WIN32 AND NOT TARGET protobuf::protoc)
     message(STATUS "Trying to find the host 'protoc'")
 
@@ -34,7 +36,6 @@ if(WIN32 AND NOT TARGET protobuf::protoc)
 endif()
 
 if(NOT WIN32)
-    find_package(gRPC CONFIG REQUIRED)
     find_package(Iconv REQUIRED)
     find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 

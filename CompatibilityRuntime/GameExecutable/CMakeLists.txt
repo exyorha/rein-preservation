@@ -109,7 +109,11 @@ if(WIN32)
 endif()
 
 if(WIN32)
-    target_sources(GameExecutable PRIVATE Il2CppUtilitiesWindows.cpp)
+    target_sources(GameExecutable PRIVATE
+        Il2CppUtilitiesWindows.cpp
+        WindowsHelpers.cpp
+        WindowsHelpers.h
+    )
 else()
     target_sources(GameExecutable PRIVATE Il2CppUtilitiesIconv.cpp)
     target_link_libraries(GameExecutable PRIVATE Iconv::Iconv)
@@ -130,7 +134,7 @@ if(UNIX)
 endif()
 
 if(MINGW)
-    target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc)
+    target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc -pthread)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)

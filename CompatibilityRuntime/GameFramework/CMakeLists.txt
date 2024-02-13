@@ -33,6 +33,13 @@ add_library(GameAssembly SHARED
 
     translator_main.cpp
 
+    grpc_channel_redirection.cpp
+    grpc_channel_redirection.h
+    grpc_csharp_ext.c
+    grpc_csharp_ext.h
+    grpc_special_thunks.cpp
+    grpc_special_thunks.h
+
     GlobalContext.cpp
     GlobalContext.h
 
@@ -90,9 +97,9 @@ target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT
 target_include_directories(GameAssembly PRIVATE .)
 target_link_libraries(GameAssembly PRIVATE dynarmic ffi)
 
-if(NOT WIN32)
-    target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
+target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
 
+if(NOT WIN32)
     target_sources(GameAssembly PRIVATE
 
         Bionic/BionicMmapLinuxHost.cpp
@@ -109,13 +116,6 @@ if(NOT WIN32)
         GDB/GDBPacketParser.h
         GDB/GDBStub.cpp
         GDB/GDBStub.h
-
-        grpc_channel_redirection.cpp
-        grpc_channel_redirection.h
-        grpc_csharp_ext.c
-        grpc_csharp_ext.h
-        grpc_special_thunks.cpp
-        grpc_special_thunks.h
 
         Translator/thunkutils.S
     )
@@ -198,7 +198,7 @@ endif()
 
 if(MINGW)
     target_link_options(GameAssembly PRIVATE
-        -Wl,-Bstatic -static-libgcc
+        -Wl,-Bstatic -static-libgcc -pthread -Wl,--gc-sections
     )
 endif()
 

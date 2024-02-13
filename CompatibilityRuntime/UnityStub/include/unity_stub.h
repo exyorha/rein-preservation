@@ -15,7 +15,7 @@
 
     }
 
-    static inline PlayerMain(int argc, char **argv) {
+    static inline int PlayerMain(int argc, char **argv) {
         return UnityMain(argc, argv);
     }
 

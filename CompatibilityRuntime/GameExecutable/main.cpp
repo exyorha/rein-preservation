@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <unity_stub.h>
 #include <translator_api.h>
 
@@ -12,7 +13,9 @@
 #include "OctoContentStorage.h"
 #include "Octo.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include "WindowsHelpers.h"
+#else
 #include "GLES/Shim/GLESContextShim.h"
 #include "FastAES.h"
 
@@ -344,8 +347,18 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
 }
 #endif
 
+static std::filesystem::path getExecutablePath() {
+#ifdef _WIN32
+    return getPathToModule(nullptr);
+#else
+    return std::filesystem::read_symlink("/proc/self/exe");
+#endif
+}
+
 static int gameMain(int argc, char **argv) {
-    OctoContentStorage storage("/home/reki/rein/content");
+    auto executableDirectory = getExecutablePath().parent_path();
+
+    OctoContentStorage storage(executableDirectory / "content");
     contentStorageInstance = &storage;
 
 #ifndef _WIN32
