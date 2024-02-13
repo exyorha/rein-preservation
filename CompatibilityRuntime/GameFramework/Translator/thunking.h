@@ -47,7 +47,7 @@ extern "C" {
     }
 
     static inline void writeThunkUtilitySlot(void *value) {
-        thunkUtilitySlot = thunkUtilitySlot;
+        thunkUtilitySlot = value;
     }
 
 #endif

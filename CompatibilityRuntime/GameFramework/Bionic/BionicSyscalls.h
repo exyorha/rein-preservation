@@ -17,9 +17,8 @@ int plat_unlinkat(int dirfd, const char *pathname, int flags);
 int plat_mkdirat(int dirfd, const char *pathname, bionic_mode_t mode);
 bionic_off_t plat_lseek(int fildes, bionic_off_t offset, int whence);
 
-int plat_gettimeofday(bionic_timeval *tp, void *tzp);
-int plat_clock_gettime(clockid_t clockid, bionic_timespec *tp);
-int plat_clock_getres(clockid_t clockid, bionic_timespec *tp);
+int plat_clock_gettime(bionic_clockid_t clockid, bionic_timespec *tp);
+int plat_clock_getres(bionic_clockid_t clockid, bionic_timespec *tp);
 int plat_nanosleep(const bionic_timespec *rqtp, bionic_timespec *rmtp);
 
 void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_off_t off);

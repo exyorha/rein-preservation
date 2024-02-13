@@ -1,16 +1,46 @@
+#include "Bionic/BionicABITypes.h"
 #include <Bionic/BionicSyscalls.h>
 #include <Bionic/BionicCallouts.h>
 
+#include <ctime>
 #include <cerrno>
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/utsname.h>
+static int translateErrno(int hostPlatformError) {
+    return hostPlatformError;
+}
 
-static void nativeTimevalToBionic(bionic_timeval *out, const struct timeval *in) {
-    out->tv_sec = in->tv_sec;
-    out->tv_usec = in->tv_usec;
+static bool translateClockID(clockid_t &host, bionic_clockid_t bionic) {
+#ifdef _WIN32
+    switch(bionic) {
+        case BIONIC_CLOCK_MONOTONIC:
+            host = CLOCK_MONOTONIC;
+            break;
+
+        case BIONIC_CLOCK_REALTIME:
+            host = CLOCK_REALTIME;
+            break;
+
+        case BIONIC_CLOCK_PROCESS_CPUTIME_ID:
+            host = CLOCK_PROCESS_CPUTIME_ID;
+            break;
+
+        case BIONIC_CLOCK_THREAD_CPUTIME_ID:
+            host = CLOCK_THREAD_CPUTIME_ID;
+            break;
+
+        case BIONIC_CLOCK_REALTIME_COARSE:
+            host = CLOCK_REALTIME_COARSE;
+            break;
+
+        default:
+            return false;
+    }
+
+    return true;
+#else
+    host = bionic;
+    return true;
+#endif
 }
 
 static void translateTimespec(struct bionic_timespec *out, const struct timespec *in) {
@@ -22,6 +52,13 @@ static void translateTimespecToNative(struct timespec *out, const struct bionic_
     out->tv_sec = in->tv_sec;
     out->tv_nsec = in->tv_nsec;
 }
+
+#ifndef _WIN32
+
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/utsname.h>
 
 static void translateStat(const struct stat *native, struct bionic_stat *android) {
     android->st_dev = native->st_dev;
@@ -42,7 +79,7 @@ static void translateStat(const struct stat *native, struct bionic_stat *android
 int plat_openat(int fd, const char* path, int oflag, int mode) {
     auto result = openat(fd, path, oflag, mode);
     if(result < 0) {
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
     }
 
     return result;
@@ -73,7 +110,7 @@ int plat_fstatat(int fd, const char *path, struct bionic_stat *statbuf, int flag
 int plat_dup(int fd) {
     auto result = dup(fd);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -81,7 +118,7 @@ int plat_dup(int fd) {
 int plat_close(int fd) {
     auto result = close(fd);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -89,7 +126,7 @@ int plat_close(int fd) {
 bionic_ssize_t plat_read(int fd, void *dest, size_t size) {
     auto result = read(fd, dest, size);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -97,7 +134,7 @@ bionic_ssize_t plat_read(int fd, void *dest, size_t size) {
 ssize_t plat_write(int fd, const void *dest, size_t size) {
     auto result = write(fd, dest, size);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -107,7 +144,7 @@ ssize_t plat_readlinkat(int dirfd, const char *pathname,
 
     auto result = readlinkat(dirfd, pathname, buf, bufsiz);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -116,7 +153,7 @@ int plat_faccessat(int fd, const char *path, int amode, int flag) {
     auto result = faccessat(fd, path, amode, flag);
 
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -124,7 +161,7 @@ int plat_faccessat(int fd, const char *path, int amode, int flag) {
 int plat_renameat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath) {
     auto result = renameat(olddirfd, oldpath, newdirfd, newpath);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -132,7 +169,7 @@ int plat_renameat(int olddirfd, const char *oldpath, int newdirfd, const char *n
 int plat_unlinkat(int dirfd, const char *pathname, int flags) {
     auto result = unlinkat(dirfd, pathname, flags);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -140,7 +177,7 @@ int plat_unlinkat(int dirfd, const char *pathname, int flags) {
 int plat_mkdirat(int dirfd, const char *pathname, bionic_mode_t mode) {
     auto result = mkdirat(dirfd, pathname, mode);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -148,42 +185,43 @@ int plat_mkdirat(int dirfd, const char *pathname, bionic_mode_t mode) {
 bionic_off_t plat_lseek(int fildes, bionic_off_t offset, int whence) {
     auto result = lseek(fildes, offset, whence);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 
 }
+#endif
 
-int plat_gettimeofday(bionic_timeval *tp, void *tzp) {
-    struct timeval native;
-
-    auto result = gettimeofday(&native, tzp);
-    if(result < 0)
-        bionic_set_errno(errno);
-
-    nativeTimevalToBionic(tp, &native);
-
-    return result;
-}
-
-int plat_clock_gettime(clockid_t clockid, bionic_timespec *tp) {
+int plat_clock_gettime(bionic_clockid_t clockid, bionic_timespec *tp) {
     struct timespec tn;
 
-    auto result = clock_gettime(clockid, &tn);
+    clockid_t host;
+    if(!translateClockID(host, clockid)) {
+        bionic_set_errno(EINVAL);
+        return -1;
+    }
+
+    auto result = clock_gettime(host, &tn);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     translateTimespec(tp, &tn);
 
     return result;
 }
 
-int plat_clock_getres(clockid_t clockid, bionic_timespec *tp) {
+int plat_clock_getres(bionic_clockid_t clockid, bionic_timespec *tp) {
     struct timespec tn;
 
-    auto result = clock_getres(clockid, &tn);
+    clockid_t host;
+    if(!translateClockID(host, clockid)) {
+        bionic_set_errno(EINVAL);
+        return -1;
+    }
+
+    auto result = clock_getres(host, &tn);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     translateTimespec(tp, &tn);
 
@@ -203,14 +241,16 @@ int plat_nanosleep(const bionic_timespec *rqtp, bionic_timespec *rmtp) {
     }
 
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
+
+#ifndef _WIN32
 void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_off_t off) {
     auto result = mmap(addr, len, prot, flags, fildes, off);
     if(result == MAP_FAILED)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -218,7 +258,7 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 int plat_mprotect(void *addr, size_t len, int prot) {
     auto result = mprotect(addr, len, prot);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -226,7 +266,7 @@ int plat_mprotect(void *addr, size_t len, int prot) {
 int plat_munmap(void *addr, size_t len) {
     auto result = munmap(addr, len);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
 
     return result;
 }
@@ -235,7 +275,7 @@ int plat_uname(bionic_utsname *name) {
     utsname host;
     auto result = uname(&host);
     if(result < 0)
-        bionic_set_errno(errno);
+        bionic_set_errno(translateErrno(errno));
     else {
         strncpy(name->sysname, host.sysname, sizeof(name->sysname));
         strncpy(name->nodename, host.nodename, sizeof(name->nodename));
@@ -248,3 +288,4 @@ int plat_uname(bionic_utsname *name) {
     return result;
 }
 
+#endif

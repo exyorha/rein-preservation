@@ -16,6 +16,7 @@ add_library(GameAssembly SHARED
     Bionic/BionicCallouts.h
     Bionic/BionicDynamicLoaderAPI.cpp
     Bionic/BionicDynamicLoaderAPI.h
+    Bionic/BionicSyscalls.cpp
     Bionic/BionicSyscalls.h
     Bionic/BionicThreading.cpp
     Bionic/BionicThreading.h
@@ -92,7 +93,6 @@ if(NOT WIN32)
     target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
 
     target_sources(GameAssembly PRIVATE
-        Bionic/BionicSyscalls.cpp
 
         GDB/DebugMemoryAccess.cpp
         GDB/DebugMemoryAccess.h

@@ -322,11 +322,7 @@ bool Image::getSymbol(const char *name, void *&value) const {
         const auto &symbol = m_symbolTable[symbolEntry];
 
         if(strcmp(name, m_stringTable + symbol.st_name) == 0) {
-            // If this assert triggers, then we need to look over the specs and evaluate whether
-            // do we need to look over the rest of the link set for undefined symbols or not.
-
             if(symbol.st_shndx == SHN_UNDEF) {
-                fprintf(stderr, "Image::getSymbol called for an undefined symbol '%s'\n", name);
                 return false;
             }
 
@@ -421,7 +417,6 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
         void *symbol;
 
         if(armlibToCheck && armlibToCheck->getSymbol(name, symbol)) {
-            printf("resolved %s to %p from armlib\n", name, symbol);
             return symbol;
         } else {
             return resolveUndefinedARMSymbol(name);

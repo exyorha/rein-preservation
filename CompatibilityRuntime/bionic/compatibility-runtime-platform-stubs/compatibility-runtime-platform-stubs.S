@@ -142,9 +142,6 @@ __compatibility_runtime_log_event = _compatibility_runtime_stub
 .globl __system_property_get
 __system_property_get = _compatibility_runtime_stub
 
-.globl gettimeofday
-gettimeofday = _compatibility_runtime_stub
-
 .globl nanosleep
 nanosleep = _compatibility_runtime_stub
 

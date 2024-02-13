@@ -35,7 +35,6 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
      */
 #ifndef _WIN32
     { "__openat", &thunkX86<plat_openat> },
-    { "gettimeofday", &thunkX86<plat_gettimeofday> },
     { "mmap", &thunkX86<plat_mmap> },
     { "mprotect", &thunkX86<plat_mprotect> },
     { "munmap", &thunkX86<plat_munmap> },
@@ -43,7 +42,6 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "fstatat", &thunkX86<plat_fstatat> },
     { "dup", &thunkX86<plat_dup> },
     { "___close", &thunkX86<plat_close> },
-    { "clock_gettime", &thunkX86<plat_clock_gettime> },
     { "read", &thunkX86<plat_read> },
     { "write", &thunkX86<plat_write> },
     { "___getpid", &thunkX86<getpid> },
@@ -52,12 +50,15 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "unlinkat", &thunkX86<plat_unlinkat> },
     { "___faccessat", &thunkX86<plat_faccessat> },
     { "uname", &thunkX86<plat_uname> },
-    { "clock_getres", &thunkX86<plat_clock_getres> },
-    { "sched_yield", &thunkX86<sched_yield> },
     { "mkdirat", &thunkX86<plat_mkdirat> },
     { "lseek", &thunkX86<plat_lseek> },
-    { "nanosleep", &thunkX86<plat_nanosleep> },
 #endif
+
+    { "clock_gettime", &thunkX86<plat_clock_gettime> },
+    { "nanosleep", &thunkX86<plat_nanosleep> },
+    { "clock_getres", &thunkX86<plat_clock_getres> },
+
+    { "sched_yield", &thunkX86<sched_yield> },
     /*
      * Android-specific API that we delegate out to x86 code.
      */

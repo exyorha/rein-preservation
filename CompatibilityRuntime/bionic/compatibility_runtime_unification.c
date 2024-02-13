@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
 pid_t ___getpid(void);
 
@@ -39,4 +41,18 @@ pid_t getpid(void) {
     }
 
     return cached;
+}
+
+int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
+    (void)tzp;
+
+    struct timespec ts;
+
+    if(clock_gettime(CLOCK_REALTIME, &ts) < 0)
+        return -1;
+
+    tp->tv_sec = ts.tv_sec;
+    tp->tv_usec = (ts.tv_nsec + 500) / 1000;
+
+    return 0;
 }

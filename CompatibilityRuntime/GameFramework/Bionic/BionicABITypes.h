@@ -18,6 +18,21 @@ typedef int64_t bionic_off_t;
 typedef uint64_t bionic_size_t;
 typedef int64_t bionic_ssize_t;
 
+typedef enum bionic_clockid : int32_t {
+  BIONIC_CLOCK_REALTIME = 0,
+  BIONIC_CLOCK_MONOTONIC = 1,
+  BIONIC_CLOCK_PROCESS_CPUTIME_ID = 2,
+  BIONIC_CLOCK_THREAD_CPUTIME_ID = 3,
+  BIONIC_CLOCK_MONOTONIC_RAW = 4,
+  BIONIC_CLOCK_REALTIME_COARSE = 5,
+  BIONIC_CLOCK_MONOTONIC_COARSE = 6,
+  BIONIC_CLOCK_BOOTTIME = 7,
+  BIONIC_CLOCK_REALTIME_ALARM = 8,
+  BIONIC_CLOCK_BOOTTIME_ALARM = 9,
+  BIONIC_CLOCK_SGI_CYCLE = 10,
+  BIONIC_CLOCK_CLOCK_TAI = 11
+} bionic_clockid_t;
+
 struct bionic_timespec {
     int64_t tv_sec;
     int64_t tv_nsec;
