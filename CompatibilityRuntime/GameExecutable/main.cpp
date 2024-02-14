@@ -321,13 +321,12 @@ static void postInitialize() {
 #endif
 }
 
-#ifndef _WIN32
 static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
     printf("gRPC redirection: creating a channel to %s, attributes %p, credentials %p, secure %d\n",
            setup->target, setup->args, setup->creds, setup->secure);
 
 #if 1
-    setup->target = "127.0.0.1:8087";
+    setup->target = "192.168.4.47:8087";
     setup->creds = nullptr;
     setup->secure = 0;
 #else
@@ -345,7 +344,6 @@ static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
     }
 #endif
 }
-#endif
 
 static std::filesystem::path getExecutablePath() {
 #ifdef _WIN32
@@ -388,9 +386,7 @@ int main(int argc, char **argv) {
         return 1;
 
     translator_set_post_initialize_callback(postInitialize);
-#ifndef _WIN32
     translator_set_grpc_redirection_callback(grpcRedirection);
-#endif
 
     return translator_main(argc, argv, gameMain);
 }

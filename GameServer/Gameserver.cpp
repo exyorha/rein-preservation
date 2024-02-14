@@ -23,7 +23,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     grpcBuilder.RegisterService(&m_gachaService);
     grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
-    grpcBuilder.AddListeningPort("127.0.0.1:8087", grpc::InsecureServerCredentials());
+    grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());
 
     m_server = grpcBuilder.BuildAndStart();
     if(!m_server)

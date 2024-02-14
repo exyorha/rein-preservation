@@ -153,6 +153,11 @@ fi
 
 if [ ! -f "${winprefix}/grpc_installed" ]; then
 
+    if ! (cd "windows-build-deps/grpc-${windows_grpc_version}" && (git log -n 1 | grep -q 'mingw build fix')); then
+        patchpath=$(realpath -- "grpc-mingw-build-fix.patch")
+        (cd "windows-build-deps/grpc-${windows_grpc_version}" && git am "$patchpath")
+    fi
+
     prepend_include "#include <stdint.h>" "windows-build-deps/grpc-${windows_grpc_version}/third_party/re2/util/pcre.h"
     prepend_include "#include <intrin.h>" \
         "windows-build-deps/grpc-${windows_grpc_version}/third_party/boringssl-with-bazel/src/third_party/fiat/curve25519_64_adx.h"
@@ -164,7 +169,8 @@ if [ ! -f "${winprefix}/grpc_installed" ]; then
         -DBUILD_SHARED_LIBS=OFF -DgRPC_ABSL_PROVIDER=package -DgRPC_PROTOBUF_PROVIDER=package \
         -DgRPC_BUILD_CODEGEN=OFF \
         -DgRPC_ZLIB_PROVIDER=package \
-        -DRE2_BUILD_TESTING=OFF
+        -DRE2_BUILD_TESTING=OFF \
+        -DOPENSSL_NO_ASM=ON
 
     echo -e "%:\n\ttrue" > "windows-build-deps/grpc_build/third_party/boringssl-with-bazel/CMakeFiles/bssl.dir/build.make"
 
