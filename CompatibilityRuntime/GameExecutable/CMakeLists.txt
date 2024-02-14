@@ -1,6 +1,9 @@
 add_executable(GameExecutable
     AndroidJNI.cpp
 
+    CommonUtilities.cpp
+    CommonUtilities.h
+
     FastAES.h
 
     main.cpp
@@ -105,6 +108,11 @@ if(WIN32)
         Il2CppUtilitiesWindows.cpp
         WindowsHelpers.cpp
         WindowsHelpers.h
+
+        GLES/WGL/WGLHooking.cpp
+        GLES/WGL/WGLHooking.h
+        GLES/WGL/WindowsImportRedirection.cpp
+        GLES/WGL/WindowsImportRedirection.h
     )
     target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
     target_link_libraries(GameExecutable PRIVATE bcrypt)

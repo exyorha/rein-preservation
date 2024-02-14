@@ -16,6 +16,7 @@
 
 #ifdef _WIN32
 #include "WindowsHelpers.h"
+#include "GLES/WGL/WGLHooking.h"
 #else
 #include "GLES/Shim/GLESContextShim.h"
 
@@ -357,10 +358,22 @@ static int gameMain(int argc, char **argv) {
     OctoContentStorage storage(executableDirectory / "content");
     contentStorageInstance = &storage;
 
+#ifdef _WIN32
+    bool shouldHookWGL = true;
+#endif
+
 #ifndef _WIN32
     GLESImplementationType gles = GLESImplementationType::Native;
+#endif
 
     for(int index = 1; index < argc; index++) {
+#ifdef _WIN32
+        if(strcmp(argv[index], "-dont-hook-wgl") == 0) {
+            shouldHookWGL = false;
+        }
+#endif
+
+#ifndef _WIN32
         if(strcmp(argv[index], "-angle") == 0) {
             gles = GLESImplementationType::ANGLE;
         } else if(strcmp(argv[index], "-always-emulate-astc") == 0) {
@@ -368,10 +381,20 @@ static int gameMain(int argc, char **argv) {
         } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
             GLESContextShim::NeverRecompressASTC = true;
         }
+#endif
     }
 
+#ifdef _WIN32
+    if(shouldHookWGL) {
+        replaceUnityWGL();
+    }
+#endif
+
+#ifndef _WIN32
     initializeGLES(gles);
 #endif
+
+
     int result = PlayerMain(argc, argv);
 
     contentStorageInstance = nullptr;

@@ -1,4 +1,5 @@
 #include "UnityPatches.h"
+#include "CommonUtilities.h"
 
 #include <unity_stub.h>
 
@@ -93,29 +94,6 @@ static const PatchSite UnityPlayerPatchSites[] = {
     { 0x1a85b39, patch_1a85b39, sizeof(patch_1a85b39) },
     { 0x1a85d01, patch_1a85d01, sizeof(patch_1a85d01) },
 };
-#endif
-
-#ifndef _WIN32
-static bool stringsEqualIgnoreCaseAsciiOnly(const char *a, const char *b) {
-    char chB;
-
-    while(*a) {
-        char chA = *a++;
-        chB = *b++;
-
-        if(chA >= 'A' && chA <= 'Z')
-            chA = chA - 'A' + 'a';
-
-        if(chB >= 'A' && chB <= 'Z')
-            chB = chB - 'A' + 'a';
-
-        if(chA != chB)
-            return false;
-    }
-
-    return *b == 0;
-
-}
 #endif
 
 static uint32_t crc32Small(const unsigned char *data, size_t size, uint32_t previous = 0) {
