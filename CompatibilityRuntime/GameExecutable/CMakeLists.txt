@@ -1,6 +1,8 @@
 add_executable(GameExecutable
     AndroidJNI.cpp
 
+    FastAES.h
+
     main.cpp
 
     Il2CppUtilities.cpp
@@ -56,9 +58,6 @@ protobuf_generate(TARGET GameExecutable)
 
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
-        FastAES.cpp
-        FastAES.h
-
         GLES/BaseGLESContext.cpp
         GLES/BaseGLESContext.h
         GLES/GLESImplementation.cpp
@@ -100,23 +99,22 @@ if(NOT WIN32)
 
 endif()
 
-if(NOT WIN32)
-    target_link_libraries(GameExecutable PRIVATE OpenSSL::Crypto)
-endif()
-
-if(WIN32)
-    target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
-endif()
-
 if(WIN32)
     target_sources(GameExecutable PRIVATE
+        FastAESWindows.cpp
         Il2CppUtilitiesWindows.cpp
         WindowsHelpers.cpp
         WindowsHelpers.h
     )
+    target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
+    target_link_libraries(GameExecutable PRIVATE bcrypt)
 else()
-    target_sources(GameExecutable PRIVATE Il2CppUtilitiesIconv.cpp)
-    target_link_libraries(GameExecutable PRIVATE Iconv::Iconv)
+    target_sources(GameExecutable PRIVATE
+        FastAESOpenSSL.cpp
+        Il2CppUtilitiesIconv.cpp
+    )
+
+    target_link_libraries(GameExecutable PRIVATE Iconv::Iconv OpenSSL::Crypto)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})

@@ -12,12 +12,12 @@
 #include "Input.h"
 #include "OctoContentStorage.h"
 #include "Octo.h"
+#include "FastAES.h"
 
 #ifdef _WIN32
 #include "WindowsHelpers.h"
 #else
 #include "GLES/Shim/GLESContextShim.h"
-#include "FastAES.h"
 
 #include <GLES/SDLWrapper.h>
 #endif
@@ -271,13 +271,11 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetIda",
                              DeviceUtil_DeviceUtil_GetIda);
 
-#ifndef _WIN32
     /*
      * We divert this method to avoid the dependency on the libFastAES.so
      * native library, it's the only method needed from it.
      */
     translator_divert_method("FastAES.dll::FastAES::NativeDecrypt", FastAES_NativeDecrypt);
-#endif
 
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
