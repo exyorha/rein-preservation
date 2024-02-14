@@ -134,7 +134,7 @@ if(UNIX)
 endif()
 
 if(MINGW)
-    target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc -pthread)
+    target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)

@@ -6,6 +6,8 @@
 #include <grpc/grpc.h>
 #include <grpc/grpc_security.h>
 
+#include <gpr_export.h>
+
 struct grpcsharp_batch_context;
 
 typedef struct grpcsharp_batch_context grpcsharp_batch_context;

@@ -35,8 +35,6 @@ add_library(GameAssembly SHARED
 
     grpc_channel_redirection.cpp
     grpc_channel_redirection.h
-    grpc_csharp_ext.c
-    grpc_csharp_ext.h
     grpc_special_thunks.cpp
     grpc_special_thunks.h
 
@@ -95,9 +93,7 @@ add_library(GameAssembly SHARED
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
     ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
 target_include_directories(GameAssembly PRIVATE .)
-target_link_libraries(GameAssembly PRIVATE dynarmic ffi)
-
-target_link_libraries(GameAssembly PRIVATE gRPC::grpc)
+target_link_libraries(GameAssembly PRIVATE dynarmic ffi grpc_csharp_ext)
 
 if(NOT WIN32)
     target_sources(GameAssembly PRIVATE
@@ -189,6 +185,7 @@ if(UNIX)
         -Wl,--relax
         -Wl,-Bsymbolic
         -Wl,-z,now
+        -Wl,--no-copy-dt-needed
     )
     target_compile_options(GameAssembly PRIVATE
         -ftls-model=initial-exec
@@ -198,7 +195,7 @@ endif()
 
 if(MINGW)
     target_link_options(GameAssembly PRIVATE
-        -Wl,-Bstatic -static-libgcc -pthread -Wl,--gc-sections
+        -Wl,-Bstatic -static-libgcc
     )
 endif()
 
@@ -221,4 +218,5 @@ add_custom_command(
     VERBATIM
 )
 
-install(TARGETS GameAssembly DESTINATION . COMPONENT GameAssembly)
+install(TARGETS GameAssembly RUNTIME DESTINATION . COMPONENT GameAssembly)
+install(TARGETS GameAssembly LIBRARY DESTINATION . COMPONENT GameAssembly)

@@ -26,6 +26,7 @@ target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 find_package(Protobuf CONFIG REQUIRED)
 
 find_package(gRPC CONFIG REQUIRED)
+add_subdirectory(grpc_csharp_ext)
 
 if(WIN32 AND NOT TARGET protobuf::protoc)
     message(STATUS "Trying to find the host 'protoc'")

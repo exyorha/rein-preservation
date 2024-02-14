@@ -180,7 +180,7 @@ if [ ! -f "${winprefix}/grpc_installed" ]; then
 fi
 
 cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
     -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
@@ -189,4 +189,5 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -G "Ninja"
 
 cmake --build CompatibilityRuntime-mingw-build
-cmake --install CompatibilityRuntime-mingw-build --component GameAssembly
+cmake --install CompatibilityRuntime-mingw-build --component GameAssembly --strip
+
