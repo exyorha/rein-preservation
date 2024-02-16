@@ -221,7 +221,7 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexImage2D(GLenum target, GLi
 
     auto outputRaster = shim->decompressTexture(emulation, width, height, data);
 
-    if(shim->m_recompressASTC) {
+    if(shim->m_recompressASTC && acceptableImageDimensionsForCompression(width, height)) {
         auto compressed = compressToDXT5(width, height, outputRaster.data());
 
         GLenum format;
@@ -231,6 +231,7 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexImage2D(GLenum target, GLi
             format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
 
+        printf("Recompressed upload via glCompressedTexImage2D, width: %d, height: %d\n", width, height);
         shim->m_nextSymbols->glCompressedTexImage2D(target, level, format, width, height, 0,
                                                        compressed.size(), compressed.data());
 
@@ -264,7 +265,7 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage2D(GLenum target, 
 
     auto outputRaster = shim->decompressTexture(emulation, width, height, data);
 
-    if(shim->m_recompressASTC) {
+    if(shim->m_recompressASTC && acceptableImageDimensionsForCompression(width, height)) {
         auto compressed = compressToDXT5(width, height, outputRaster.data());
 
         GLenum format;
@@ -274,11 +275,17 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage2D(GLenum target, 
             format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
 
-        shim->m_nextSymbols->glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format,
-                                                       compressed.size(), compressed.data());
+        printf("Recompressed upload via glCompressedTexSubImage2D, xoff: %d, yoff: %d, width: %d, height: %d\n",
+               xoffset, yoffset, width, height);
 
+        shim->m_nextSymbols->glCompressedTexSubImage2D(target, level, xoffset, yoffset,
+                                                       width,
+                                                       height, format,
+                                                       compressed.size(), compressed.data());
     } else {
 
+        printf("Decompressed upload via glCompressedTexSubImage2D, xoff: %d, yoff: %d, width: %d, height: %d\n",
+               xoffset, yoffset, width, height);
         shim->m_nextSymbols->glTexSubImage2D(target, level, xoffset, yoffset, width, height,
                                                         GL_RGBA, GL_UNSIGNED_BYTE, outputRaster.data());
     }
@@ -303,14 +310,14 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage3D(GLenum target, 
     getAndInitializeShim()->m_nextSymbols->glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
-GLenum GLESContextShim::subsituteStorageInternalFormat(GLenum internalformat) const {
+GLenum GLESContextShim::subsituteStorageInternalFormat(GLenum internalformat, bool canCompress) const {
 
     GLenum lowerInternalFormat = internalformat;
 
     if(m_emulatedASTC) {
         auto emulation = getEmulatedTextureFormat(internalformat);
         if(emulation) {
-            if(m_recompressASTC) {
+            if(m_recompressASTC && canCompress) {
                 if(emulation->isSRGB) {
                     lowerInternalFormat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
                 } else {
@@ -333,14 +340,18 @@ GLenum GLESContextShim::subsituteStorageInternalFormat(GLenum internalformat) co
 void GL_APIENTRY GLESContextShim::shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
 
     auto shim = getAndInitializeShim();
-    shim->m_nextSymbols->glTexStorage2D(target, levels, shim->subsituteStorageInternalFormat(internalformat), width, height);
+    shim->m_nextSymbols->glTexStorage2D(target, levels,
+                                        shim->subsituteStorageInternalFormat(internalformat,
+                                                                             acceptableImageDimensionsForCompression(width, height)), width, height);
 
 }
 
 void GL_APIENTRY GLESContextShim::shim_glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) {
 
     auto shim = getAndInitializeShim();
-    shim->m_nextSymbols->glTexStorage3D(target, levels, shim->subsituteStorageInternalFormat(internalformat), width, height, depth);
+    shim->m_nextSymbols->glTexStorage3D(target, levels,
+                                        shim->subsituteStorageInternalFormat(internalformat,
+                                        acceptableImageDimensionsForCompression(width, height)), width, height, depth);
 }
 
 std::vector<unsigned char> GLESContextShim::compressToDXT5(GLsizei width, GLsizei height, const unsigned char *rgbaData) {
@@ -376,4 +387,10 @@ std::vector<unsigned char> GLESContextShim::compressToDXT5(GLsizei width, GLsize
     }
 
     return output;
+}
+
+bool GLESContextShim::acceptableImageDimensionsForCompression(unsigned int width, unsigned int height) {
+    return
+        (width == 1 || width == 2 || (width & 3) == 0) &&
+        (height == 1 || height == 2 || (height & 3) == 0);
 }

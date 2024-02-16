@@ -52,7 +52,8 @@ private:
     static void GL_APIENTRY shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
     static void GL_APIENTRY shim_glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 
-    GLenum subsituteStorageInternalFormat(GLenum internalformat) const;
+    GLenum subsituteStorageInternalFormat(GLenum internalformat, bool canCompress) const;
+    static bool acceptableImageDimensionsForCompression(unsigned int width, unsigned int height);
 
     std::vector<unsigned char> decompressTexture(const EmulatedTextureFormat *emulation, GLsizei width, GLsizei height, const void *data);
     static std::vector<unsigned char> compressToDXT5(GLsizei width, GLsizei height, const unsigned char *rgbaData);
