@@ -7,7 +7,9 @@
 #include <EGL/eglext.h>
 #include <EGL/eglext_angle.h>
 
-class ANGLELibrary {
+#include <GLES/ANGLE/PlatformDynamicLibrary.h>
+
+class ANGLELibrary final : public PlatformDynamicLibrary {
 public:
     ANGLELibrary();
     ~ANGLELibrary();
@@ -20,8 +22,6 @@ public:
     PFNEGLTERMINATEPROC eglTerminate;
     PFNEGLBINDAPIPROC eglBindAPI;
 
-    EGLDisplay display;
-
     PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC eglCreatePlatformWindowSurfaceEXT;
     PFNEGLDESTROYSURFACEPROC eglDestroySurface;
 
@@ -33,13 +33,7 @@ public:
     PFNEGLMAKECURRENTPROC eglMakeCurrent;
 
     PFNEGLSWAPBUFFERSPROC eglSwapBuffers;
-
-    void *getProcAddress(const char *name) const;
-
-private:
-    [[noreturn]] static void failedToBind(const char *symbol);
-
-    void *m_library;
+    PFNEGLSWAPINTERVALPROC eglSwapInterval;
 };
 
 #endif

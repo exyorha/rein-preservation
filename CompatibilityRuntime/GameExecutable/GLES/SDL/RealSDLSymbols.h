@@ -1,5 +1,5 @@
-#ifndef GLES_REAL_SDL_SYMBOLS_H
-#define GLES_REAL_SDL_SYMBOLS_H
+#ifndef GLES_SDL_REAL_SDL_SYMBOLS_H
+#define GLES_SDL_REAL_SDL_SYMBOLS_H
 
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_syswm.h>

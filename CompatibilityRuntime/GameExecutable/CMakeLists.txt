@@ -6,6 +6,20 @@ add_executable(GameExecutable
 
     FastAES.h
 
+    GLES/BaseGLESContext.cpp
+    GLES/BaseGLESContext.h
+    GLES/GLESImplementationType.h
+
+    GLES/ANGLE/ANGLELibrary.cpp
+    GLES/ANGLE/ANGLELibrary.h
+    GLES/ANGLE/EGLWindowSurface.cpp
+    GLES/ANGLE/EGLWindowSurface.h
+    GLES/ANGLE/InitializedEGLContext.cpp
+    GLES/ANGLE/InitializedEGLContext.h
+    GLES/ANGLE/InitializedEGLDisplay.cpp
+    GLES/ANGLE/InitializedEGLDisplay.h
+    GLES/ANGLE/PlatformDynamicLibrary.h
+
     main.cpp
 
     Il2CppUtilities.cpp
@@ -61,29 +75,21 @@ protobuf_generate(TARGET GameExecutable)
 
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
-        GLES/BaseGLESContext.cpp
-        GLES/BaseGLESContext.h
-        GLES/GLESImplementation.cpp
-        GLES/GLESImplementation.h
-        GLES/GLESImplementationNative.cpp
-        GLES/GLESImplementationNative.h
-        GLES/RealSDLSymbols.cpp
-        GLES/RealSDLSymbols.h
-        GLES/SDLWrapper.cpp
-        GLES/SDLWrapper.h
+        GLES/SDL/RealSDLSymbols.cpp
+        GLES/SDL/RealSDLSymbols.h
+        GLES/SDL/SDLGLESImplementation.cpp
+        GLES/SDL/SDLGLESImplementation.h
+        GLES/SDL/SDLGLESImplementationANGLE.cpp
+        GLES/SDL/SDLGLESImplementationANGLE.h
+        GLES/SDL/SDLGLESImplementationNative.cpp
+        GLES/SDL/SDLGLESImplementationNative.h
+        GLES/SDL/SDLWrapper.cpp
+        GLES/SDL/SDLWrapper.h
+        GLES/SDL/SDLWrapperAttributeSet.cpp
+        GLES/SDL/SDLWrapperAttributeSet.h
 
-        GLES/ANGLE/ANGLELibrary.cpp
-        GLES/ANGLE/ANGLELibrary.h
-        GLES/ANGLE/EGLWindowSurface.cpp
-        GLES/ANGLE/EGLWindowSurface.h
-        GLES/ANGLE/GLESImplementationANGLE.cpp
-        GLES/ANGLE/GLESImplementationANGLE.h
-        GLES/ANGLE/InitializedEGLContext.cpp
-        GLES/ANGLE/InitializedEGLContext.h
-        GLES/ANGLE/InitializedEGLDisplay.cpp
-        GLES/ANGLE/InitializedEGLDisplay.h
-        GLES/ANGLE/SDLWrapperAttributeSet.cpp
-        GLES/ANGLE/SDLWrapperAttributeSet.h
+        GLES/ANGLE/LinuxDynamicLibrary.cpp
+        GLES/ANGLE/LinuxDynamicLibrary.h
 
         GLES/Shim/GLESContextShim.cpp
         GLES/Shim/GLESContextShim.h
@@ -109,13 +115,26 @@ if(WIN32)
         WindowsHelpers.cpp
         WindowsHelpers.h
 
+        GLES/ANGLE/WindowsDynamicLibrary.cpp
+        GLES/ANGLE/WindowsDynamicLibrary.h
+
+        GLES/WGL/ContextAndSurfacePair.cpp
+        GLES/WGL/ContextAndSurfacePair.h
+        GLES/WGL/DCAssociatedWindowSurface.cpp
+        GLES/WGL/DCAssociatedWindowSurface.h
         GLES/WGL/WGLHooking.cpp
         GLES/WGL/WGLHooking.h
+        GLES/WGL/WGLImplementation.cpp
+        GLES/WGL/WGLImplementation.h
+        GLES/WGL/WGLImplementationANGLE.cpp
+        GLES/WGL/WGLImplementationANGLE.h
+        GLES/WGL/WGLImplementationNative.cpp
+        GLES/WGL/WGLImplementationNative.h
         GLES/WGL/WindowsImportRedirection.cpp
         GLES/WGL/WindowsImportRedirection.h
     )
     target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
-    target_link_libraries(GameExecutable PRIVATE bcrypt)
+    target_link_libraries(GameExecutable PRIVATE bcrypt opengl32)
 else()
     target_sources(GameExecutable PRIVATE
         FastAESOpenSSL.cpp
@@ -125,7 +144,7 @@ else()
     target_link_libraries(GameExecutable PRIVATE Iconv::Iconv OpenSSL::Crypto)
 endif()
 
-target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
 target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly protobuf::libprotobuf)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR

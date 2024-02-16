@@ -20,7 +20,7 @@
 #else
 #include "GLES/Shim/GLESContextShim.h"
 
-#include <GLES/SDLWrapper.h>
+#include <GLES/SDL/SDLWrapper.h>
 #endif
 
 OctoContentStorage *contentStorageInstance;
@@ -358,15 +358,26 @@ static int gameMain(int argc, char **argv) {
     OctoContentStorage storage(executableDirectory / "content");
     contentStorageInstance = &storage;
 
+    GLESImplementationType gles = GLESImplementationType::Native;
+
 #ifdef _WIN32
     bool shouldHookWGL = true;
-#endif
 
-#ifndef _WIN32
-    GLESImplementationType gles = GLESImplementationType::Native;
+    /*
+     * Windows OpenGL ES seems to be of poor quality, so it's likely a good
+     * idea to default to ANGLE there. It's certainly common across OpenGL
+     * ES users to do so.
+     */
+    gles = GLESImplementationType::ANGLE;
 #endif
 
     for(int index = 1; index < argc; index++) {
+        if(strcmp(argv[index], "-angle") == 0) {
+            gles = GLESImplementationType::ANGLE;
+        } else if(strcmp(argv[index], "-native-gles") == 0) {
+            gles = GLESImplementationType::Native;
+        }
+
 #ifdef _WIN32
         if(strcmp(argv[index], "-dont-hook-wgl") == 0) {
             shouldHookWGL = false;
@@ -374,9 +385,7 @@ static int gameMain(int argc, char **argv) {
 #endif
 
 #ifndef _WIN32
-        if(strcmp(argv[index], "-angle") == 0) {
-            gles = GLESImplementationType::ANGLE;
-        } else if(strcmp(argv[index], "-always-emulate-astc") == 0) {
+        if(strcmp(argv[index], "-always-emulate-astc") == 0) {
             GLESContextShim::AlwaysEmulateASTC = true;
         } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
             GLESContextShim::NeverRecompressASTC = true;
@@ -386,14 +395,11 @@ static int gameMain(int argc, char **argv) {
 
 #ifdef _WIN32
     if(shouldHookWGL) {
-        replaceUnityWGL();
+        replaceUnityWGL(gles);
     }
+#else
+    initializeSDLGLES(gles);
 #endif
-
-#ifndef _WIN32
-    initializeGLES(gles);
-#endif
-
 
     int result = PlayerMain(argc, argv);
 

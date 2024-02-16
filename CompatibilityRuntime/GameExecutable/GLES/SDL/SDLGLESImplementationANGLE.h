@@ -1,20 +1,23 @@
-#ifndef GLES_GLES_IMPLEMENTATION_ANGLE_H
-#define GLES_GLES_IMPLEMENTATION_ANGLE_H
+#ifndef GLES_SDL_SDL_GLES_IMPLEMENTATION_ANGLE_H
+#define GLES_SDL_SDL_GLES_IMPLEMENTATION_ANGLE_H
 
-#include <GLES/GLESImplementation.h>
+#include <GLES/SDL/SDLGLESImplementation.h>
 
 #include <GLES/ANGLE/ANGLELibrary.h>
-#include <GLES/ANGLE/SDLWrapperAttributeSet.h>
+#include <GLES/SDL/SDLWrapperAttributeSet.h>
 #include <GLES/ANGLE/InitializedEGLDisplay.h>
 
 #include <optional>
 
-class InitializedEGLContext;
+#include <SDL2/SDL_syswm.h>
 
-class GLESImplementationANGLE final : public GLESImplementation {
+class InitializedEGLContext;
+class EGLWindowSurface;
+
+class SDLGLESImplementationANGLE final : public SDLGLESImplementation {
 public:
-    GLESImplementationANGLE();
-    ~GLESImplementationANGLE();
+    SDLGLESImplementationANGLE();
+    ~SDLGLESImplementationANGLE();
 
     SDL_Window *CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) noexcept override;
 
@@ -40,9 +43,16 @@ public:
     void UnloadLibrary() noexcept override;
 
 private:
+
+    static EGLWindowSurface *getSurfaceOfWindow(SDL_Window *window);
+    static void setSurfaceOfWindow(SDL_Window *window, EGLWindowSurface *surface);
+
+    static bool isCompatibleWith(const SDL_SysWMinfo &first, const SDL_SysWMinfo &other);
+
     ANGLELibrary m_angle;
     SDLWrapperAttributeSet m_currentAttributes;
     std::optional<InitializedEGLDisplay> m_display;
+    std::optional<SDL_SysWMinfo> m_displayWM;
 
 };
 

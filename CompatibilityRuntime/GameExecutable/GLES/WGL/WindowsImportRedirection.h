@@ -9,9 +9,12 @@ struct ReplacementExport {
     void *address;
 };
 
-void rebindModuleImport(HMODULE importingModule, const IMAGE_IMPORT_DESCRIPTOR *importedModule,
-                        const ReplacementExport *rebindTo, size_t numberOfReboundExports);
+void *findEntryInReplacementExports(const char *name, const ReplacementExport *rebindTo, size_t numberOfReboundExports);
 
-void rebindModuleImport(HMODULE importingModule, const char *importedModule, const ReplacementExport *rebindTo, size_t numberOfReboundExports) ;
+void rebindModuleImport(HMODULE importingModule, const IMAGE_IMPORT_DESCRIPTOR *importedModule,
+                        const ReplacementExport *rebindTo, size_t numberOfReboundExports, bool ignoreOthers = false);
+
+void rebindModuleImport(HMODULE importingModule, const char *importedModule, const ReplacementExport *rebindTo,
+                        size_t numberOfReboundExports, bool ignoreOthers = false);
 
 #endif

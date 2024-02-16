@@ -1,4 +1,4 @@
-#include <GLES/ANGLE/SDLWrapperAttributeSet.h>
+#include <GLES/SDL/SDLWrapperAttributeSet.h>
 
 #include <SDL2/SDL_video.h>
 

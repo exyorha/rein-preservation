@@ -1,5 +1,5 @@
-#ifndef GLES_GLES_IMPLEMENTATION_H
-#define GLES_GLES_IMPLEMENTATION_H
+#ifndef GLES_SDL_SDL_GLES_IMPLEMENTATION_H
+#define GLES_SDL_SDL_GLES_IMPLEMENTATION_H
 
 #include <SDL2/SDL_video.h>
 
@@ -7,13 +7,13 @@
 
 class BaseGLESContext;
 
-class GLESImplementation {
+class SDLGLESImplementation {
 protected:
-    GLESImplementation();
-    ~GLESImplementation();
+    SDLGLESImplementation();
+    ~SDLGLESImplementation();
 
-    GLESImplementation(const GLESImplementation &other) = delete;
-    GLESImplementation &operator =(const GLESImplementation &other) = delete;
+    SDLGLESImplementation(const SDLGLESImplementation &other) = delete;
+    SDLGLESImplementation &operator =(const SDLGLESImplementation &other) = delete;
 
 public:
     virtual SDL_Window *CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) noexcept = 0;

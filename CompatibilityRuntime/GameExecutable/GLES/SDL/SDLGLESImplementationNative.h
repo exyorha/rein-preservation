@@ -1,13 +1,13 @@
-#ifndef GLES_GLES_IMPLEMENTATION_NATIVE_H
-#define GLES_GLES_IMPLEMENTATION_NATIVE_H
+#ifndef GLES_SDL_SDL_GLES_IMPLEMENTATION_NATIVE_H
+#define GLES_SDL_SDL_GLES_IMPLEMENTATION_NATIVE_H
 
 #include <GLES/BaseGLESContext.h>
-#include <GLES/GLESImplementation.h>
+#include <GLES/SDL/SDLGLESImplementation.h>
 
-class GLESImplementationNative final : public GLESImplementation {
+class SDLGLESImplementationNative final : public SDLGLESImplementation {
 public:
-    GLESImplementationNative();
-    ~GLESImplementationNative();
+    SDLGLESImplementationNative();
+    ~SDLGLESImplementationNative();
 
     SDL_Window *CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) noexcept override;
 protected:

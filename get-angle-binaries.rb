@@ -5,7 +5,8 @@ require 'json'
 require 'tempfile'
 
 CHROME_PLATFORMS_AND_ANGLE_ARTIFACTS = {
-    "linux64" => "chrome-linux64/libGLESv2.so"
+    "linux64" => "chrome-linux64/libGLESv2.so",
+    "win64" => "chrome-win64/libGLESv2.dll"
 }
 
 def get_platform_download(downloads, platform)

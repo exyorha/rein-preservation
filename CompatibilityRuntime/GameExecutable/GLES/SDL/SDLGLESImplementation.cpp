@@ -1,14 +1,14 @@
-#include <GLES/GLESImplementation.h>
+#include <GLES/SDL/SDLGLESImplementation.h>
 #include <GLES/Shim/GLESContextShim.h>
 
-thread_local SDL_Window *GLESImplementation::m_currentWindow;
-thread_local SDL_GLContext GLESImplementation::m_currentContext;
+thread_local SDL_Window *SDLGLESImplementation::m_currentWindow;
+thread_local SDL_GLContext SDLGLESImplementation::m_currentContext;
 
-GLESImplementation::GLESImplementation() = default;
+SDLGLESImplementation::SDLGLESImplementation() = default;
 
-GLESImplementation::~GLESImplementation() = default;
+SDLGLESImplementation::~SDLGLESImplementation() = default;
 
-void GLESImplementation::DestroyWindow(SDL_Window *window) noexcept {
+void SDLGLESImplementation::DestroyWindow(SDL_Window *window) noexcept {
     DestroyWindowImpl(window);
 
     if(m_currentWindow == window) {
@@ -17,7 +17,7 @@ void GLESImplementation::DestroyWindow(SDL_Window *window) noexcept {
 }
 
 
-SDL_GLContext GLESImplementation::CreateContext(SDL_Window *window) noexcept {
+SDL_GLContext SDLGLESImplementation::CreateContext(SDL_Window *window) noexcept {
     try {
         auto context = CreateContextImpl(window);
         if(!context) {
@@ -34,7 +34,7 @@ SDL_GLContext GLESImplementation::CreateContext(SDL_Window *window) noexcept {
     }
 }
 
-void GLESImplementation::DeleteContext(SDL_GLContext context) noexcept {
+void SDLGLESImplementation::DeleteContext(SDL_GLContext context) noexcept {
     if(context) {
         delete static_cast<BaseGLESContext *>(context);
 
@@ -44,15 +44,15 @@ void GLESImplementation::DeleteContext(SDL_GLContext context) noexcept {
     }
 }
 
-SDL_GLContext GLESImplementation::GetCurrentContext() noexcept {
+SDL_GLContext SDLGLESImplementation::GetCurrentContext() noexcept {
     return m_currentContext;
 }
 
-SDL_Window *GLESImplementation::GetCurrentWindow() noexcept {
+SDL_Window *SDLGLESImplementation::GetCurrentWindow() noexcept {
     return m_currentWindow;
 }
 
-int GLESImplementation::MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept {
+int SDLGLESImplementation::MakeCurrent(SDL_Window *window, SDL_GLContext context) noexcept {
     if(context == nullptr)
         window = nullptr;
 
@@ -68,11 +68,11 @@ int GLESImplementation::MakeCurrent(SDL_Window *window, SDL_GLContext context) n
     return result;
 }
 
-BaseGLESContext *GLESImplementation::currentImplementationContext() const noexcept {
+BaseGLESContext *SDLGLESImplementation::currentImplementationContext() const noexcept {
     return GLESContextShim::unwrap(m_currentContext);
 }
 
-void *GLESImplementation::GetProcAddress(const char *proc) noexcept {
+void *SDLGLESImplementation::GetProcAddress(const char *proc) noexcept {
     auto context = static_cast<BaseGLESContext *>(m_currentContext);
     if(!context) {
         fprintf(stderr, "GLESImplementation::GetProcAddress is called with no context set\n");

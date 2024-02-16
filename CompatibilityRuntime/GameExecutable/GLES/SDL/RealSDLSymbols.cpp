@@ -1,4 +1,4 @@
-#include <GLES/RealSDLSymbols.h>
+#include <GLES/SDL/RealSDLSymbols.h>
 
 #include <dlfcn.h>
 
