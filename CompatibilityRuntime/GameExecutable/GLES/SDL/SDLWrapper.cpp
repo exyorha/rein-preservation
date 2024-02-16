@@ -8,17 +8,16 @@
 #include <variant>
 #include <stdexcept>
 
-static std::variant<std::monostate, SDLGLESImplementationNative, SDLGLESImplementationANGLE> SDLGLESImplementationStorage;
 static SDLGLESImplementation *SelectedSDLGLESImplementation;
 
 void initializeSDLGLES(GLESImplementationType type) {
     switch(type) {
         case GLESImplementationType::Native:
-            SelectedSDLGLESImplementation = &SDLGLESImplementationStorage.emplace<SDLGLESImplementationNative>();
+            SelectedSDLGLESImplementation = new SDLGLESImplementationNative;
             break;
 
         case GLESImplementationType::ANGLE:
-            SelectedSDLGLESImplementation = &SDLGLESImplementationStorage.emplace<SDLGLESImplementationANGLE>();
+            SelectedSDLGLESImplementation = new SDLGLESImplementationANGLE;
             break;
 
         default:

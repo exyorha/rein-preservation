@@ -31,7 +31,6 @@ BOOL WINAPI replacement_wglChoosePixelFormatARB (HDC hdc, const int *piAttribILi
 
 WINBOOL WINAPI replacement_SwapBuffers(HDC hdc);
 
-static std::variant<std::monostate, WGLImplementationNative, WGLImplementationANGLE> WGLImplementationStorage;
 static WGLImplementation *SelectedWGLImplementation;
 
 static const ReplacementExport replacementWGLFunctions[]{
@@ -97,11 +96,11 @@ void replaceUnityWGL(GLESImplementationType implementationType) {
 
     switch(implementationType) {
         case GLESImplementationType::Native:
-            SelectedWGLImplementation = &WGLImplementationStorage.emplace<WGLImplementationNative>();
+            SelectedWGLImplementation = new WGLImplementationNative();
             break;
 
         case GLESImplementationType::ANGLE:
-            SelectedWGLImplementation = &WGLImplementationStorage.emplace<WGLImplementationANGLE>();
+            SelectedWGLImplementation = new WGLImplementationANGLE();
             break;
 
         default:
