@@ -42,8 +42,6 @@ DCAssociatedWindowSurface::DCAssociatedWindowSurface(const ANGLELibrary &angle,
         availableConfigs == 0)
         throw std::runtime_error("EGL_ChooseConfig has failed");
 
-    printf("config chosen: %p\n", m_config);
-
     std::vector<EGLint> surfaceAttributes;
     if(formatDescriptor.dwFlags & PFD_DOUBLEBUFFER) {
         surfaceAttributes.emplace_back(EGL_RENDER_BUFFER);
@@ -58,13 +56,9 @@ DCAssociatedWindowSurface::DCAssociatedWindowSurface(const ANGLELibrary &angle,
     m_surface = std::make_unique<EGLWindowSurface>(
         angle, display, m_config, window, surfaceAttributes.data());
 
-    printf("surface created: %p\n", m_surface.get());
-
 }
 
-DCAssociatedWindowSurface::~DCAssociatedWindowSurface() {
-    printf("destroying surface: %p\n", m_surface.get());
-}
+DCAssociatedWindowSurface::~DCAssociatedWindowSurface() = default;
 
 void DCAssociatedWindowSurface::addReference() noexcept {
     m_references.fetch_add(1);

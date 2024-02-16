@@ -83,11 +83,8 @@ std::unique_ptr<BaseGLESContext> WGLImplementationANGLE::CreateContextImpl(HDC h
     auto existingSurface = DCAssociatedWindowSurface::getSurfaceOfDC(hDC);
 
     if(!existingSurface) {
-        printf("creating a new surface\n");
         existingSurface = DCAssociatedWindowSurfaceReference(new DCAssociatedWindowSurface(
             m_angle, m_display, hDC));
-    } else {
-        printf("reusing an existing surface\n");
     }
 
 
@@ -97,12 +94,8 @@ std::unique_ptr<BaseGLESContext> WGLImplementationANGLE::CreateContextImpl(HDC h
         shareWithEGLContext = static_cast<ContextAndSurfacePair *>(hShareContext)->context();
     }
 
-    printf("config %p, sharing with context %p\n", existingSurface->config(), shareWithEGLContext);
-
     auto context = std::make_unique<InitializedEGLContext>(
         m_angle, m_display, existingSurface->config(), shareWithEGLContext);
-
-    printf("context created: %p\n", context.get());
 
     return std::make_unique<ContextAndSurfacePair>(std::move(context),
                                                    DCAssociatedWindowSurfaceReference(existingSurface), hDC);
@@ -132,8 +125,6 @@ const char *WGLImplementationANGLE::GetExtensionsStringARB(HDC hdc) noexcept {
 }
 
 BOOL WGLImplementationANGLE::SwapIntervalEXT(int interval) noexcept {
-    printf("ANGLE: set swap interval: %d\n", interval);
-
     if(m_angle.eglSwapInterval(m_display, interval))
         return TRUE;
     else

@@ -92,6 +92,8 @@ void *getExtensionWGLProc(const char *name) {
 }
 
 void replaceUnityWGL(GLESImplementationType implementationType) {
+    printf("Initializing OpenGL ES.\n");
+
     switch(implementationType) {
         case GLESImplementationType::Native:
             SelectedWGLImplementation = &WGLImplementationStorage.emplace<WGLImplementationNative>();
@@ -116,6 +118,8 @@ void replaceUnityWGL(GLESImplementationType implementationType) {
         rebindModuleImport(unityModule, "gdi32.dll", replacementGDIFunctions,
                         sizeof(replacementGDIFunctions) / sizeof(replacementGDIFunctions[0]), true);
     }
+
+    printf("OpenGL ES initialization finished\n");
 }
 
 HDC WINAPI replacement_wglGetCurrentDC(void) {
@@ -139,6 +143,7 @@ PROC WINAPI replacement_wglGetProcAddress(LPCSTR lpszProc) {
 }
 
 BOOL WINAPI replacement_wglDeleteContext(HGLRC oldContext) {
+    printf("wglDeleteContext\n");
     return SelectedWGLImplementation->DeleteContext(oldContext);
 }
 

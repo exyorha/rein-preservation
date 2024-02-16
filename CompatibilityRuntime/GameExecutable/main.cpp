@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <unity_stub.h>
 #include <translator_api.h>
 
 #include <cstdio>
@@ -13,6 +12,7 @@
 #include "OctoContentStorage.h"
 #include "Octo.h"
 #include "FastAES.h"
+#include "GameEntryPoint.h"
 
 #ifdef _WIN32
 #include "WindowsHelpers.h"
@@ -22,6 +22,7 @@
 
 #include <GLES/SDL/SDLWrapper.h>
 #endif
+
 
 OctoContentStorage *contentStorageInstance;
 
@@ -352,23 +353,19 @@ static std::filesystem::path getExecutablePath() {
 #endif
 }
 
-static int gameMain(int argc, char **argv) {
+int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unityInvocationPackage) {
     auto executableDirectory = getExecutablePath().parent_path();
 
     OctoContentStorage storage(executableDirectory / "content");
     contentStorageInstance = &storage;
 
-    GLESImplementationType gles = GLESImplementationType::Native;
+    /*
+     * For uniformity and predictability, we use ANGLE by default.
+     */
+    GLESImplementationType gles = GLESImplementationType::ANGLE;
 
 #ifdef _WIN32
     bool shouldHookWGL = true;
-
-    /*
-     * Windows OpenGL ES seems to be of poor quality, so it's likely a good
-     * idea to default to ANGLE there. It's certainly common across OpenGL
-     * ES users to do so.
-     */
-    gles = GLESImplementationType::ANGLE;
 #endif
 
     for(int index = 1; index < argc; index++) {
@@ -401,19 +398,19 @@ static int gameMain(int argc, char **argv) {
     initializeSDLGLES(gles);
 #endif
 
-    int result = PlayerMain(argc, argv);
+    int result = unityEntryPoint(unityInvocationPackage);
 
     contentStorageInstance = nullptr;
 
     return result;
 }
 
-int main(int argc, char **argv) {
+bool gameEarlyInit() {
     if(!applyUnityPatches())
-        return 1;
+        return false;
 
     translator_set_post_initialize_callback(postInitialize);
     translator_set_grpc_redirection_callback(grpcRedirection);
 
-    return translator_main(argc, argv, gameMain);
+    return true;
 }

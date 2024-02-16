@@ -4,10 +4,10 @@
 
 #include "GlobalContext.h"
 
-int translator_main(int argc, char **argv, TranslatorEngineMain engineMain) {
+int translator_main(TranslatorEngineMain engineMain, void *arg) {
     auto globalContext = std::make_unique<GlobalContext>();
 
-    return engineMain(argc, argv);
+    return engineMain(arg);
 }
 
 void *translator_get_il2cpp_base_address() {

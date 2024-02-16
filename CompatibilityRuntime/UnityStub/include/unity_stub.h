@@ -3,6 +3,8 @@
 
 #if defined(_WIN32)
 
+#include <windows.h>
+
 #if defined(UNITY_STUB_BUILD)
 #define UNITY_STUB_IMPORT __attribute__((dllexport))
 #else
@@ -11,12 +13,8 @@
 
     extern "C" {
 
-        int UNITY_STUB_IMPORT UnityMain(int argc, char **argv);
+        int UNITY_STUB_IMPORT UnityMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, const wchar_t *lpCommandLine, int nShow);
 
-    }
-
-    static inline int PlayerMain(int argc, char **argv) {
-        return UnityMain(argc, argv);
     }
 
 #else

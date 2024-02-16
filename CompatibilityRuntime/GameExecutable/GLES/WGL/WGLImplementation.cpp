@@ -58,8 +58,6 @@ HGLRC WGLImplementation::CreateContext(HDC hDC) noexcept {
         if(!context)
             return nullptr;
 
-        printf("CreateContext(basic) returning %p\n", context.get());
-
         SetLastError(ERROR_SUCCESS);
 
         return reinterpret_cast<HGLRC>(context.release());
@@ -73,8 +71,6 @@ HGLRC WGLImplementation::CreateContext(HDC hDC) noexcept {
 }
 
 HGLRC WGLImplementation::CreateContext(HDC hDC, HGLRC hShareContext, const int *attribList) noexcept {
-    printf("WGLImplementation::CreateContext(hDC = %p, hShareContext = %p, attribList = %p)\n",
-           hDC, hShareContext, attribList);
     try {
         auto context = CreateContextImpl(hDC, reinterpret_cast<BaseGLESContext *>(hShareContext), attribList);
         if(!context)
@@ -95,8 +91,6 @@ HGLRC WGLImplementation::CreateContext(HDC hDC, HGLRC hShareContext, const int *
 }
 
 BOOL WGLImplementation::DeleteContext(HGLRC contextHandle) noexcept {
-    printf("DeleteContext(%p)\n", contextHandle);
-
     auto context = reinterpret_cast<BaseGLESContext *>(contextHandle);
 
     if(context == nullptr) {
@@ -107,14 +101,10 @@ BOOL WGLImplementation::DeleteContext(HGLRC contextHandle) noexcept {
 
     delete context;
 
-    printf("deleted!\n");
-
     SetLastError(0);
 
     if(context == m_currentContext) {
-        printf("clearing current!\n");
         MakeCurrent(nullptr, nullptr);
-        printf("cleared!\n");
     }
 
     return TRUE;

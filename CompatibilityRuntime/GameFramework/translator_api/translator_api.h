@@ -17,11 +17,11 @@ struct TranslatorGrpcChannelSetup {
 extern "C" {
 #endif
 
-typedef int (*TranslatorEngineMain)(int argc, char **argv);
+typedef int (*TranslatorEngineMain)(void *arg);
 
 typedef void (*TranslatorGrpcRedirectionCallback)(TranslatorGrpcChannelSetup *setup);
 
-int IL2CPP_EXPORT translator_main(int argc, char **argv, TranslatorEngineMain engineMain);
+int IL2CPP_EXPORT translator_main(TranslatorEngineMain engineMain, void *arg);
 
 void IL2CPP_EXPORT translator_add_icall_interposer(const char *name, Il2CppMethodPointer interposer);
 void IL2CPP_EXPORT translator_remove_icall_interposer(const char *name);

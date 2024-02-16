@@ -175,12 +175,17 @@ static bool calculateFileCRC32(const std::filesystem::path &filename, uint32_t &
 }
 
 static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t displacement) {
-#ifndef _WIN32
+#ifdef _WIN32
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    uintptr_t pageSize = info.dwPageSize;
+#else
     auto result = sysconf(_SC_PAGE_SIZE);
     if(result < 0)
         return false;
 
-    auto pageSize = static_cast<size_t>(result);
+    uintptr_t pageSize = static_cast<size_t>(result);
+#endif
 
     class PageProtectionManager {
     public:
@@ -191,43 +196,50 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
         size_t pageSize;
 
         bool allowWritesToPage(uintptr_t address) {
-            if(std::find(m_pagesWithAdjustedPermissions.begin(), m_pagesWithAdjustedPermissions.end(), address) !=
+            if(std::find_if(m_pagesWithAdjustedPermissions.begin(), m_pagesWithAdjustedPermissions.end(),
+                [address](const auto &existing) { return existing.first == address; }) !=
                 m_pagesWithAdjustedPermissions.end())
                 return true;
 
+#ifdef _WIN32
+            DWORD oldPermissions;
+            if(!VirtualProtect(reinterpret_cast<void *>(address), pageSize, PAGE_READWRITE, &oldPermissions)) {
+                return false;
+            }
+#else
+            uint32_t oldPermissions = PROT_READ | PROT_EXEC;
+
             if(mprotect(reinterpret_cast<void *>(address), pageSize, PROT_READ | PROT_WRITE) < 0)
                 return false;
+#endif
 
-            m_pagesWithAdjustedPermissions.emplace_back(address);
+            m_pagesWithAdjustedPermissions.emplace_back(address, oldPermissions);
 
             return true;
         }
 
         bool restorePermissions() {
             for(auto page: m_pagesWithAdjustedPermissions) {
-                if(mprotect(reinterpret_cast<void *>(page), pageSize, PROT_READ | PROT_EXEC) < 0)
+#ifdef _WIN32
+                DWORD oldPermissions;
+                if(!VirtualProtect(reinterpret_cast<void *>(page.first), pageSize, page.second, &oldPermissions)) {
                     return false;
+                }
+#else
+                if(mprotect(reinterpret_cast<void *>(page.first), pageSize, page.second) < 0)
+                    return false;
+#endif
             }
 
             return true;
         }
 
     private:
-        std::vector<uintptr_t> m_pagesWithAdjustedPermissions;
+        std::vector<std::pair<uintptr_t, uint32_t>> m_pagesWithAdjustedPermissions;
     } protectionManager(pageSize);
-#endif
 
     auto patchLimit = patches + patchCount;
     for(auto patch = patches; patch < patchLimit; patch++) {
-#ifdef _WIN32
-
-        size_t bytesWritten;
-
-        if(!WriteProcessMemory(GetCurrentProcess(),
-            reinterpret_cast<void *>(patch->patchVA + displacement), patch->patchContents, patch->size, &bytesWritten))
-            return false;
-
-#else
         auto address = patch->patchVA + displacement;
 
         uintptr_t startingPage = address & ~(pageSize - 1);
@@ -239,16 +251,10 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
         }
 
         memcpy(reinterpret_cast<void *>(patch->patchVA + displacement), patch->patchContents, patch->size);
-#endif
     }
 
-#ifdef _WIN32
-    return true;
-#else
     return protectionManager.restorePermissions();
-#endif
 }
-
 
 bool applyUnityPatches() {
 

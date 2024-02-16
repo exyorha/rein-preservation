@@ -6,6 +6,8 @@ add_executable(GameExecutable
 
     FastAES.h
 
+    GameEntryPoint.h
+
     GLES/BaseGLESContext.cpp
     GLES/BaseGLESContext.h
     GLES/GLESImplementationType.h
@@ -75,6 +77,8 @@ protobuf_generate(TARGET GameExecutable)
 
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
+        EntryPointLinux.cpp
+
         GLES/SDL/RealSDLSymbols.cpp
         GLES/SDL/RealSDLSymbols.h
         GLES/SDL/SDLGLESImplementation.cpp
@@ -110,6 +114,8 @@ endif()
 
 if(WIN32)
     target_sources(GameExecutable PRIVATE
+        EntryPointWindows.cpp
+
         FastAESWindows.cpp
         Il2CppUtilitiesWindows.cpp
         WindowsHelpers.cpp
@@ -159,7 +165,7 @@ if(UNIX)
 endif()
 
 if(MINGW)
-    target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc)
+    target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc -municode)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)

@@ -56,7 +56,7 @@ void rebindModuleImport(HMODULE importingModule, const IMAGE_IMPORT_DESCRIPTOR *
     /*
      * Determine the length of IAT.
      */
-    size_t iatSize = 1;
+    size_t iatSize = sizeof(uint64_t);
     for(auto ptr = importAddressTable; *ptr; ptr++)
         iatSize += sizeof(uint64_t);
 
@@ -67,6 +67,8 @@ void rebindModuleImport(HMODULE importingModule, const IMAGE_IMPORT_DESCRIPTOR *
     if(!VirtualProtect(importAddressTable, iatSize, PAGE_READWRITE, &oldprot)) {
         throw std::runtime_error("VirtualProtect has failed");
     }
+
+    auto originalIAT = importAddressTable;
 
     for(; *importLookupTable && *importAddressTable; importLookupTable++, importAddressTable++) {
         auto lookupEntry = *importLookupTable;
@@ -90,7 +92,7 @@ void rebindModuleImport(HMODULE importingModule, const IMAGE_IMPORT_DESCRIPTOR *
     /*
      * Restore the IAT protection
      */
-    if(!VirtualProtect(importAddressTable, iatSize, oldprot, &oldprot)) {
+    if(!VirtualProtect(originalIAT, iatSize, oldprot, &oldprot)) {
         throw std::runtime_error("VirtualProtect has failed to restore the permissions");
     }
 
