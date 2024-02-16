@@ -7,8 +7,6 @@
 #include <GLES/Shim/ShimNextContextSymbols.h>
 #include <GLES/Shim/ShimExtensionString.h>
 
-#include <SDL2/SDL_video.h>
-
 #include <memory>
 #include <optional>
 
@@ -21,11 +19,12 @@ public:
         return m_nextContext.get();
     }
 
-    static inline BaseGLESContext *unwrap(SDL_GLContext context) {
+    template<typename T>
+    static inline BaseGLESContext *unwrap(T context) {
         if(!context)
             return nullptr;
 
-        return static_cast<GLESContextShim *>(context)->nextContext();
+        return reinterpret_cast<GLESContextShim *>(context)->nextContext();
     }
 
     void *getProcAddress(const char *name) noexcept override;
@@ -57,6 +56,8 @@ private:
 
     std::vector<unsigned char> decompressTexture(const EmulatedTextureFormat *emulation, GLsizei width, GLsizei height, const void *data);
     static std::vector<unsigned char> compressToDXT5(GLsizei width, GLsizei height, const unsigned char *rgbaData);
+
+    static GLESContextShim *getAndInitializeShim();
 
     std::unique_ptr<BaseGLESContext> m_nextContext;
     std::optional<ShimNextContextSymbols> m_nextSymbols;

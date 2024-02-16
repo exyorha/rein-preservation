@@ -51,8 +51,19 @@ BOOL WGLImplementationNative::MakeCurrentImpl(HDC hDc, BaseGLESContext *newConte
     return wglMakeCurrent(hDc, nativeTargetContext);
 }
 
-PROC WGLImplementationNative::GetWGLProcAddress(LPCSTR proc) noexcept {
-    return wglGetProcAddress(proc);
+PROC WGLImplementationNative::GetWGLProcAddress(LPCSTR procname) noexcept {
+    return GetWGLProcAddressStatic(procname);
+}
+
+PROC WGLImplementationNative::GetWGLProcAddressStatic(LPCSTR procname) noexcept {
+    auto proc = wglGetProcAddress(procname);
+    if(!proc) {
+        auto handle = GetModuleHandle(L"opengl32.dll");
+        if(handle)
+            return ::GetProcAddress(handle, procname);
+    }
+
+    return proc;
 }
 
 WGLImplementationNative::NativeGLESContext::NativeGLESContext(HGLRC context) : m_context(context) {
@@ -64,5 +75,5 @@ WGLImplementationNative::NativeGLESContext::~NativeGLESContext() {
 }
 
 void *WGLImplementationNative::NativeGLESContext::getProcAddress(const char *name) noexcept {
-    return reinterpret_cast<void *>(wglGetProcAddress(name));
+    return reinterpret_cast<void *>(WGLImplementationNative::GetWGLProcAddressStatic(name));
 }

@@ -14,12 +14,12 @@
 #include "FastAES.h"
 #include "GameEntryPoint.h"
 
+#include <GLES/Shim/GLESContextShim.h>
+
 #ifdef _WIN32
 #include "WindowsHelpers.h"
-#include "GLES/WGL/WGLHooking.h"
+#include <GLES/WGL/WGLHooking.h>
 #else
-#include "GLES/Shim/GLESContextShim.h"
-
 #include <GLES/SDL/SDLWrapper.h>
 #endif
 
@@ -368,24 +368,23 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
     bool shouldHookWGL = true;
 #endif
 
+    printf("argc: %d\n", argc);
+
     for(int index = 1; index < argc; index++) {
+        printf("arg[%d] = '%s'\n", index, argv[index]);
         if(strcmp(argv[index], "-angle") == 0) {
             gles = GLESImplementationType::ANGLE;
         } else if(strcmp(argv[index], "-native-gles") == 0) {
             gles = GLESImplementationType::Native;
+        } else if(strcmp(argv[index], "-always-emulate-astc") == 0) {
+            GLESContextShim::AlwaysEmulateASTC = true;
+        } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
+            GLESContextShim::NeverRecompressASTC = true;
         }
 
 #ifdef _WIN32
         if(strcmp(argv[index], "-dont-hook-wgl") == 0) {
             shouldHookWGL = false;
-        }
-#endif
-
-#ifndef _WIN32
-        if(strcmp(argv[index], "-always-emulate-astc") == 0) {
-            GLESContextShim::AlwaysEmulateASTC = true;
-        } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
-            GLESContextShim::NeverRecompressASTC = true;
         }
 #endif
     }

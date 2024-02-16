@@ -1,6 +1,7 @@
 #include "GLES/WGL/WGLHooking.h"
 #include <GLES/WGL/WGLImplementation.h>
 #include <GLES/BaseGLESContext.h>
+#include <GLES/Shim/GLESContextShim.h>
 
 #include <GL/gl.h>
 #include <GL/wgl.h>
@@ -25,7 +26,7 @@ HGLRC WGLImplementation::GetCurrentContext() noexcept {
 }
 
 BOOL WGLImplementation::MakeCurrent(HDC hDC, HGLRC newContextHandle) noexcept {
-    auto newContext = reinterpret_cast<BaseGLESContext *>(newContextHandle);
+    auto newContext = reinterpret_cast<GLESContextShim *>(newContextHandle);
 
     if(newContext == nullptr)
         hDC = nullptr;
@@ -35,7 +36,7 @@ BOOL WGLImplementation::MakeCurrent(HDC hDC, HGLRC newContextHandle) noexcept {
         return true;
     }
 
-    auto result = MakeCurrentImpl(hDC, newContext);
+    auto result = MakeCurrentImpl(hDC, GLESContextShim::unwrap(newContextHandle));
     if(result) {
         m_currentDC = hDC;
         m_currentContext = newContext;
@@ -60,7 +61,7 @@ HGLRC WGLImplementation::CreateContext(HDC hDC) noexcept {
 
         SetLastError(ERROR_SUCCESS);
 
-        return reinterpret_cast<HGLRC>(context.release());
+        return reinterpret_cast<HGLRC>(new GLESContextShim(std::move(context)));
 
     } catch(const std::exception &e) {
         fprintf(stderr, "WGLImplementation::CreateContext: an exception has occurred: %s\n", e.what());
@@ -72,7 +73,7 @@ HGLRC WGLImplementation::CreateContext(HDC hDC) noexcept {
 
 HGLRC WGLImplementation::CreateContext(HDC hDC, HGLRC hShareContext, const int *attribList) noexcept {
     try {
-        auto context = CreateContextImpl(hDC, reinterpret_cast<BaseGLESContext *>(hShareContext), attribList);
+        auto context = CreateContextImpl(hDC, GLESContextShim::unwrap(hShareContext), attribList);
         if(!context)
             return nullptr;
 
@@ -80,7 +81,7 @@ HGLRC WGLImplementation::CreateContext(HDC hDC, HGLRC hShareContext, const int *
 
         SetLastError(ERROR_SUCCESS);
 
-        return reinterpret_cast<HGLRC>(context.release());
+        return reinterpret_cast<HGLRC>(new GLESContextShim(std::move(context)));
 
     } catch(const std::exception &e) {
         fprintf(stderr, "WGLImplementation::CreateContext: an exception has occurred: %s\n", e.what());
@@ -91,7 +92,7 @@ HGLRC WGLImplementation::CreateContext(HDC hDC, HGLRC hShareContext, const int *
 }
 
 BOOL WGLImplementation::DeleteContext(HGLRC contextHandle) noexcept {
-    auto context = reinterpret_cast<BaseGLESContext *>(contextHandle);
+    auto context = reinterpret_cast<GLESContextShim *>(contextHandle);
 
     if(context == nullptr) {
         SetLastError(ERROR_SUCCESS);
@@ -136,7 +137,15 @@ const char *WGLImplementation::GetExtensionsStringARB(HDC hdc) noexcept {
     if(!extensions)
         return "";
 
-    return extensions(hdc);
+    auto result = extensions(hdc);
+
+    if(result == nullptr) {
+        auto extensions = reinterpret_cast<PFNWGLGETEXTENSIONSSTRINGEXTPROC>(GetWGLProcAddress("wglGetExtensionsStringEXT"));
+        if(extensions)
+            return extensions();
+    }
+
+    return result;
 }
 
 BOOL WGLImplementation::SwapIntervalEXT(int interval) noexcept {

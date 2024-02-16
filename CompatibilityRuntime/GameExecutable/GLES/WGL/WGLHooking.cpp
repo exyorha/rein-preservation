@@ -2,6 +2,7 @@
 #include <GLES/WGL/WindowsImportRedirection.h>
 #include <GLES/WGL/WGLImplementationANGLE.h>
 #include <GLES/WGL/WGLImplementationNative.h>
+#include <GLES/Shim/GLESContextShim.h>
 
 #include <clocale>
 #include <stdexcept>
@@ -143,7 +144,6 @@ PROC WINAPI replacement_wglGetProcAddress(LPCSTR lpszProc) {
 }
 
 BOOL WINAPI replacement_wglDeleteContext(HGLRC oldContext) {
-    printf("wglDeleteContext\n");
     return SelectedWGLImplementation->DeleteContext(oldContext);
 }
 
@@ -185,4 +185,8 @@ BOOL WINAPI replacement_wglChoosePixelFormatARB (HDC hdc, const int *piAttribILi
 
 WINBOOL WINAPI replacement_SwapBuffers(HDC hdc) {
     return SelectedWGLImplementation->SwapBuffers(hdc);
+}
+
+GLESContextShim *GLESContextShim::getCurrentShim() {
+    return reinterpret_cast<GLESContextShim *>(replacement_wglGetCurrentContext());
 }

@@ -22,6 +22,20 @@ add_executable(GameExecutable
     GLES/ANGLE/InitializedEGLDisplay.h
     GLES/ANGLE/PlatformDynamicLibrary.h
 
+    GLES/Shim/GLESContextShim.cpp
+    GLES/Shim/GLESContextShim.h
+    GLES/Shim/ShimExtensionString.cpp
+    GLES/Shim/ShimExtensionString.h
+    GLES/Shim/ShimNextContextSymbols.cpp
+    GLES/Shim/ShimNextContextSymbols.h
+
+    GLES/TextureEmulation/EmulatedTextureFormat.cpp
+    GLES/TextureEmulation/EmulatedTextureFormat.h
+    GLES/TextureEmulation/astc_dec/astc_decomp.cpp
+    GLES/TextureEmulation/astc_dec/astc_decomp.h
+    GLES/TextureEmulation/stb_dxt.cpp
+    GLES/TextureEmulation/stb_dxt.h
+
     main.cpp
 
     Il2CppUtilities.cpp
@@ -94,20 +108,6 @@ if(NOT WIN32)
 
         GLES/ANGLE/LinuxDynamicLibrary.cpp
         GLES/ANGLE/LinuxDynamicLibrary.h
-
-        GLES/Shim/GLESContextShim.cpp
-        GLES/Shim/GLESContextShim.h
-        GLES/Shim/ShimExtensionString.cpp
-        GLES/Shim/ShimExtensionString.h
-        GLES/Shim/ShimNextContextSymbols.cpp
-        GLES/Shim/ShimNextContextSymbols.h
-
-        GLES/TextureEmulation/EmulatedTextureFormat.cpp
-        GLES/TextureEmulation/EmulatedTextureFormat.h
-        GLES/TextureEmulation/astc_dec/astc_decomp.cpp
-        GLES/TextureEmulation/astc_dec/astc_decomp.h
-        GLES/TextureEmulation/stb_dxt.cpp
-        GLES/TextureEmulation/stb_dxt.h
     )
 
 endif()

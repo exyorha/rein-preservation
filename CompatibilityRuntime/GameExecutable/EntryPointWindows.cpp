@@ -28,27 +28,33 @@ static int invokeUnityWindows(void *package) {
 static int gameMainWindows(void *arg) {
     auto args = static_cast<ArgumentsPackageWindows *>(arg);
 
-    struct WideARGV {
-        LPWSTR *argv = nullptr;
-
-        ~WideARGV() {
-            if(argv)
-                LocalFree(argv);
-        }
-    } wideARGV;
-
-    int wideARGC;
-    wideARGV.argv = CommandLineToArgvW(args->lpCommandLine, &wideARGC);
-    if(wideARGV.argv == nullptr)
-        throw std::runtime_error("CommandLineToArgvW has failed");
-
     std::vector<std::string> arguments;
-    arguments.reserve(wideARGC);
 
-    for(int argno = 0; argno < wideARGC; argno++) {
-        std::u16string_view argstring(reinterpret_cast<const char16_t *>(wideARGV.argv[argno]));
+    arguments.emplace_back("GameExecutable");
 
-        arguments.emplace_back(utf16ToUtf8(argstring));
+    if(*args->lpCommandLine) {
+
+        struct WideARGV {
+            LPWSTR *argv = nullptr;
+
+            ~WideARGV() {
+                if(argv)
+                    LocalFree(argv);
+            }
+        } wideARGV;
+
+        int wideARGC;
+        wideARGV.argv = CommandLineToArgvW(args->lpCommandLine, &wideARGC);
+        if(wideARGV.argv == nullptr)
+            throw std::runtime_error("CommandLineToArgvW has failed");
+
+        arguments.reserve(arguments.size() + wideARGC);
+
+        for(int argno = 0; argno < wideARGC; argno++) {
+            std::u16string_view argstring(reinterpret_cast<const char16_t *>(wideARGV.argv[argno]));
+
+            const auto &arg = arguments.emplace_back(utf16ToUtf8(argstring));
+        }
     }
 
     std::vector<char *> argumentPointers;

@@ -3,9 +3,8 @@
 #include <GLES/TextureEmulation/EmulatedTextureFormat.h>
 #include <GLES2/gl2ext.h>
 
-#include <SDL2/SDL_video.h>
-
 #include <array>
+#include <cstring>
 
 #include <GLES/TextureEmulation/stb_dxt.h>
 
@@ -99,12 +98,21 @@ void GLESContextShim::lateInitialize() {
     }
 }
 
+GLESContextShim *GLESContextShim::getAndInitializeShim() {
+    auto shim = getCurrentShim();
+    if(shim) {
+        shim->lateInitialize();
+    }
+
+    return shim;
+}
+
 const GLubyte *GL_APIENTRY GLESContextShim::shim_glGetString(GLenum name) {
-    return getCurrentShim()->m_nextSymbols->glGetString(name);
+    return getAndInitializeShim()->m_nextSymbols->glGetString(name);
 }
 
 const GLubyte *GL_APIENTRY GLESContextShim::shim_glGetStringi(GLenum name, GLuint index) {
-    auto shim = getCurrentShim();
+    auto shim = getAndInitializeShim();
     if(name == GL_EXTENSIONS) {
         return shim->m_extensionString->extension(index);
     } else {
@@ -113,17 +121,13 @@ const GLubyte *GL_APIENTRY GLESContextShim::shim_glGetStringi(GLenum name, GLuin
 }
 
 void GL_APIENTRY GLESContextShim::shim_glGetIntegerv(GLenum pname, GLint *data) {
-    auto shim = getCurrentShim();
+    auto shim = getAndInitializeShim();
 
     if(pname == GL_NUM_EXTENSIONS) {
         *data = shim->m_extensionString->numberOfExtensions();
     } else {
         shim->m_nextSymbols->glGetIntegerv(pname, data);
     }
-}
-
-GLESContextShim *GLESContextShim::getCurrentShim() {
-    return static_cast<GLESContextShim *>(SDL_GL_GetCurrentContext());
 }
 
 /*
@@ -203,7 +207,7 @@ std::vector<unsigned char> GLESContextShim::decompressTexture(const EmulatedText
 void GL_APIENTRY GLESContextShim::shim_glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width,
                                                               GLsizei height, GLint border, GLsizei imageSize, const void *data) {
 
-    auto shim = getCurrentShim();
+    auto shim = getAndInitializeShim();
 
     const EmulatedTextureFormat *emulation = nullptr;
 
@@ -246,7 +250,7 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexImage2D(GLenum target, GLi
 void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width,
                                                                  GLsizei height, GLenum format, GLsizei imageSize, const void *data) {
 
-    auto shim = getCurrentShim();
+    auto shim = getAndInitializeShim();
 
     const EmulatedTextureFormat *emulation = nullptr;
 
@@ -286,7 +290,7 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage3D(GLenum target, 
 
     auto emulation = getEmulatedTextureFormat(format);
     if(!emulation) {
-        return getCurrentShim()->m_nextSymbols->glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+        return getAndInitializeShim()->m_nextSymbols->glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
     }
 
     /*
@@ -296,7 +300,7 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage3D(GLenum target, 
     fprintf(stderr, "shim_glCompressedTexSubImage3D: 3D texture upload (of format 0x%04X) in the need of emulation, but 3D emulation is not implemented\n",
             format);
 
-    getCurrentShim()->m_nextSymbols->glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+    getAndInitializeShim()->m_nextSymbols->glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
 GLenum GLESContextShim::subsituteStorageInternalFormat(GLenum internalformat) const {
@@ -328,14 +332,14 @@ GLenum GLESContextShim::subsituteStorageInternalFormat(GLenum internalformat) co
 
 void GL_APIENTRY GLESContextShim::shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
 
-    auto shim = getCurrentShim();
+    auto shim = getAndInitializeShim();
     shim->m_nextSymbols->glTexStorage2D(target, levels, shim->subsituteStorageInternalFormat(internalformat), width, height);
 
 }
 
 void GL_APIENTRY GLESContextShim::shim_glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) {
 
-    auto shim = getCurrentShim();
+    auto shim = getAndInitializeShim();
     shim->m_nextSymbols->glTexStorage3D(target, levels, shim->subsituteStorageInternalFormat(internalformat), width, height, depth);
 }
 

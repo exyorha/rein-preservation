@@ -17,6 +17,8 @@ protected:
 
     PROC GetWGLProcAddress(LPCSTR proc) noexcept override;
 
+    static PROC GetWGLProcAddressStatic(LPCSTR proc) noexcept;
+
 private:
     class NativeGLESContext final : public BaseGLESContext {
     public:

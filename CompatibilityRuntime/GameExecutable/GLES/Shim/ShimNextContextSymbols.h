@@ -2,7 +2,7 @@
 #define GLES_SHIM_SHIM_NEXT_CONTEXT_SYMBOLS_H
 
 #define GL_GLES_PROTOTYPES 0
-#include <GLES3/gl3.h>
+#include <GLES3/gl32.h>
 
 class BaseGLESContext;
 

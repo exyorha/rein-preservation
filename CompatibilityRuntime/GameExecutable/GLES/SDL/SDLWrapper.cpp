@@ -1,6 +1,7 @@
 #include <GLES/SDL/SDLWrapper.h>
 #include <GLES/SDL/SDLGLESImplementationNative.h>
 #include <GLES/SDL/SDLGLESImplementationANGLE.h>
+#include <GLES/Shim/GLESContextShim.h>
 
 #include <SDL2/SDL_video.h>
 
@@ -93,4 +94,8 @@ void SDLCALL SDL_GL_SwapWindow(SDL_Window *window) {
 
 void SDLCALL SDL_GL_UnloadLibrary() {
     SelectedSDLGLESImplementation->UnloadLibrary();
+}
+
+GLESContextShim *GLESContextShim::getCurrentShim() {
+    return static_cast<GLESContextShim *>(SDL_GL_GetCurrentContext());
 }
