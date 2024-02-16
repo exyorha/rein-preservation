@@ -1,4 +1,5 @@
 #include <Translator/JITThreadContext.h>
+#include <Translator/ThreadContextAssociation.h>
 
 #include <Bionic/BionicCallouts.h>
 
@@ -15,7 +16,6 @@
 #include <algorithm>
 #include <thread>
 
-thread_local JITThreadLocalContextPtr JITThreadContext::m_jitThread;
 JoinableThreadManager JITThreadContext::m_joinableManager;
 
 std::mutex JITThreadContext::ThreadContextRegistration::m_contextListMutex;
@@ -91,10 +91,10 @@ void JITThreadContext::release() noexcept {
 }
 
 JITThreadContext &JITThreadContext::get() {
-    auto &thisContext = m_jitThread;
-
-    if(!thisContext.get()) {
-        thisContext = JITThreadContextPtr(new JITThreadContext);
+    auto thisContext = getJITContextOfCurrentThread();
+    if(!thisContext) {
+        thisContext = new JITThreadContext;
+        setJITContextOfCurrentThread(thisContext);
     }
 
     return *thisContext;
@@ -196,12 +196,12 @@ void JITThreadContext::startNewHostThread(void *(*func)(void *arg), void *arg) {
 }
 
 void JITThreadContext::hostThreadEntry(JITThreadContextPtr &&context, void *(*func)(void *arg), void *arg) {
-    if(m_jitThread.get())
+    if(getJITContextOfCurrentThread())
         throw std::runtime_error("JITThreadContext::hostThreadEntry: newly created host thread already has a JIT context set up\n");
 
-    m_jitThread = std::move(context);
+    setJITContextOfCurrentThread(context.get());
 
-    m_jitThread->m_threadResult = func(arg);
+    getJITContextOfCurrentThread()->m_threadResult = func(arg);
 }
 
 void JITThreadContext::join(void **result) {
@@ -219,12 +219,12 @@ void JITThreadContext::detach() {
 }
 
 void JITThreadContext::threadStateTeardown() noexcept {
-    if(m_jitThread.get() != this) {
+    if(getJITContextOfCurrentThread() != this) {
         /*
          * This happens on Windows process shutdown.
          */
         printf("JITThreadContext::threadStateTeardown: we're on thread %p, but called to destroy %p, doing nothing\n",
-               m_jitThread.get(), this);
+               getJITContextOfCurrentThread(), this);
     } else {
 
         printf("running the thread destruction of %p\n", this);
@@ -236,7 +236,7 @@ void JITThreadContext::threadStateTeardown() noexcept {
 }
 
 void JITThreadContext::clearCurrentThreadContext() noexcept {
-    m_jitThread = JITThreadContextPtr();
+    setJITContextOfCurrentThread(nullptr);
 }
 
 JITThreadContextPtr::JITThreadContextPtr(JITThreadContext *ptr) noexcept : m_pointer(ptr) {
@@ -308,37 +308,4 @@ void JoinableThreadManager::removeJoinableThread(JITThreadContext *ctx) {
 
         m_unjoinedThreads.erase(it);
     }
-}
-
-JITThreadLocalContextPtr::JITThreadLocalContextPtr() noexcept : m_pointer(nullptr) {
-
-}
-
-JITThreadLocalContextPtr::~JITThreadLocalContextPtr() {
-    if(m_pointer) {
-        m_pointer->threadStateTeardown();
-        m_pointer->release();
-    }
-}
-
-JITThreadLocalContextPtr::JITThreadLocalContextPtr(const JITThreadContextPtr &other) noexcept : m_pointer(other.get()) {
-    if(m_pointer) {
-        m_pointer->addReference();
-    }
-}
-
-JITThreadLocalContextPtr &JITThreadLocalContextPtr::operator =(const JITThreadContextPtr &other) noexcept {
-    if(m_pointer != other.get()) {
-        if(m_pointer) {
-            m_pointer->threadStateTeardown();
-            m_pointer->release();
-        }
-
-        m_pointer = other.get();
-
-        if(m_pointer)
-            m_pointer->addReference();
-    }
-
-    return *this;
 }

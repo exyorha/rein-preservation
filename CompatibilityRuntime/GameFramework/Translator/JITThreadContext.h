@@ -135,7 +135,6 @@ private:
 
     static void hostThreadEntry(JITThreadContextPtr &&context, void *(*func)(void *arg), void *arg);
 
-    static thread_local JITThreadLocalContextPtr m_jitThread;
     static JoinableThreadManager m_joinableManager;
 
     std::atomic_uintptr_t m_referenceCount;
@@ -154,33 +153,6 @@ public:
 
     JITThreadContextPtr(const JITThreadContextPtr &other) noexcept;
     JITThreadContextPtr &operator =(const JITThreadContextPtr &other) noexcept;
-
-    inline JITThreadContext *get() const noexcept {
-        return m_pointer;
-    }
-
-    inline JITThreadContext &operator *() const {
-        return *m_pointer;
-    }
-
-    inline JITThreadContext *operator ->() const {
-        return m_pointer;
-    }
-
-private:
-    JITThreadContext *m_pointer;
-};
-
-class JITThreadLocalContextPtr {
-public:
-    explicit JITThreadLocalContextPtr() noexcept;
-    ~JITThreadLocalContextPtr();
-
-    JITThreadLocalContextPtr(const JITThreadLocalContextPtr &other) = delete;
-    JITThreadLocalContextPtr &operator =(const JITThreadLocalContextPtr &other) noexcept = delete;
-
-    JITThreadLocalContextPtr(const JITThreadContextPtr &other) noexcept;
-    JITThreadLocalContextPtr &operator =(const JITThreadContextPtr &other) noexcept;
 
     inline JITThreadContext *get() const noexcept {
         return m_pointer;

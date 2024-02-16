@@ -81,6 +81,7 @@ add_library(GameAssembly SHARED
     Translator/JIT.h
     Translator/JITThreadContext.cpp
     Translator/JITThreadContext.h
+    Translator/ThreadContextAssociation.h
     Translator/thunking.cpp
     Translator/thunking.h
     Translator/ThunkManager.cpp
@@ -114,6 +115,7 @@ if(NOT WIN32)
         GDB/GDBStub.h
 
         Translator/thunkutils.S
+        Translator/LinuxTLSProvider.cpp
     )
 
 endif()
@@ -124,6 +126,8 @@ if(WIN32)
         Bionic/BionicMmapWindowsHost.cpp
         Bionic/BionicSyscallsWindowsHost.cpp
         Bionic/BionicSyscallTranslationWindowsHost.cpp
+
+        Translator/WindowsTLSProvider.cpp
 
         Windows/StringConversions.cpp
         Windows/StringConversions.h

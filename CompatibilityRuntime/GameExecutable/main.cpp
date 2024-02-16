@@ -401,6 +401,11 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
 
     contentStorageInstance = nullptr;
 
+    /*
+     * Unity doesn't really support nicer shutdown.
+     */
+    exit(result);
+
     return result;
 }
 
