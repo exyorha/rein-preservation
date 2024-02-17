@@ -11,7 +11,10 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_questService(m_db),
     m_gimmickService(m_db),
     m_notificationService(m_db),
-    m_gachaService(m_db) {
+    m_gachaService(m_db),
+    m_tutorialService(m_db),
+    m_bannerService(m_db),
+    m_battleService(m_db) {
 
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
@@ -21,6 +24,9 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     grpcBuilder.RegisterService(&m_gimmickService);
     grpcBuilder.RegisterService(&m_notificationService);
     grpcBuilder.RegisterService(&m_gachaService);
+    grpcBuilder.RegisterService(&m_tutorialService);
+    grpcBuilder.RegisterService(&m_bannerService);
+    grpcBuilder.RegisterService(&m_battleService);
     grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
     grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());

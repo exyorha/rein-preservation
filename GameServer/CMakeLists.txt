@@ -96,7 +96,10 @@ add_executable(GameServer
 
     main.cpp
 
+    service/BannerService.proto
+    service/BattleService.proto
     service/DataService.proto
+    service/DeckService.proto
     service/GachaService.proto
     service/GamePlayService.proto
     service/GiftService.proto
@@ -104,7 +107,14 @@ add_executable(GameServer
     service/MissionService.proto
     service/NotificationService.proto
     service/QuestService.proto
+    service/TutorialService.proto
     service/UserService.proto
+
+    ServiceImplementations/BannerService.cpp
+    ServiceImplementations/BannerService.h
+
+    ServiceImplementations/BattleService.cpp
+    ServiceImplementations/BattleService.h
 
     ServiceImplementations/CommonService.cpp
     ServiceImplementations/CommonService.h
@@ -126,6 +136,9 @@ add_executable(GameServer
 
     ServiceImplementations/QuestService.cpp
     ServiceImplementations/QuestService.h
+
+    ServiceImplementations/TutorialService.cpp
+    ServiceImplementations/TutorialService.h
 
     ServiceImplementations/UserService.cpp
     ServiceImplementations/UserService.h

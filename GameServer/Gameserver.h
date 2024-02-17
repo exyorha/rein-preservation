@@ -11,6 +11,9 @@
 #include "ServiceImplementations/QuestService.h"
 #include "ServiceImplementations/GimmickService.h"
 #include "ServiceImplementations/NotificationService.h"
+#include "ServiceImplementations/TutorialService.h"
+#include "ServiceImplementations/BannerService.h"
+#include "ServiceImplementations/BattleService.h"
 
 #include "DataModel/Database.h"
 
@@ -33,6 +36,9 @@ private:
     GimmickService m_gimmickService;
     NotificationService m_notificationService;
     GachaService m_gachaService;
+    TutorialService m_tutorialService;
+    BannerService m_bannerService;
+    BattleService m_battleService;
     std::unique_ptr<grpc::Server> m_server;
 };
 
