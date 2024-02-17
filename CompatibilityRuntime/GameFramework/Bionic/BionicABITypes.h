@@ -2,7 +2,7 @@
 #define BIONIC_BIONIC_ABI_TYPES_H
 
 #include <cstdint>
-#include <ELF/musl-elf.h>
+#include <musl-elf.h>
 
 #include <sys/types.h>
 

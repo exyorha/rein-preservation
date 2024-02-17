@@ -42,7 +42,10 @@ if(NOT WIN32)
 
 endif()
 
+add_subdirectory(makeelfpe)
+
 add_subdirectory(GameFramework)
 
 add_subdirectory(GameExecutable)
+
 

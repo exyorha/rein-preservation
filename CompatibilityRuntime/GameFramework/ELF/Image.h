@@ -1,14 +1,15 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include "ELF/ELFExecutableMapperLinux.h"
 #include <shared_mutex>
 #include <optional>
 #include <filesystem>
 #include <memory>
 
-#include <ELF/musl-elf.h>
+#include <musl-elf.h>
 
-class ElfModule;
+#include <ELF/ELFExecutableMapper.h>
 
 class Image {
 public:
@@ -22,73 +23,39 @@ public:
         return m_path;
     }
 
+    inline const Elf64_Phdr *phdr() const {
+        return m_mapper.phdr();
+    }
+
+    inline size_t phnum() const {
+        return m_mapper.phnum();
+    }
+
     bool getSymbol(const char *name, void *&symbol) const;
     void *getSymbolChecked(const char *name) const;
 
     inline intptr_t displacement() const {
-        return m_mapping->displacement();
-    }
-
-    inline const Elf64_Phdr* phdr() const {
-        return m_phdr;
-    }
-
-    inline size_t phnum() const {
-        return m_phnum;
+        return m_mapper.displacement();
     }
 
     void runConstructors();
 
     template<typename T = void>
     inline T *displace(uintptr_t address) const {
-        return reinterpret_cast<T *>(address + m_mapping->displacement());
+        return reinterpret_cast<T *>(address + displacement());
     }
 
 private:
-    void createBackgroundMapping();
-    void mapImageSegments();
     void parseDynamic();
     void processRelocations(const Elf64_Rela *entries, size_t sizeBytes);
     void *resolveSymbol(uint32_t symbolIndex);
 
     static uint32_t symbolHash(const char *name);
 
-    class ImageMapping {
-    public:
-        explicit ImageMapping(void *preferredBase, size_t size);
-        ~ImageMapping();
-
-        ImageMapping(const ImageMapping &other) = delete;
-        ImageMapping &operator =(const ImageMapping &other) = delete;
-
-        inline void *preferredBase() const {
-            return m_preferredBase;
-        }
-
-        inline void *actualBase() const {
-            return m_base;
-        }
-
-        inline intptr_t displacement() const {
-            return reinterpret_cast<uintptr_t>(m_base) - reinterpret_cast<uintptr_t>(m_preferredBase);
-        }
-
-        inline size_t size() const {
-            return m_size;
-        }
-
-    private:
-        void *m_preferredBase;
-        void *m_base;
-        size_t m_size;
-    };
-
     using InitFiniFunc = void (*)();
 
+    ELFExecutableMapper m_mapper;
     std::filesystem::path m_path;
-    std::unique_ptr<ElfModule> m_module;
-    std::optional<ImageMapping> m_mapping;
-    const Elf64_Dyn *m_dynamic;
     const InitFiniFunc *m_initArray;
     size_t m_initArraySize;
     const InitFiniFunc *m_finiArray;
@@ -102,8 +69,6 @@ private:
     size_t m_relocationsSize;
     const Elf64_Rela *m_pltRelocations;
     size_t m_pltRelocationsSize;
-    Elf64_Phdr *m_phdr;
-    size_t m_phnum;
 };
 
 #endif

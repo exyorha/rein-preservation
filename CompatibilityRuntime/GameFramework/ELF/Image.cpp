@@ -15,16 +15,8 @@
 #include "SystemAPIThunking.h"
 #include "GlobalContext.h"
 
-#if defined(_WIN32)
-#include <windows.h>
-#include <Windows/WindowsError.h>
-#else
-#include <sys/mman.h>
-#endif
-
-
-Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFromFile(path)),
-    m_dynamic(nullptr),
+Image::Image(const std::filesystem::path &path) :
+    m_mapper(path),
     m_initArray(nullptr), m_initArraySize(0),
     m_finiArray(nullptr), m_finiArraySize(0),
     m_hash(nullptr),
@@ -33,27 +25,8 @@ Image::Image(const std::filesystem::path &path) : m_module(ElfModule::createFrom
     m_got(nullptr),
     m_relocations(nullptr), m_relocationsSize(0),
     m_pltRelocations(nullptr), m_pltRelocationsSize(0),
-    m_phdr(nullptr),
-    m_phnum(0),
     m_path(path) {
 
-    if(m_module->moduleClass() != ELFCLASS64 || m_module->machine() != EM_AARCH64) {
-        throw std::runtime_error("unsupported module class or architecture");
-    }
-
-    m_phnum = m_module->phnum();
-
-    createBackgroundMapping();
-    mapImageSegments();
-
-    if(!m_phdr)
-        throw std::runtime_error("unable to map the PHDR into one of the segments");
-
-    printf("----- ARM image %s is occupying the memory range from %p to %p\n",
-           path.string().c_str(),
-           m_mapping->actualBase(), static_cast<unsigned char *>(m_mapping->actualBase()) + m_mapping->size());
-
-    m_module.reset();
 
     parseDynamic();
 
@@ -78,151 +51,11 @@ void Image::runConstructors() {
     }
 }
 
-void Image::createBackgroundMapping() {
-    std::optional<uint64_t> lowestVA, highestVA;
-    for(size_t entry = 0, num = m_module->phnum(); entry < num; entry++) {
-        auto phdr = m_module->phent(entry);
-
-        if(phdr.p_type == PT_LOAD) {
-            if(!lowestVA.has_value() || *lowestVA > phdr.p_vaddr)
-                lowestVA.emplace(phdr.p_vaddr);
-
-            auto limit = phdr.p_vaddr + phdr.p_memsz;
-
-            if(!highestVA.has_value() || *highestVA < limit)
-                highestVA.emplace(limit);
-        }
-    }
-
-    if(!lowestVA.has_value() || !highestVA.has_value()) {
-        throw std::runtime_error("nothing to load in the image");
-    }
-
-    if(*lowestVA & (GlobalContext::PageSize - 1))
-        throw std::runtime_error("image lowest VA is not aligned to the system page size");
-
-    auto imageSize = *highestVA - *lowestVA;
-
-    imageSize = (imageSize + GlobalContext::PageSize - 1) & ~(GlobalContext::PageSize - 1);
-
-    m_mapping.emplace(reinterpret_cast<void *>(*lowestVA), imageSize);
-}
-
-void Image::mapImageSegments() {
-    auto phstart = m_module->phoff();
-    auto phend = phstart + m_module->phnum() * sizeof(Elf64_Phdr);
-
-    for(size_t entry = 0, num = m_module->phnum(); entry < num; entry++) {
-        auto phdr = m_module->phent(entry);
-
-        if(phdr.p_type == PT_LOAD) {
-            size_t mappedSize = 0;
-
-#if defined(_WIN32)
-            DWORD prot;
-
-            if(phdr.p_flags & PF_W) {
-                prot = PAGE_READWRITE;
-            } else if(phdr.p_flags & (PF_R | PF_X)) {
-                prot = PAGE_READONLY;
-            } else {
-                prot = PAGE_NOACCESS;
-            }
-
-#else
-            int prot = PROT_NONE;
-
-            if(phdr.p_flags & PF_R)
-                prot |= PROT_READ;
-
-            if(phdr.p_flags & PF_W)
-                prot |= PROT_WRITE;
-
-            if(phdr.p_flags & PF_X)
-                prot |= PROT_EXEC;
-#endif
-
-            if(phdr.p_filesz != 0) {
-                if((phdr.p_offset & (GlobalContext::PageSize - 1)) != (phdr.p_vaddr & (GlobalContext::PageSize - 1)))
-                    throw std::runtime_error("the program segment offset and the virtual address are not congruent modulo system page size");
-
-                mappedSize = (phdr.p_filesz + (GlobalContext::PageSize - 1)) & ~(GlobalContext::PageSize - 1);
-
-                auto misalign = phdr.p_vaddr & (GlobalContext::PageSize - 1);
-
-                auto alignedVaddr = phdr.p_vaddr & ~(GlobalContext::PageSize - 1);
-                auto alignedOffset = phdr.p_offset & ~(GlobalContext::PageSize - 1);
-
-#if defined(_WIN32)
-                auto mapped = displace(alignedVaddr);
-                if(!VirtualAlloc(mapped, mappedSize, MEM_COMMIT, PAGE_READWRITE))
-                    WindowsError::throwLastError();
-#if 0
-                DWORD oldProtect;
-                if(!VirtualProtect(mapped, mappedSize, PAGE_READWRITE, &oldProtect))
-                    WindowsError::throwLastError();
-#endif
-                m_module->readFileData(mapped, mappedSize, alignedOffset);
-#else
-
-                auto result = mmap(
-                    displace(alignedVaddr), mappedSize,
-                    prot,
-                    MAP_PRIVATE | MAP_FIXED,
-                    m_module->getFileDescriptor(),
-                    alignedOffset);
-                if(result == MAP_FAILED)
-                    throw std::system_error(errno, std::generic_category());
-#endif
-            }
-
-            if(phdr.p_memsz > mappedSize) {
-                auto tailStart = (phdr.p_vaddr & ~(GlobalContext::PageSize - 1)) + mappedSize;
-                auto tailSize = (phdr.p_memsz - mappedSize + (GlobalContext::PageSize - 1)) & ~(GlobalContext::PageSize - 1);
-
-#if defined(_WIN32)
-                if(!VirtualAlloc(displace(tailStart), tailSize, MEM_COMMIT, PAGE_READWRITE))
-                    WindowsError::throwLastError();
-#else
-
-                auto result = mprotect(displace(tailStart), tailSize, prot);
-                if(result < 0) {
-                    throw std::system_error(errno, std::generic_category());
-                }
-#endif
-            }
-
-            if(phdr.p_memsz > phdr.p_filesz) {
-                memset(displace<char>(phdr.p_vaddr + phdr.p_filesz), 0, phdr.p_memsz - phdr.p_filesz);
-            }
-
-#if defined(_WIN32)
-            DWORD oldProtect;
-
-            if(!VirtualProtect(displace(phdr.p_vaddr), phdr.p_memsz, prot, &oldProtect))
-                WindowsError::throwLastError();
-#endif
-
-
-            if(!m_phdr && (phdr.p_offset <= phstart && phdr.p_offset + phdr.p_filesz >= phend)) {
-                m_phdr = displace<Elf64_Phdr>(phdr.p_vaddr + (phstart - phdr.p_offset));
-            }
-        } else if(phdr.p_type == PT_DYNAMIC) {
-            if(m_dynamic)
-                throw std::runtime_error("the image has multiple dynamic headers");
-
-            m_dynamic = displace<Elf64_Dyn>(phdr.p_vaddr);
-        } else {
-            fprintf(stderr, "The image has an unhandled PHDR entry of type 0x%08" PRIx32 "\n", phdr.p_type);
-        }
-    }
-}
-
 void Image::parseDynamic() {
-    if(!m_dynamic)
+    if(!m_mapper.dynamic())
         throw std::runtime_error("the image has no dynamic table");
 
-    for(auto entry = m_dynamic; entry->d_tag != DT_NULL; ++entry) {
+    for(auto entry = m_mapper.dynamic(); entry->d_tag != DT_NULL; ++entry) {
         switch(entry->d_tag) {
         case DT_INIT_ARRAY:
             m_initArray = displace<const InitFiniFunc>(entry->d_un.d_ptr);
@@ -425,26 +258,4 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
     } else {
         return displace(symbol.st_value);
     }
-}
-
-Image::ImageMapping::ImageMapping(void *preferredBase, size_t size) : m_preferredBase(preferredBase), m_size(size) {
-#if defined(_WIN32)
-    (void)preferredBase;
-
-    m_base = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
-    if(m_base == nullptr)
-        WindowsError::throwLastError();
-#else
-    m_base = mmap(preferredBase, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if(m_base == MAP_FAILED)
-        throw std::system_error(errno, std::generic_category());
-#endif
-}
-
-Image::ImageMapping::~ImageMapping() {
-#if defined(_WIN32)
-    VirtualFree(m_base, 0, MEM_RELEASE);
-#else
-    munmap(m_base, m_size);
-#endif
 }

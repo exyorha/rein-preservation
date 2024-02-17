@@ -22,11 +22,9 @@ add_library(GameAssembly SHARED
     Bionic/BionicThreading.cpp
     Bionic/BionicThreading.h
 
-    ELF/ElfModule.cpp
-    ELF/ElfModule.h
+    ELF/ELFExecutableMapper.h
     ELF/Image.cpp
     ELF/Image.h
-    ELF/musl-elf.h
 
     FileDescriptor.cpp
     FileDescriptor.h
@@ -93,7 +91,7 @@ add_library(GameAssembly SHARED
 )
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
     ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
-target_include_directories(GameAssembly PRIVATE .)
+target_include_directories(GameAssembly PRIVATE . ${PROJECT_SOURCE_DIR}/thirdparty/muslelf)
 target_link_libraries(GameAssembly PRIVATE dynarmic ffi grpc_csharp_ext)
 
 if(NOT WIN32)
@@ -102,6 +100,11 @@ if(NOT WIN32)
         Bionic/BionicMmapLinuxHost.cpp
         Bionic/BionicSyscallsLinuxHost.cpp
         Bionic/BionicSyscallTranslationLinuxHost.cpp
+
+        ELF/ElfModule.cpp
+        ELF/ElfModule.h
+        ELF/ELFExecutableMapperLinux.cpp
+        ELF/ELFExecutableMapperLinux.h
 
         GDB/DebugMemoryAccess.cpp
         GDB/DebugMemoryAccess.h
@@ -127,6 +130,9 @@ if(WIN32)
         Bionic/BionicSyscallsWindowsHost.cpp
         Bionic/BionicSyscallTranslationWindowsHost.cpp
 
+        ELF/ELFExecutableMapperWindows.cpp
+        ELF/ELFExecutableMapperWindows.h
+
         Translator/WindowsTLSProvider.cpp
 
         Windows/StringConversions.cpp
@@ -148,6 +154,8 @@ set_target_properties(GameAssembly PROPERTIES
     INSTALL_RPATH "\$ORIGIN"
     PREFIX ""
 )
+
+target_link_libraries(GameAssembly PRIVATE elfpe-interface)
 
 if(FALSE)
 set(bdwgc_root ${PROJECT_SOURCE_DIR}/thirdparty/bdwgc)

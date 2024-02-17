@@ -5,21 +5,13 @@
 #include <filesystem>
 #include <vector>
 
-#include <ELF/musl-elf.h>
+#include <musl-elf.h>
 
-#ifdef _WIN32
-#include <Windows/WindowsHandle.h>
-#else
 #include "FileDescriptor.h"
-#endif
 
-#ifdef _WIN32
-using ElfHandleType = WindowsHandle;
-#else
 using ElfHandleType = FileDescriptor;
-#endif
 
-void elfCheckedRead(const ElfHandleType &handle, void *dest, size_t size);
+void elfCheckedRead(const ElfHandleType &handle, void *dest, size_t size, off_t offset);
 
 class ElfModule {
 protected:
@@ -41,9 +33,8 @@ public:
 
     virtual void readFileData(void *data, size_t size, off_t offset) = 0;
 
-#ifndef _WIN32
     virtual int getFileDescriptor() const = 0;
-#endif
+    virtual size_t elfBodyOffset() const = 0;
 
     static std::unique_ptr<ElfModule> createFromFile(const std::filesystem::path &filename);
 };
@@ -84,7 +75,7 @@ public:
     using Ehdr = Traits::Ehdr;
     using Phdr = Traits::Phdr;
 
-    ElfModuleImpl(const unsigned char *ident, ElfHandleType &&handle);
+    ElfModuleImpl(const unsigned char *ident, ElfHandleType &&handle, size_t elfBodyOffset);
     ~ElfModuleImpl() override;
 
     uint8_t moduleClass() const override;
@@ -96,14 +87,15 @@ public:
     Elf64_Phdr phent(size_t index) const override;
 
     void readFileData(void *data, size_t size, off_t offset) override;
-#ifndef _WIN32
+
     int getFileDescriptor() const override;
-#endif
+    size_t elfBodyOffset() const override;
 
 private:
     Ehdr m_ehdr;
     std::vector<Phdr> m_phdr;
     ElfHandleType m_handle;
+    size_t m_elfBodyOffset;
 };
 
 #endif
