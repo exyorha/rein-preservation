@@ -28,7 +28,8 @@ static void dumpCustomAttributes(Il2CppCustomAttrInfo *attrInfo) {
     dumpCustomAttributes(attrArray);
 }
 
-int tool_main(int argc, char *argv[]) {
+int tool_main(void *arg) {
+    (void)arg;
     il2cpp_set_data_dir("graft/NieR_Data/il2cpp_data");
     auto result = il2cpp_init("IL2CPP Root Domain");
     if(!result) {
@@ -66,6 +67,13 @@ int tool_main(int argc, char *argv[]) {
 
             dumpCustomAttributes(il2cpp_custom_attrs_from_class(classDesc));
 
+            bool isEnum = il2cpp_class_is_enum(classDesc);
+            if(isEnum) {
+                auto enumBase = il2cpp_class_enum_basetype(classDesc);
+                auto baseName = il2cpp_type_get_name(enumBase);
+                printf("    enum, base: '%s\n", baseName);
+            }
+
             void *iter = nullptr;
             FieldInfo *field;
             while((field = il2cpp_class_get_fields(classDesc, &iter)) != nullptr) {
@@ -77,6 +85,13 @@ int tool_main(int argc, char *argv[]) {
                 auto fieldTypeName = il2cpp_type_get_name(fieldType);
 
                 printf("    field: '%s', flags: 0x%08X, at %zu, '%s'\n", name, flags, offset, fieldTypeName);
+
+                if((flags & (FIELD_ATTRIBUTE_HAS_DEFAULT | FIELD_ATTRIBUTE_STATIC)) == (FIELD_ATTRIBUTE_HAS_DEFAULT | FIELD_ATTRIBUTE_STATIC) && isEnum) {
+                    int64_t value = 0;
+                    il2cpp_field_static_get_value(field, &value);
+
+                    printf("      enum value: %ld\n", value);
+                }
             }
 
             iter = nullptr;
@@ -128,11 +143,12 @@ int tool_main(int argc, char *argv[]) {
 
     }
 
+    exit(0);
     return 0;
 }
 
 
 int main(int argc, char *argv[]) {
-    return translator_main(argc, argv, tool_main);
+    return translator_main(tool_main, nullptr);
 }
 

@@ -48,4 +48,9 @@ add_subdirectory(GameFramework)
 
 add_subdirectory(GameExecutable)
 
+if(NOT WIN32)
+    add_subdirectory(interrogator)
+endif()
+
+
 

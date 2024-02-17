@@ -227,7 +227,7 @@ int tool_main(void) {
     return 0;
 }
 
-static int tool_noengine_main(int argc, char **argv) {
+static int tool_noengine_main(void *arg) {
 
     il2cpp_set_data_dir("../graft/NieR_Data/il2cpp_data");
     auto result = il2cpp_init("IL2CPP Root Domain");
@@ -247,5 +247,5 @@ int main(int argc, char *argv[]) {
     translator_set_post_initialize_callback(tool);
 
     //return translator_main(argc, argv, PlayerMain);
-    return translator_main(argc, argv, tool_noengine_main);
+    return translator_main(tool_noengine_main, nullptr);
 }
