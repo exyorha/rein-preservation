@@ -217,6 +217,12 @@ static Il2CppString *Dark_Localization_LocalizeTime_GetLocalTimeZoneId(Il2CppStr
     return stringFromUtf8("Etc/UTC");
 }
 
+static void UniWebViewInterface_CheckPlatform(void *original) {
+    (void)original;
+    printf("UniWebViewInterface::CheckPlatform\n");
+}
+
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -305,6 +311,13 @@ static void postInitialize() {
     translator_divert_method("mscorlib.dll::System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes",
                              System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes);
 #endif
+
+    /*
+     * We report that we are *not* running on Android, so we need to disable
+     * the platform check in the WebView, since we *do* provide the Android
+     * JNI API to it.
+     */
+    translator_divert_method("Assembly-CSharp.dll::UniWebViewInterface::CheckPlatform", UniWebViewInterface_CheckPlatform);
 
     InitializeInput();
     InitializeOcto();
