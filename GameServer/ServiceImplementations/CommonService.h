@@ -10,6 +10,8 @@
 
 #include <DataModel/Sqlite/Transaction.h>
 
+#include <service/DeckService.pb.h>
+
 #include <functional>
 
 class Database;
@@ -126,6 +128,26 @@ protected:
             fputs(response->DebugString().c_str(), stdout);
         });
     }
+
+    void buildDefaultDeckIfNoneExists(int64_t userId);
+
+protected:
+    struct DeckInDatabaseRepresentation {
+        std::array<std::string, 3> characterUUIDs;
+    };
+
+    void replaceDeck(int64_t userId, int32_t deckType, int32_t userDeckNumber, const apb::api::deck::Deck *deckDefinition);
+
+    void replaceDeckCharacters(int64_t userId,
+                               DeckInDatabaseRepresentation &storedDeck,
+                               const ::apb::api::deck::Deck *deck);
+
+    void replaceDeckCharacter(int64_t userId,
+                              std::string &characterUUID,
+                              const ::apb::api::deck::DeckCharacter *character);
+
+
+    void givePossession(int64_t userId, int32_t possessionType, int32_t possessionId, int32_t count);
 
 private:
     ::grpc::Status guardedCall(const char *name, const std::function<void()> &body);

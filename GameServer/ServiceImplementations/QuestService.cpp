@@ -1,4 +1,5 @@
 #include "QuestService.h"
+#include "DataModel/Sqlite/Transaction.h"
 
 #include <DataModel/Sqlite/Statement.h>
 
@@ -288,6 +289,7 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
                 clear_count = clear_count + 1,
                 last_clear_datetime = current_net_timestamp()
             WHERE user_id = ? AND quest_id = ? AND quest_state_type = 1
+            RETURNING clear_count
         )SQL");
 
         // TODO: daily clear management
@@ -295,7 +297,19 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
         updateQuest->bind(1, QuestStateType_MainFlowComplete),
         updateQuest->bind(2, userId);
         updateQuest->bind(3, request->quest_id());
-        updateQuest->exec();
+        while(updateQuest->step()) {
+            auto clearCount = updateQuest->columnInt(0);
+            if(clearCount == 1) {
+                auto getQuestFirstClearRewardGroup = db().prepare("SELECT quest_first_clear_reward_group_id FROM m_quest WHERE quest_id = ?");
+                getQuestFirstClearRewardGroup->bind(1, request->quest_id());
+                while(getQuestFirstClearRewardGroup->step()) {
+                    auto rewardGroup = getQuestFirstClearRewardGroup->columnInt(0);
+                    if(rewardGroup != 0) {
+                        issueFirstClearRewardGroup(userId, rewardGroup);
+                    }
+                }
+            }
+        }
 
         setMainQuestFlowStatus(userId, QuestFlowType_MainFlow);
     }
@@ -468,4 +482,63 @@ void QuestService::setMainQuestFlowStatus(int64_t userId, QuestFlowType flowType
     updateMainQuestFlowStatus->bind(1, userId);
     updateMainQuestFlowStatus->bind(2, flowType);
     updateMainQuestFlowStatus->exec();
+}
+
+void QuestService::issueAllFirstClearRewards() {
+    sqlite::Transaction transaction(&db());
+
+    auto getQuests = db().prepare(R"SQL(
+        SELECT
+            i_user_quest.user_id,
+            m_quest.quest_first_clear_reward_group_id
+        FROM
+            i_user_quest,
+            m_quest ON m_quest.quest_id = i_user_quest.quest_id
+        WHERE
+            clear_count > 0 AND
+            m_quest.quest_first_clear_reward_group_id != 0
+    )SQL");
+
+    while(getQuests->step()) {
+        auto userId = getQuests->columnInt64(0);
+        auto firstClearGroupId = getQuests->columnInt64(1);
+
+        issueFirstClearRewardGroup(userId, firstClearGroupId);
+    }
+
+    transaction.commit();
+}
+
+void QuestService::issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId) {
+    printf("QuestService: issuing first clear reward group %ld to user %ld\n", firstClearGroupId, userId);
+
+    auto getRewardGroup = db().prepare(R"SQL(
+        SELECT
+            quest_first_clear_reward_type,
+            possession_type,
+            possession_id,
+            count,
+            is_pickup
+        FROM m_quest_first_clear_reward_group
+        WHERE quest_first_clear_reward_group_id = ?
+        ORDER BY sort_order
+    )SQL");
+    getRewardGroup->bind(1, firstClearGroupId);
+
+    while(getRewardGroup->step()) {
+        auto rewardType = getRewardGroup->columnInt(0);
+        auto possessionType = getRewardGroup->columnInt(1);
+        auto possessionId = getRewardGroup->columnInt(2);
+        auto count = getRewardGroup->columnInt(3);
+        auto isPickup = getRewardGroup->columnInt(4);
+
+        /*
+         * TODO: reward type handling
+         */
+
+        printf("QuestService: awarding first clear reward to %ld: reward type %d, possession type %d, possession id %d, count %d, is pickup? %d\n",
+               userId, rewardType, possessionType, possessionId, count, isPickup);
+
+        givePossession(userId, possessionType, possessionId, count);
+    }
 }

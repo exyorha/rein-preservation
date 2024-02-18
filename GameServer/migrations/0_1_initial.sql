@@ -4536,8 +4536,8 @@ END;
 CREATE TABLE i_user_character (
   user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
-  level integer,
-  exp integer,
+  level integer NOT NULL DEFAULT 1,
+  exp integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, character_id)
 );
@@ -4686,12 +4686,13 @@ END;
 
 CREATE TABLE i_user_companion (
   user_id INTEGER NOT NULL,
-  user_companion_uuid text NOT NULL PRIMARY KEY,
+  user_companion_uuid text NOT NULL,
   companion_id integer,
   headup_display_view_id integer,
   level integer,
   acquisition_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_companion_uuid)
 );
 CREATE INDEX i_user_companion_user_id ON i_user_companion(user_id);
 
@@ -4704,8 +4705,8 @@ END;
 CREATE TABLE i_user_consumable_item (
   user_id INTEGER NOT NULL,
   consumable_item_id integer NOT NULL,
-  count integer,
-  first_acquisition_datetime timestamp,
+  count integer NOT NULL DEFAULT 0,
+  first_acquisition_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, consumable_item_id)
 );
@@ -4720,7 +4721,7 @@ END;
 CREATE TABLE i_user_contents_story (
   user_id INTEGER NOT NULL,
   contents_story_id integer NOT NULL,
-  play_datetime timestamp,
+  play_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, contents_story_id)
 );
@@ -4734,15 +4735,16 @@ END;
 
 CREATE TABLE i_user_costume (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
-  costume_id integer,
-  limit_break_count integer,
-  level integer,
-  exp integer,
-  headup_display_view_id integer,
-  acquisition_datetime timestamp,
-  awaken_count integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_costume_uuid text NOT NULL,
+  costume_id integer NOT NULL,
+  limit_break_count integer NOT NULL DEFAULT 0,
+  level integer NOT NULL DEFAULT 1,
+  exp integer NOT NULL DEFAULT 0,
+  headup_display_view_id integer NOT NULL DEFAULT 1, -- TODO: we don't know how this is assigned!
+  acquisition_datetime timestamp NOT NULL,
+  awaken_count integer NOT NULL DEFAULT 0,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, costume_id)
 );
 CREATE INDEX i_user_costume_user_id ON i_user_costume(user_id);
 
@@ -4754,10 +4756,11 @@ END;
 
 CREATE TABLE i_user_costume_active_skill (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
-  level integer,
-  acquisition_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_costume_uuid text NOT NULL,
+  level integer NOT NULL DEFAULT 1,
+  acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_costume_uuid)
 );
 CREATE INDEX i_user_costume_active_skill_user_id ON i_user_costume_active_skill(user_id);
 
@@ -4769,7 +4772,7 @@ END;
 
 CREATE TABLE i_user_costume_awaken_status_up (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
+  user_costume_uuid text NOT NULL,
   status_calculation_type integer,
   hp integer,
   attack integer,
@@ -4777,7 +4780,8 @@ CREATE TABLE i_user_costume_awaken_status_up (
   agility integer,
   critical_ratio integer,
   critical_attack integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_costume_uuid)
 );
 CREATE INDEX i_user_costume_awaken_status_up_user_id ON i_user_costume_awaken_status_up(user_id);
 
@@ -4805,10 +4809,11 @@ END;
 
 CREATE TABLE i_user_costume_lottery_effect (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
+  user_costume_uuid text NOT NULL,
   slot_number integer,
   odds_number integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_costume_uuid)
 );
 CREATE INDEX i_user_costume_lottery_effect_user_id ON i_user_costume_lottery_effect(user_id);
 
@@ -4820,11 +4825,12 @@ END;
 
 CREATE TABLE i_user_costume_lottery_effect_ability (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
+  user_costume_uuid text NOT NULL,
   slot_number integer,
   ability_id integer,
   ability_level integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_costume_uuid)
 );
 CREATE INDEX i_user_costume_lottery_effect_ability_user_id ON i_user_costume_lottery_effect_ability(user_id);
 
@@ -4836,10 +4842,11 @@ END;
 
 CREATE TABLE i_user_costume_lottery_effect_pending (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
+  user_costume_uuid text NOT NULL,
   slot_number integer,
   odds_number integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_costume_uuid)
 );
 CREATE INDEX i_user_costume_lottery_effect_pending_user_id ON i_user_costume_lottery_effect_pending(user_id);
 
@@ -4851,7 +4858,7 @@ END;
 
 CREATE TABLE i_user_costume_lottery_effect_status_up (
   user_id INTEGER NOT NULL,
-  user_costume_uuid text NOT NULL PRIMARY KEY,
+  user_costume_uuid text NOT NULL,
   status_calculation_type integer,
   hp integer,
   attack integer,
@@ -4859,7 +4866,8 @@ CREATE TABLE i_user_costume_lottery_effect_status_up (
   agility integer,
   critical_ratio integer,
   critical_attack integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_costume_uuid)
 );
 CREATE INDEX i_user_costume_lottery_effect_status_up_user_id ON i_user_costume_lottery_effect_status_up(user_id);
 
@@ -4871,13 +4879,13 @@ END;
 
 CREATE TABLE i_user_deck (
   user_id INTEGER NOT NULL,
-  deck_type integer NOT NULL,
-  user_deck_number integer NOT NULL,
-  user_deck_character_uuid01 text,
-  user_deck_character_uuid02 text,
-  user_deck_character_uuid03 text,
-  name text,
-  power integer,
+  deck_type integer NOT NULL DEFAULT 1,
+  user_deck_number integer NOT NULL DEFAULT 1,
+  user_deck_character_uuid01 text NOT NULL DEFAULT '',
+  user_deck_character_uuid02 text NOT NULL DEFAULT '',
+  user_deck_character_uuid03 text NOT NULL DEFAULT '',
+  name text NOT NULL DEFAULT '',
+  power integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, deck_type, user_deck_number)
 );
@@ -4891,13 +4899,14 @@ END;
 
 CREATE TABLE i_user_deck_character (
   user_id INTEGER NOT NULL,
-  user_deck_character_uuid text NOT NULL PRIMARY KEY,
-  user_costume_uuid text,
-  main_user_weapon_uuid text,
-  user_companion_uuid text,
-  power integer,
-  user_thought_uuid text,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_deck_character_uuid text NOT NULL,
+  user_costume_uuid text NOT NULL DEFAULT '',
+  main_user_weapon_uuid text NOT NULL DEFAULT '',
+  user_companion_uuid text NOT NULL DEFAULT '',
+  power integer NOT NULL DEFAULT 0,
+  user_thought_uuid text NOT NULL DEFAULT '',
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_deck_character_uuid)
 );
 CREATE INDEX i_user_deck_character_user_id ON i_user_deck_character(user_id);
 
@@ -4909,9 +4918,10 @@ END;
 
 CREATE TABLE i_user_deck_character_dressup_costume (
   user_id INTEGER NOT NULL,
-  user_deck_character_uuid text NOT NULL PRIMARY KEY,
-  dressup_costume_id integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_deck_character_uuid text NOT NULL,
+  dressup_costume_id integer NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_deck_character_uuid)
 );
 CREATE INDEX i_user_deck_character_dressup_costume_user_id ON i_user_deck_character_dressup_costume(user_id);
 
@@ -4943,9 +4953,9 @@ CREATE TABLE i_user_deck_parts_group (
   user_id INTEGER NOT NULL,
   user_deck_character_uuid text NOT NULL,
   user_parts_uuid text NOT NULL,
-  sort_order integer,
+  sort_order integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_deck_character_uuid, user_parts_uuid)
+  PRIMARY KEY(user_id, user_deck_character_uuid, user_parts_uuid)
 );
 CREATE INDEX i_user_deck_parts_group_user_id ON i_user_deck_parts_group(user_id);
 
@@ -4959,9 +4969,9 @@ CREATE TABLE i_user_deck_sub_weapon_group (
   user_id INTEGER NOT NULL,
   user_deck_character_uuid text NOT NULL,
   user_weapon_uuid text NOT NULL,
-  sort_order integer,
+  sort_order integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_deck_character_uuid, user_weapon_uuid)
+  PRIMARY KEY(user_id, user_deck_character_uuid, user_weapon_uuid)
 );
 CREATE INDEX i_user_deck_sub_weapon_group_user_id ON i_user_deck_sub_weapon_group(user_id);
 
@@ -5240,8 +5250,8 @@ END;
 CREATE TABLE i_user_important_item (
   user_id INTEGER NOT NULL,
   important_item_id integer NOT NULL,
-  count integer,
-  first_acquisition_datetime timestamp,
+  count integer NOT NULL,
+  first_acquisition_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, important_item_id)
 );
@@ -5508,13 +5518,14 @@ END;
 
 CREATE TABLE i_user_parts (
   user_id INTEGER NOT NULL,
-  user_parts_uuid text NOT NULL PRIMARY KEY,
-  parts_id integer,
-  level integer,
-  parts_status_main_id integer,
-  is_protected boolean,
-  acquisition_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_parts_uuid text NOT NULL,
+  parts_id integer NOT NULL,
+  level integer NOT NULL DEFAULT 1,
+  parts_status_main_id integer NOT NULL DEFAULT 0,
+  is_protected boolean NOT NULL DEFAULT 0,
+  acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_parts_uuid)
 );
 
 CREATE INDEX i_user_parts_id_user_id ON i_user_parts(user_id);
@@ -5591,7 +5602,7 @@ CREATE TABLE i_user_parts_status_sub (
   status_calculation_type integer,
   status_change_value integer,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_parts_uuid, status_index)
+  PRIMARY KEY(user_id, user_parts_uuid, status_index)
 );
 
 CREATE INDEX i_user_parts_status_sub_user_id ON i_user_parts_status_sub(user_id);
@@ -5990,10 +6001,11 @@ END;
 
 CREATE TABLE i_user_thought (
   user_id INTEGER NOT NULL,
-  user_thought_uuid text NOT NULL PRIMARY KEY,
-  thought_id integer,
-  acquisition_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_thought_uuid text NOT NULL,
+  thought_id integer NOT NULL,
+  acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_thought_uuid)
 );
 CREATE INDEX i_user_thought_user_id ON i_user_thought(user_id);
 
@@ -6043,14 +6055,15 @@ END;
 
 CREATE TABLE i_user_weapon (
   user_id INTEGER NOT NULL,
-  user_weapon_uuid text NOT NULL PRIMARY KEY,
-  weapon_id integer,
-  level integer,
-  exp integer,
-  limit_break_count integer,
-  is_protected boolean,
-  acquisition_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_weapon_uuid text NOT NULL,
+  weapon_id integer NOT NULL,
+  level integer NOT NULL DEFAULT 1,
+  exp integer NOT NULL DEFAULT 0,
+  limit_break_count integer NOT NULL DEFAULT 0,
+  is_protected boolean NOT NULL DEFAULT 0,
+  acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_weapon_uuid)
 );
 CREATE INDEX i_user_weapon_user_id ON i_user_weapon(user_id);
 
@@ -6065,9 +6078,9 @@ CREATE TABLE i_user_weapon_ability (
   user_id INTEGER NOT NULL,
   user_weapon_uuid text NOT NULL,
   slot_number integer NOT NULL,
-  level integer,
+  level integer NOT NULL DEFAULT 1,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_weapon_uuid, slot_number)
+  PRIMARY KEY(user_id, user_weapon_uuid, slot_number)
 );
 CREATE INDEX i_user_weapon_ability_user_id ON i_user_weapon_ability(user_id);
 
@@ -6080,8 +6093,9 @@ END;
 
 CREATE TABLE i_user_weapon_awaken (
   user_id INTEGER NOT NULL,
-  user_weapon_uuid text NOT NULL PRIMARY KEY,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_weapon_uuid text NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, user_weapon_uuid)
 );
 CREATE INDEX i_user_weapon_awaken_user_id ON i_user_weapon_awaken(user_id);
 
@@ -6094,11 +6108,12 @@ END;
 
 CREATE TABLE i_user_weapon_note (
   user_id INTEGER NOT NULL,
-  weapon_id integer NOT NULL PRIMARY KEY,
-  max_level integer,
-  max_limit_break_count integer,
-  first_acquisition_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  weapon_id integer NOT NULL,
+  max_level integer NOT NULL DEFAULT 1,
+  max_limit_break_count integer NOT NULL DEFAULT 0,
+  first_acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, weapon_id)
 );
 CREATE INDEX i_user_weapon_note_user_id ON i_user_weapon_note(user_id);
 
@@ -6113,9 +6128,9 @@ CREATE TABLE i_user_weapon_skill (
   user_id INTEGER NOT NULL,
   user_weapon_uuid text NOT NULL,
   slot_number integer NOT NULL,
-  level integer,
+  level integer NOT NULL DEFAULT 1,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_weapon_uuid, slot_number)
+  PRIMARY KEY(user_id, user_weapon_uuid, slot_number)
 );
 
 CREATE INDEX i_user_weapon_skill_user_id ON i_user_weapon_skill(user_id);
@@ -6129,9 +6144,10 @@ END;
 
 CREATE TABLE i_user_weapon_story (
   user_id INTEGER NOT NULL,
-  weapon_id integer NOT NULL PRIMARY KEY,
-  released_max_story_index integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  weapon_id integer NOT NULL,
+  released_max_story_index integer NOT NULL DEFAULT 0,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, weapon_id)
 );
 
 CREATE INDEX i_user_weapon_story_user_id ON i_user_weapon_story(user_id);

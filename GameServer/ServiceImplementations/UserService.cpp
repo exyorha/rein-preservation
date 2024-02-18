@@ -75,6 +75,7 @@ void UserService::AuthImpl(const ::apb::api::user::AuthUserRequest* request, ::a
         "INSERT OR IGNORE INTO i_user_gem (user_id) VALUES (?)",
         "INSERT OR IGNORE INTO i_user_login (user_id) VALUES (?)", // note that login time is not updated here yet - that's GameStart!
         "INSERT OR IGNORE INTO i_user_profile (user_id) VALUES (?)"
+
     }) {
         auto query = db().prepare(userInitQuery);
         query->bind(1, response->user_id());

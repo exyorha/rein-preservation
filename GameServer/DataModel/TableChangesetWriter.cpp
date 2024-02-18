@@ -131,6 +131,30 @@ void TableChangesetWriter::writeEntry(sqlite::ChangesetIterator &it, const sqlit
         }
 
 
+        case SQLITE_DELETE:
+        {
+            m_deleteWriter.writeMapOpen();
+
+            if(op.numberOfColumns != m_columnNames.size()) {
+                throw std::runtime_error("the number of columns in the changeset didn't match the expected");
+            }
+
+            for(int column = 0; column < op.numberOfColumns; column++) {
+                auto value = it.oldValue(column);
+
+                if(value == nullptr) {
+                    throw std::runtime_error("unexpected absent value on INSERT");
+                }
+
+                m_deleteWriter.writeString(m_columnNames[column]);
+                writeSQLiteValue(m_deleteWriter, value, m_columnIsBoolean[column]);
+            }
+
+            m_deleteWriter.writeMapClose();
+
+            break;
+        }
+
         default:
             /*
              * TODO: it's not currently known how deletes should be represented

@@ -104,6 +104,7 @@ add_executable(GameServer
     service/GamePlayService.proto
     service/GiftService.proto
     service/GimmickService.proto
+    service/LoginBonusService.proto
     service/MissionService.proto
     service/NotificationService.proto
     service/QuestService.proto
@@ -122,6 +123,9 @@ add_executable(GameServer
     ServiceImplementations/DataService.cpp
     ServiceImplementations/DataService.h
 
+    ServiceImplementations/DeckService.cpp
+    ServiceImplementations/DeckService.h
+
     ServiceImplementations/GachaService.cpp
     ServiceImplementations/GachaService.h
 
@@ -130,6 +134,9 @@ add_executable(GameServer
 
     ServiceImplementations/GimmickService.cpp
     ServiceImplementations/GimmickService.h
+
+    ServiceImplementations/LoginBonusService.cpp
+    ServiceImplementations/LoginBonusService.h
 
     ServiceImplementations/NotificationService.cpp
     ServiceImplementations/NotificationService.h

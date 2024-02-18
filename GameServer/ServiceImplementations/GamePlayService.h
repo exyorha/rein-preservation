@@ -5,6 +5,9 @@
 
 #include <ServiceImplementations/CommonService.h>
 
+/*
+ * All methods are present.
+ */
 class GamePlayService final : public apb::api::gameplay::GamePlayService::Service, public CommonService {
 public:
     explicit GamePlayService(Database &db);
@@ -16,6 +19,11 @@ public:
     ::grpc::Status CheckBeforeGamePlay(::grpc::ServerContext* context,
                                        const ::apb::api::gameplay::CheckBeforeGamePlayRequest* request,
                                        ::apb::api::gameplay::CheckBeforeGamePlayResponse* response) override;
+
+private:
+    void CheckBeforeGamePlayImpl(int64_t userId,
+                                 const ::apb::api::gameplay::CheckBeforeGamePlayRequest* request,
+                                 ::apb::api::gameplay::CheckBeforeGamePlayResponse* response);
 
 };
 

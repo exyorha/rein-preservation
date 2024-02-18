@@ -14,6 +14,8 @@
 #include "ServiceImplementations/TutorialService.h"
 #include "ServiceImplementations/BannerService.h"
 #include "ServiceImplementations/BattleService.h"
+#include "ServiceImplementations/DeckService.h"
+#include "ServiceImplementations/LoginBonusService.h"
 
 #include "DataModel/Database.h"
 
@@ -39,6 +41,8 @@ private:
     TutorialService m_tutorialService;
     BannerService m_bannerService;
     BattleService m_battleService;
+    DeckService m_deckService;
+    LoginBonusService m_loginBonusService;
     std::unique_ptr<grpc::Server> m_server;
 };
 

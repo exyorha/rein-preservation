@@ -25,6 +25,8 @@ public:
 
     ::grpc::Status UpdateMainQuestSceneProgress(::grpc::ServerContext* context, const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) override;
 
+    void issueAllFirstClearRewards();
+
 private:
 
     enum QuestStateType : int32_t {
@@ -54,6 +56,8 @@ private:
                                           ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response);
 
     void updateMainQuestProgress(int64_t userId);
+
+    void issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId);
 };
 
 #endif
