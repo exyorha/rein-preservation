@@ -33,8 +33,13 @@ GlobalContext *GlobalContext::GlobalContextRegisterer::m_context = nullptr;
 GlobalContext::GlobalContext() : m_registerer(this) {
 
     auto directory = thisLibraryDirectory();
-    m_armlib.emplace(directory / "bionic.so.pe");
-    m_il2cpp.emplace(directory / "libil2cpp.so.pe");
+    if(getenv("ARM_DEBUG")) {
+        m_armlib.emplace(directory / "bionic.so");
+        m_il2cpp.emplace(directory / "libil2cpp.so");
+    } else {
+        m_armlib.emplace(directory / "bionic.so.pe");
+        m_il2cpp.emplace(directory / "libil2cpp.so.pe");
+    }
 
     bindBionicCallouts(*m_armlib);
 

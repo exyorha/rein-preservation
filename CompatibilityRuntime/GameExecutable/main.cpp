@@ -222,7 +222,6 @@ static void UniWebViewInterface_CheckPlatform(void *original) {
     printf("UniWebViewInterface::CheckPlatform\n");
 }
 
-
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
