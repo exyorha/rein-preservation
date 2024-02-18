@@ -1,4 +1,5 @@
 #include "QuestService.h"
+#include "DataModel/DatabaseEnums.h"
 #include "DataModel/Sqlite/Transaction.h"
 
 #include <DataModel/Sqlite/Statement.h>
@@ -44,6 +45,24 @@ void QuestService::UpdateMainFlowSceneProgressImpl(int64_t userId,
 
 void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::StartMainQuestRequest* request,
     ::apb::api::quest::StartMainQuestResponse* response) {
+
+    auto updateStartAttributes = db().prepare(R"SQL(
+        INSERT INTO internal_user_quest_last_start_attributes (
+            user_id,
+            quest_id,
+            user_deck_number
+        ) VALUES (
+            ?,
+            ?,
+            ?
+        )
+        ON CONFLICT (user_id, quest_id) DO UPDATE SET
+            user_deck_number = excluded.user_deck_number
+    )SQL");
+    updateStartAttributes->bind(1, userId);
+    updateStartAttributes->bind(2, request->quest_id());
+    updateStartAttributes->bind(3, request->user_deck_number());
+    updateStartAttributes->exec();
 
     auto getRoute = db().prepare(R"SQL(
         SELECT
@@ -181,56 +200,6 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
     }
 
     // TODO: should update i_user_quest_auto_orbit
-
-#if 0
-    response->mutable_diff_user_data()->emplace("IUserMainQuestMainFlowStatus", stream.str());
-#endif
-#if 0
-
-    response->mutable_diff_user_data()->emplace(
-        "IUserMainQuestFlowStatus",
-        R"json([{"userId":1,"currentQuestFlowType":1,"latestVersion":1}])json"
-    );
-#endif
-
-#if 0
-    auto &quest = (*response->mutable_diff_user_data())["IUserQuest"];
-
-    quest.set_update_records_json(
-        R"json([{"userId":1,"questId":1,"questStateType":1,"isBattleOnly":false,"latestStartDatetime":1706703062000,"clearCount":0,"dailyClearCount":0,"lastClearDatetime":28800000,"shortestClearFrames":2147483647,"latestVersion":1}])json"
-    );
-
-    quest.set_delete_keys_json("[]");
-
-    auto &mainQuestFlow = (*response->mutable_diff_user_data())["IUserMainQuestFlowStatus"];
-    mainQuestFlow.set_update_records_json(
-        R"json([{"userId":1,"currentQuestFlowType":1,"latestVersion":1}])json"
-    );
-    mainQuestFlow.set_delete_keys_json("[]");
-#if 0
-    auto &mainQuestMainFlow = (*response->mutable_diff_user_data())["IUserMainQuestMainFlowStatus"];
-    mainQuestMainFlow.set_update_records_json(
-        R"json([{"userId":1,"currentMainQuestRouteId":1,"currentQuestSceneId":2,"headQuestSceneId":2,"isReachedLastQuestScene":false,"latestVersion":1}])json"
-    );
-    mainQuestMainFlow.set_delete_keys_json("[]");
-#endif
-
-
-    auto &mainQuestProgress = (*response->mutable_diff_user_data())["IUserMainQuestProgressStatus"];
-
-    mainQuestProgress.set_update_records_json(
-        R"json([{"userId":1,"currentQuestSceneId":2,"headQuestSceneId":2,"currentQuestFlowType":1,"latestVersion":1}])json"
-    );
-    mainQuestProgress.set_delete_keys_json("[]");
-
-    auto &questAutoOrbit = (*response->mutable_diff_user_data())["IUserQuestAutoOrbit"];
-    questAutoOrbit.set_update_records_json(
-        R"json([{"userId":1,"questType":1,"chapterId":1,"questId":1,"maxAutoOrbitCount":0,"clearedAutoOrbitCount":0,"lastClearDatetime":28800000,"latestVersion":1}])json"
-    );
-    questAutoOrbit.set_delete_keys_json("[]");
-#endif
-
-//    return grpc::Status::OK;
 }
 
 
@@ -243,6 +212,23 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
 
 void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::FinishMainQuestRequest* request,
                                               ::apb::api::quest::FinishMainQuestResponse* response) {
+
+    auto getAttributesAtStart = db().prepare(R"SQL(
+        DELETE FROM
+            internal_user_quest_last_start_attributes
+        WHERE
+            user_id = ? AND
+            quest_id = ?
+        RETURNING
+            user_deck_number
+    )SQL");
+    getAttributesAtStart->bind(1, userId);
+    getAttributesAtStart->bind(2, request->quest_id());
+    int32_t userDeckNumber = 0;
+
+    while(getAttributesAtStart->step()) {
+        userDeckNumber = getAttributesAtStart->columnInt(0);
+    }
 
     /*
      * 'Quit' quest:
@@ -283,6 +269,36 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
 
         int64_t quest_state_type = QuestStateType_MainFlowComplete; // is this always correct???
 
+        auto getQuestRewardInfo = db().prepare(R"SQL(
+            SELECT
+                quest_first_clear_reward_group_id,
+                quest_pickup_reward_group_id,
+                gold,
+                user_exp,
+                character_exp,
+                costume_exp
+            FROM
+                m_quest
+            WHERE quest_id = ?
+        )SQL");
+
+        int32_t questFirstClearRewardGroupId = 0;
+        int32_t questPickupRewardGroupId = 0;
+        int32_t gold = 0;
+        int32_t userExperience = 0;
+        int32_t characterExperience = 0;
+        int32_t costumeExperience = 0;
+
+        getQuestRewardInfo->bind(1, request->quest_id());
+        if(getQuestRewardInfo->step()) {
+            questFirstClearRewardGroupId = getQuestRewardInfo->columnInt(0);
+            questPickupRewardGroupId = getQuestRewardInfo->columnInt(1);
+            gold = getQuestRewardInfo->columnInt(2);
+            userExperience = getQuestRewardInfo->columnInt(3);
+            characterExperience = getQuestRewardInfo->columnInt(4);
+            costumeExperience = getQuestRewardInfo->columnInt(5);
+        }
+
         auto updateQuest = db().prepare(R"SQL(
             UPDATE i_user_quest SET
                 quest_state_type = ?,
@@ -292,23 +308,60 @@ void QuestService::FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::
             RETURNING clear_count
         )SQL");
 
-        // TODO: daily clear management
-
         updateQuest->bind(1, QuestStateType_MainFlowComplete),
         updateQuest->bind(2, userId);
         updateQuest->bind(3, request->quest_id());
         while(updateQuest->step()) {
             auto clearCount = updateQuest->columnInt(0);
-            if(clearCount == 1) {
-                auto getQuestFirstClearRewardGroup = db().prepare("SELECT quest_first_clear_reward_group_id FROM m_quest WHERE quest_id = ?");
-                getQuestFirstClearRewardGroup->bind(1, request->quest_id());
-                while(getQuestFirstClearRewardGroup->step()) {
-                    auto rewardGroup = getQuestFirstClearRewardGroup->columnInt(0);
-                    if(rewardGroup != 0) {
-                        issueFirstClearRewardGroup(userId, rewardGroup);
-                    }
-                }
+            if(clearCount == 1 && questFirstClearRewardGroupId != 0) {
+               issueFirstClearRewardGroup(userId, questFirstClearRewardGroupId,
+                                          response->mutable_first_clear_reward(),
+                                          response->mutable_drop_reward());
             }
+        }
+
+
+        if(gold != 0) {
+            givePossession(userId,
+                           static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM),
+                           consumableItemIdForGold(),
+                           gold
+            );
+        }
+
+        if(userExperience != 0) {
+            giveUserExperience(userId, userExperience);
+        }
+
+        if(userDeckNumber != 0) {
+            giveUserDeckExperience(userId,
+                                   static_cast<int32_t>(DeckType::QUEST),
+                                   userDeckNumber,
+                                   characterExperience,
+                                   costumeExperience);
+
+        }
+
+        /*
+         * TODO: This is simplification: add all battle drop.
+         */
+        auto getAllBattleDrop = db().prepare(R"SQL(
+            SELECT
+                possession_type, possession_id, count
+            FROM
+                m_quest_pickup_reward_group,
+                m_battle_drop_reward ON m_battle_drop_reward.battle_drop_reward_id = m_quest_pickup_reward_group.battle_drop_reward_id
+
+            WHERE quest_pickup_reward_group_id = ?
+            ORDER BY sort_order
+        )SQL");
+        getAllBattleDrop->bind(1, questPickupRewardGroupId);
+        while(getAllBattleDrop->step()) {
+            auto type = getAllBattleDrop->columnInt(0);
+            auto id = getAllBattleDrop->columnInt(1);
+            auto count = getAllBattleDrop->columnInt(2);
+
+            givePossession(userId, type, id, count, response->mutable_drop_reward());
         }
 
         setMainQuestFlowStatus(userId, QuestFlowType_MainFlow);
@@ -509,7 +562,10 @@ void QuestService::issueAllFirstClearRewards() {
     transaction.commit();
 }
 
-void QuestService::issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId) {
+void QuestService::issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId,
+                                              google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards,
+                                              google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestDropRewards) {
+
     printf("QuestService: issuing first clear reward group %ld to user %ld\n", firstClearGroupId, userId);
 
     auto getRewardGroup = db().prepare(R"SQL(
@@ -539,6 +595,11 @@ void QuestService::issueFirstClearRewardGroup(int64_t userId, int64_t firstClear
         printf("QuestService: awarding first clear reward to %ld: reward type %d, possession type %d, possession id %d, count %d, is pickup? %d\n",
                userId, rewardType, possessionType, possessionId, count, isPickup);
 
-        givePossession(userId, possessionType, possessionId, count);
+        auto list = addToQuestRewards;
+        if(isPickup) {
+            list = addToQuestDropRewards;
+        }
+
+        givePossession(userId, possessionType, possessionId, count, list);
     }
 }

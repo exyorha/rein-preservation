@@ -4794,8 +4794,8 @@ END;
 CREATE TABLE i_user_costume_level_bonus_release_status (
   user_id INTEGER NOT NULL,
   costume_id integer NOT NULL,
-  last_released_bonus_level integer,
-  confirmed_bonus_level integer,
+  last_released_bonus_level integer NOT NULL DEFAULT 0,
+  confirmed_bonus_level integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, costume_id)
 );
@@ -4984,7 +4984,7 @@ END;
 CREATE TABLE i_user_deck_type_note (
   user_id INTEGER NOT NULL,
   deck_type integer NOT NULL,
-  max_deck_power integer,
+  max_deck_power integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, deck_type)
 );
@@ -5395,8 +5395,8 @@ END;
 CREATE TABLE i_user_material (
   user_id INTEGER NOT NULL,
   material_id integer NOT NULL,
-  count integer,
-  first_acquisition_datetime timestamp,
+  count integer NOT NULL DEFAULT 0,
+  first_acquisition_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, material_id)
 );
@@ -6162,8 +6162,9 @@ END;
 CREATE TABLE i_user_webview_panel_mission (
   user_id INTEGER NOT NULL,
   webview_panel_mission_page_id integer NOT NULL,
-  reward_receive_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  reward_receive_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, webview_panel_mission_page_id)
 );
 
 CREATE INDEX i_user_webview_panel_mission_user_id ON i_user_webview_panel_mission(user_id);
@@ -6175,3 +6176,9 @@ BEGIN
     WHERE i_user_webview_panel_mission.rowid = NEW.rowid;
 END;
 
+CREATE TABLE internal_user_quest_last_start_attributes (
+  user_id INTEGER NOT NULL,
+  quest_id INTEGER NOT NULL,
+  user_deck_number INTEGER NOT NULL,
+  PRIMARY KEY(user_id, quest_id)
+);

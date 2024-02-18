@@ -92,6 +92,23 @@ void DeckService::RefreshDeckPowerImpl(int64_t userId,
     if(deckPower.has_deck_character_power_03()) {
         updateDeckCharacterPower(userId, deckPower.deck_character_power_03());
     }
+
+    auto updateDeckNote = db().prepare(R"SQL(
+        INSERT INTO i_user_deck_type_note (
+            user_id,
+            deck_type,
+            max_deck_power
+        ) VALUES (
+            ?,
+            ?,
+            ?
+        )
+        ON CONFLICT (user_id, deck_type) DO UPDATE SET max_deck_power = MAX(max_deck_power, excluded.max_deck_power)
+    )SQL");
+    updateDeckNote->bind(1, userId);
+    updateDeckNote->bind(2, request->deck_type());
+    updateDeckNote->bind(3, deckPower.power());
+    updateDeckNote->exec();
 }
 
 void DeckService::updateDeckCharacterPower(int64_t userId, const apb::api::deck::DeckCharacterPower &power) {

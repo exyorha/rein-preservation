@@ -274,9 +274,17 @@ void CommonService::replaceDeckCharacter(int64_t userId,
     }
 }
 
-void CommonService::givePossession(int64_t userId, int32_t possessionType, int32_t possessionId, int32_t count) {
+void CommonService::givePossession(int64_t userId, int32_t possessionType, int32_t possessionId, int32_t count,
+                                   google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards) {
     printf("QuestService: giving to %ld: possession type %d, id %d, count %d\n",
            userId, possessionType, possessionId, count);
+
+    if(addToQuestRewards) {
+        auto reward = addToQuestRewards->Add();
+        reward->set_possession_type(possessionType);
+        reward->set_possession_id(possessionId);
+        reward->set_count(count);
+    }
 
     switch(static_cast<PossessionType>(possessionType)) {
         case PossessionType::COSTUME:
@@ -431,10 +439,8 @@ void CommonService::givePossession(int64_t userId, int32_t possessionType, int32
         }
         break;
 
-
         case PossessionType::PARTS:
         {
-            return;
             if(count != 1)
                 throw std::runtime_error("Unexpected count value for WEAPON");
 
@@ -443,18 +449,72 @@ void CommonService::givePossession(int64_t userId, int32_t possessionType, int32
                     user_id,
                     user_parts_uuid,
                     parts_id,
-                    acquisition_datetime
+                    acquisition_datetime,
+                    parts_status_main_id
                 ) VALUES (
                     ?,
                     hex(randomblob(16)),
                     ?,
-                    current_net_timestamp()
+                    current_net_timestamp(),
+                    1 -- TODO: XXX: 'parts_status_main_id' is supposed to be determined by a lottery, however, the data for it
+                      -- appears to be absent. For now, we always set a valid key here to avoid crashing the client UI.
                 )
-                ON CONFLICT (user_id, parts_id) DO NOTHING
             )SQL");
 
             query->bind(1, userId);
             query->bind(2, possessionId);
+            query->exec();
+        }
+        break;
+
+        case PossessionType::MATERIAL:
+        {
+            if(count <= 0)
+                throw std::runtime_error("Unexpected count value for MATERIAL");
+
+            auto query = db().prepare(R"SQL(
+                INSERT INTO i_user_material (
+                    user_id,
+                    material_id,
+                    count,
+                    first_acquisition_datetime
+                ) VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    current_net_timestamp()
+                )
+                ON CONFLICT (user_id, material_id) DO UPDATE SET count = count + excluded.count
+            )SQL");
+            query->bind(1, userId);
+            query->bind(2, possessionId);
+            query->bind(3, count);
+            query->exec();
+        }
+        break;
+
+        case PossessionType::CONSUMABLE_ITEM:
+        {
+            if(count <= 0)
+                throw std::runtime_error("Unexpected count value for CONSUMABLE_ITEM");
+
+            auto query = db().prepare(R"SQL(
+                INSERT INTO i_user_consumable_item (
+                    user_id,
+                    consumable_item_id,
+                    count,
+                    first_acquisition_datetime
+                ) VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    current_net_timestamp()
+                )
+                ON CONFLICT (user_id, consumable_item_id) DO UPDATE SET count = count + excluded.count
+            )SQL");
+            query->bind(1, userId);
+            query->bind(2, possessionId);
+            query->bind(3, count);
             query->exec();
         }
         break;
@@ -557,4 +617,356 @@ void CommonService::replaceDeck(int64_t userId, int32_t deckType, int32_t userDe
     updateDeck->bind(5, deck.characterUUIDs[1]);
     updateDeck->bind(6, deck.characterUUIDs[2]);
     updateDeck->exec();
+}
+
+int32_t CommonService::getIntConfig(const std::string_view &setting) const {
+    auto query = db().prepare("SELECT value FROM m_config WHERE config_key = ?");
+    query->bind(1, setting);
+
+    if(query->step()) {
+        return query->columnInt(0);
+    }
+
+    throw std::runtime_error("option is not in config: " + std::string(setting));
+}
+
+void CommonService::giveUserExperience(int64_t userId, int32_t experience) {
+    if(experience < 0)
+        throw std::logic_error("experience cannot be negative");
+
+    printf("Giving user %ld %d experience\n", userId, experience);
+
+    auto query = db().prepare("UPDATE i_user_status SET exp = exp + ? WHERE user_id = ? RETURNING exp, level");
+    int32_t currentTotalExp = 0, currentLevel = 0;
+
+    query->bind(1, experience);
+    query->bind(2, userId);
+    while(query->step()) {
+        currentTotalExp = query->columnInt(0);
+        currentLevel = query->columnInt(1);
+    }
+
+    auto newLevel = evaluateNumericalParameterMap(userLevelExpNumericalParameterMapID(), currentTotalExp);
+    // TODO: clamp by max level (if one exists)
+    if(newLevel.has_value() && *newLevel != currentLevel) {
+        printf("User %ld has leveled up: %d -> %d\n", userId, currentLevel, *newLevel);
+        auto updateLevel = db().prepare("UPDATE i_user_status SET level = ? WHERE user_id = ?");
+        updateLevel->bind(1, *newLevel);
+        updateLevel->bind(2, userId);
+        updateLevel->exec();
+    }
+}
+
+std::optional<int32_t> CommonService::evaluateNumericalParameterMap(int32_t mapId, int32_t value) {
+    auto query = db().prepare(R"SQL(
+        SELECT
+            parameter_key
+        FROM
+            m_numerical_parameter_map
+        WHERE
+            parameter_value <= ? AND
+            numerical_parameter_map_id = ?
+        ORDER BY
+            parameter_key DESC
+        LIMIT 1
+    )SQL");
+
+    query->bind(1, value);
+    query->bind(2, mapId);
+    if(query->step()) {
+        return query->columnInt(0);
+    }
+
+    return {};
+}
+
+void CommonService::giveUserDeckExperience(
+    int64_t userId,
+    int32_t deckType,
+    int32_t userDeckNumber,
+    int32_t characterExperience,
+    int32_t costumeExperience) {
+
+    auto query = db().prepare(R"SQL(
+        SELECT
+            user_deck_character_uuid01,
+            user_deck_character_uuid02,
+            user_deck_character_uuid03
+        FROM
+            i_user_deck
+        WHERE
+            user_id = ? AND
+            deck_type = ? AND
+            user_deck_number = ?
+    )SQL");
+    query->bind(1, userId);
+    query->bind(2, deckType);
+    query->bind(3, userDeckNumber);
+
+    while(query->step()) {
+        std::string uuid1 = query->columnText(0);
+        std::string uuid2 = query->columnText(1);
+        std::string uuid3 = query->columnText(2);
+
+        if(!uuid1.empty()) {
+            giveUserDeckCharacterExperience(userId, uuid1, characterExperience, costumeExperience);
+        }
+
+        if(!uuid2.empty()) {
+            giveUserDeckCharacterExperience(userId, uuid2, characterExperience, costumeExperience);
+        }
+
+        if(!uuid3.empty()) {
+            giveUserDeckCharacterExperience(userId, uuid3, characterExperience, costumeExperience);
+        }
+    }
+}
+
+void CommonService::giveUserDeckCharacterExperience(
+    int64_t userId,
+    const std::string &userDeckCharacterUuid,
+    int32_t characterExperience,
+    int32_t costumeExperience) {
+
+    std::string costumeUuid;
+    std::string weaponUuid;
+
+    auto query = db().prepare(R"SQL(
+        SELECT user_costume_uuid, main_user_weapon_uuid FROM i_user_deck_character WHERE user_id = ? AND user_deck_character_uuid = ?
+    )SQL");
+    query->bind(1, userId);
+    query->bind(2, userDeckCharacterUuid);
+    if(query->step())  {
+        costumeUuid = query->columnText(0);
+        weaponUuid = query->columnText(1);
+    }
+
+    if(!costumeUuid.empty()) {
+        giveUserCostumeExperience(userId, costumeUuid, characterExperience, costumeExperience);
+    }
+
+    if(!weaponUuid.empty()) {
+        giveUserWeaponExperience(userId, weaponUuid, characterExperience, costumeExperience);
+    }
+
+    auto subWeapons = db().prepare(R"SQL(
+        SELECT user_weapon_uuid FROM i_user_deck_sub_weapon_group WHERE user_id = ? AND user_deck_character_uuid = ?
+    )SQL");
+
+    subWeapons->bind(1, userId);
+    subWeapons->bind(2, userDeckCharacterUuid);
+    while(subWeapons->step()) {
+        std::string subWeapon = subWeapons->columnText(0);
+        if(!subWeapon.empty()) {
+            giveUserWeaponExperience(userId, weaponUuid, characterExperience, costumeExperience);
+        }
+    }
+}
+
+void CommonService::giveUserCostumeExperience(int64_t userId, const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience) {
+    printf("Giving user %ld costume %s %d character experience and %d costume experience\n",
+           userId, userCostumeUuid.c_str(), characterExperience, costumeExperience);
+
+    auto updateExperience = db().prepare(R"SQL(
+        UPDATE i_user_costume SET exp = exp + ?
+        WHERE user_id = ? AND user_costume_uuid = ?
+        RETURNING costume_id, level, exp
+    )SQL");
+    updateExperience->bind(1, costumeExperience);
+    updateExperience->bind(2, userId);
+    updateExperience->bind(3, userCostumeUuid);
+    if(!updateExperience->step())
+        throw std::logic_error("no such costume");
+
+    auto costumeId = updateExperience->columnInt(0);
+    auto currentLevel = updateExperience->columnInt(1);
+    auto newExperience = updateExperience->columnInt(2);
+
+    updateExperience->step();
+
+    auto queryCostumeExperienceSetup = db().prepare(R"SQL(
+        SELECT
+            required_exp_for_level_up_numerical_parameter_map_id,
+            costume_level_bonus_id,
+            character_id
+        FROM m_costume
+        LEFT JOIN m_costume_rarity ON m_costume_rarity.rarity_type = m_costume.rarity_type
+        WHERE
+            costume_id = ?
+    )SQL");
+    queryCostumeExperienceSetup->bind(1, costumeId);
+    if(!queryCostumeExperienceSetup->step())
+        throw std::runtime_error("the costume setup was not found");
+
+    int32_t costumeExpLevelMap = queryCostumeExperienceSetup->columnInt(0);
+    int32_t costumeLevelBonusId = queryCostumeExperienceSetup->columnInt(1);
+    int32_t characterId = queryCostumeExperienceSetup->columnInt(2);
+    queryCostumeExperienceSetup->step();
+
+    auto newLevel = evaluateNumericalParameterMap(costumeExpLevelMap, newExperience);
+    // TODO: clamp by max level
+    if(newLevel.has_value() && *newLevel != currentLevel) {
+        printf("User %ld costume %s has leveled up: %d -> %d\n",
+           userId, userCostumeUuid.c_str(), currentLevel, *newLevel);
+
+        auto updateLevel = db().prepare("UPDATE i_user_costume SET level = ? WHERE user_id = ? AND user_costume_uuid = ?");
+        updateLevel->bind(1, *newLevel);
+        updateLevel->bind(2, userId);
+        updateLevel->bind(3, userCostumeUuid);
+        updateLevel->exec();
+
+        /*
+         * Query if there's a new level bonus.
+         */
+        auto queryLevelBonus = db().prepare(R"SQL(
+            SELECT level FROM m_costume_level_bonus WHERE costume_level_bonus_id = ? AND level <= ? ORDER BY level DESC LIMIT 1
+        )SQL");
+        int32_t highestLevelBonusAvailable = 0;
+        queryLevelBonus->bind(1, costumeLevelBonusId);
+        queryLevelBonus->bind(2, *newLevel);
+        if(queryLevelBonus->step()) {
+            highestLevelBonusAvailable = queryLevelBonus->columnInt(0);
+        }
+
+        if(highestLevelBonusAvailable != 0) {
+            /*
+             * Update the level bonus status record.
+             */
+
+            auto updateLevelBonus = db().prepare(R"SQL(
+                INSERT INTO i_user_costume_level_bonus_release_status (
+                    user_id,
+                    costume_id,
+                    last_released_bonus_level
+                ) VALUES (
+                    ?,
+                    ?,
+                    ?
+                )
+                ON CONFLICT (user_id, costume_id) DO UPDATE SET
+                    last_released_bonus_level = MAX(last_released_bonus_level, excluded.last_released_bonus_level)
+            )SQL");
+            updateLevelBonus->bind(1, userId);
+            updateLevelBonus->bind(2, costumeId);
+            updateLevelBonus->bind(3, highestLevelBonusAvailable);
+            updateLevelBonus->exec();
+        }
+
+        /*
+         * TODO: level unlocks (if that needs to be done on the server - it probably needs to be
+         */
+    }
+
+    giveUserCharacterExperience(userId, characterId, characterExperience);
+}
+
+void CommonService::giveUserCharacterExperience(int64_t userId, int32_t characterId, int32_t characterExperience) {
+    printf("Giving user %ld character %d %d character experience\n",
+           userId, characterId, characterExperience);
+
+    auto updateExperience = db().prepare(R"SQL(
+        UPDATE i_user_character SET exp = exp + ?
+        WHERE user_id = ? AND character_id = ?
+        RETURNING level, exp
+    )SQL");
+    updateExperience->bind(1, characterExperience);
+    updateExperience->bind(2, userId);
+    updateExperience->bind(3, characterId);
+    if(!updateExperience->step())
+        throw std::logic_error("no such character");
+
+    auto currentLevel = updateExperience->columnInt(0);
+    auto newExperience = updateExperience->columnInt(1);
+
+    updateExperience->step();
+
+    auto queryCharacterExperienceSetup = db().prepare(R"SQL(
+        SELECT
+            required_exp_for_level_up_numerical_parameter_map_id
+        FROM m_character
+        WHERE
+            character_id = ?
+    )SQL");
+    queryCharacterExperienceSetup->bind(1, characterId);
+    if(!queryCharacterExperienceSetup->step())
+        throw std::runtime_error("the character setup was not found");
+
+    int32_t characterExpLevelMap = queryCharacterExperienceSetup->columnInt(0);
+    queryCharacterExperienceSetup->step();
+
+    auto newLevel = evaluateNumericalParameterMap(characterExpLevelMap, newExperience);
+    // TODO: clamp by max level
+    if(newLevel.has_value() && *newLevel != currentLevel) {
+        printf("User %ld character %d has leveled up: %d -> %d\n",
+           userId, characterId, currentLevel, *newLevel);
+
+        auto updateLevel = db().prepare("UPDATE i_user_character SET level = ? WHERE user_id = ? AND character_id = ?");
+        updateLevel->bind(1, *newLevel);
+        updateLevel->bind(2, userId);
+        updateLevel->bind(3, characterId);
+        updateLevel->exec();
+
+        // any level bonuses?
+
+    }
+}
+
+void CommonService::giveUserWeaponExperience(int64_t userId, const std::string &userWeaponUuid, int32_t characterExperience, int32_t costumeExperience) {
+    printf("Giving user %ld weapon %s %d character experience and %d costume experience\n",
+           userId, userWeaponUuid.c_str(), characterExperience, costumeExperience);
+
+    auto updateExperience = db().prepare(R"SQL(
+        UPDATE i_user_weapon SET exp = exp + ?
+        WHERE user_id = ? AND user_weapon_uuid = ?
+        RETURNING weapon_id, level, exp
+    )SQL");
+    updateExperience->bind(1, costumeExperience);
+    updateExperience->bind(2, userId);
+    updateExperience->bind(3, userWeaponUuid);
+    if(!updateExperience->step())
+        throw std::logic_error("no such weapon");
+
+    auto weaponId = updateExperience->columnInt(0);
+    auto currentLevel = updateExperience->columnInt(1);
+    auto newExperience = updateExperience->columnInt(2);
+
+    updateExperience->step();
+
+    auto queryWeaponExperienceSetup = db().prepare(R"SQL(
+        SELECT
+            required_exp_for_level_up_numerical_parameter_map_id
+        FROM m_weapon
+        LEFT JOIN m_weapon_rarity ON m_weapon_rarity.rarity_type = m_weapon.rarity_type
+        WHERE
+            weapon_id = ?
+    )SQL");
+    queryWeaponExperienceSetup->bind(1, weaponId);
+    if(!queryWeaponExperienceSetup->step())
+        throw std::runtime_error("the weapon setup was not found");
+
+    int32_t weaponExpLevelMap = queryWeaponExperienceSetup->columnInt(0);
+    queryWeaponExperienceSetup->step();
+
+    auto newLevel = evaluateNumericalParameterMap(weaponExpLevelMap, newExperience);
+    // TODO: clamp by max level
+    if(newLevel.has_value() && *newLevel != currentLevel) {
+        printf("User %ld weapon %s has leveled up: %d -> %d\n",
+           userId, userWeaponUuid.c_str(), currentLevel, *newLevel);
+
+        auto updateLevel = db().prepare("UPDATE i_user_weapon SET level = ? WHERE user_id = ? AND user_weapon_uuid = ?");
+        updateLevel->bind(1, *newLevel);
+        updateLevel->bind(2, userId);
+        updateLevel->bind(3, userWeaponUuid);
+        updateLevel->exec();
+
+        auto updateNote = db().prepare("UPDATE i_user_weapon_note SET max_level = MAX(max_level, ?) WHERE user_id = ? AND weapon_id = ?");
+        updateNote->bind(1, userId);
+        updateNote->bind(2, *newLevel);
+        updateNote->exec();
+
+
+        /*
+         * TODO: level unlocks (if that needs to be done on the server - it probably needs to be
+         */
+    }
 }

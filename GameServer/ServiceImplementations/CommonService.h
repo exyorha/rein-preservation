@@ -11,6 +11,7 @@
 #include <DataModel/Sqlite/Transaction.h>
 
 #include <service/DeckService.pb.h>
+#include <service/QuestService.pb.h>
 
 #include <functional>
 
@@ -147,7 +148,39 @@ protected:
                               const ::apb::api::deck::DeckCharacter *character);
 
 
-    void givePossession(int64_t userId, int32_t possessionType, int32_t possessionId, int32_t count);
+    void givePossession(int64_t userId, int32_t possessionType, int32_t possessionId, int32_t count,
+                        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr);
+
+    void giveUserExperience(int64_t userId, int32_t experience);
+
+    void giveUserDeckExperience(
+        int64_t userId,
+        int32_t deckType,
+        int32_t userDeckNumber,
+        int32_t characterExperience,
+        int32_t costumeExperience);
+
+    void giveUserDeckCharacterExperience(
+        int64_t userId,
+        const std::string &userDeckCharacterUuid,
+        int32_t characterExperience,
+        int32_t costumeExperience);
+
+    void giveUserCostumeExperience(int64_t userId, const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience);
+    void giveUserWeaponExperience(int64_t userId, const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience);
+    void giveUserCharacterExperience(int64_t userId, int32_t characterId, int32_t characterExperience);
+
+    int32_t getIntConfig(const std::string_view &setting) const;
+
+    inline int32_t consumableItemIdForGold() const {
+        return getIntConfig("CONSUMABLE_ITEM_ID_FOR_GOLD");
+    }
+
+    inline int32_t userLevelExpNumericalParameterMapID() const {
+        return getIntConfig("USER_LEVEL_EXP_NUMERICAL_PARAMETER_MAP_ID");
+    }
+
+    std::optional<int32_t> evaluateNumericalParameterMap(int32_t mapId, int32_t value);
 
 private:
     ::grpc::Status guardedCall(const char *name, const std::function<void()> &body);

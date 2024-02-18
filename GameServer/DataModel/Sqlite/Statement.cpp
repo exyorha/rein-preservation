@@ -65,7 +65,7 @@ namespace sqlite {
             Error::raiseError(status, m_owningContext);
     }
 
-    void Statement::bind(int index, const std::string &data) {
+    void Statement::bind(int index, const std::string_view &data) {
         int status = sqlite3_bind_text64(m_handle, index, data.data(), data.size(), SQLITE_TRANSIENT, SQLITE_UTF8);
         if (status != SQLITE_OK)
             Error::raiseError(status, m_owningContext);

@@ -39,7 +39,7 @@ namespace sqlite {
         void bind(int index, int value);
         void bind(int index, int64_t value);
         void bindNull(int index);
-        void bind(int index, const std::string &data);
+        void bind(int index, const std::string_view &data);
         void bind(int index, const std::wstring &data);
         void bind(int index, const Value &value);
         void bindZeroBlob(int index, sqlite3_int64 length);

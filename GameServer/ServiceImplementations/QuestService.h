@@ -1,6 +1,8 @@
 #ifndef SERVICE_IMPLEMENTATIONS_QUEST_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_QUEST_SERVICE_H
 
+#include "service/QuestService.pb.h"
+#include <google/protobuf/reflection.h>
 #include <service/QuestService.grpc.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
@@ -57,7 +59,9 @@ private:
 
     void updateMainQuestProgress(int64_t userId);
 
-    void issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId);
+    void issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId,
+                                    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr,
+                                    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestDropRewards = nullptr);
 };
 
 #endif

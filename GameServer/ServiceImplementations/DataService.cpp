@@ -72,7 +72,7 @@ void DataService::GetUserDataNameV2Impl(const ::google::protobuf::Empty* request
 std::vector<std::string> DataService::getUserDataName() const {
     std::vector<std::string> names;
 
-    auto statement = db().prepare("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND name LIKE 'i_%'");
+    auto statement = db().prepare("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND name LIKE 'i\\_%' ESCAPE '\\'");
     while(statement->step()) {
         names.emplace_back(tableNameToEntityName(statement->columnText(0)));
     }
