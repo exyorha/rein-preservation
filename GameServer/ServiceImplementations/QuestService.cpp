@@ -3,6 +3,7 @@
 #include "DataModel/Sqlite/Transaction.h"
 
 #include <DataModel/Sqlite/Statement.h>
+#include <stdexcept>
 
 QuestService::QuestService(Database &db) : CommonService(db) {
 
@@ -46,6 +47,14 @@ void QuestService::UpdateMainFlowSceneProgressImpl(int64_t userId,
 void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::StartMainQuestRequest* request,
     ::apb::api::quest::StartMainQuestResponse* response) {
 
+    recordQuestStartAttributes(userId, request->quest_id(), request->user_deck_number());
+
+    commonStartAndRestartMainQuest(userId, request->quest_id(), request->is_main_flow(), request->is_replay_flow(), request->is_battle_only());
+}
+
+
+void QuestService::recordQuestStartAttributes(int64_t userId, int32_t questId, int32_t userDeckNumber) {
+
     auto updateStartAttributes = db().prepare(R"SQL(
         INSERT INTO internal_user_quest_last_start_attributes (
             user_id,
@@ -60,9 +69,15 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
             user_deck_number = excluded.user_deck_number
     )SQL");
     updateStartAttributes->bind(1, userId);
-    updateStartAttributes->bind(2, request->quest_id());
-    updateStartAttributes->bind(3, request->user_deck_number());
+    updateStartAttributes->bind(2, questId);
+    updateStartAttributes->bind(3, userDeckNumber);
     updateStartAttributes->exec();
+}
+
+void QuestService::commonStartAndRestartMainQuest(int64_t userId, int32_t questId,
+                                                  bool isMainFlow,
+                                                  bool isReplayFlow,
+                                                  const std::optional<bool> &isBattleOnly) {
 
     auto getRoute = db().prepare(R"SQL(
         SELECT
@@ -75,7 +90,7 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
         LIMIT 1
     )SQL");
 
-    getRoute->bind(1, request->quest_id());
+    getRoute->bind(1, questId);
     if(!getRoute->step()) {
         throw std::runtime_error("the quest was not found");
     }
@@ -101,7 +116,7 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
         LIMIT 1
     )SQL");
 
-    getFirstScene->bind(1, request->quest_id());
+    getFirstScene->bind(1, questId);
     if(!getFirstScene->step())
         throw std::runtime_error("the quest was not found or has no scenes");
 
@@ -128,12 +143,12 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
             ?,
             ?,
             ?,
-            ?,
+            COALESCE(?, 0),
             current_net_timestamp()
         )
         ON CONFLICT DO UPDATE SET
-            quest_state_type = excluded.quest_state_type,
-            is_battle_only = excluded.is_battle_only,
+            quest_state_type = MAX(quest_state_type, excluded.quest_state_type),
+            is_battle_only = COALESCE(excluded.is_battle_only, is_battle_only),
             latest_start_datetime = excluded.latest_start_datetime
     )SQL");
 
@@ -142,12 +157,16 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
     int64_t quest_state_type = 1; // 1 probably in progress, 2 probably completed???
 
     startQuest->bind(1, userId);
-    startQuest->bind(2, request->quest_id());
+    startQuest->bind(2, questFlowType);
     startQuest->bind(3, quest_state_type);
-    startQuest->bind(4, request->is_battle_only() ? 1 : 0);
+    if(isBattleOnly.has_value()) {
+        startQuest->bind(4, *isBattleOnly ? 1 : 0);
+    } else {
+        startQuest->bindNull(4);
+    }
     startQuest->exec();
 
-    if(request->is_main_flow()) {
+    if(isMainFlow) {
 
         auto updateMainFlow = db().prepare(R"SQL(
             INSERT INTO i_user_main_quest_main_flow_status (
@@ -177,7 +196,7 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
         updateMainFlow->exec();
     }
 
-    if(request->is_replay_flow()) {
+    if(isReplayFlow) {
         auto updateReplayFlow = db().prepare(R"SQL(
             INSERT INTO i_user_main_quest_replay_flow_status (
                 user_id,
@@ -202,6 +221,50 @@ void QuestService::StartMainQuestImpl(int64_t userId, const ::apb::api::quest::S
     // TODO: should update i_user_quest_auto_orbit
 }
 
+
+::grpc::Status QuestService::RestartMainQuest(::grpc::ServerContext* context,
+                                    const ::apb::api::quest::RestartMainQuestRequest* request, ::apb::api::quest::RestartMainQuestResponse* response) {
+
+    return inChangesetCall("QuestService::RestartMainQuest", context, request, response, &QuestService::RestartMainQuestImpl);
+}
+
+void QuestService::RestartMainQuestImpl(int64_t userId,
+                        const ::apb::api::quest::RestartMainQuestRequest* request,
+                        ::apb::api::quest::RestartMainQuestResponse* response) {
+
+    auto getAttributesAtStart = db().prepare(R"SQL(
+        SELECT user_deck_number FROM internal_user_quest_last_start_attributes
+        WHERE
+            user_id = ? AND
+            quest_id = ?
+    )SQL");
+    getAttributesAtStart->bind(1, userId);
+    getAttributesAtStart->bind(2, request->quest_id());
+    int32_t userDeckNumber;
+
+    if(getAttributesAtStart->step()) {
+        userDeckNumber = getAttributesAtStart->columnInt(0);
+    } else {
+        fprintf(stderr, "RestartMainQuestImpl (%ld, %d): the quest is not running\n",
+                userId,
+                request->quest_id());
+
+        userDeckNumber = 1;
+
+        recordQuestStartAttributes(userId, request->quest_id(), userDeckNumber);
+
+
+    }
+
+    response->set_deck_number(userDeckNumber);
+    getAttributesAtStart->reset();
+
+    /*
+     * TODO: is it correct to always set is_replay_flow = false here?
+     */
+    commonStartAndRestartMainQuest(userId, request->quest_id(), request->is_main_flow(), false, std::nullopt);
+
+}
 
 ::grpc::Status QuestService::FinishMainQuest(::grpc::ServerContext* context,
         const ::apb::api::quest::FinishMainQuestRequest* request, ::apb::api::quest::FinishMainQuestResponse* response) {

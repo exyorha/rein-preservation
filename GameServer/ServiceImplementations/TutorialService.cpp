@@ -68,5 +68,10 @@ void TutorialService::setUserTutorialProgress(int64_t userId, int32_t tutorialTy
     statement->bind(3, progressPhase);
     statement->bind(4, choiceId);
     statement->exec();
+
+    /*
+     * It appears that in some cases we should be giving items depending on
+     * the tutorial choices, but we don't seem to have the data needed.
+     */
 }
 

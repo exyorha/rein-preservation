@@ -16,6 +16,11 @@
 #include "ServiceImplementations/BattleService.h"
 #include "ServiceImplementations/DeckService.h"
 #include "ServiceImplementations/LoginBonusService.h"
+#include "ServiceImplementations/PortalCageService.h"
+#include "ServiceImplementations/CharacterViewerService.h"
+#include "ServiceImplementations/OmikujiService.h"
+#include "ServiceImplementations/NaviCutInService.h"
+#include "ServiceImplementations/DokanService.h"
 
 #include "DataModel/Database.h"
 
@@ -43,6 +48,11 @@ private:
     BattleService m_battleService;
     DeckService m_deckService;
     LoginBonusService m_loginBonusService;
+    PortalCageService m_portalCageService;
+    CharacterViewerService m_characterViewerService;
+    OmikujiService m_omikujiService;
+    NaviCutInService m_naviCutInService;
+    DokanService m_dokanService;
     std::unique_ptr<grpc::Server> m_server;
 };
 

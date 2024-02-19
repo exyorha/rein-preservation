@@ -4687,10 +4687,10 @@ END;
 CREATE TABLE i_user_companion (
   user_id INTEGER NOT NULL,
   user_companion_uuid text NOT NULL,
-  companion_id integer,
-  headup_display_view_id integer,
-  level integer,
-  acquisition_datetime timestamp,
+  companion_id integer NOT NULL,
+  headup_display_view_id integer NOT NULL DEFAULT 1, -- probably comes from USER_COMPANION_DEFAULT_HEADUP_DISPLAY_ID
+  level integer NOT NULL DEFAULT 1,
+  acquisition_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, user_companion_uuid)
 );
@@ -4740,7 +4740,7 @@ CREATE TABLE i_user_costume (
   limit_break_count integer NOT NULL DEFAULT 0,
   level integer NOT NULL DEFAULT 1,
   exp integer NOT NULL DEFAULT 0,
-  headup_display_view_id integer NOT NULL DEFAULT 1, -- TODO: we don't know how this is assigned!
+  headup_display_view_id integer NOT NULL DEFAULT 1, -- probably comes from USER_COSTUME_DEFAULT_HEADUP_DISPLAY_ID
   acquisition_datetime timestamp NOT NULL,
   awaken_count integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
@@ -4999,7 +4999,7 @@ END;
 CREATE TABLE i_user_dokan (
   user_id INTEGER NOT NULL,
   dokan_id integer NOT NULL,
-  display_datetime timestamp,
+  display_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, dokan_id)
 );
@@ -5379,10 +5379,11 @@ BEGIN
 END;
 
 CREATE TABLE i_user_main_quest_season_route (
-  user_id INTEGER NOT NULL PRIMARY KEY,
-  main_quest_season_id integer,
-  main_quest_route_id integer,
-  latest_version bigint NOT NULL DEFAULT 1
+  user_id INTEGER NOT NULL,
+  main_quest_season_id integer NOT NULL,
+  main_quest_route_id integer NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, main_quest_season_id)
 );
 
 CREATE TRIGGER i_user_main_quest_season_route_update_version
@@ -5486,7 +5487,7 @@ END;
 CREATE TABLE i_user_navi_cut_in (
   user_id INTEGER NOT NULL,
   navi_cut_in_id integer NOT NULL,
-  play_datetime timestamp,
+  play_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, navi_cut_in_id)
 );
@@ -5503,8 +5504,9 @@ END;
 CREATE TABLE i_user_omikuji (
   user_id INTEGER NOT NULL,
   omikuji_id integer NOT NULL,
-  latest_draw_datetime timestamp,
-  latest_version bigint NOT NULL DEFAULT 1
+  latest_draw_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, omikuji_id)
 );
 
 CREATE INDEX i_user_omikuji_id ON i_user_omikuji(user_id);

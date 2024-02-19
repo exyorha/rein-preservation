@@ -7,6 +7,8 @@
 
 #include <cstdio>
 
+#include <chrono>
+
 CommonService::CommonService(Database &db) : m_db(db) {
 
 }
@@ -436,6 +438,31 @@ void CommonService::givePossession(int64_t userId, int32_t possessionType, int32
             ability->bind(1, userId);
             ability->bind(2, weaponUuid);
             ability->exec();
+        }
+        break;
+
+        case PossessionType::COMPANION:
+        {
+            if(count != 1)
+                throw std::runtime_error("Unexpected count value for COMPANION");
+
+            auto query = db().prepare(R"SQL(
+                INSERT INTO i_user_companion (
+                    user_id,
+                    user_companion_uuid,
+                    companion_id,
+                    acquisition_datetime
+                ) VALUES (
+                    ?,
+                    hex(randomblob(16)),
+                    ?,
+                    current_net_timestamp()
+                )
+            )SQL");
+
+            query->bind(1, userId);
+            query->bind(2, possessionId);
+            query->exec();
         }
         break;
 
@@ -969,4 +996,11 @@ void CommonService::giveUserWeaponExperience(int64_t userId, const std::string &
          * TODO: level unlocks (if that needs to be done on the server - it probably needs to be
          */
     }
+}
+
+void CommonService::addDateToContext(::grpc::ServerContext* context) {
+    context->AddTrailingMetadata(
+        "x-apb-response-datetime",
+        std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+    );
 }

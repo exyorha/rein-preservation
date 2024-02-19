@@ -22,6 +22,9 @@ public:
     ::grpc::Status StartMainQuest(::grpc::ServerContext* context,
                                   const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response) override;
 
+    ::grpc::Status RestartMainQuest(::grpc::ServerContext* context,
+                                    const ::apb::api::quest::RestartMainQuestRequest* request, ::apb::api::quest::RestartMainQuestResponse* response) override;
+
     ::grpc::Status FinishMainQuest(::grpc::ServerContext* context, const ::apb::api::quest::FinishMainQuestRequest* request,
                                    ::apb::api::quest::FinishMainQuestResponse* response) override;
 
@@ -50,6 +53,10 @@ private:
 
     void StartMainQuestImpl(int64_t userId, const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response);
 
+    void RestartMainQuestImpl(int64_t userId,
+                          const ::apb::api::quest::RestartMainQuestRequest* request,
+                          ::apb::api::quest::RestartMainQuestResponse* response);
+
     void FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::FinishMainQuestRequest* request,
                              ::apb::api::quest::FinishMainQuestResponse* response);
 
@@ -62,6 +69,10 @@ private:
     void issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId,
                                     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr,
                                     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestDropRewards = nullptr);
+
+    void commonStartAndRestartMainQuest(int64_t userId, int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly);
+
+    void recordQuestStartAttributes(int64_t userId, int32_t questId, int32_t userDeckNumber);
 };
 
 #endif

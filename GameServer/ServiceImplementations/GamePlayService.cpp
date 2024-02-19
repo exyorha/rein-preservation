@@ -44,5 +44,20 @@ void GamePlayService::CheckBeforeGamePlayImpl(int64_t userId,
             givePossession(userId, static_cast<int32_t>(PossessionType::WEAPON), defaultWeapon, 1);
         }
     }
+
+    /*
+     * This is needed for the companion tutorial to not get wedged.
+     */
+
+    auto checkAny = db().prepare("SELECT * FROM i_user_companion WHERE user_id = ?");
+    checkAny->bind(1, userId);
+    if(!checkAny->step()) {
+        /*
+         * This should depend on the tutorial choices and such, but we
+         * currently lack the needed stuff, so we just give out *something*
+         * for the game to not get stuck.
+         */
+        givePossession(userId, static_cast<int32_t>(PossessionType::COMPANION), 1, 1);
+    }
 }
 

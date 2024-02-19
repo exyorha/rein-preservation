@@ -19,7 +19,12 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_bannerService(m_db),
     m_battleService(m_db),
     m_deckService(m_db),
-    m_loginBonusService(m_db) {
+    m_loginBonusService(m_db),
+    m_portalCageService(m_db),
+    m_characterViewerService(m_db),
+    m_omikujiService(m_db),
+    m_naviCutInService(m_db),
+    m_dokanService(m_db) {
 
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
@@ -34,6 +39,11 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     grpcBuilder.RegisterService(&m_battleService);
     grpcBuilder.RegisterService(&m_deckService);
     grpcBuilder.RegisterService(&m_loginBonusService);
+    grpcBuilder.RegisterService(&m_portalCageService);
+    grpcBuilder.RegisterService(&m_characterViewerService);
+    grpcBuilder.RegisterService(&m_omikujiService);
+    grpcBuilder.RegisterService(&m_naviCutInService);
+    grpcBuilder.RegisterService(&m_dokanService);
     grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
     grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());
@@ -53,11 +63,16 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         sqlite::Transaction transaction(&m_db.db());
         const char * ptr = data.data();
         while(*ptr) {
-            m_db.db().prepare(ptr, 0, &ptr)->exec();
+            auto statement = m_db.db().prepare(ptr, 0, &ptr);
+            if(!statement)
+                break;
+
+            statement->exec();
         }
         transaction.commit();
     }
-
+#endif
+#if 0
     m_questService.issueAllFirstClearRewards();
 #endif
 #if 0

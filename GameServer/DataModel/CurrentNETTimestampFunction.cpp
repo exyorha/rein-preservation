@@ -24,5 +24,5 @@ int CurrentNETTimestampFunction::textRepresentation() const {
 }
 
 void CurrentNETTimestampFunction::evaluate(sqlite::Context &context, const std::vector<sqlite::Value> &arguments) {
-    sqlite3_result_int64(context, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    sqlite3_result_int64(context, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 }

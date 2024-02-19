@@ -98,15 +98,20 @@ add_executable(GameServer
 
     service/BannerService.proto
     service/BattleService.proto
+    service/CharacterViewerService.proto
     service/DataService.proto
     service/DeckService.proto
+    service/DokanService.proto
     service/GachaService.proto
     service/GamePlayService.proto
     service/GiftService.proto
     service/GimmickService.proto
     service/LoginBonusService.proto
     service/MissionService.proto
+    service/NaviCutInService.proto
     service/NotificationService.proto
+    service/OmikujiService.proto
+    service/PortalCageService.proto
     service/QuestService.proto
     service/TutorialService.proto
     service/UserService.proto
@@ -117,6 +122,9 @@ add_executable(GameServer
     ServiceImplementations/BattleService.cpp
     ServiceImplementations/BattleService.h
 
+    ServiceImplementations/CharacterViewerService.cpp
+    ServiceImplementations/CharacterViewerService.h
+
     ServiceImplementations/CommonService.cpp
     ServiceImplementations/CommonService.h
 
@@ -125,6 +133,9 @@ add_executable(GameServer
 
     ServiceImplementations/DeckService.cpp
     ServiceImplementations/DeckService.h
+
+    ServiceImplementations/DokanService.cpp
+    ServiceImplementations/DokanService.h
 
     ServiceImplementations/GachaService.cpp
     ServiceImplementations/GachaService.h
@@ -138,8 +149,17 @@ add_executable(GameServer
     ServiceImplementations/LoginBonusService.cpp
     ServiceImplementations/LoginBonusService.h
 
+    ServiceImplementations/NaviCutInService.cpp
+    ServiceImplementations/NaviCutInService.h
+
     ServiceImplementations/NotificationService.cpp
     ServiceImplementations/NotificationService.h
+
+    ServiceImplementations/OmikujiService.cpp
+    ServiceImplementations/OmikujiService.h
+
+    ServiceImplementations/PortalCageService.cpp
+    ServiceImplementations/PortalCageService.h
 
     ServiceImplementations/QuestService.cpp
     ServiceImplementations/QuestService.h

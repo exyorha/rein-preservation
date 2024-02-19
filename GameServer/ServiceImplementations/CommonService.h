@@ -45,7 +45,9 @@ protected:
         ResponseType *response,
         void (OuterClass::*handler)(const RequestType *request, ResponseType *response)) {
 
-        return guardedCall(callName, [this, callName, handler, request, response]() {
+        return guardedCall(callName, [this, callName, handler, request, response, context]() {
+            addDateToContext(context);
+
             std::unique_lock<std::mutex> locker(m_db.callMutex);
 
             printf("Processing RPC call: %s\n", callName);
@@ -73,6 +75,8 @@ protected:
         void (OuterClass::*handler)(int64_t userId, const RequestType *request, ResponseType *response)) {
 
         return guardedCall(callName, [this, callName, context, handler, request, response]() {
+            addDateToContext(context);
+
             std::unique_lock<std::mutex> locker(m_db.callMutex);
 
             printf("Processing RPC call: %s\n", callName);
@@ -104,6 +108,8 @@ protected:
         void (OuterClass::*handler)(int64_t userId, const RequestType *request, ResponseType *response)) {
 
         return guardedCall(callName, [this, callName, context, handler, request, response]() {
+            addDateToContext(context);
+
             std::unique_lock<std::mutex> locker(m_db.callMutex);
 
             printf("Processing RPC call: %s\n", callName);
@@ -184,6 +190,8 @@ protected:
 
 private:
     ::grpc::Status guardedCall(const char *name, const std::function<void()> &body);
+
+    void addDateToContext(::grpc::ServerContext* context);
 
     /*
      * Returns user ID or throws an exception.
