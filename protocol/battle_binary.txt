@@ -1,0 +1,11 @@
+Battle binary blobs, as send in FinishWaveRequest.battle_binary and such,
+have the following format:
+
+    uint8  success_flag - boolean flag, either 0 or 1
+    uint32 version      - must be equal to kTurnBattleSnapshotVersion, 5.
+    uint32 checksum     - 32-bit unsigned sum of all of the bytes in data[].
+    uint8  data[]       - file contents, up to the end of the file.
+
+data[] contains a single MessagePack-encoded object containing the data
+itself.
+
