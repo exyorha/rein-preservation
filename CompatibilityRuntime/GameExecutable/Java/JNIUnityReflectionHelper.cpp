@@ -1,5 +1,13 @@
 #include <Java/JNIUnityReflectionHelper.h>
 #include <Java/JNIClass.h>
+#include <Java/JNIString.h>
+#include <Java/JNIField.h>
+#include <Java/JNIState.h>
+#include <Java/JNIMethod.h>
+#include <Java/JNIString.h>
+#include <Java/JNIConstructor.h>
+
+#include <cinttypes>
 
 std::shared_ptr<JNIClass> JNIUnityReflectionHelper::makeClass() {
     auto co = std::make_shared<JNIClass>("com/unity3d/player/ReflectionHelper", parent("java/lang/Object"));
@@ -16,55 +24,61 @@ std::shared_ptr<JNIClass> JNIUnityReflectionHelper::makeClass() {
     return co;
 }
 
-std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getConstructorID(Il2CppArray *args) {
-    printf("JNIUnityReflectionHelper::getConstructorID: args %p\n", args);
+std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getConstructorID(std::shared_ptr<JNIClass> classPtr,
+                                                                      std::shared_ptr<JNIString> signature) {
+    nonNull(classPtr);
+    nonNull(signature);
 
-    printf("JNIUnityReflectionHelper: length of array: %u, byte length of array: %u, size of array header: %u\n",
-           il2cpp_array_length(args), il2cpp_array_get_byte_length(args), il2cpp_array_object_header_size());
+    auto constructor = classPtr->getMethodID("<init>", signature->string());
 
-    auto arrayClass = il2cpp_object_get_class(reinterpret_cast<Il2CppObject *>(args));
-    printf("array class name: %s\n",
-           il2cpp_class_get_name(arrayClass));
+    return std::make_shared<JNIConstructor>(classPtr, *constructor);
+}
 
+std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getMethodID(std::shared_ptr<JNIClass> classPtr, std::shared_ptr<JNIString> name,
+                                                                 std::shared_ptr<JNIString> signature, bool isStatic) {
+    nonNull(classPtr);
+    nonNull(name);
+    nonNull(signature);
+
+    const JNIClass::RegisteredMethod *method;
+    if(isStatic)
+        method = classPtr->getStaticMethodID(name->string(), signature->string());
+    else
+        method = classPtr->getMethodID(name->string(), signature->string());
+
+    return std::make_shared<JNIMethod>(classPtr, *method);
+}
+
+std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getFieldID(
+    std::shared_ptr<JNIClass> classPtr, std::shared_ptr<JNIString> name, std::shared_ptr<JNIString> signature, bool isStatic) {
+
+    nonNull(classPtr);
+    nonNull(name);
+    nonNull(signature);
+
+    const JNIClass::RegisteredField *field;
+    if(isStatic) {
+        field = classPtr->getStaticFieldID(name->string(), signature->string());
+    } else {
+        field = classPtr->getFieldID(name->string(), signature->string());
+    }
+
+    return std::make_shared<JNIField>(classPtr, *field);
+}
+
+std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getFieldSignature(std::shared_ptr<JNIField> fieldPtr) {
+    nonNull(fieldPtr);
+
+    return std::make_shared<JNIString>(fieldPtr->field()->signature);
+}
+
+std::shared_ptr<JNIObject> JNIUnityReflectionHelper::newProxyInstance(int64_t intParam, std::shared_ptr<JNIClass> classPtr) {
+    printf("JNIUnityReflectionHelper::newProxyInstance: intParam 0x%" PRIx64 ", class %.*s\n", intParam,
+           static_cast<int>(classPtr->name().size()), classPtr->name().data());
     return {};
 }
 
-std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getMethodID(Il2CppArray *args) {
-    printf("JNIUnityReflectionHelper::getMethodID: args %p\n", args);
-
-    printf("JNIUnityReflectionHelper: length of array: %u, byte length of array: %u, size of array header: %u\n",
-           il2cpp_array_length(args), il2cpp_array_get_byte_length(args), il2cpp_array_object_header_size());
-
-    auto arrayClass = il2cpp_object_get_class(reinterpret_cast<Il2CppObject *>(args));
-    printf("array class name: %s\n",
-           il2cpp_class_get_name(arrayClass));
-
-    return {};
-}
-
-std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getFieldID(Il2CppArray *args) {
-    printf("JNIUnityReflectionHelper::getFieldID: args %p\n", args);
-
-    printf("JNIUnityReflectionHelper: length of array: %u, byte length of array: %u, size of array header: %u\n",
-           il2cpp_array_length(args), il2cpp_array_get_byte_length(args), il2cpp_array_object_header_size());
-
-    auto arrayClass = il2cpp_object_get_class(reinterpret_cast<Il2CppObject *>(args));
-    printf("array class name: %s\n",
-           il2cpp_class_get_name(arrayClass));
-
-    return {};
-}
-
-std::shared_ptr<JNIObject> JNIUnityReflectionHelper::getFieldSignature(Il2CppArray *args) {
-    printf("JNIUnityReflectionHelper::getFieldSignature: args %p\n", args);
-    return {};
-}
-
-std::shared_ptr<JNIObject> JNIUnityReflectionHelper::newProxyInstance(Il2CppArray *args) {
-    printf("JNIUnityReflectionHelper::getFieldSignature: args %p\n", args);
-    return {};
-}
-
-void JNIUnityReflectionHelper::setNativeExceptionOnProxy(Il2CppArray *args) {
-    printf("JNIUnityReflectionHelper::setNativeExceptionOnProxy: args %p\n", args);
+void JNIUnityReflectionHelper::setNativeExceptionOnProxy(std::shared_ptr<JNIObject> objectPtr, int64_t intParam, bool boolParam) {
+    printf("JNIUnityReflectionHelper::setNativeExceptionOnProxy: object %p, int param 0x%" PRIx64 ", bool param %d\n",
+           objectPtr.get(), intParam, boolParam);
 }

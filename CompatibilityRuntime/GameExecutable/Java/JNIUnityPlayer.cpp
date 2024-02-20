@@ -3,6 +3,9 @@
 
 std::shared_ptr<JNIClass> JNIUnityPlayer::makeClass() {
     auto co = std::make_shared<JNIClass>("com/unity3d/player/UnityPlayer", parent("java/lang/Object"));
+
+    co->registerField("currentActivity", "Ljava/lang/Object;", true);
+
     return co;
 }
 

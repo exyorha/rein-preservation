@@ -5,10 +5,10 @@
 
 class JNIString final : public JNIObject {
 public:
-    explicit JNIString(const std::string &string = {});
+    explicit JNIString(const std::string_view &string = {});
     ~JNIString();
 
-    std::shared_ptr<JNIObject> toString(Il2CppArray *args) override;
+    std::shared_ptr<JNIObject> toString() override;
 
     static std::shared_ptr<JNIClass> makeClass();
 

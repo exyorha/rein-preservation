@@ -1,6 +1,9 @@
 add_executable(GameExecutable
     AndroidJNI.cpp
 
+    AVProVideoNativeBypass.cpp
+    AVProVideoNativeBypass.h
+
     CommonUtilities.cpp
     CommonUtilities.h
 
@@ -48,14 +51,25 @@ add_executable(GameExecutable
     Java/AdjustSdkAdjust.h
     Java/AndroidUtilLog.cpp
     Java/AndroidUtilLog.h
+    Java/AVProMobileVideo.cpp
+    Java/AVProMobileVideo.h
+    Java/AVProVideoPlayer.cpp
+    Java/AVProVideoPlayer.h
     Java/JavaClasses.cpp
     Java/JNIAccessibleObject.cpp
     Java/JNIAccessibleObject.h
     Java/JNIClass.cpp
     Java/JNIClass.h
+    Java/JNIConstructor.cpp
+    Java/JNIConstructor.h
+    Java/JNIExecutable.cpp
+    Java/JNIExecutable.h
     Java/JNIField.cpp
     Java/JNIGlobalState.cpp
     Java/JNIGlobalState.h
+    Java/JNIMethod.cpp
+    Java/JNIMethod.h
+    Java/JNIMethodInvocation.h
     Java/JNIObject.cpp
     Java/JNIObject.h
     Java/JNIState.cpp
@@ -68,6 +82,8 @@ add_executable(GameExecutable
     Java/JNIUnityPlayer.h
     Java/JNIUnityReflectionHelper.cpp
     Java/JNIUnityReflectionHelper.h
+    Java/JValue.cpp
+    Java/JValue.h
     Java/LiliumDefaultAttestCallback.cpp
     Java/LiliumDefaultAttestCallback.h
     Java/UniWebViewInterface.cpp

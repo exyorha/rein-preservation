@@ -5,7 +5,9 @@
 
 #include <sstream>
 
-JNIObject::JNIObject() = default;
+JNIObject::JNIObject(const std::shared_ptr<JNIClass> &objectClass) : m_objectClass(objectClass) {
+
+}
 
 JNIObject::~JNIObject() = default;
 
@@ -20,10 +22,14 @@ std::shared_ptr<JNIClass> JNIObject::makeClass() {
     return co;
 }
 
-std::shared_ptr<JNIObject> JNIObject::toString(Il2CppArray *args) {
+std::shared_ptr<JNIObject> JNIObject::toString() {
     std::stringstream stream;
     stream << typeid(*this).name() << " ";
     stream << std::hex;
     stream <<reinterpret_cast<uintptr_t>(this);
     return std::make_shared<JNIString>(stream.str());
+}
+
+void JNIObject::unexpectedNullValue() {
+    throw std::runtime_error("unexpected null value");
 }

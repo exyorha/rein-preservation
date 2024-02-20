@@ -11,7 +11,7 @@ public:
 
     static std::shared_ptr<JNIClass> makeClass();
 
-    std::shared_ptr<JNIObject> toString(Il2CppArray *args) override;
+    std::shared_ptr<JNIObject> toString() override;
 
 private:
     std::string m_message;

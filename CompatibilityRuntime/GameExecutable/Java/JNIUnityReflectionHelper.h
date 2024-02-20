@@ -3,16 +3,21 @@
 
 #include <Java/JNIObject.h>
 
+class JNIString;
+class JNIField;
+
 class JNIUnityReflectionHelper final : public JNIObject {
 public:
     static std::shared_ptr<JNIClass> makeClass();
 
-    static std::shared_ptr<JNIObject> getConstructorID(Il2CppArray *args);
-    static std::shared_ptr<JNIObject> getMethodID(Il2CppArray *args);
-    static std::shared_ptr<JNIObject> getFieldID(Il2CppArray *args);
-    static std::shared_ptr<JNIObject> getFieldSignature(Il2CppArray *args);
-    static std::shared_ptr<JNIObject> newProxyInstance(Il2CppArray *args);
-    static void setNativeExceptionOnProxy(Il2CppArray *args);
+    static std::shared_ptr<JNIObject> getConstructorID(std::shared_ptr<JNIClass> classPtr, std::shared_ptr<JNIString> signature);
+    static std::shared_ptr<JNIObject> getMethodID(std::shared_ptr<JNIClass> classPtr, std::shared_ptr<JNIString> name,
+                                                  std::shared_ptr<JNIString> signature, bool isStatic);
+    static std::shared_ptr<JNIObject> getFieldID(std::shared_ptr<JNIClass> classPtr, std::shared_ptr<JNIString> name,
+                                                 std::shared_ptr<JNIString> signature, bool isStatic);
+    static std::shared_ptr<JNIObject> getFieldSignature(std::shared_ptr<JNIField> fieldPtr);
+    static std::shared_ptr<JNIObject> newProxyInstance(int64_t intParam, std::shared_ptr<JNIClass> classPtr);
+    static void setNativeExceptionOnProxy(std::shared_ptr<JNIObject> objectPtr, int64_t intParam, bool boolParam);
 };
 
 #endif

@@ -103,4 +103,9 @@ struct JNIState::DefaultReturn<void> {
 };
 
 
+template<typename Type, typename>
+inline JValue::operator std::shared_ptr<Type>() const {
+    return JNIState::get().resolve<Type>(l);
+}
+
 #endif

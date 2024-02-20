@@ -3,8 +3,11 @@
 
 #include <Java/JNIObject.h>
 
-class JNIAccessibleObject final : public JNIObject {
+class JNIAccessibleObject : public JNIObject {
 public:
+    explicit JNIAccessibleObject(const std::shared_ptr<JNIClass> &objectClass);
+    ~JNIAccessibleObject() override;
+
     static std::shared_ptr<JNIClass> makeClass();
 };
 

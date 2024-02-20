@@ -13,6 +13,7 @@
 #include "Octo.h"
 #include "FastAES.h"
 #include "GameEntryPoint.h"
+#include "AVProVideoNativeBypass.h"
 
 #include <GLES/Shim/GLESContextShim.h>
 
@@ -217,7 +218,6 @@ static Il2CppString *Dark_Localization_LocalizeTime_GetLocalTimeZoneId(Il2CppStr
 
 static void UniWebViewInterface_CheckPlatform(void *original) {
     (void)original;
-    printf("UniWebViewInterface::CheckPlatform\n");
 }
 
 static void postInitialize() {
@@ -285,8 +285,10 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
 
+#if 0
     translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
                             RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
+#endif
 
     translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Notification.Notification::SetupNotification",
                              Adam_Framework_Notification_Notification_SetupNotification);
@@ -329,6 +331,8 @@ static void postInitialize() {
 
     printf("Analytics enabled: %d\n", getEnabledInternal());
 #endif
+
+    installAVProVideoNativeBypass();
 }
 
 static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {

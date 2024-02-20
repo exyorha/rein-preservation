@@ -2,15 +2,17 @@
 #include <Java/JNIString.h>
 #include <Java/JNIClass.h>
 
-JNIThrowable::JNIThrowable() = default;
+JNIThrowable::JNIThrowable() : JNIObject(parent("java/lang/Throwable")) {
 
-JNIThrowable::JNIThrowable(const std::exception &e) : m_message(e.what()) {
+}
+
+JNIThrowable::JNIThrowable(const std::exception &e) : JNIObject(parent("java/lang/Throwable")), m_message(e.what()) {
 
 }
 
 JNIThrowable::~JNIThrowable() = default;
 
-std::shared_ptr<JNIObject> JNIThrowable::toString(Il2CppArray *args) {
+std::shared_ptr<JNIObject> JNIThrowable::toString() {
     return std::make_shared<JNIString>(m_message);
 }
 

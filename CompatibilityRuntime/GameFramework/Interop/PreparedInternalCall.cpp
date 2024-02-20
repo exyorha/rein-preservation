@@ -12,6 +12,11 @@ PreparedInternalCall::PreparedInternalCall(const std::string &fullName) {
 
     m_interposer = ICallInterposerManager::getInterposerForMethod(fullName);
 
+    if(!m_interposer && fullName.starts_with("UnityEngine.AndroidJNI::")) {
+        fprintf(stderr, "\nPreparedInternalCall: an internal call of '%s' is going to the native implementation without an interposer. This is probably an error, since this interface is not implemented in the Unity versions we're targeting.\n\n",
+                fullName.c_str());
+    }
+
     InteropMethodLocatorParameters parameters;
     parameters.mustBeInternalCall = true;
 

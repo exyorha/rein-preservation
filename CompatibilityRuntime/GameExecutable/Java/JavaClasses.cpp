@@ -11,6 +11,10 @@
 #include <Java/AdjustSdkAdjust.h>
 #include <Java/LiliumDefaultAttestCallback.h>
 #include <Java/UniWebViewInterface.h>
+#include <Java/JNIMethod.h>
+#include <Java/AVProMobileVideo.h>
+#include <Java/JNIConstructor.h>
+#include <Java/AVProVideoPlayer.h>
 
 void JNIGlobalState::init() {
     registerClass<JNIObject>();
@@ -19,6 +23,9 @@ void JNIGlobalState::init() {
     registerClass<JNIString>();
     registerClass<JNIAccessibleObject>();
     registerClass<JNIField>();
+    registerClass<JNIExecutable>();
+    registerClass<JNIMethod>();
+    registerClass<JNIConstructor>();
 
     registerClass<AndroidUtilLog>();
     registerClass<JNIUnityPlayer>();
@@ -28,4 +35,7 @@ void JNIGlobalState::init() {
     registerClass<LiliumDefaultAttestCallback>();
 
     registerClass<UniWebViewInterface>();
+
+    registerClass<AVProMobileVideo>();
+    registerClass<AVProVideoPlayer>();
 }
