@@ -32,6 +32,7 @@ void OmikujiService::OmikujiDrawImpl(
             ?,
             current_net_timestamp()
         )
+        ON CONFLICT (user_id, omikuji_id) DO UPDATE SET latest_draw_datetime = excluded.latest_draw_datetime
     )SQL");
     draw->bind(1, userId);
     draw->bind(2, request->omikuji_id());
