@@ -193,19 +193,17 @@ static void System_Security_Cryptography_RNGCryptoServiceProvider_Check(Il2CppOb
     printf("System.Security.Cryptography.RNGCryptoServiceProvider::Check\n");
 }
 
-static void System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(Il2CppObject *this_, Il2CppArray *out, void *original) {
+static void System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(Il2CppObject *this_, Il2CppArray *outPtr, void *original) {
     (void)this_;
     (void)original;
 
 
-    int32_t dataLength = il2cpp_array_length(out);
-    auto arrayHeaderSize = il2cpp_array_object_header_size();
-    auto data = reinterpret_cast<uint8_t *>(out) + arrayHeaderSize;
+    ArrayWrapper<unsigned char> out(outPtr);
 
-    printf("System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes(%p, %d)\n", data, dataLength);
+    printf("System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes(%p, %zu)\n", out.data(), out.size());
 
     using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char>;
-    std::generate(data, data + dataLength, random_bytes_engine());
+    std::generate(out.data(), out.data() + out.size(), random_bytes_engine());
 
 }
 #endif
@@ -366,6 +364,8 @@ static std::filesystem::path getExecutablePath() {
 }
 
 int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unityInvocationPackage) {
+    Il2CppVMCharacteristics::initialize();
+
     auto executableDirectory = getExecutablePath().parent_path();
 
     OctoContentStorage storage(executableDirectory / "content");

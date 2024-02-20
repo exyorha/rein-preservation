@@ -1,4 +1,5 @@
 #include "FastAES.h"
+#include "Il2CppUtilities.h"
 
 #include <stdexcept>
 #include <vector>
@@ -44,48 +45,28 @@ static void setBCryptProperty(BCRYPT_HANDLE object, LPCWSTR property, const T &v
         throw std::runtime_error("BCryptSetProperty has failed");
 }
 
-#if 0
-static std::vector<unsigned char> makeBlob(Il2CppArray *in) {
-
-    auto length = il2cpp_array_length(in);
-    auto arrayHeaderSize = il2cpp_array_object_header_size();
-
-    std::vector<unsigned char> blob(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + length);
-    auto header = reinterpret_cast<BCRYPT_KEY_DATA_BLOB_HEADER *>(blob.data());
-
-    header->dwMagic = BCRYPT_KEY_DATA_BLOB_MAGIC;
-    header->dwVersion = BCRYPT_KEY_DATA_BLOB_VERSION1;
-    header->cbKeyData = length;
-
-    memcpy(blob.data() + sizeof(BCRYPT_KEY_DATA_BLOB_HEADER),
-           reinterpret_cast<unsigned char *>(in) + arrayHeaderSize, length);
-
-    return blob;
-}
-#endif
-
 Il2CppArray *FastAES_NativeDecrypt(Il2CppObject *decryptor,
                                    int32_t paddingMode,
-                                   Il2CppArray *inputData,
+                                   Il2CppArray *inputDataPtr,
                                    int32_t inputOffset,
                                    int32_t inputLength,
-                                   Il2CppArray *keyArray,
-                                   Il2CppArray *ivArray,
+                                   Il2CppArray *keyArrayPtr,
+                                   Il2CppArray *ivArrayPtr,
                                    void *unusedOriginal) {
 
-    if(!inputData || !keyArray || !ivArray) {
+    if(!inputDataPtr || !keyArrayPtr || !ivArrayPtr) {
         fprintf(stderr, "FastAES_NativeDecrypt: one of the input parameters is null\n");
         return nullptr;
     }
 
-    int32_t inputDataLength = il2cpp_array_length(inputData);
+    ArrayWrapper<unsigned char> inputData(inputDataPtr);
+    ArrayWrapper<unsigned char> keyArray(keyArrayPtr);
+    ArrayWrapper<unsigned char> ivArray(ivArrayPtr);
 
-    if(inputOffset < 0 || inputLength < 0 || inputDataLength < inputOffset + inputLength) {
+    if(inputOffset < 0 || inputLength < 0 || inputData.size() < inputOffset + inputLength) {
         fprintf(stderr, "FastAES_NativeDecrypt: supplied offset and length are out of range for the input array\n");
         return nullptr;
     }
-
-    auto arrayHeaderSize = il2cpp_array_object_header_size();
 
     BCryptContext context;
 
@@ -102,31 +83,18 @@ Il2CppArray *FastAES_NativeDecrypt(Il2CppObject *decryptor,
     std::vector<UCHAR> keyObject(keyObjectLength);
     BCryptKey key;
 
-    {
-#if 0
-        auto keyBlob = makeBlob(keyArray);
-        result = BCryptImportKey(context.handle, nullptr, BCRYPT_KEY_DATA_BLOB, &key.handle, keyObject.data(), keyObject.size(),
-                                 keyBlob.data(), keyBlob.size(), 0);
-        if(!NT_SUCCESS(result))
-            throw std::runtime_error("BCryptImportKey has failed");
-#endif
+    result = BCryptGenerateSymmetricKey(context.handle, &key.handle, keyObject.data(), keyObject.size(),
+                                        keyArray.data(),
+                                        keyArray.size(), 0);
+    if(!NT_SUCCESS(result))
+        throw std::runtime_error("BCryptGenerateSymmetricKey has failed");
 
-
-        result = BCryptGenerateSymmetricKey(context.handle, &key.handle, keyObject.data(), keyObject.size(),
-                                                 reinterpret_cast<unsigned char *>(keyArray) + arrayHeaderSize,
-                                                 il2cpp_array_length(keyArray), 0);
-        if(!NT_SUCCESS(result))
-            throw std::runtime_error("BCryptGenerateSymmetricKey has failed");
-    }
-
-    std::vector<unsigned char> runningIV(
-        reinterpret_cast<unsigned char *>(ivArray) + arrayHeaderSize,
-        reinterpret_cast<unsigned char *>(ivArray) + arrayHeaderSize + il2cpp_array_length(ivArray));
+    std::vector<unsigned char> runningIV(keyArray.data(), keyArray.data() + keyArray.size());
 
     ULONG outputLength, unusedFinalOutputLength;
     result = BCryptDecrypt(
         key.handle,
-        reinterpret_cast<unsigned char *>(inputData) + arrayHeaderSize + inputOffset, inputDataLength,
+        &inputData[inputOffset], inputLength,
         nullptr,
         runningIV.data(), runningIV.size(),
         nullptr, 0, &outputLength,
@@ -135,21 +103,20 @@ Il2CppArray *FastAES_NativeDecrypt(Il2CppObject *decryptor,
     if(!NT_SUCCESS(result))
         throw std::runtime_error("BCryptDecrypt has failed");
 
-    auto outputArray = il2cpp_array_new(il2cpp_class_get_element_class(il2cpp_object_get_class(reinterpret_cast<Il2CppObject *>(inputData))),
-                                                                       outputLength);
+    ArrayWrapper<unsigned char> outputArray(il2cpp_array_new(il2cpp_class_get_element_class(il2cpp_object_get_class(inputData.object())),
+                                                                       outputLength));
 
-    runningIV.assign(reinterpret_cast<unsigned char *>(ivArray) + arrayHeaderSize,
-                     reinterpret_cast<unsigned char *>(ivArray) + arrayHeaderSize + runningIV.size());
+    runningIV.assign(keyArray.data(), keyArray.data() + keyArray.size());
 
     result = BCryptDecrypt(
         key.handle,
-        reinterpret_cast<unsigned char *>(inputData) + arrayHeaderSize + inputOffset, inputDataLength,
+        &inputData[inputOffset], inputLength,
         nullptr,
         runningIV.data(), runningIV.size(),
-        reinterpret_cast<unsigned char *>(outputArray) + arrayHeaderSize, outputLength, &unusedFinalOutputLength,
+        outputArray.data(), outputArray.size(), &unusedFinalOutputLength,
         BCRYPT_BLOCK_PADDING);
     if(!NT_SUCCESS(result))
         throw std::runtime_error("BCryptDecrypt has failed");
 
-    return outputArray;
+    return outputArray.array();
 }
