@@ -81,6 +81,9 @@ public:
     using SDL_GL_UnloadLibrary_Type = void (*SDLCALL)(void);
     SDL_GL_UnloadLibrary_Type realGL_UnloadLibrary;
 
+    using SDL_GetWindowSize_Type = void (*SDLCALL)(SDL_Window *window, int *w, int *h);
+    SDL_GetWindowSize_Type realGetWindowSize;
+
     static const RealSDLSymbols &getSingleton();
 
 private:

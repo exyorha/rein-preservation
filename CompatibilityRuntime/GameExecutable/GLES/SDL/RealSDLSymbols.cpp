@@ -18,6 +18,7 @@ RealSDLSymbols::RealSDLSymbols() {
     BIND_SYMBOL(GetWindowData)
     BIND_SYMBOL(SetWindowData)
     BIND_SYMBOL(GetWindowWMInfo)
+    BIND_SYMBOL(GetWindowSize)
 
     BIND_SYMBOL(GL_CreateContext)
     BIND_SYMBOL(GL_DeleteContext)
@@ -34,6 +35,7 @@ RealSDLSymbols::RealSDLSymbols() {
     BIND_SYMBOL(GL_SetSwapInterval)
     BIND_SYMBOL(GL_SwapWindow)
     BIND_SYMBOL(GL_UnloadLibrary)
+
 
 #undef BIND_SYMBOL
 }

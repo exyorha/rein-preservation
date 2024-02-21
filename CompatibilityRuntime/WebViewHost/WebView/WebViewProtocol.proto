@@ -1,0 +1,405 @@
+syntax = "proto3";
+
+package webview.protocol;
+
+option cc_generic_services = true;
+
+message RPCRequest {
+    string method = 1;
+    bytes request = 2;
+};
+
+message RPCResponse {
+    optional string errorMessage = 1;
+    optional bytes response = 2;
+};
+
+message AddJavaScriptRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+  string arg3 = 3;
+};
+
+message AddPermissionTrustDomainRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message AddSslExceptionDomainRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message AddUrlSchemeRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message AnimateToRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+  int32 arg3 = 3;
+  int32 arg4 = 4;
+  int32 arg5 = 5;
+  float arg6 = 6;
+  float arg7 = 7;
+  string arg8 = 8;
+};
+
+message CanGoBackRequest {
+  string arg1 = 1;
+};
+
+message CanGoForwardRequest {
+  string arg1 = 1;
+};
+
+message CleanCacheRequest {
+  string arg1 = 1;
+};
+
+message ClearCookiesRequest {
+};
+
+message ClearHttpAuthUsernamePasswordRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message DestroyRequest {
+  string arg1 = 1;
+};
+
+message EvaluateJavaScriptRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+  string arg3 = 3;
+};
+
+message GetCookieRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message GetUrlRequest {
+  string arg1 = 1;
+};
+
+message GetUserAgentRequest {
+  string arg1 = 1;
+};
+
+message GetWebViewAlphaRequest {
+  string arg1 = 1;
+};
+
+message GoBackRequest {
+  string arg1 = 1;
+};
+
+message GoForwardRequest {
+  string arg1 = 1;
+};
+
+message HideRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+  int32 arg3 = 3;
+  float arg4 = 4;
+  string arg5 = 5;
+};
+
+message InitRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+  int32 arg3 = 3;
+  int32 arg4 = 4;
+  int32 arg5 = 5;
+  int64 parentWindowHandle = 6;
+};
+
+message LoadRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message LoadHTMLStringRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+  string arg3 = 3;
+};
+
+message PrintRequest {
+  string arg1 = 1;
+};
+
+message ReloadRequest {
+  string arg1 = 1;
+};
+
+message RemovePermissionTrustDomainRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message RemoveSslExceptionDomainRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message RemoveUrlSchemeRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message ScrollToRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+  int32 arg3 = 3;
+  bool arg4 = 4;
+};
+
+message SetAllowAutoPlayRequest {
+  bool arg1 = 1;
+};
+
+message SetAllowHTTPAuthPopUpWindowRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetAllowJavaScriptOpenWindowRequest {
+  bool arg1 = 1;
+};
+
+message SetBackButtonEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetBackgroundColorRequest {
+  string arg1 = 1;
+  float arg2 = 2;
+  float arg3 = 3;
+  float arg4 = 4;
+  float arg5 = 5;
+};
+
+message SetBouncesEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetCalloutEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetCookieRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message SetDefaultFontSizeRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+};
+
+message SetFrameRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+  int32 arg3 = 3;
+  int32 arg4 = 4;
+  int32 arg5 = 5;
+};
+
+message SetHeaderFieldRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+  string arg3 = 3;
+};
+
+message SetHorizontalScrollBarEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetImmersiveModeEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetJavaScriptEnabledRequest {
+  bool arg1 = 1;
+};
+
+message SetLoadWithOverviewModeRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetLogLevelRequest {
+  int32 arg1 = 1;
+};
+
+message SetOpenLinksInExternalBrowserRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetPositionRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+  int32 arg3 = 3;
+};
+
+message SetShowSpinnerWhileLoadingRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetSizeRequest {
+  string arg1 = 1;
+  int32 arg2 = 2;
+  int32 arg3 = 3;
+};
+
+message SetSpinnerTextRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message SetSupportMultipleWindowsRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetUseWideViewPortRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetUserAgentRequest {
+  string arg1 = 1;
+  string arg2 = 2;
+};
+
+message SetUserInteractionEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetVerticalScrollBarEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message SetWebContentsDebuggingEnabledRequest {
+  bool arg1 = 1;
+};
+
+message SetWebViewAlphaRequest {
+  string arg1 = 1;
+  float arg2 = 2;
+};
+
+message SetZoomEnabledRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message ShowRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+  int32 arg3 = 3;
+  float arg4 = 4;
+  string arg5 = 5;
+};
+
+message ShowWebViewDialogRequest {
+  string arg1 = 1;
+  bool arg2 = 2;
+};
+
+message StopRequest {
+  string arg1 = 1;
+};
+
+message VoidResponse {
+
+};
+
+message StringResponse {
+  string result = 1;
+};
+
+message FloatResponse {
+  float result = 1;
+};
+
+message BoolResponse {
+  bool result = 1;
+};
+
+service WebViewService {
+  rpc AddJavaScript(AddJavaScriptRequest) returns (VoidResponse);
+  rpc AddPermissionTrustDomain(AddPermissionTrustDomainRequest) returns (VoidResponse);
+  rpc AddSslExceptionDomain(AddSslExceptionDomainRequest) returns (VoidResponse);
+  rpc AddUrlScheme(AddUrlSchemeRequest) returns (VoidResponse);
+  rpc AnimateTo(AnimateToRequest) returns (BoolResponse);
+  rpc CanGoBack(CanGoBackRequest) returns (BoolResponse);
+  rpc CanGoForward(CanGoForwardRequest) returns (BoolResponse);
+  rpc CleanCache(CleanCacheRequest) returns (VoidResponse);
+  rpc ClearCookies(ClearCookiesRequest) returns (VoidResponse);
+  rpc ClearHttpAuthUsernamePassword(ClearHttpAuthUsernamePasswordRequest) returns (VoidResponse);
+  rpc Destroy(DestroyRequest) returns (VoidResponse);
+  rpc EvaluateJavaScript(EvaluateJavaScriptRequest) returns (VoidResponse);
+  rpc GetCookie(GetCookieRequest) returns (StringResponse);
+  rpc GetUrl(GetUrlRequest) returns (StringResponse);
+  rpc GetUserAgent(GetUserAgentRequest) returns (StringResponse);
+  rpc GetWebViewAlpha(GetWebViewAlphaRequest) returns (FloatResponse);
+  rpc GoBack(GoBackRequest) returns (VoidResponse);
+  rpc GoForward(GoForwardRequest) returns (VoidResponse);
+  rpc Hide(HideRequest) returns (BoolResponse);
+  rpc Init(InitRequest) returns (VoidResponse);
+  rpc Load(LoadRequest) returns (VoidResponse);
+  rpc LoadHTMLString(LoadHTMLStringRequest) returns (VoidResponse);
+  rpc Print(PrintRequest) returns (VoidResponse);
+  rpc Reload(ReloadRequest) returns (VoidResponse);
+  rpc RemovePermissionTrustDomain(RemovePermissionTrustDomainRequest) returns (VoidResponse);
+  rpc RemoveSslExceptionDomain(RemoveSslExceptionDomainRequest) returns (VoidResponse);
+  rpc RemoveUrlScheme(RemoveUrlSchemeRequest) returns (VoidResponse);
+  rpc ScrollTo(ScrollToRequest) returns (VoidResponse);
+  rpc SetAllowAutoPlay(SetAllowAutoPlayRequest) returns (VoidResponse);
+  rpc SetAllowHTTPAuthPopUpWindow(SetAllowHTTPAuthPopUpWindowRequest) returns (VoidResponse);
+  rpc SetAllowJavaScriptOpenWindow(SetAllowJavaScriptOpenWindowRequest) returns (VoidResponse);
+  rpc SetBackButtonEnabled(SetBackButtonEnabledRequest) returns (VoidResponse);
+  rpc SetBackgroundColor(SetBackgroundColorRequest) returns (VoidResponse);
+  rpc SetBouncesEnabled(SetBouncesEnabledRequest) returns (VoidResponse);
+  rpc SetCalloutEnabled(SetCalloutEnabledRequest) returns (VoidResponse);
+  rpc SetCookie(SetCookieRequest) returns (VoidResponse);
+  rpc SetDefaultFontSize(SetDefaultFontSizeRequest) returns (VoidResponse);
+  rpc SetFrame(SetFrameRequest) returns (VoidResponse);
+  rpc SetHeaderField(SetHeaderFieldRequest) returns (VoidResponse);
+  rpc SetHorizontalScrollBarEnabled(SetHorizontalScrollBarEnabledRequest) returns (VoidResponse);
+  rpc SetImmersiveModeEnabled(SetImmersiveModeEnabledRequest) returns (VoidResponse);
+  rpc SetJavaScriptEnabled(SetJavaScriptEnabledRequest) returns (VoidResponse);
+  rpc SetLoadWithOverviewMode(SetLoadWithOverviewModeRequest) returns (VoidResponse);
+  rpc SetLogLevel(SetLogLevelRequest) returns (VoidResponse);
+  rpc SetOpenLinksInExternalBrowser(SetOpenLinksInExternalBrowserRequest) returns (VoidResponse);
+  rpc SetPosition(SetPositionRequest) returns (VoidResponse);
+  rpc SetShowSpinnerWhileLoading(SetShowSpinnerWhileLoadingRequest) returns (VoidResponse);
+  rpc SetSize(SetSizeRequest) returns (VoidResponse);
+  rpc SetSpinnerText(SetSpinnerTextRequest) returns (VoidResponse);
+  rpc SetSupportMultipleWindows(SetSupportMultipleWindowsRequest) returns (VoidResponse);
+  rpc SetUseWideViewPort(SetUseWideViewPortRequest) returns (VoidResponse);
+  rpc SetUserAgent(SetUserAgentRequest) returns (VoidResponse);
+  rpc SetUserInteractionEnabled(SetUserInteractionEnabledRequest) returns (VoidResponse);
+  rpc SetVerticalScrollBarEnabled(SetVerticalScrollBarEnabledRequest) returns (VoidResponse);
+  rpc SetWebContentsDebuggingEnabled(SetWebContentsDebuggingEnabledRequest) returns (VoidResponse);
+  rpc SetWebViewAlpha(SetWebViewAlphaRequest) returns (VoidResponse);
+  rpc SetZoomEnabled(SetZoomEnabledRequest) returns (VoidResponse);
+  rpc Show(ShowRequest) returns (BoolResponse);
+  rpc ShowWebViewDialog(ShowWebViewDialogRequest) returns (VoidResponse);
+  rpc Stop(StopRequest) returns (VoidResponse);
+}

@@ -2,6 +2,11 @@
 #include <Java/JNIState.h>
 #include <Java/JNIString.h>
 
+#include <WebView/WebViewImplementationFactory.h>
+#include <WebView/WebViewImplementation.h>
+
+std::unique_ptr<WebViewImplementation> UniWebViewInterface::m_impl;
+
 std::shared_ptr<JNIClass> UniWebViewInterface::makeClass() {
     auto co = std::make_shared<JNIClass>("com/onevcat/uniwebview/UniWebViewInterface", parent("java/lang/Object"));
 
@@ -72,267 +77,259 @@ std::shared_ptr<JNIClass> UniWebViewInterface::makeClass() {
     return co;
 }
 
+void UniWebViewInterface::prepare() {
+    printf("UniWebViewInterface::prepare()\n");
+
+    if(!m_impl)
+        m_impl = WebViewImplementationFactory::createWebViewImplementation();
+}
+
 void UniWebViewInterface::addJavaScript(const std::string & arg1, const std::string & arg2, const std::string & arg3) {
-    printf("UniWebViewInterface::addJavaScript(%s, %s, %s) stub!\n", arg1.c_str(), arg2.c_str(), arg3.c_str());
+    return m_impl->addJavaScript(arg1, arg2, arg3);
 }
 
 void UniWebViewInterface::addPermissionTrustDomain(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::addPermissionTrustDomain(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->addPermissionTrustDomain(arg1, arg2);
 }
 
 void UniWebViewInterface::addSslExceptionDomain(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::addSslExceptionDomain(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->addSslExceptionDomain(arg1, arg2);
 }
 
 void UniWebViewInterface::addUrlScheme(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::addUrlScheme(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->addUrlScheme(arg1, arg2);
 }
 
 bool UniWebViewInterface::animateTo(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, float arg6, float arg7, const std::string & arg8) {
-    printf("UniWebViewInterface::animateTo(%s, %d, %d, %d, %d, %f, %f, %s) stub!\n", arg1.c_str(), arg2, arg3, arg4, arg5, arg6, arg7, arg8.c_str());
-    return true;
+    return m_impl->animateTo(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
 bool UniWebViewInterface::canGoBack(const std::string & arg1) {
-    printf("UniWebViewInterface::canGoBack(%s) stub!\n", arg1.c_str());
-    return false;
+    return m_impl->canGoBack(arg1);
 }
 
 bool UniWebViewInterface::canGoForward(const std::string & arg1) {
-    printf("UniWebViewInterface::canGoForward(%s) stub!\n", arg1.c_str());
-    return false;
+    return m_impl->canGoForward(arg1);
 }
 
 void UniWebViewInterface::cleanCache(const std::string & arg1) {
-    printf("UniWebViewInterface::cleanCache(%s) stub!\n", arg1.c_str());
+    return m_impl->cleanCache(arg1);
 }
 
 void UniWebViewInterface::clearCookies() {
-    printf("UniWebViewInterface::clearCookies() stub!\n");
+    return m_impl->clearCookies();
 }
 
 void UniWebViewInterface::clearHttpAuthUsernamePassword(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::clearHttpAuthUsernamePassword(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->clearHttpAuthUsernamePassword(arg1, arg2);
 }
 
 void UniWebViewInterface::destroy(const std::string & arg1) {
-    printf("UniWebViewInterface::destroy(%s) stub!\n", arg1.c_str());
+    return m_impl->destroy(arg1);
 }
 
 void UniWebViewInterface::evaluateJavaScript(const std::string & arg1, const std::string & arg2, const std::string & arg3) {
-    printf("UniWebViewInterface::evaluateJavaScript(%s, %s, %s) stub!\n", arg1.c_str(), arg2.c_str(), arg3.c_str());
+    return m_impl->evaluateJavaScript(arg1, arg2, arg3);
 }
 
 std::shared_ptr<JNIObject> UniWebViewInterface::getCookie(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::getCookie(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
-
-    return std::make_shared<JNIString>();
+    return std::make_shared<JNIString>(m_impl->getCookie(arg1, arg2));
 }
 
 std::shared_ptr<JNIObject> UniWebViewInterface::getUrl(const std::string & arg1) {
-    printf("UniWebViewInterface::getUrl(%s) stub!\n", arg1.c_str());
-    return std::make_shared<JNIString>();
+    return std::make_shared<JNIString>(m_impl->getUrl(arg1));
 }
 
-std::shared_ptr<JNIObject> UniWebViewInterface::getUserAgent(const std::string & arg1) {
-    printf("UniWebViewInterface::getUserAgent(%s) stub!\n", arg1.c_str());
-    return std::make_shared<JNIString>();
+std::shared_ptr<JNIObject>  UniWebViewInterface::getUserAgent(const std::string & arg1) {
+    return std::make_shared<JNIString>(arg1);
 }
 
 float UniWebViewInterface::getWebViewAlpha(const std::string & arg1) {
-    printf("UniWebViewInterface::getWebViewAlpha(%s) stub!\n", arg1.c_str());
-    return 1.0f;
+    return m_impl->getWebViewAlpha(arg1);
 }
 
 void UniWebViewInterface::goBack(const std::string & arg1) {
-    printf("UniWebViewInterface::goBack(%s) stub!\n", arg1.c_str());
+    return m_impl->goBack(arg1);
 }
 
 void UniWebViewInterface::goForward(const std::string & arg1) {
-    printf("UniWebViewInterface::goForward(%s) stub!\n", arg1.c_str());
+    return m_impl->goForward(arg1);
 }
 
 bool UniWebViewInterface::hide(const std::string & arg1, bool arg2, int32_t arg3, float arg4, const std::string & arg5) {
-    printf("UniWebViewInterface::hide(%s, %d, %d, %f, %s) stub!\n", arg1.c_str(), arg2, arg3, arg4, arg5.c_str());
-    return true;
+    return m_impl->hide(arg1, arg2, arg3, arg4, arg5);
 }
 
 void UniWebViewInterface::init(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5) {
-    printf("UniWebViewInterface::init(%s, %d, %d, %d, %d) stub!\n", arg1.c_str(), arg2, arg3, arg4, arg5);
+    return m_impl->init(arg1, arg2, arg3, arg4, arg5);
 }
 
 void UniWebViewInterface::load(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::load(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->load(arg1, arg2);
 }
 
 void UniWebViewInterface::loadHTMLString(const std::string & arg1, const std::string & arg2, const std::string & arg3) {
-    printf("UniWebViewInterface::loadHTMLString(%s, %s, %s) stub!\n", arg1.c_str(), arg2.c_str(), arg3.c_str());
-}
-
-void UniWebViewInterface::prepare() {
-    printf("UniWebViewInterface::prepare() stub!\n");
+    return m_impl->loadHTMLString(arg1, arg2, arg3);
 }
 
 void UniWebViewInterface::print(const std::string & arg1) {
-    printf("UniWebViewInterface::print(%s) stub!\n", arg1.c_str());
+    return m_impl->print(arg1);
 }
 
 void UniWebViewInterface::reload(const std::string & arg1) {
-    printf("UniWebViewInterface::reload(%s) stub!\n", arg1.c_str());
+    return m_impl->reload(arg1);
 }
 
 void UniWebViewInterface::removePermissionTrustDomain(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::removePermissionTrustDomain(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->removePermissionTrustDomain(arg1, arg2);
 }
 
 void UniWebViewInterface::removeSslExceptionDomain(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::removeSslExceptionDomain(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->removeSslExceptionDomain(arg1, arg2);
 }
 
 void UniWebViewInterface::removeUrlScheme(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::removeUrlScheme(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->removeUrlScheme(arg1, arg2);
 }
 
 float UniWebViewInterface::screenHeight() {
-    printf("UniWebViewInterface::screenHeight() stub!\n");
-    return 640.0f;
+    return m_impl->screenHeight();
 }
 
 float UniWebViewInterface::screenWidth() {
-    printf("UniWebViewInterface::screenWidth() stub!\n");
-    return 480.0f;
+    return m_impl->screenWidth();
 }
 
 void UniWebViewInterface::scrollTo(const std::string & arg1, int32_t arg2, int32_t arg3, bool arg4) {
-    printf("UniWebViewInterface::scrollTo(%s, %d, %d, %d) stub!\n", arg1.c_str(), arg2, arg3, arg4);
+    return m_impl->scrollTo(arg1, arg2, arg3, arg4);
 }
 
 void UniWebViewInterface::setAllowAutoPlay(bool arg1) {
-    printf("UniWebViewInterface::setAllowAutoPlay(%d) stub!\n", arg1);
+    return m_impl->setAllowAutoPlay(arg1);
 }
 
 void UniWebViewInterface::setAllowHTTPAuthPopUpWindow(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setAllowHTTPAuthPopUpWindow(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setAllowHTTPAuthPopUpWindow(arg1, arg2);
 }
 
 void UniWebViewInterface::setAllowJavaScriptOpenWindow(bool arg1) {
-    printf("UniWebViewInterface::setAllowJavaScriptOpenWindow(%d) stub!\n", arg1);
+    return m_impl->setAllowJavaScriptOpenWindow(arg1);
 }
 
 void UniWebViewInterface::setBackButtonEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setBackButtonEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setBackButtonEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setBackgroundColor(const std::string & arg1, float arg2, float arg3, float arg4, float arg5) {
-    printf("UniWebViewInterface::setBackgroundColor(%s, %f, %f, %f, %f) stub!\n", arg1.c_str(), arg2, arg3, arg4, arg5);
+    return m_impl->setBackgroundColor(arg1, arg2, arg3, arg4, arg5);
 }
 
 void UniWebViewInterface::setBouncesEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setBouncesEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setBouncesEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setCalloutEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setCalloutEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setCalloutEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setCookie(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::setCookie(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->setCookie(arg1, arg2);
 }
 
 void UniWebViewInterface::setDefaultFontSize(const std::string & arg1, int32_t arg2) {
-    printf("UniWebViewInterface::setDefaultFontSize(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setDefaultFontSize(arg1, arg2);
 }
 
 void UniWebViewInterface::setFrame(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5) {
-    printf("UniWebViewInterface::setFrame(%s, %d, %d, %d, %d) stub!\n", arg1.c_str(), arg2, arg3, arg4, arg5);
+    return m_impl->setFrame(arg1, arg2, arg3, arg4, arg5);
 }
 
 void UniWebViewInterface::setHeaderField(const std::string & arg1, const std::string & arg2, const std::string & arg3) {
-    printf("UniWebViewInterface::setHeaderField(%s, %s, %s) stub!\n", arg1.c_str(), arg2.c_str(), arg3.c_str());
+    return m_impl->setHeaderField(arg1, arg2, arg3);
 }
 
 void UniWebViewInterface::setHorizontalScrollBarEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setHorizontalScrollBarEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setHorizontalScrollBarEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setImmersiveModeEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setImmersiveModeEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setImmersiveModeEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setJavaScriptEnabled(bool arg1) {
-    printf("UniWebViewInterface::setJavaScriptEnabled(%d) stub!\n", arg1);
+    return m_impl->setJavaScriptEnabled(arg1);
 }
 
 void UniWebViewInterface::setLoadWithOverviewMode(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setLoadWithOverviewMode(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setLoadWithOverviewMode(arg1, arg2);
 }
 
 void UniWebViewInterface::setLogLevel(int32_t arg1) {
-    printf("UniWebViewInterface::setLogLevel(%d) stub!\n", arg1);
+    return m_impl->setLogLevel(arg1);
 }
 
 void UniWebViewInterface::setOpenLinksInExternalBrowser(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setOpenLinksInExternalBrowser(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setOpenLinksInExternalBrowser(arg1, arg2);
 }
 
 void UniWebViewInterface::setPosition(const std::string & arg1, int32_t arg2, int32_t arg3) {
-    printf("UniWebViewInterface::setPosition(%s, %d, %d) stub!\n", arg1.c_str(), arg2, arg3);
+    return m_impl->setPosition(arg1, arg2, arg3);
 }
 
 void UniWebViewInterface::setShowSpinnerWhileLoading(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setShowSpinnerWhileLoading(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setShowSpinnerWhileLoading(arg1, arg2);
 }
 
 void UniWebViewInterface::setSize(const std::string & arg1, int32_t arg2, int32_t arg3) {
-    printf("UniWebViewInterface::setSize(%s, %d, %d) stub!\n", arg1.c_str(), arg2, arg3);
+    return m_impl->setSize(arg1, arg2, arg3);
 }
 
 void UniWebViewInterface::setSpinnerText(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::setSpinnerText(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->setSpinnerText(arg1, arg2);
 }
 
 void UniWebViewInterface::setSupportMultipleWindows(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setSupportMultipleWindows(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setSupportMultipleWindows(arg1, arg2);
 }
 
 void UniWebViewInterface::setUseWideViewPort(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setUseWideViewPort(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setUseWideViewPort(arg1, arg2);
 }
 
 void UniWebViewInterface::setUserAgent(const std::string & arg1, const std::string & arg2) {
-    printf("UniWebViewInterface::setUserAgent(%s, %s) stub!\n", arg1.c_str(), arg2.c_str());
+    return m_impl->setUserAgent(arg1, arg2);
 }
 
 void UniWebViewInterface::setUserInteractionEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setUserInteractionEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setUserInteractionEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setVerticalScrollBarEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setVerticalScrollBarEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setVerticalScrollBarEnabled(arg1, arg2);
 }
 
 void UniWebViewInterface::setWebContentsDebuggingEnabled(bool arg1) {
-    printf("UniWebViewInterface::setWebContentsDebuggingEnabled(%d) stub!\n", arg1);
+    return m_impl->setWebContentsDebuggingEnabled(arg1);
 }
 
 void UniWebViewInterface::setWebViewAlpha(const std::string & arg1, float arg2) {
-    printf("UniWebViewInterface::setWebViewAlpha(%s, %f) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setWebViewAlpha(arg1, arg2);
 }
 
 void UniWebViewInterface::setZoomEnabled(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::setZoomEnabled(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->setZoomEnabled(arg1, arg2);
 }
 
 bool UniWebViewInterface::show(const std::string & arg1, bool arg2, int32_t arg3, float arg4, const std::string & arg5) {
-    printf("UniWebViewInterface::show(%s, %d, %d, %f, %s) stub!\n", arg1.c_str(), arg2, arg3, arg4, arg5.c_str());
-    return true;
+    return m_impl->show(arg1, arg2, arg3, arg4, arg5);
 }
 
 void UniWebViewInterface::showWebViewDialog(const std::string & arg1, bool arg2) {
-    printf("UniWebViewInterface::showWebViewDialog(%s, %d) stub!\n", arg1.c_str(), arg2);
+    return m_impl->showWebViewDialog(arg1, arg2);
 }
 
 void UniWebViewInterface::stop(const std::string & arg1) {
-    printf("UniWebViewInterface::stop(%s) stub!\n", arg1.c_str());
+    return m_impl->stop(arg1);
 }
+
 

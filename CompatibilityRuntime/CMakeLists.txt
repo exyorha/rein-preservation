@@ -14,6 +14,19 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ${prev})
 
 find_program(RUBY ruby REQUIRED)
 
+if(CEF_ROOT)
+    message(STATUS "CEF_ROOT specified as ${CEF_ROOT}, trying to find CEF")
+    list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
+
+    set(USE_SANDBOX OFF CACHE BOOL "Enable or disable use of the sandbox." FORCE)
+    set(USE_ATL OFF CACHE BOOL "Enable or disable use of ATL." FORCE)
+    find_package(CEF REQUIRED)
+endif()
+
+if(NOT CEF_ROOT)
+    message(STATUS "CEF wasn't found or the CEF location wasn't configured, will build without webview support")
+endif()
+
 enable_language(ASM)
 
 find_library(FFI_LIBRARY ffi REQUIRED)
@@ -44,6 +57,11 @@ endif()
 
 add_subdirectory(makeelfpe)
 
+if(CEF_ROOT)
+    add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+    add_subdirectory(WebViewHost)
+endif()
+
 add_subdirectory(GameFramework)
 
 add_subdirectory(GameExecutable)
@@ -51,6 +69,3 @@ add_subdirectory(GameExecutable)
 if(NOT WIN32)
     add_subdirectory(interrogator)
 endif()
-
-
-

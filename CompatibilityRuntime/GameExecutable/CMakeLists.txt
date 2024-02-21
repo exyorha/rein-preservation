@@ -96,6 +96,11 @@ add_executable(GameExecutable
 
     Octo/Proto/Database.proto
 
+    WebView/WebViewImplementation.cpp
+    WebView/WebViewImplementation.h
+    WebView/WebViewImplementationFactory.cpp
+    WebView/WebViewImplementationFactory.h
+
     UnityPatches.cpp
     UnityPatches.h
 
@@ -182,6 +187,17 @@ endif()
 
 if(MINGW)
     target_link_options(GameExecutable PRIVATE -Wl,-Bstatic -static-libgcc -municode)
+endif()
+
+if(TARGET WebViewHostClient)
+    target_sources(GameExecutable PRIVATE
+        WebView/CEFWebViewImplementation.cpp
+        WebView/CEFWebViewImplementation.h
+
+        WebView/CEFWebViewWindowing.cpp
+    )
+    target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_CEF)
+    target_link_libraries(GameExecutable PRIVATE WebViewHostClient)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)
