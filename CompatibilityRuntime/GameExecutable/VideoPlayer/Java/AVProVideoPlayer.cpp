@@ -1,4 +1,4 @@
-#include <Java/AVProVideoPlayer.h>
+#include <VideoPlayer/Java/AVProVideoPlayer.h>
 #include <Java/JNIClass.h>
 #include <Java/JNIState.h>
 
@@ -37,6 +37,20 @@ std::shared_ptr<JNIClass> AVProVideoPlayer::makeClass() {
     co->registerMethod("OpenVideoFromFile", "(Ljava/lang/String;JLjava/lang/Object;I)Z", &AVProVideoPlayer::OpenVideoFromFile);
     co->registerMethod("SetDeinitialiseFlagged", "()V", &AVProVideoPlayer::SetDeinitialiseFlagged);
     co->registerMethod("SetLooping", "(Z)V", &AVProVideoPlayer::SetLooping);
+    co->registerMethod("GetWidth", "()I", &AVProVideoPlayer::GetWidth);
+    co->registerMethod("GetHeight", "()I", &AVProVideoPlayer::GetHeight);
+    co->registerMethod("GetTextureHandle", "()I", &AVProVideoPlayer::GetTextureHandle);
+    co->registerMethod("GetDurationMs", "()L", &AVProVideoPlayer::GetDurationMs);
+    co->registerMethod("GetLastErrorCode", "()I", &AVProVideoPlayer::GetLastErrorCode);
+    co->registerMethod("GetFrameCount", "()I", &AVProVideoPlayer::GetFrameCount);
+    co->registerMethod("GetDisplayRate", "()I", &AVProVideoPlayer::GetDisplayRate);
+    co->registerMethod("CanPlay", "()Z", &AVProVideoPlayer::CanPlay);
+    co->registerMethod("RendererSetup", "(I)V", &AVProVideoPlayer::RendererSetup);
+    co->registerMethod("Render", "()V", &AVProVideoPlayer::Render);
+    co->registerMethod("WaitForNewFrame", "()V", &AVProVideoPlayer::WaitForNewFrame);
+    co->registerMethod("DeinitialiseRender", "()V", &AVProVideoPlayer::DeinitialiseRender);
+
+    co->registerMethod("Deinitialise", "()V", &AVProVideoPlayer::Deinitialise);
 
     return co;
 }
@@ -144,4 +158,68 @@ void AVProVideoPlayer::SetDeinitialiseFlagged() {
 
 void AVProVideoPlayer::SetLooping(bool looping) {
     printf("AVProVideoPlayer::SetLooping(%d) stub!\n", looping);
+}
+
+void AVProVideoPlayer::initialize(int32_t playerType, bool useFastOesPath, bool showPosterFrame, int32_t arg4, bool arg5) {
+    printf("AVProVideoPlayer::initialize(%d, %d, %d, %d, %d) stub!\n", playerType, useFastOesPath, showPosterFrame, arg4, arg5);
+}
+
+void AVProVideoPlayer::Deinitialise() {
+    printf("AVProVideoPlayer::Deinitialise() stub!\n");
+}
+
+int32_t AVProVideoPlayer::GetWidth() {
+    printf("AVProVideoPlayer::GetWidth() stub!\n");
+    return 0;
+}
+
+int32_t AVProVideoPlayer::GetHeight() {
+    printf("AVProVideoPlayer::GetHeight() stub!\n");
+    return 0;
+}
+
+int32_t AVProVideoPlayer::GetTextureHandle() {
+    printf("AVProVideoPlayer::GetTextureHandle() stub!\n");
+    return 0;
+}
+
+int64_t AVProVideoPlayer::GetDurationMs() {
+    printf("AVProVideoPlayer::GetDurationMs() stub!\n");
+    return 0;
+}
+
+int32_t AVProVideoPlayer::GetLastErrorCode() {
+    printf("AVProVideoPlayer::GetLastErrorCode() stub!\n");
+    return 0;
+}
+
+int32_t AVProVideoPlayer::GetFrameCount() {
+    printf("AVProVideoPlayer::GetFrameCount() stub!\n");
+    return 0;
+}
+
+float AVProVideoPlayer::GetDisplayRate() {
+    printf("AVProVideoPlayer::GetDisplayRate() stub!\n");
+    return 0;
+}
+
+bool AVProVideoPlayer::CanPlay() {
+    printf("AVProVideoPlayer::CanPlay() stub!\n");
+    return false;
+}
+
+void AVProVideoPlayer::RendererSetup(int32_t glesVersion) {
+    printf("AVProVideoPlayer::RendererSetup() stub!\n");
+}
+
+void AVProVideoPlayer::Render() {
+    printf("AVProVideoPlayer::Render() stub!\n");
+}
+
+void AVProVideoPlayer::WaitForNewFrame() {
+    printf("AVProVideoPlayer::WaitForNewFrame() stub!\n");
+}
+
+void AVProVideoPlayer::DeinitialiseRender() {
+    printf("AVProVideoPlayer::DeinitialiseRender() stub!\n");
 }

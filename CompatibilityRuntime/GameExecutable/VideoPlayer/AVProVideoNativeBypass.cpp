@@ -3,9 +3,9 @@
  * C JNI layers.
  */
 
-#include "AVProVideoNativeBypass.h"
+#include <VideoPlayer/AVProVideoNativeBypass.h>
 
-#include <Java/AVProMobileVideo.h>
+#include <VideoPlayer/Java/AVProMobileVideo.h>
 
 #include <translator_api.h>
 
@@ -13,11 +13,38 @@
 
 static void AVLocal_RenderEventFunc(uint32_t event) {
     printf("AVLocal_RenderEventFunc(0x%08X)\n", event);
+
+    if((event & UINT32_C(0xFFFFF000)) == UINT32_C(0x5D5AC000)) {
+        auto function = (event >> 8) & 0x0F;
+        auto playerIndex = event & 0xFF;
+
+        switch(function) {
+            case 1:
+                AVProMobileVideo::RendererSetupPlayer(playerIndex, 0);
+                break;
+
+            case 2:
+                AVProMobileVideo::RenderPlayer(playerIndex);
+                break;
+
+            case 3:
+                AVProMobileVideo::RendererDestroyPlayers();
+                break;
+
+            case 4:
+                AVProMobileVideo::WaitForNewFramePlayer(playerIndex);
+                break;
+        }
+
+    }
 }
 
+/*
+ * This function returns a pointer value that will be handed over to Unity,
+ * and called by it directly. As such, it's host-host call and requires no
+ * thunking.
+ */
 static intptr_t AVLocal_GetRenderEventFunc(void *original) {
-    printf("AVLocal_GetRenderEventFunc\n");
-
     return reinterpret_cast<intptr_t>(AVLocal_RenderEventFunc);
 }
 

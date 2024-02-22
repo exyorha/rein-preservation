@@ -13,7 +13,10 @@
 #include "Octo.h"
 #include "FastAES.h"
 #include "GameEntryPoint.h"
-#include "AVProVideoNativeBypass.h"
+
+#ifdef BUILDING_WITH_MPV
+#include <VideoPlayer/AVProVideoNativeBypass.h>
+#endif
 
 #include <GLES/Shim/GLESContextShim.h>
 
@@ -163,11 +166,16 @@ static bool Framework_Network_Download_AssetDownloader_IsStorageEnough(Il2CppObj
     return true;
 }
 
+#ifndef BUILDING_WITH_MPV
+/*
+ * When we're built without mpv, always fail video init.
+ */
 static bool RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform(void *original) {
     printf("RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitializePlatform\n");
 
     return false;
 }
+#endif
 
 /*
  * Stubbing out this avoids initializing the whole Firebase stuff, including the native library.
@@ -285,11 +293,6 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
 
-#if 0
-    translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
-                            RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
-#endif
-
     translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Notification.Notification::SetupNotification",
                              Adam_Framework_Notification_Notification_SetupNotification);
 
@@ -332,7 +335,19 @@ static void postInitialize() {
     printf("Analytics enabled: %d\n", getEnabledInternal());
 #endif
 
+#ifdef BUILDING_WITH_MPV
+
     installAVProVideoNativeBypass();
+#else
+    /*
+     * If we're building without mpv, always report a failure to initialize
+     * the platform media player. The .NET portion of the middleware will
+     * fall back to dummy rendering without touching the Java API.
+     */
+    translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
+                            RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
+#endif
+
 }
 
 static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {

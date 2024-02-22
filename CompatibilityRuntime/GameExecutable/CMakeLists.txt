@@ -1,9 +1,6 @@
 add_executable(GameExecutable
     AndroidJNI.cpp
 
-    AVProVideoNativeBypass.cpp
-    AVProVideoNativeBypass.h
-
     CommonUtilities.cpp
     CommonUtilities.h
 
@@ -51,10 +48,6 @@ add_executable(GameExecutable
     Java/AdjustSdkAdjust.h
     Java/AndroidUtilLog.cpp
     Java/AndroidUtilLog.h
-    Java/AVProMobileVideo.cpp
-    Java/AVProMobileVideo.h
-    Java/AVProVideoPlayer.cpp
-    Java/AVProVideoPlayer.h
     Java/JavaClasses.cpp
     Java/JNIAccessibleObject.cpp
     Java/JNIAccessibleObject.h
@@ -198,6 +191,20 @@ if(TARGET WebViewHostClient)
     )
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_CEF)
     target_link_libraries(GameExecutable PRIVATE WebViewHostClient)
+endif()
+
+if(TARGET PkgConfig::MPV)
+    target_sources(GameExecutable PRIVATE
+        VideoPlayer/AVProVideoNativeBypass.cpp
+        VideoPlayer/AVProVideoNativeBypass.h
+
+        VideoPlayer/Java/AVProMobileVideo.cpp
+        VideoPlayer/Java/AVProMobileVideo.h
+        VideoPlayer/Java/AVProVideoPlayer.cpp
+        VideoPlayer/Java/AVProVideoPlayer.h
+    )
+
+    target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_MPV)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)

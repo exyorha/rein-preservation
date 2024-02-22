@@ -41,6 +41,18 @@ find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 add_subdirectory(grpc_csharp_ext)
 
+if(NOT WIN32)
+    find_package(PkgConfig)
+
+    if(PkgConfig_FOUND)
+        pkg_check_modules(MPV IMPORTED_TARGET mpv)
+    endif()
+endif()
+
+if(NOT TARGET PkgConfig::MPV)
+    message(STATUS "mpv was not found, will build without video playback (cutscene) support")
+endif()
+
 if(WIN32 AND NOT TARGET protobuf::protoc)
     message(STATUS "Trying to find the host 'protoc'")
 

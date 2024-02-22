@@ -12,9 +12,12 @@
 #include <Java/LiliumDefaultAttestCallback.h>
 #include <Java/UniWebViewInterface.h>
 #include <Java/JNIMethod.h>
-#include <Java/AVProMobileVideo.h>
 #include <Java/JNIConstructor.h>
-#include <Java/AVProVideoPlayer.h>
+
+#ifdef BUILDING_WITH_MPV
+#include <VideoPlayer/Java/AVProMobileVideo.h>
+#include <VideoPlayer/Java/AVProVideoPlayer.h>
+#endif
 
 void JNIGlobalState::init() {
     registerClass<JNIObject>();
@@ -36,6 +39,8 @@ void JNIGlobalState::init() {
 
     registerClass<UniWebViewInterface>();
 
+#ifdef BUILDING_WITH_MPV
     registerClass<AVProMobileVideo>();
     registerClass<AVProVideoPlayer>();
+#endif
 }
