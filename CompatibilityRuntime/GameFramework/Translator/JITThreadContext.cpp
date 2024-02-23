@@ -16,6 +16,9 @@
 #include <algorithm>
 #include <thread>
 
+#include "gc.h"
+#include <Translator/GCHooks.h>
+
 JoinableThreadManager JITThreadContext::m_joinableManager;
 
 std::mutex JITThreadContext::ThreadContextRegistration::m_contextListMutex;
@@ -28,7 +31,6 @@ JITThreadContext::JITThreadContext(void *providedStack, size_t providedStackSize
 
     memset(&gprs, 0xBA, sizeof(gprs));
     memset(&vectors, 0xBA, sizeof(vectors));
-
 
     if(m_threadStack == nullptr || m_threadStackSize == 0) {
         m_threadStackAllocated = true;
@@ -218,21 +220,28 @@ void JITThreadContext::detach() {
     m_joinableManager.removeJoinableThread(this);
 }
 
-void JITThreadContext::threadStateTeardown() noexcept {
-    if(getJITContextOfCurrentThread() != this) {
-        /*
-         * This happens on Windows process shutdown.
-         */
-        printf("JITThreadContext::threadStateTeardown: we're on thread %p, but called to destroy %p, doing nothing\n",
-               getJITContextOfCurrentThread(), this);
-    } else {
+void JITThreadContext::threadStateInitialization() noexcept {
+    GC_stack_base sb;
 
-        printf("running the thread destruction of %p\n", this);
+    sb.mem_base = getPlatformSpecificStackBottomForThisThread();
 
-        bionic_teardown_thread();
-
-        printf("running the thread destruction of %p done\n", this);
+    auto result = GC_register_my_thread(&sb);
+    if(result != GC_SUCCESS) {
+        fprintf(stderr, "GC_register_my_thread has failed for %p: %d\n", this, result);
     }
+
+    printf("running the thread initialization of %p\n", this);
+}
+
+void JITThreadContext::threadStateTeardown() noexcept {
+
+    printf("running the thread destruction of %p\n", this);
+
+    bionic_teardown_thread();
+
+    printf("running the thread destruction of %p done\n", this);
+
+    GC_unregister_my_thread();
 }
 
 void JITThreadContext::clearCurrentThreadContext() noexcept {
@@ -309,3 +318,4 @@ void JoinableThreadManager::removeJoinableThread(JITThreadContext *ctx) {
         m_unjoinedThreads.erase(it);
     }
 }
+

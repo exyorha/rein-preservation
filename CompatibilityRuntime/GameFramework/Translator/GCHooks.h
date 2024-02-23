@@ -3,7 +3,10 @@
 
 class Image;
 
+void initializeHostGC();
 void installGCHooks(const Image &il2cppImage);
+
+void *getPlatformSpecificStackBottomForThisThread();
 
 #endif
 

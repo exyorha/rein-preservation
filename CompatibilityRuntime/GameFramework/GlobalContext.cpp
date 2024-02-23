@@ -26,11 +26,15 @@ extern "C" {
 #include <dlfcn.h>
 #endif
 
+#include <Translator/GCHooks.h>
+
 const uint32_t GlobalContext::PageSize = queryPageSize();
 
 GlobalContext *GlobalContext::GlobalContextRegisterer::m_context = nullptr;
 
 GlobalContext::GlobalContext() : m_registerer(this) {
+
+    initializeHostGC();
 
     auto directory = thisLibraryDirectory();
     if(getenv("ARM_DEBUG")) {

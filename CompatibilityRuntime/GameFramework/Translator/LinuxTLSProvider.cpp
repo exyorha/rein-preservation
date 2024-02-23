@@ -55,8 +55,10 @@ JITThreadLocalContextPtr &JITThreadLocalContextPtr::operator =(const JITThreadCo
 
         m_pointer = other.get();
 
-        if(m_pointer)
+        if(m_pointer) {
             m_pointer->addReference();
+            m_pointer->threadStateInitialization();
+        }
     }
 
     return *this;

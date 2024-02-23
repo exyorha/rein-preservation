@@ -105,6 +105,7 @@ public:
     void join(void **result);
     [[noreturn]] void exitHostThread(void *result);
 
+    void threadStateInitialization() noexcept;
     void threadStateTeardown() noexcept;
 
     static void clearCurrentThreadContext() noexcept;

@@ -157,7 +157,6 @@ set_target_properties(GameAssembly PROPERTIES
 
 target_link_libraries(GameAssembly PRIVATE elfpe-interface)
 
-if(FALSE)
 set(bdwgc_root ${PROJECT_SOURCE_DIR}/thirdparty/bdwgc)
 if(CYGWIN OR WIN32)
     set(bdwgc_sources
@@ -180,17 +179,20 @@ add_library(bdwgc_portion STATIC
     ${bdwgc_sources}
 )
 target_compile_definitions(bdwgc_portion PRIVATE
-    -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION -DGC_BUILTIN_ATOMIC -DGC_THREADS -D_REENTRANT -DGC_USESIGRT_SIGNALS
-    -DNO_HANDLE_FORK
+    -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION -D_REENTRANT -DGC_USESIGRT_SIGNALS
+    -DNO_HANDLE_FORK -DGC_DISABLE_INCREMENTAL -DGC_ALWAYS_MULTITHREADED
+    -DGC_NO_THREADS_DISCOVERY
 )
+target_compile_definitions(bdwgc_portion PUBLIC -DGC_THREADS -DGC_BUILTIN_ATOMIC )
 target_include_directories(bdwgc_portion PUBLIC "${bdwgc_root}/include")
 
 if(WIN32)
     target_compile_definitions(bdwgc_portion PRIVATE
-        -D_CRT_SECURE_NO_DEPRECATE
+        -D_CRT_SECURE_NO_DEPRECATE -DUSE_SPIN_LOCK
     )
 endif()
-endif()
+
+target_link_libraries(GameAssembly PRIVATE bdwgc_portion)
 
 if(UNIX)
     target_link_options(GameAssembly PRIVATE

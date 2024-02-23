@@ -7,3 +7,6 @@
 [submodule "CompatibilityRuntime/bionic/bionic"]
 	path = CompatibilityRuntime/bionic/bionic
 	url = https://github.com/exyorha/crbionic.git
+[submodule "CompatibilityRuntime/thirdparty/bdwgc"]
+	path = CompatibilityRuntime/thirdparty/bdwgc
+	url = https://github.com/ivmai/bdwgc.git
