@@ -12,8 +12,6 @@
 #include <cstdio>
 
 static void AVLocal_RenderEventFunc(uint32_t event) {
-    printf("AVLocal_RenderEventFunc(0x%08X)\n", event);
-
     if((event & UINT32_C(0xFFFFF000)) == UINT32_C(0x5D5AC000)) {
         auto function = (event >> 8) & 0x0F;
         auto playerIndex = event & 0xFF;

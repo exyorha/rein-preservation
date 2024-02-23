@@ -51,6 +51,7 @@ add_executable(GameExecutable
     Java/JavaClasses.cpp
     Java/JNIAccessibleObject.cpp
     Java/JNIAccessibleObject.h
+    Java/JNIBasePrimitiveArray.h
     Java/JNIClass.cpp
     Java/JNIClass.h
     Java/JNIConstructor.cpp
@@ -58,6 +59,8 @@ add_executable(GameExecutable
     Java/JNIExecutable.cpp
     Java/JNIExecutable.h
     Java/JNIField.cpp
+    Java/JNIFloatArray.cpp
+    Java/JNIFloatArray.h
     Java/JNIGlobalState.cpp
     Java/JNIGlobalState.h
     Java/JNIMethod.cpp
@@ -175,7 +178,7 @@ set_target_properties(GameExecutable PROPERTIES
 )
 
 if(UNIX)
-    target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*")
+    target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*" "-Wl,--no-copy-dt-needed-entries")
 endif()
 
 if(MINGW)
@@ -202,9 +205,24 @@ if(TARGET PkgConfig::MPV)
         VideoPlayer/Java/AVProMobileVideo.h
         VideoPlayer/Java/AVProVideoPlayer.cpp
         VideoPlayer/Java/AVProVideoPlayer.h
+
+        VideoPlayer/MPVBasePropertyObserver.cpp
+        VideoPlayer/MPVBasePropertyObserver.h
+
+        VideoPlayer/MPVError.cpp
+        VideoPlayer/MPVError.h
+
+        VideoPlayer/MPVPlayer.cpp
+        VideoPlayer/MPVPlayer.h
+
+        VideoPlayer/MPVTypes.h
+
+        VideoPlayer/VideoRenderingOpenGLAPISet.cpp
+        VideoPlayer/VideoRenderingOpenGLAPISet.h
     )
 
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_MPV)
+    target_link_libraries(GameExecutable PRIVATE PkgConfig::MPV)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)

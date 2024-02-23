@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <algorithm>
 
-static SDLGLESImplementation *SelectedSDLGLESImplementation;
+SDLGLESImplementation *SelectedSDLGLESImplementation;
 static std::vector<SDL_Window *> ExistingSDLWindows;
 
 static void registerSDLWindow(SDL_Window *window) {

@@ -3,6 +3,11 @@
 
 #include <Java/JNIObject.h>
 
+#include <VideoPlayer/MPVPlayer.h>
+
+#include <optional>
+#include <atomic>
+
 class AVProVideoPlayer final : public JNIObject {
 public:
     explicit AVProVideoPlayer(int32_t playerIndex);
@@ -37,6 +42,13 @@ public:
     void Pause();
     bool OpenVideoFromFile(const std::string &arg1, int64_t arg2, const std::shared_ptr<JNIObject> arg3, int32_t arg4);
     void SetDeinitialiseFlagged();
+    void SetPlaybackRate(float rate);
+    void SetVolume(float volume);
+    void SetAudioPan(float pan);
+    void Play();
+    void MuteAudio(bool mute);
+    std::shared_ptr<JNIObject> GetTextureTransform();
+    void Seek(int64_t positionMilliseconds);
 
     /*
      * Methods that are called via AVProVideoNativeBypass -> AVProMobileVideo
@@ -67,6 +79,22 @@ public:
 
 private:
     int32_t m_playerIndex;
+    MPVPlayer m_mpv;
+    bool m_coreIdle;
+    bool m_pause;
+    bool m_idleActive;
+    bool m_seeking;
+    bool m_buffering;
+    bool m_looping;
+    bool m_eofReached;
+    int64_t m_duration;
+    int64_t m_position;
+    bool m_hasVideo;
+    int64_t m_nativeWidth;
+    int64_t m_nativeHeight;
+    float m_displayRate;
+    std::optional<std::string> m_pendingFileToPlay;
+    std::atomic_bool m_renderingFullyInitialized;
 };
 
 #endif

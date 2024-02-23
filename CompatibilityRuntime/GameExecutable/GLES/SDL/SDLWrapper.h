@@ -4,9 +4,13 @@
 #include <GLES/GLESImplementationType.h>
 #include <SDL2/SDL.h>
 
+class SDLGLESImplementation;
+
 void initializeSDLGLES(GLESImplementationType type);
 
 SDL_Window *getSDLWindowForWebView();
+
+extern SDLGLESImplementation *SelectedSDLGLESImplementation;;
 
 #endif
 

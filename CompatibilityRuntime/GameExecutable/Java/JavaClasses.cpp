@@ -13,6 +13,7 @@
 #include <Java/UniWebViewInterface.h>
 #include <Java/JNIMethod.h>
 #include <Java/JNIConstructor.h>
+#include <Java/JNIFloatArray.h>
 
 #ifdef BUILDING_WITH_MPV
 #include <VideoPlayer/Java/AVProMobileVideo.h>
@@ -29,6 +30,7 @@ void JNIGlobalState::init() {
     registerClass<JNIExecutable>();
     registerClass<JNIMethod>();
     registerClass<JNIConstructor>();
+    registerClass<JNIFloatArray>();
 
     registerClass<AndroidUtilLog>();
     registerClass<JNIUnityPlayer>();
