@@ -4,6 +4,7 @@
 
 #include <Translator/JITThreadContext.h>
 #include <Translator/thunking.h>
+#include <Translator/WrappedARMException.h>
 
 InternalCallThunk::InternalCallThunk(const char *name, Il2CppMethodPointer x86Method) :
     m_call(std::in_place_type_t<std::string>(), name),
@@ -13,8 +14,12 @@ InternalCallThunk::InternalCallThunk(const char *name, Il2CppMethodPointer x86Me
 
 InternalCallThunk::~InternalCallThunk() = default;
 
-void InternalCallThunk::thunkCall() {
-    static_cast<InternalCallThunk *>(readThunkUtilitySlot())->execute();
+void InternalCallThunk::thunkCall() noexcept {
+    try {
+        static_cast<InternalCallThunk *>(readThunkUtilitySlot())->execute();
+    } catch(const WrappedARMException &exception) {
+        rethrowWrappedARMExceptionFromX86Call(exception);
+    }
 }
 
 const PreparedInternalCall *InternalCallThunk::prepareInternalCall(std::string &&name, std::optional<SavedICallContext> &savedContext) {

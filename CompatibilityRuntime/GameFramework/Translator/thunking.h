@@ -6,6 +6,9 @@
 #include <Translator/JIT.h>
 #include <Translator/JITThreadContext.h>
 #include <Translator/ThunkManager.h>
+#include <Translator/WrappedARMException.h>
+#include <Translator/ARMCallCleanableFrame.h>
+
 #include <cinttypes>
 
 #include <cstddef>
@@ -33,6 +36,8 @@ void storeX86CallFloatResult(long double result);
 void storeX86CallStructureResult(const void *data, size_t size);
 
 void runARMCall(JITThreadContext &context);
+
+void rethrowWrappedARMExceptionFromX86Call(const WrappedARMException &exception);
 
 extern "C" {
     intptr_t getOffsetOfThunkUtilitySlot();
@@ -163,24 +168,19 @@ ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Ar
 
     auto &context = JITThreadContext::get();
 
-    auto savedPC = context.pc;
-    auto savedLR = context.lr();
-   // context.push(context.pc);
-   // context.push(context.lr());
+    {
+        ARMCallCleanableFrame armFrame(context);
 
-    armCallStoreArguments(0, args...);
+        armCallStoreArguments(0, args...);
 
-    context.pc = reinterpret_cast<uintptr_t>(armFunctionPointer);
+        context.pc = reinterpret_cast<uintptr_t>(armFunctionPointer);
 
-    /*
-     * runARMCall will change LR.
-     */
-    runARMCall(context);
-
-    //context.lr() = context.pop();
-    //context.pc = context.pop();
-    context.lr() = savedLR;
-    context.pc = savedPC;
+        /*
+        * runARMCall will change LR to __compatibility_runtime_armcall_catcher,
+        * containing a SVC that will return from runARMCall.
+        */
+        runARMCall(context);
+    }
 
     return ARMCallResultFetcher<ReturnType>::fetchAndReturn();
 }
@@ -341,9 +341,12 @@ struct X86CallTranslatingFunctionApply<0, X86FunctionPointer> {
 };
 
 template<typename ReturnType, typename... Args>
-void x86call(ReturnType (*x86FunctionPointer)(Args... args)) {
-
-    X86CallTranslatingFunctionApply<sizeof...(Args), decltype(x86FunctionPointer)>::apply(x86FunctionPointer);
+void x86call(ReturnType (*x86FunctionPointer)(Args... args)) noexcept {
+    try {
+        X86CallTranslatingFunctionApply<sizeof...(Args), decltype(x86FunctionPointer)>::apply(x86FunctionPointer);
+    } catch(const WrappedARMException &exception) {
+        rethrowWrappedARMExceptionFromX86Call(exception);
+    }
 }
 
 template<typename ReturnType, typename... Args>

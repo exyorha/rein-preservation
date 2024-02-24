@@ -20,7 +20,7 @@ public:
     InternalCallThunk(const InternalCallThunk &other) = delete;
     InternalCallThunk &operator =(const InternalCallThunk &other) = delete;
 
-    static void thunkCall();
+    static void thunkCall() noexcept;
 
     inline Il2CppMethodPointer x86Method() const {
         return m_x86Method;

@@ -45,6 +45,14 @@ GlobalContext::GlobalContext() : m_registerer(this) {
         m_il2cpp.emplace(directory / "libil2cpp.so.pe");
     }
 
+    /*
+     * Bind the personality routine located in bionic with the unwinder located in libil2cpp.
+     */
+    *reinterpret_cast<void **>(m_armlib->getSymbolChecked("__compatibility_runtime_actual_Unwind_SetIP")) = m_il2cpp->getSymbolChecked("_Unwind_SetIP");
+    *reinterpret_cast<void **>(m_armlib->getSymbolChecked("__compatibility_runtime_actual_Unwind_SetGR")) = m_il2cpp->getSymbolChecked("_Unwind_SetGR");
+    *reinterpret_cast<void **>(m_armlib->getSymbolChecked("__compatibility_runtime_actual_Unwind_RaiseException")) =
+        m_il2cpp->getSymbolChecked("_Unwind_RaiseException");
+
     bindBionicCallouts(*m_armlib);
 
     installGCHooks(*m_il2cpp);

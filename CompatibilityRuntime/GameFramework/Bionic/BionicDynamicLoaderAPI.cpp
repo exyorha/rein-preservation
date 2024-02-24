@@ -19,19 +19,25 @@ char *emulated_dlerror(void) {
     return nullptr;
 }
 
-int emulated_dl_iterate_phdr(int (*callback)(struct bionic_dl_phdr_info *info, size_t size, void *data), void *data) {
-    /*
-     * We report exactly one module - libil2cpp.so.
-     */
-    const auto &image = GlobalContext::get().il2cpp();
+typedef int (*bionic_dl_iterate_phdr_callback)(struct bionic_dl_phdr_info *info, size_t size, void *data);
 
+static int emulated_dl_iterate_phdr_module(const Image &image, bionic_dl_iterate_phdr_callback callback, void *data) {
     struct bionic_dl_phdr_info info;
     info.dlpi_addr = image.displacement();
-    info.dlpi_name = "libil2cpp.so";
+    info.dlpi_name = image.path().filename().generic_string().c_str();
     info.dlpi_phdr = image.phdr();
     info.dlpi_phnum = image.phnum();
 
     return callback(&info, sizeof(info), data);
+}
+
+int emulated_dl_iterate_phdr(bionic_dl_iterate_phdr_callback callback, void *data) {
+
+    auto result = emulated_dl_iterate_phdr_module(GlobalContext::get().armlib(), callback, data);
+    if(result != 0)
+        return result;
+
+    return emulated_dl_iterate_phdr_module(GlobalContext::get().il2cpp(), callback, data);
 }
 
 void *emulated_dlopen(const char *filename, int flags) {

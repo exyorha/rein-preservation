@@ -69,6 +69,8 @@ add_library(GameAssembly SHARED
     SystemAPIThunking.cpp
     SystemAPIThunking.h
 
+    Translator/ARMCallCleanableFrame.cpp
+    Translator/ARMCallCleanableFrame.h
     Translator/BumpAllocator.cpp
     Translator/BumpAllocator.h
     Translator/DiversionManager.cpp
@@ -86,6 +88,8 @@ add_library(GameAssembly SHARED
     Translator/ThunkManager.h
     Translator/WorldStoppingScope.cpp
     Translator/WorldStoppingScope.h
+    Translator/WrappedARMException.cpp
+    Translator/WrappedARMException.h
 
     translator_api/translator_api.h
 )

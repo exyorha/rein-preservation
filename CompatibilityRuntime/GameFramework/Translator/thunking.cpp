@@ -1,5 +1,8 @@
 #include <Translator/thunking.h>
 #include <Translator/ThunkManager.h>
+#include <Translator/WrappedARMException.h>
+
+#include <Bionic/BionicCallouts.h>
 
 #include "GlobalContext.h"
 
@@ -56,6 +59,7 @@ thread_local void *thunkUtilitySlot;
 #endif
 
 static const uint16_t ARMCallEndSVC = 0xE0;
+static const uint16_t ARMCallExceptionSVC = 0xE1;
 
 static bool processJITExit(JITThreadContext &context, const SVCExit &exit) {
     if(exit.svc == ThunkManager::ARMToX86ThunkCallSVC) {
@@ -65,14 +69,26 @@ static bool processJITExit(JITThreadContext &context, const SVCExit &exit) {
         if(!key)
             panic("ARMToX86ThunkCallSVC at an unknown thunk address");
 
-        auto savedLR = context.lr();
+        auto savedLR = context.thunkLR;
+        context.thunkLR = context.lr();
 
         writeThunkUtilitySlot(key);
+
         invokable();
 
-        context.pc = savedLR;
+        context.pc = context.thunkLR;
+        context.thunkLR = savedLR;
 
         return true;
+    } else if(exit.svc == ARMCallExceptionSVC) {
+        auto exceptionCode = context.gprs[0];
+        auto exceptionObject = reinterpret_cast<void *>(context.gprs[1]);
+
+        printf("ARM call exited due to ARM-side exception; exception code: 0x%016" PRIx64 ", exception object: %p\n",
+            exceptionCode, exceptionObject);
+
+        throw WrappedARMException(exceptionCode, exceptionObject);
+
     } else if(exit.svc == ARMCallEndSVC) {
         return false;
     } else {
@@ -92,9 +108,13 @@ static bool processJITExit(JITThreadContext &context, const DiversionExit &diver
 
 void runARMCall(JITThreadContext &context) {
 
-    static const uint32_t stopSVC = UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMCallEndSVC) << 5);
+    if(!arm_bionic_armcall_catcher)
+        throw std::logic_error("cannot do arm calls until the armcall catcher is set");
 
-    context.lr() = reinterpret_cast<uintptr_t>(&stopSVC);
+    /*
+     * The thunk starts with a 4-byte nop. Skip it. It's there to make the unwinder happier.
+     */
+    context.lr() = reinterpret_cast<uintptr_t>(arm_bionic_armcall_catcher) + 4;
 
     bool keepRunning;
 
@@ -201,6 +221,23 @@ void fetchX86CallFloatingPointArgument(int position, long double &out) {
     } else {
         panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
     }
+}
+
+void rethrowWrappedARMExceptionFromX86Call(const WrappedARMException &exception) {
+    /*
+     * This can only be called from an arm->x86 thunk, with no other frames on
+     * the ARM stack. We fudge the ARM machine context in such a way that the
+     * ARM execution will resume instead from the landing pad in bionic, which
+     * will then do _Unwind_RaiseException.
+     */
+
+    printf("rethrowing wrapped ARM exception, object %p\n", exception.exceptionObject());
+
+    auto &context = JITThreadContext::get();
+
+    context.lr() = context.thunkLR;
+    context.thunkLR = reinterpret_cast<uintptr_t>(arm_bionic_armcall_rethrower);
+    context.gprs[0] = reinterpret_cast<uintptr_t>(exception.exceptionObject());
 }
 
 #if defined(_WIN32)

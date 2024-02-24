@@ -616,6 +616,8 @@ add_library(bionic SHARED
     ${cxa_src_sources}
 
     compatibility_runtime_unification.c
+    call_arm_code_catching_exceptions.S
+    exception_handling.c
 )
 
 target_compile_definitions(bionic PRIVATE

@@ -33,5 +33,8 @@ static inline void bionic_teardown_thread(void) {
     armcall(arm_bionic_teardown_thread);
 }
 
+extern void *arm_bionic_armcall_catcher;
+extern void *arm_bionic_armcall_rethrower;
+
 #endif
 

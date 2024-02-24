@@ -57,6 +57,8 @@ public:
     uint32_t fpsr;
     uint32_t pstate;
 
+    uint64_t thunkLR;
+
     inline uint64_t &fp() {
         return gprs[29];
     }
