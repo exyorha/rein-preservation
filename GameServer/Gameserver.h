@@ -21,6 +21,7 @@
 #include "ServiceImplementations/OmikujiService.h"
 #include "ServiceImplementations/NaviCutInService.h"
 #include "ServiceImplementations/DokanService.h"
+#include "ServiceImplementations/CostumeService.h"
 
 #include "DataModel/Database.h"
 
@@ -53,6 +54,7 @@ private:
     OmikujiService m_omikujiService;
     NaviCutInService m_naviCutInService;
     DokanService m_dokanService;
+    CostumeService m_costumeService;
     std::unique_ptr<grpc::Server> m_server;
 };
 

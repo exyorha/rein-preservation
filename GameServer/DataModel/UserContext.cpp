@@ -729,7 +729,6 @@ void UserContext::giveUserDeckCharacterExperience(
     }
 }
 
-
 void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience) {
     printf("Giving user %ld costume %s %d character experience and %d costume experience\n",
            m_userId, userCostumeUuid.c_str(), characterExperience, costumeExperience);
@@ -737,7 +736,7 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
     auto updateExperience = db().prepare(R"SQL(
         UPDATE i_user_costume SET exp = exp + ?
         WHERE user_id = ? AND user_costume_uuid = ?
-        RETURNING costume_id, level, exp
+        RETURNING costume_id, level, exp, limit_break_count
     )SQL");
     updateExperience->bind(1, costumeExperience);
     updateExperience->bind(2, m_userId);
@@ -748,6 +747,7 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
     auto costumeId = updateExperience->columnInt(0);
     auto currentLevel = updateExperience->columnInt(1);
     auto newExperience = updateExperience->columnInt(2);
+    auto limitBreakCount = updateExperience->columnInt(3);
 
     updateExperience->step();
 
@@ -755,7 +755,8 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
         SELECT
             required_exp_for_level_up_numerical_parameter_map_id,
             costume_level_bonus_id,
-            character_id
+            character_id,
+            max_level_numerical_function_id
         FROM m_costume
         LEFT JOIN m_costume_rarity ON m_costume_rarity.rarity_type = m_costume.rarity_type
         WHERE
@@ -768,10 +769,21 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
     int32_t costumeExpLevelMap = queryCostumeExperienceSetup->columnInt(0);
     int32_t costumeLevelBonusId = queryCostumeExperienceSetup->columnInt(1);
     int32_t characterId = queryCostumeExperienceSetup->columnInt(2);
+    int32_t maxLevelFunction = queryCostumeExperienceSetup->columnInt(3);
     queryCostumeExperienceSetup->step();
 
     auto newLevel = evaluateNumericalParameterMap(costumeExpLevelMap, newExperience);
-    // TODO: clamp by max level
+
+    if(newLevel.has_value()) {
+        auto maxLevel = evaluateNumericalFunction(maxLevelFunction, limitBreakCount);
+
+        /*
+         * TODO: rebirth needs to be *added* here.
+         */
+
+        newLevel = std::min<int32_t>(*newLevel, maxLevel);
+    }
+
     if(newLevel.has_value() && *newLevel != currentLevel) {
         printf("User %ld costume %s has leveled up: %d -> %d\n",
            m_userId, userCostumeUuid.c_str(), currentLevel, *newLevel);
@@ -852,7 +864,8 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
 
     auto queryCharacterExperienceSetup = db().prepare(R"SQL(
         SELECT
-            required_exp_for_level_up_numerical_parameter_map_id
+            required_exp_for_level_up_numerical_parameter_map_id,
+            max_level_numerical_function_id
         FROM m_character
         WHERE
             character_id = ?
@@ -862,10 +875,15 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
         throw std::runtime_error("the character setup was not found");
 
     int32_t characterExpLevelMap = queryCharacterExperienceSetup->columnInt(0);
+    int32_t maxLevelNumericalFunction = queryCharacterExperienceSetup->columnInt(1);
     queryCharacterExperienceSetup->step();
 
     auto newLevel = evaluateNumericalParameterMap(characterExpLevelMap, newExperience);
-    // TODO: clamp by max level
+    if(newLevel.has_value()) {
+        auto maxLevel = evaluateNumericalFunction(maxLevelNumericalFunction, 0); /* it appears that the input is always 0. */
+        newLevel = std::min(*newLevel, maxLevel);
+    }
+
     if(newLevel.has_value() && *newLevel != currentLevel) {
         printf("User %ld character %d has leveled up: %d -> %d\n",
            m_userId, characterId, currentLevel, *newLevel);
@@ -888,7 +906,7 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
     auto updateExperience = db().prepare(R"SQL(
         UPDATE i_user_weapon SET exp = exp + ?
         WHERE user_id = ? AND user_weapon_uuid = ?
-        RETURNING weapon_id, level, exp
+        RETURNING weapon_id, level, exp, limit_break_count
     )SQL");
     updateExperience->bind(1, costumeExperience);
     updateExperience->bind(2, m_userId);
@@ -899,12 +917,14 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
     auto weaponId = updateExperience->columnInt(0);
     auto currentLevel = updateExperience->columnInt(1);
     auto newExperience = updateExperience->columnInt(2);
+    auto limitBreakCount = updateExperience->columnInt(3);
 
     updateExperience->step();
 
     auto queryWeaponExperienceSetup = db().prepare(R"SQL(
         SELECT
-            required_exp_for_level_up_numerical_parameter_map_id
+            required_exp_for_level_up_numerical_parameter_map_id,
+            max_level_numerical_function_id
         FROM m_weapon
         LEFT JOIN m_weapon_rarity ON m_weapon_rarity.rarity_type = m_weapon.rarity_type
         WHERE
@@ -915,10 +935,17 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
         throw std::runtime_error("the weapon setup was not found");
 
     int32_t weaponExpLevelMap = queryWeaponExperienceSetup->columnInt(0);
+    int32_t maxLevelNumericalFunctionId = queryWeaponExperienceSetup->columnInt(1);
     queryWeaponExperienceSetup->step();
 
     auto newLevel = evaluateNumericalParameterMap(weaponExpLevelMap, newExperience);
-    // TODO: clamp by max level
+    if(newLevel.has_value()) {
+        /*
+         * TODO: awakenings need to be added here
+         */
+        auto maxLevel = evaluateNumericalFunction(maxLevelNumericalFunctionId, limitBreakCount);
+        newLevel = std::min(*newLevel, maxLevel);
+    }
     if(newLevel.has_value() && *newLevel != currentLevel) {
         printf("User %ld weapon %s has leveled up: %d -> %d\n",
            m_userId, userWeaponUuid.c_str(), currentLevel, *newLevel);
@@ -1987,4 +2014,124 @@ bool UserContext::isWeaponStoryReleaseConditionSatisfied(
             fprintf(stderr, "UserContext::isWeaponStoryReleaseConditionSatisfied: unsupported condition type %d\n", type);
             return false;
     }
+}
+
+
+void UserContext::registerCostumeLevelBonusConfirmed(int32_t costumeId, int32_t newlyConfirmedLevel) {
+    auto query = db().prepare(R"SQL(
+        UPDATE i_user_costume_level_bonus_release_status SET
+            confirmed_bonus_level = MAX(confirmed_bonus_level, ?)
+        WHERE
+            user_id = ? AND
+            costume_id = ?
+    )SQL");
+    query->bind(1, newlyConfirmedLevel);
+    query->bind(2, m_userId);
+    query->bind(3, costumeId);
+    query->exec();
+}
+
+
+void UserContext::queryCostumeRarityAndEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
+                                                       int32_t &costumeRarity, int32_t &costumeEnhancementCost) {
+    auto query = db().prepare("SELECT costume_id FROM i_user_costume WHERE user_id = ? AND user_costume_uuid = ?");
+    query->bind(1, m_userId);
+    query->bind(2, costumeUUID);
+    if(query->step())
+        return DatabaseContext::queryCostumeRarityAndEnhancementCost(query->columnInt(0), itemCount, costumeRarity, costumeEnhancementCost);
+
+    throw std::runtime_error("the user doesn't have such costume");
+
+}
+
+int32_t UserContext::consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType,
+                                                                            int32_t requiredRarity) {
+
+
+    if(materialCount <= 0)
+        throw std::logic_error("material count is not valid");
+
+    auto checkMaterialSuitabilityAndAvailability = db().prepare(R"SQL(
+        SELECT
+            effect_value
+        FROM
+            i_user_material,
+            m_material ON m_material.material_id = i_user_material.material_id
+        WHERE
+            user_id = ? AND
+            i_user_material.material_id = ? AND
+            count >= ? AND
+            material_type = ? AND
+            rarity_type = ?
+    )SQL");
+    checkMaterialSuitabilityAndAvailability->bind(1, m_userId);
+    checkMaterialSuitabilityAndAvailability->bind(2, materialId);
+    checkMaterialSuitabilityAndAvailability->bind(3, materialCount);
+    checkMaterialSuitabilityAndAvailability->bind(4, static_cast<int32_t>(requiredMaterialType));
+    checkMaterialSuitabilityAndAvailability->bind(5, requiredRarity);
+
+    if(!checkMaterialSuitabilityAndAvailability->step())
+        throw std::runtime_error("the user doesn't have enough of the material, or the material is not appropriate");
+
+
+    auto value = checkMaterialSuitabilityAndAvailability->columnInt(0);
+
+    checkMaterialSuitabilityAndAvailability->reset();
+
+    auto consumeMaterial = db().prepare(R"SQL(
+        UPDATE
+            i_user_material
+        SET
+            count = count - ?
+        WHERE
+            user_id = ? AND
+            material_id = ?
+        RETURNING
+            count
+    )SQL");
+    consumeMaterial->bind(1, materialCount);
+    consumeMaterial->bind(2, m_userId);
+    consumeMaterial->bind(3, materialId);
+
+    if(!consumeMaterial->step())
+        throw std::runtime_error("could not consume the material");
+
+    return value * materialCount;
+}
+
+void UserContext::consumeConsumableItem(int32_t consumableItemId, int32_t count) {
+    if(count < 0)
+        throw std::logic_error("the count to consume is not valid");
+
+    if(count == 0)
+        return;
+
+    auto checkEnoughCount = db().prepare(R"SQL(
+        SELECT
+            count
+        FROM i_user_consumable_item
+        WHERE
+            user_id = ? AND
+            consumable_item_id = ? AND
+            count >= ?
+    )SQL");
+    checkEnoughCount->bind(1, m_userId);
+    checkEnoughCount->bind(2, consumableItemId);
+    checkEnoughCount->bind(3, count);
+    if(!checkEnoughCount->step())
+        throw std::runtime_error("not enough of the consumable item available");
+
+    checkEnoughCount->reset();
+
+    auto consume = db().prepare(R"SQL(
+        UPDATE i_user_consumable_item SET
+            count = count - ?
+        WHERE
+            user_id = ? AND
+            consumable_item_id = ?
+    )SQL");
+    consume->bind(1, count);
+    consume->bind(2, m_userId);
+    consume->bind(3, consumableItemId);
+    consume->exec();
 }

@@ -105,6 +105,7 @@ add_executable(GameServer
     service/BannerService.proto
     service/BattleService.proto
     service/CharacterViewerService.proto
+    service/CostumeService.proto
     service/DataService.proto
     service/DeckService.proto
     service/DokanService.proto
@@ -133,6 +134,9 @@ add_executable(GameServer
 
     ServiceImplementations/CommonService.cpp
     ServiceImplementations/CommonService.h
+
+    ServiceImplementations/CostumeService.cpp
+    ServiceImplementations/CostumeService.h
 
     ServiceImplementations/DataService.cpp
     ServiceImplementations/DataService.h

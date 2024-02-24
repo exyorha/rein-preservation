@@ -102,6 +102,16 @@ public:
 
     std::optional<int32_t> getWeaponLevel(int32_t weaponId);
 
+    void registerCostumeLevelBonusConfirmed(int32_t costumeId, int32_t newlyConfirmedLevel);
+
+    void queryCostumeRarityAndEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
+                                              int32_t &costumeRarity, int32_t &costumeEnhancementCost);
+
+    int32_t consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType,
+                                                                   int32_t requiredRarity);
+
+    void consumeConsumableItem(int32_t consumableItemId, int32_t count);
+
 private:
 
     struct DeckInDatabaseRepresentation {

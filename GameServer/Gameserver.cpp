@@ -24,7 +24,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_characterViewerService(m_db),
     m_omikujiService(m_db),
     m_naviCutInService(m_db),
-    m_dokanService(m_db) {
+    m_dokanService(m_db),
+    m_costumeService(m_db) {
 
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
@@ -44,6 +45,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     grpcBuilder.RegisterService(&m_omikujiService);
     grpcBuilder.RegisterService(&m_naviCutInService);
     grpcBuilder.RegisterService(&m_dokanService);
+    grpcBuilder.RegisterService(&m_costumeService);
     grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
     grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());
@@ -80,14 +82,6 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         transaction.commit();
     }
 #endif
-
-    UserContext user(m_db, 1);
-    {
-        sqlite::Transaction transaction(&m_db.db());
-
-        user.updateUserUnlocks();
-    }
-
 }
 
 Gameserver::~Gameserver() {
