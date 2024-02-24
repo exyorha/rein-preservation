@@ -37,13 +37,13 @@ private:
 
     void AuthImpl(const ::apb::api::user::AuthUserRequest* request, ::apb::api::user::AuthUserResponse* response);
 
-    void GameStartImpl(int64_t userId, const ::google::protobuf::Empty * request, ::apb::api::user::GameStartResponse* response);
+    void GameStartImpl(UserContext &user, const ::google::protobuf::Empty * request, ::apb::api::user::GameStartResponse* response);
 
-    void SetUserNameImpl(int64_t userId, const ::apb::api::user::SetUserNameRequest* request, ::apb::api::user::SetUserNameResponse* response);
+    void SetUserNameImpl(UserContext &user, const ::apb::api::user::SetUserNameRequest* request, ::apb::api::user::SetUserNameResponse* response);
 
-    void SetUserMessageImpl(int64_t userId, const ::apb::api::user::SetUserMessageRequest* request, ::apb::api::user::SetUserMessageResponse* response);
+    void SetUserMessageImpl(UserContext &user, const ::apb::api::user::SetUserMessageRequest* request, ::apb::api::user::SetUserMessageResponse* response);
 
-    void SetUserFavoriteCostumeIdImpl(int64_t userId, const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
+    void SetUserFavoriteCostumeIdImpl(UserContext &user, const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
                                       ::apb::api::user::SetUserFavoriteCostumeIdResponse* response);
 
     void GetAndroidArgsImpl(const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response);

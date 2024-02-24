@@ -73,9 +73,6 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     }
 #endif
 #if 0
-    m_questService.issueAllFirstClearRewards();
-#endif
-#if 0
     {
         sqlite::Transaction transaction(&m_db.db());
 
@@ -83,6 +80,14 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         transaction.commit();
     }
 #endif
+
+    UserContext user(m_db, 1);
+    {
+        sqlite::Transaction transaction(&m_db.db());
+
+        user.updateUserUnlocks();
+    }
+
 }
 
 Gameserver::~Gameserver() {

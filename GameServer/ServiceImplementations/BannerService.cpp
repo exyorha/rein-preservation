@@ -16,7 +16,7 @@ BannerService::~BannerService() = default;
 }
 
 void BannerService::GetMamaBannerImpl(
-    int64_t userId, const ::apb::api::banner::GetMamaBannerRequest* request,
+    UserContext &user, const ::apb::api::banner::GetMamaBannerRequest* request,
     ::apb::api::banner::GetMamaBannerResponse* response) {
 
 }

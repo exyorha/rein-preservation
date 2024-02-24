@@ -23,7 +23,7 @@ public:
 
 private:
     void CharacterViewerTopImpl(
-        int64_t userId,
+        UserContext &user,
         const ::google::protobuf::Empty* request,
         ::apb::api::characterviewer::CharacterViewerTopResponse* response);
 };

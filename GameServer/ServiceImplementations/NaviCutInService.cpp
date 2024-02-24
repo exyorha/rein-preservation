@@ -15,23 +15,10 @@ NaviCutInService::~NaviCutInService() = default;
     return inChangesetCall("NaviCutInService::RegisterPlayed", context, request, response, &NaviCutInService::RegisterPlayedImpl);
 }
 
-void NaviCutInService::RegisterPlayedImpl(int64_t userId, const ::apb::api::navicutin::RegisterPlayedRequest* request,
-                                                    ::apb::api::navicutin::RegisterPlayedResponse* response) {
+void NaviCutInService::RegisterPlayedImpl(
+    UserContext &user,
+    const ::apb::api::navicutin::RegisterPlayedRequest* request,
+    ::apb::api::navicutin::RegisterPlayedResponse* response) {
 
-    auto query = db().prepare(R"SQL(
-        INSERT INTO i_user_navi_cut_in (
-            user_id,
-            navi_cut_in_id,
-            play_datetime
-        ) VALUES (
-            ?,
-            ?,
-            current_net_timestamp()
-        )
-        ON CONFLICT (user_id, navi_cut_in_id) DO NOTHING
-    )SQL");
-
-    query->bind(1, userId);
-    query->bind(2, request->navi_cut_id());
-    query->exec();
+    user.registerNaviCutInPlayed(request->navi_cut_id());
 }

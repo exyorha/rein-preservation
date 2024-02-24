@@ -45,11 +45,17 @@ add_executable(GameServer
     DataModel/Database.cpp
     DataModel/Database.h
 
+    DataModel/DatabaseContext.cpp
+    DataModel/DatabaseContext.h
+
     DataModel/DatabaseJSONRepresentation.cpp
     DataModel/DatabaseJSONRepresentation.h
 
     DataModel/TableChangesetWriter.cpp
     DataModel/TableChangesetWriter.h
+
+    DataModel/UserContext.cpp
+    DataModel/UserContext.h
 
     DataModel/Sqlite/AggregateFunction.h
 

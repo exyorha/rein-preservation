@@ -21,11 +21,11 @@ public:
                                  const ::apb::api::battle::FinishWaveRequest* request,
                                  ::apb::api::battle::FinishWaveResponse* response) override;
 private:
-    void StartWaveImpl(int64_t userId,
+    void StartWaveImpl(UserContext &user,
                            const ::apb::api::battle::StartWaveRequest* request,
                            ::apb::api::battle::StartWaveResponse* response);
 
-    void FinishWaveImpl(int64_t userId,
+    void FinishWaveImpl(UserContext &user,
                            const ::apb::api::battle::FinishWaveRequest* request,
                            ::apb::api::battle::FinishWaveResponse* response);
 };

@@ -21,7 +21,7 @@ public:
                                        ::apb::api::gameplay::CheckBeforeGamePlayResponse* response) override;
 
 private:
-    void CheckBeforeGamePlayImpl(int64_t userId,
+    void CheckBeforeGamePlayImpl(UserContext &user,
                                  const ::apb::api::gameplay::CheckBeforeGamePlayRequest* request,
                                  ::apb::api::gameplay::CheckBeforeGamePlayResponse* response);
 

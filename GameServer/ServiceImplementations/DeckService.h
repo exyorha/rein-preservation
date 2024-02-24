@@ -26,20 +26,17 @@ public:
                                     ::apb::api::deck::RefreshDeckPowerResponse* response) override;
 
 private:
-    void UpdateNameImpl(int64_t userId,
+    void UpdateNameImpl(UserContext &user,
                         const ::apb::api::deck::UpdateNameRequest* request,
                         ::apb::api::deck::UpdateNameResponse* response);
 
-    void ReplaceDeckImpl(int64_t userId,
+    void ReplaceDeckImpl(UserContext &user,
                          const ::apb::api::deck::ReplaceDeckRequest* request,
                          ::apb::api::deck::ReplaceDeckResponse* response);
 
-    void RefreshDeckPowerImpl(int64_t userId,
+    void RefreshDeckPowerImpl(UserContext &user,
                               const ::apb::api::deck::RefreshDeckPowerRequest* request,
                               ::apb::api::deck::RefreshDeckPowerResponse* response);
-
-    void updateDeckCharacterPower(int64_t userId, const apb::api::deck::DeckCharacterPower &power);
-
 };
 
 #endif

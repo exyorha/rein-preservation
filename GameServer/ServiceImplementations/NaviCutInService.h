@@ -22,7 +22,7 @@ public:
                                   ::apb::api::navicutin::RegisterPlayedResponse* response) override;
 
 private:
-    void RegisterPlayedImpl(int64_t userId,
+    void RegisterPlayedImpl(UserContext &user,
                             const ::apb::api::navicutin::RegisterPlayedRequest* request,
                             ::apb::api::navicutin::RegisterPlayedResponse* response);
 };

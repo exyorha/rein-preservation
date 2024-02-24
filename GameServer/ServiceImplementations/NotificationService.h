@@ -17,7 +17,8 @@ public:
                                          ::apb::api::notification::GetHeaderNotificationResponse* response) override;
 
 private:
-    void GetHeaderNotificationImpl(int64_t userId, const ::google::protobuf::Empty* request, ::apb::api::notification::GetHeaderNotificationResponse* response);
+    void GetHeaderNotificationImpl(UserContext &user,
+                                   const ::google::protobuf::Empty* request, ::apb::api::notification::GetHeaderNotificationResponse* response);
 
 
 };

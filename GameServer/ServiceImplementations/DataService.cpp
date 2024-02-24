@@ -22,7 +22,7 @@ DataService::~DataService() = default;
 void DataService::GetLatestMasterDataVersionImpl(const ::google::protobuf::Empty* request,
                                                  ::apb::api::data::MasterDataGetLatestVersionResponse* response) {
 
-    response->set_latest_master_data_version(dataModel().masterDatabaseVersion());
+    response->set_latest_master_data_version(global().dataModel().masterDatabaseVersion());
 }
 
 ::grpc::Status DataService::GetUserDataName(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
@@ -35,7 +35,7 @@ void DataService::GetUserDataNameImpl(const ::google::protobuf::Empty* request, 
 
 
 
-    for(const auto &name: getUserDataName()) {
+    for(const auto &name: global().getUserDataName()) {
         response->add_table_name(name);
     }
 }
@@ -64,20 +64,9 @@ void DataService::GetUserDataNameV2Impl(const ::google::protobuf::Empty* request
 
     auto list = response->add_table_name_list();
 
-    for(const auto &name: getUserDataName()) {
+    for(const auto &name: global().getUserDataName()) {
         list->add_table_name(name);
     }
-}
-
-std::vector<std::string> DataService::getUserDataName() const {
-    std::vector<std::string> names;
-
-    auto statement = db().prepare("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND name LIKE 'i\\_%' ESCAPE '\\'");
-    while(statement->step()) {
-        names.emplace_back(tableNameToEntityName(statement->columnText(0)));
-    }
-
-    return names;
 }
 
 ::grpc::Status DataService::GetUserData(::grpc::ServerContext* context,
@@ -88,70 +77,14 @@ std::vector<std::string> DataService::getUserDataName() const {
 }
 
 
-void DataService::GetUserDataImpl(int64_t userId,
+void DataService::GetUserDataImpl(UserContext &user,
                                   const ::apb::api::data::UserDataGetRequest* request,
                                   ::apb::api::data::UserDataGetResponse* response) {
 
     JSONWriter json;
 
     for(const auto &tableName: request->table_name()) {
-        json.writeArrayOpen();
-
-        std::stringstream query;
-        query << "SELECT * FROM " << entityNameToTableNameChecked(tableName) << " WHERE user_id = ?";
-        auto statement = db().prepare(query.str());
-        statement->bind(1, userId);
-
-        auto colCount = statement->columnCount();
-
-        std::optional<std::vector<std::string>> columnNames;
-
-        while(statement->step()) {
-            json.writeMapOpen();
-
-            if(!columnNames.has_value()) {
-                columnNames.emplace();
-
-                columnNames->reserve(colCount);
-
-                for(int colIndex = 0; colIndex < colCount; colIndex++) {
-                    auto columnName = statement->columnName(colIndex);
-
-                    columnNames->emplace_back(columnNameToEntityFieldName(columnName));
-                }
-            }
-
-            for(int colIndex = 0; colIndex < colCount; colIndex++) {
-                const auto &columnName = (*columnNames)[colIndex];
-
-                json.writeString(columnName);
-
-                writeSQLiteColumnValue(json, *statement, colIndex);
-            }
-
-            json.writeMapClose();
-        }
-
-        json.writeArrayClose();
-#if 0
-        std::string_view content;
-
-        if(tableName == "IUserProfile") {
-            content = R"json([{"userId":1,"name":"Ash","nameUpdateDatetime":28800000,"message":"","messageUpdateDatetime":28800000,"favoriteCostumeId":0,"favoriteCostumeIdUpdateDatetime":28800000,"latestVersion":1}])json";
-        } else if(tableName == "IUser") {
-            content = R"json([{"userId":1,"playerId":259591998318,"osType":2,"platformType":2,"userRestrictionType":1,"registerDatetime":1706304564000,"gameStartDatetime":28800000,"latestVersion":1}])json";
-        } else if(tableName == "IUserLogin") {
-            content = R"json([{"userId":1,"totalLoginCount":0,"continualLoginCount":0,"maxContinualLoginCount":0,"lastLoginDatetime":28800000,"lastComebackLoginDatetime":28800000,"latestVersion":1}]")json";
-        } else if(tableName == "IUserStatus") {
-            content = R"json([{"userId":1,"level":1,"exp":0,"staminaMilliValue":50000,"staminaUpdateDatetime":1706304564000,"latestVersion":1}])json";
-        } else if(tableName == "IUserGem") {
-            content = R"json([{"userId":1,"paidGem":0,"freeGem":0}])json";
-        } else if(tableName == "IUserMainQuestMainFlowStatus") {
-            content = R"json([{"userId":1,"currentMainQuestRouteId":1,"currentQuestSceneId":0,"headQuestSceneId":0,"isReachedLastQuestScene":false,"latestVersion":1}])json";
-        } else {
-            content = "[]";
-        }
-#endif
+        user.serializeTable(tableName, json);
 
         response->mutable_user_data_json()->emplace(tableName, json.output());
 

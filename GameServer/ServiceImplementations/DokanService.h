@@ -24,7 +24,7 @@ public:
 private:
 
     void RegisterDokanConfirmedImpl(
-        int64_t userId,
+        UserContext &user,
         const ::apb::api::dokan::RegisterDokanConfirmedRequest* request,
         ::apb::api::dokan::RegisterDokanConfirmedResponse* response);
 };

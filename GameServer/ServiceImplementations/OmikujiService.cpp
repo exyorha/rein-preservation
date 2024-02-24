@@ -18,23 +18,10 @@ OmikujiService::~OmikujiService() = default;
 }
 
 void OmikujiService::OmikujiDrawImpl(
-    int64_t userId,
+    UserContext &user,
     const ::apb::api::omikuji::OmikujiDrawRequest* request,
     ::apb::api::omikuji::OmikujiDrawResponse* response) {
 
-    auto draw = db().prepare(R"SQL(
-        INSERT INTO i_user_omikuji (
-            user_id,
-            omikuji_id,
-            latest_draw_datetime
-        ) VALUES (
-            ?,
-            ?,
-            current_net_timestamp()
-        )
-        ON CONFLICT (user_id, omikuji_id) DO UPDATE SET latest_draw_datetime = excluded.latest_draw_datetime
-    )SQL");
-    draw->bind(1, userId);
-    draw->bind(2, request->omikuji_id());
-    draw->exec();
+    user.registerOmikujiDraw(request->omikuji_id());
+
 }

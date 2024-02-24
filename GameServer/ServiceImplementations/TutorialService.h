@@ -24,16 +24,13 @@ public:
                                        ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckResponse* response) override;
 
 private:
-    void SetTutorialProgressImpl(int64_t userId,
+    void SetTutorialProgressImpl(UserContext &user,
                                  const ::apb::api::tutorial::SetTutorialProgressRequest* request,
                                  ::apb::api::tutorial::SetTutorialProgressResponse* response);
 
-    void SetTutorialProgressAndReplaceDeckImpl(int64_t userId,
+    void SetTutorialProgressAndReplaceDeckImpl(UserContext &user,
                                  const ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckRequest* request,
                                  ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckResponse* response);
-
-    void setUserTutorialProgress(int64_t userId, int32_t tutorialType, int32_t progressPhase, int32_t choiceId = 0);
-
 };
 
 #endif

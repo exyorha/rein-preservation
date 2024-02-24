@@ -30,49 +30,26 @@ public:
 
     ::grpc::Status UpdateMainQuestSceneProgress(::grpc::ServerContext* context, const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) override;
 
-    void issueAllFirstClearRewards();
-
 private:
 
-    enum QuestStateType : int32_t {
-        QuestStateType_MainFlowInProgress = 1, // Verified
-        QuestStateType_MainFlowComplete = 2 // Verified
-    };
-
-    enum QuestFlowType : int32_t {
-        QuestFlowType_NoFlow = 0, // Verified
-        QuestFlowType_MainFlow = 1, // Verified
-    };
-
-    void setMainQuestProgressStatus(int64_t userId, int32_t currentQuestSceneId, int32_t headQuestSceneId, QuestFlowType currentQuestFlowType);
-    void setMainQuestFlowStatus(int64_t userId, QuestFlowType flowType);
-
-    void UpdateMainFlowSceneProgressImpl(int64_t userId,
+    void UpdateMainFlowSceneProgressImpl(UserContext &user,
                                          const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
                                          ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response);
 
-    void StartMainQuestImpl(int64_t userId, const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response);
+    void StartMainQuestImpl(UserContext &user, const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response);
 
-    void RestartMainQuestImpl(int64_t userId,
+    void RestartMainQuestImpl(UserContext &user,
                           const ::apb::api::quest::RestartMainQuestRequest* request,
                           ::apb::api::quest::RestartMainQuestResponse* response);
 
-    void FinishMainQuestImpl(int64_t userId, const ::apb::api::quest::FinishMainQuestRequest* request,
+    void FinishMainQuestImpl(UserContext &user, const ::apb::api::quest::FinishMainQuestRequest* request,
                              ::apb::api::quest::FinishMainQuestResponse* response);
 
-    void UpdateMainQuestSceneProgressImpl(int64_t userId,
+    void UpdateMainQuestSceneProgressImpl(UserContext &user,
                                           const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
                                           ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response);
 
-    void updateMainQuestProgress(int64_t userId);
-
-    void issueFirstClearRewardGroup(int64_t userId, int64_t firstClearGroupId,
-                                    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr,
-                                    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestDropRewards = nullptr);
-
-    void commonStartAndRestartMainQuest(int64_t userId, int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly);
-
-    void recordQuestStartAttributes(int64_t userId, int32_t questId, int32_t userDeckNumber);
+    void recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber);
 };
 
 #endif

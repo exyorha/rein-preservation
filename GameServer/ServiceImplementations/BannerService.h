@@ -17,7 +17,7 @@ public:
                                  const ::apb::api::banner::GetMamaBannerRequest* request,
                                  ::apb::api::banner::GetMamaBannerResponse* response) override;
 private:
-    void GetMamaBannerImpl(int64_t userId,
+    void GetMamaBannerImpl(UserContext &user,
                            const ::apb::api::banner::GetMamaBannerRequest* request,
                            ::apb::api::banner::GetMamaBannerResponse* response);
 };

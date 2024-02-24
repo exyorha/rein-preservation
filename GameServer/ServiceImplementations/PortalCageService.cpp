@@ -17,7 +17,7 @@ PortalCageService::~PortalCageService() = default;
 }
 
 void PortalCageService::UpdatePortalCageSceneProgressImpl(
-    int64_t userId,
+    UserContext &user,
     const ::apb::api::portalcage::UpdatePortalCageSceneProgressRequest* request,
     ::apb::api::portalcage::UpdatePortalCageSceneProgressResponse* response) {
 

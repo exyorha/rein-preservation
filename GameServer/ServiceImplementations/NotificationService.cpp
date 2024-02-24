@@ -13,7 +13,8 @@ NotificationService::~NotificationService() = default;
     return inChangesetCall("NotificationService::GetHeaderNotification", context, request, response, &NotificationService::GetHeaderNotificationImpl);
 }
 
-void NotificationService::GetHeaderNotificationImpl(int64_t userId, const ::google::protobuf::Empty* request,
+void NotificationService::GetHeaderNotificationImpl(UserContext &user,
+                                                    const ::google::protobuf::Empty* request,
                                                     ::apb::api::notification::GetHeaderNotificationResponse* response) {
 
 }

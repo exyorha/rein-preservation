@@ -16,6 +16,12 @@ public:
     ::grpc::Status InitSequenceSchedule(::grpc::ServerContext* context,
                                         const ::google::protobuf::Empty* request, ::apb::api::gimmick::InitSequenceScheduleResponse* response) override;
 
+private:
+
+    void InitSequenceScheduleImpl(
+        UserContext &user,
+        const ::google::protobuf::Empty* request, ::apb::api::gimmick::InitSequenceScheduleResponse* response);
+
 };
 
 #endif

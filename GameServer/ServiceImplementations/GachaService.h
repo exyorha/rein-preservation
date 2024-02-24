@@ -13,10 +13,16 @@ public:
     GachaService(const GachaService &other) = delete;
     GachaService &operator =(const GachaService &other) = delete;
 
+    ::grpc::Status GetGachaList(
+        ::grpc::ServerContext* context, const ::apb::api::gacha::GetGachaListRequest* request, ::apb::api::gacha::GetGachaListResponse* response) override;
+
     ::grpc::Status GetRewardGacha(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::apb::api::gacha::GetRewardGachaResponse* response) override;
 
 private:
-    void GetRewardGachaImpl(int64_t userId, const ::google::protobuf::Empty* request, ::apb::api::gacha::GetRewardGachaResponse* response);
+    void GetGachaListImpl(
+        UserContext &user, const ::apb::api::gacha::GetGachaListRequest* request, ::apb::api::gacha::GetGachaListResponse* response);
+
+    void GetRewardGachaImpl(UserContext &user, const ::google::protobuf::Empty* request, ::apb::api::gacha::GetRewardGachaResponse* response);
 
 
 };

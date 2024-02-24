@@ -16,7 +16,7 @@ BattleService::~BattleService() = default;
 }
 
 void BattleService::StartWaveImpl(
-    int64_t userId, const ::apb::api::battle::StartWaveRequest* request,
+    UserContext &user, const ::apb::api::battle::StartWaveRequest* request,
     ::apb::api::battle::StartWaveResponse* response) {
 
 }
@@ -29,7 +29,7 @@ void BattleService::StartWaveImpl(
 }
 
 void BattleService::FinishWaveImpl(
-    int64_t userId, const ::apb::api::battle::FinishWaveRequest* request,
+    UserContext &user, const ::apb::api::battle::FinishWaveRequest* request,
     ::apb::api::battle::FinishWaveResponse* response) {
 
 }

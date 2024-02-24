@@ -23,7 +23,7 @@ public:
 
 private:
     void OmikujiDrawImpl(
-        int64_t userId,
+        UserContext &user,
         const ::apb::api::omikuji::OmikujiDrawRequest* request,
         ::apb::api::omikuji::OmikujiDrawResponse* response);
 

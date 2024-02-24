@@ -19,7 +19,7 @@ GamePlayService::~GamePlayService() = default;
 
 }
 
-void GamePlayService::CheckBeforeGamePlayImpl(int64_t userId,
+void GamePlayService::CheckBeforeGamePlayImpl(UserContext &user,
                                     const ::apb::api::gameplay::CheckBeforeGamePlayRequest* request,
                                     ::apb::api::gameplay::CheckBeforeGamePlayResponse* response) {
 
@@ -29,19 +29,14 @@ void GamePlayService::CheckBeforeGamePlayImpl(int64_t userId,
     // TODO: IUserWeaponNote is initially populated here?
     // TODO: IUserWeaponStory is initially populated here?
 
-    buildDefaultDeckIfNoneExists(userId);
+    user.buildDefaultDeckIfNoneExists();
 
+    /*
+     * The live server does that for new characters and it's necessary for the mom menu tutorial.
+     */
     for(int32_t defaultWeapon: { 100001, 100011, 100021 }) {
-        bool hasWeapon = false;
-        auto hasWeaponQuery = db().prepare("SELECT 1 FROM i_user_weapon WHERE user_id = ? AND weapon_id = ? LIMIT 1");
-        hasWeaponQuery->bind(1, userId);
-        hasWeaponQuery->bind(2, defaultWeapon);
-        if(hasWeaponQuery->step()) {
-            hasWeapon = true;
-        }
-
-        if(!hasWeapon) {
-            givePossession(userId, static_cast<int32_t>(PossessionType::WEAPON), defaultWeapon, 1);
+        if(!user.hasWeaponWithId(defaultWeapon)) {
+            user.givePossession(static_cast<int32_t>(PossessionType::WEAPON), defaultWeapon, 1);
         }
     }
 
@@ -49,15 +44,15 @@ void GamePlayService::CheckBeforeGamePlayImpl(int64_t userId,
      * This is needed for the companion tutorial to not get wedged.
      */
 
-    auto checkAny = db().prepare("SELECT * FROM i_user_companion WHERE user_id = ?");
-    checkAny->bind(1, userId);
-    if(!checkAny->step()) {
+    if(!user.hasAnyCompanions()) {
         /*
          * This should depend on the tutorial choices and such, but we
          * currently lack the needed stuff, so we just give out *something*
          * for the game to not get stuck.
          */
-        givePossession(userId, static_cast<int32_t>(PossessionType::COMPANION), 1, 1);
+        user.givePossession(static_cast<int32_t>(PossessionType::COMPANION), 1, 1);
     }
+
+    user.updateUserUnlocks();
 }
 

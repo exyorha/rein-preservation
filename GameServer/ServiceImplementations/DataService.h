@@ -39,11 +39,9 @@ private:
     void GetUserDataNameV2Impl(const ::google::protobuf::Empty* request,
                                ::apb::api::data::UserDataGetNameResponseV2* response);
 
-    void GetUserDataImpl(int64_t userId,
+    void GetUserDataImpl(UserContext &user,
                          const ::apb::api::data::UserDataGetRequest* request,
                          ::apb::api::data::UserDataGetResponse* response);
-
-    std::vector<std::string> getUserDataName() const;
 };
 
 #endif

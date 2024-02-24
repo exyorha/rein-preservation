@@ -22,7 +22,7 @@ public:
         ::apb::api::loginBonus::ReceiveStampResponse* response) override;
 
 private:
-    void ReceiveStampImpl(int64_t userId,
+    void ReceiveStampImpl(UserContext &user,
         const ::google::protobuf::Empty* request,
         ::apb::api::loginBonus::ReceiveStampResponse* response);
 
