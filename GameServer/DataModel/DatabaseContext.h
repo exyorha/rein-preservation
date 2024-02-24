@@ -46,7 +46,7 @@ public:
     int64_t registerUser();
     void authenticate(int64_t &outputUserId, std::string &outputSession, time_t &outputExpiration);
 
-    void queryCostumeRarityAndEnhancementCost(int32_t costumeID, int32_t itemCount, int32_t &costumeRarity, int32_t &costumeEnhancementCost);
+    void queryCostumeEnhancementCost(int32_t costumeID, int32_t itemCount, int32_t &costumeEnhancementCost);
 
 private:
     Database &m_db;

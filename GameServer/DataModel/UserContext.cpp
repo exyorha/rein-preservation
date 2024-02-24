@@ -2032,20 +2032,19 @@ void UserContext::registerCostumeLevelBonusConfirmed(int32_t costumeId, int32_t 
 }
 
 
-void UserContext::queryCostumeRarityAndEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
-                                                       int32_t &costumeRarity, int32_t &costumeEnhancementCost) {
+void UserContext::queryCostumeEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
+                                              int32_t &costumeEnhancementCost) {
     auto query = db().prepare("SELECT costume_id FROM i_user_costume WHERE user_id = ? AND user_costume_uuid = ?");
     query->bind(1, m_userId);
     query->bind(2, costumeUUID);
     if(query->step())
-        return DatabaseContext::queryCostumeRarityAndEnhancementCost(query->columnInt(0), itemCount, costumeRarity, costumeEnhancementCost);
+        return DatabaseContext::queryCostumeEnhancementCost(query->columnInt(0), itemCount, costumeEnhancementCost);
 
     throw std::runtime_error("the user doesn't have such costume");
 
 }
 
-int32_t UserContext::consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType,
-                                                                            int32_t requiredRarity) {
+int32_t UserContext::consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType) {
 
 
     if(materialCount <= 0)
@@ -2061,14 +2060,12 @@ int32_t UserContext::consumeEnhancementMaterialAndCalculateTotalEffectValue(int3
             user_id = ? AND
             i_user_material.material_id = ? AND
             count >= ? AND
-            material_type = ? AND
-            rarity_type = ?
+            material_type = ?
     )SQL");
     checkMaterialSuitabilityAndAvailability->bind(1, m_userId);
     checkMaterialSuitabilityAndAvailability->bind(2, materialId);
     checkMaterialSuitabilityAndAvailability->bind(3, materialCount);
     checkMaterialSuitabilityAndAvailability->bind(4, static_cast<int32_t>(requiredMaterialType));
-    checkMaterialSuitabilityAndAvailability->bind(5, requiredRarity);
 
     if(!checkMaterialSuitabilityAndAvailability->step())
         throw std::runtime_error("the user doesn't have enough of the material, or the material is not appropriate");

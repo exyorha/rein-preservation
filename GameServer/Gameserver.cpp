@@ -1,4 +1,5 @@
 #include "Gameserver.h"
+#include "DataModel/DatabaseEnums.h"
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Statement.h>
 
@@ -79,6 +80,15 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         sqlite::Transaction transaction(&m_db.db());
 
         m_db.db().prepare("UPDATE i_user_main_quest_main_flow_status SET current_quest_scene_id = 43")->exec();
+        transaction.commit();
+    }
+#endif
+#if 0
+    {
+        sqlite::Transaction transaction(&m_db.db());
+
+        UserContext ctx(m_db, 1);
+        ctx.givePossession(static_cast<int32_t>(PossessionType::MATERIAL), 100004, 1000);
         transaction.commit();
     }
 #endif

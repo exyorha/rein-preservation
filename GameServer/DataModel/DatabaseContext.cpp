@@ -126,11 +126,10 @@ void DatabaseContext::authenticate(int64_t &outputUserId, std::string &outputSes
     }
 }
 
-void DatabaseContext::queryCostumeRarityAndEnhancementCost(int32_t costumeID, int32_t itemCount,
-                                                           int32_t &costumeRarity, int32_t &costumeEnhancementCost) {
+void DatabaseContext::queryCostumeEnhancementCost(int32_t costumeID, int32_t itemCount,
+                                                  int32_t &costumeEnhancementCost) {
     auto query = db().prepare(R"SQL(
         SELECT
-            m_costume.rarity_type,
             m_costume_rarity.enhancement_cost_by_material_numerical_function_id
         FROM
             m_costume,
@@ -143,8 +142,7 @@ void DatabaseContext::queryCostumeRarityAndEnhancementCost(int32_t costumeID, in
     if(!query->step())
         throw std::runtime_error("no such costume");
 
-    costumeRarity = query->columnInt(0);
-    auto costFunction = query->columnInt(1);
+    auto costFunction = query->columnInt(0);
     query->reset();
 
     costumeEnhancementCost = evaluateNumericalFunction(costFunction, itemCount);

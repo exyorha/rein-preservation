@@ -104,11 +104,10 @@ public:
 
     void registerCostumeLevelBonusConfirmed(int32_t costumeId, int32_t newlyConfirmedLevel);
 
-    void queryCostumeRarityAndEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
-                                              int32_t &costumeRarity, int32_t &costumeEnhancementCost);
+    void queryCostumeEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
+                                     int32_t &costumeEnhancementCost);
 
-    int32_t consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType,
-                                                                   int32_t requiredRarity);
+    int32_t consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType);
 
     void consumeConsumableItem(int32_t consumableItemId, int32_t count);
 

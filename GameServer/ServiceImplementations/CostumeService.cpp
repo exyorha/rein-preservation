@@ -35,14 +35,13 @@ void CostumeService::EnhanceImpl(
         int32_t costForThisMaterial;
         int32_t rarity;
 
-        user.queryCostumeRarityAndEnhancementCost(request->user_costume_uuid(), materialItemIdAndCount.second,
-                                                  rarity, costForThisMaterial);
+        user.queryCostumeEnhancementCost(request->user_costume_uuid(), materialItemIdAndCount.second,
+                                         costForThisMaterial);
 
         effectValue = user.consumeEnhancementMaterialAndCalculateTotalEffectValue(
             materialItemIdAndCount.first,
             materialItemIdAndCount.second,
-            MaterialType::COSTUME_ENHANCEMENT,
-            rarity);
+            MaterialType::COSTUME_ENHANCEMENT);
 
         costumeTotalEnhancementCost += costForThisMaterial;
     }
