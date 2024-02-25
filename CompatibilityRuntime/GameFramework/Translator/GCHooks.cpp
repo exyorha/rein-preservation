@@ -7,13 +7,16 @@
 #include "support.h"
 #include "thunking.h"
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
 #include "gc.h"
 #include "private/gc_priv.h"
 #include "gc_mark.h"
+#endif
 
 static size_t *totalStackSize;
 static void (*arm_GC_push_all_stack)(void *bottom, void *top);
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
 static void GC_CALLBACK warnProc(char *format, GC_word value);
 static void GC_CALLBACK abortProc(const char *msg);
 
@@ -42,13 +45,22 @@ static void GC_CALLBACK abortProc(const char *msg) {
         fputs(msg, stderr);
 }
 
+static void *gcAllocReplacement(size_t lb) {
+    auto ptr = malloc(lb);
+    if(ptr && lb) {
+        memset(ptr, 0, lb);
+    }
+
+    return ptr;
+}
+
 void * GC_generic_malloc_inner(size_t lb, int k) {
     (void)k;
-    return malloc(lb);
+    return gcAllocReplacement(lb);
 }
 
 void * GC_malloc_uncollectable(size_t size) {
-    return malloc(size);
+    return gcAllocReplacement(size);
 }
 
 void GC_free_inner(void * p) {
@@ -101,6 +113,24 @@ void initializeHostGC() {
 
     GC_thr_init();
 }
+
+void *getPlatformSpecificStackBottomForThisThread() {
+
+#ifdef _WIN32
+    auto teb = reinterpret_cast<PNT_TIB>(NtCurrentTeb());
+
+    return teb->StackBase;
+#else
+    pthread_attr_t attr;
+    pthread_getattr_np(pthread_self(), &attr);
+    void *stackaddr;
+    size_t stacksize;
+    pthread_attr_getstack(&attr, &stackaddr, &stacksize);
+
+    return static_cast<unsigned char *>(stackaddr) + stacksize;
+#endif
+}
+#endif
 
 class BoehmGCThreadVisitor final : public GarbageCollectorThreadVisitor {
 public:
@@ -157,6 +187,7 @@ static void GC_start_world_diversion(const Diversion *diversion) {
     GlobalContext::get().jit().startWorld(JITThreadContext::get());
 }
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
 extern "C" {
     void GC_push_all_stacks(void);
 }
@@ -178,6 +209,7 @@ void GC_push_all_stack(ptr_t bottom, ptr_t top) {
 void GC_push_many_regs(const word *regs, unsigned count) {
     markOnARMSide(const_cast<word *>(regs), const_cast<word *>(regs + count));
 }
+#endif
 
 static void GC_push_all_stacks_diversion(const Diversion *diversion) {
     (void)diversion;
@@ -189,6 +221,7 @@ static void GC_push_all_stacks_diversion(const Diversion *diversion) {
      */
     JITThreadContext::collectThreadStacks(&visitor);
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
     /*
      * Also collect the x86 stacks.
      */
@@ -197,6 +230,7 @@ static void GC_push_all_stacks_diversion(const Diversion *diversion) {
     GC_push_all_stacks();
 
     GC_start_world();
+#endif
 
     *totalStackSize = visitor.totalStackSize();
 }
@@ -216,19 +250,3 @@ void installGCHooks(const Image &il2cppImage) {
 
 }
 
-void *getPlatformSpecificStackBottomForThisThread() {
-
-#ifdef _WIN32
-    auto teb = reinterpret_cast<PNT_TIB>(NtCurrentTeb());
-
-    return teb->StackBase;
-#else
-    pthread_attr_t attr;
-    pthread_getattr_np(pthread_self(), &attr);
-    void *stackaddr;
-    size_t stacksize;
-    pthread_attr_getstack(&attr, &stackaddr, &stacksize);
-
-    return static_cast<unsigned char *>(stackaddr) + stacksize;
-#endif
-}

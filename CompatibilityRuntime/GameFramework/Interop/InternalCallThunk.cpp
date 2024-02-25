@@ -6,6 +6,8 @@
 #include <Translator/thunking.h>
 #include <Translator/WrappedARMException.h>
 
+#include <Translator/GCHooks.h>
+
 InternalCallThunk::InternalCallThunk(const char *name, Il2CppMethodPointer x86Method) :
     m_call(std::in_place_type_t<std::string>(), name),
     m_x86Method(x86Method) {
@@ -45,6 +47,15 @@ const PreparedInternalCall *InternalCallThunk::prepareInternalCall(std::string &
 }
 
 void InternalCallThunk::execute() {
+#ifndef CR_GARBAGE_COLLECT_HOST_STACKS
+    /*
+     * If we are not capable of marking the host stacks, then we need to
+     * disable the ARM-side GC for the whole time the thunk is running,
+     * including the icall preparation time.
+     */
+    GCDisablingScope disableGC;
+#endif
+
     /*
      * First, try to take the fast path: take a shared lock and see if the
      * thunk is already prepared. If it is, then call immediately - it'll be

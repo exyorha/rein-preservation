@@ -16,8 +16,10 @@
 #include <algorithm>
 #include <thread>
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
 #include "gc.h"
 #include <Translator/GCHooks.h>
+#endif
 
 JoinableThreadManager JITThreadContext::m_joinableManager;
 
@@ -221,6 +223,7 @@ void JITThreadContext::detach() {
 }
 
 void JITThreadContext::threadStateInitialization() noexcept {
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
     GC_stack_base sb;
 
     sb.mem_base = getPlatformSpecificStackBottomForThisThread();
@@ -229,6 +232,7 @@ void JITThreadContext::threadStateInitialization() noexcept {
     if(result != GC_SUCCESS) {
         fprintf(stderr, "GC_register_my_thread has failed for %p: %d\n", this, result);
     }
+#endif
 
     printf("running the thread initialization of %p\n", this);
 }
@@ -241,7 +245,9 @@ void JITThreadContext::threadStateTeardown() noexcept {
 
     printf("running the thread destruction of %p done\n", this);
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
     GC_unregister_my_thread();
+#endif
 }
 
 void JITThreadContext::clearCurrentThreadContext() noexcept {

@@ -1,5 +1,9 @@
 include(GenerateExportHeader)
 
+# Walk host (x86) thread stacks to mark objects that may be  referenced in
+# there. If disabled, GC will instead be disabled during .NET callouts.
+set(CR_GARBAGE_COLLECT_HOST_STACKS TRUE)
+
 add_library(GameAssembly SHARED
     ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api-functions.h
     ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api/il2cpp-api-types.h
@@ -161,42 +165,46 @@ set_target_properties(GameAssembly PROPERTIES
 
 target_link_libraries(GameAssembly PRIVATE elfpe-interface)
 
-set(bdwgc_root ${PROJECT_SOURCE_DIR}/thirdparty/bdwgc)
-if(CYGWIN OR WIN32)
-    set(bdwgc_sources
-        win32_threads.c
-    )
-else()
-    set(bdwgc_sources
-        pthread_start.c pthread_stop_world.c pthread_support.c
-    )
+if(CR_GARBAGE_COLLECT_HOST_STACKS)
+    set(bdwgc_root ${PROJECT_SOURCE_DIR}/thirdparty/bdwgc)
+    if(CYGWIN OR WIN32)
+        set(bdwgc_sources
+            win32_threads.c
+        )
+    else()
+        set(bdwgc_sources
+            pthread_start.c pthread_stop_world.c pthread_support.c
+        )
 
-    if(APPLE)
-        list(APPEND bdwgc_sources darwin_stop_world.c)
+        if(APPLE)
+            list(APPEND bdwgc_sources darwin_stop_world.c)
+        endif()
+
+
     endif()
 
-
-endif()
-
-list(TRANSFORM bdwgc_sources PREPEND "${bdwgc_root}/")
-add_library(bdwgc_portion STATIC
-    ${bdwgc_sources}
-)
-target_compile_definitions(bdwgc_portion PRIVATE
-    -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION -D_REENTRANT -DGC_USESIGRT_SIGNALS
-    -DNO_HANDLE_FORK -DGC_DISABLE_INCREMENTAL -DGC_ALWAYS_MULTITHREADED
-    -DGC_NO_THREADS_DISCOVERY
-)
-target_compile_definitions(bdwgc_portion PUBLIC -DGC_THREADS -DGC_BUILTIN_ATOMIC )
-target_include_directories(bdwgc_portion PUBLIC "${bdwgc_root}/include")
-
-if(WIN32)
-    target_compile_definitions(bdwgc_portion PRIVATE
-        -D_CRT_SECURE_NO_DEPRECATE -DUSE_SPIN_LOCK
+    list(TRANSFORM bdwgc_sources PREPEND "${bdwgc_root}/")
+    add_library(bdwgc_portion STATIC
+        ${bdwgc_sources}
     )
-endif()
+    target_compile_definitions(bdwgc_portion PRIVATE
+        -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION -D_REENTRANT -DGC_USESIGRT_SIGNALS
+        -DNO_HANDLE_FORK -DGC_DISABLE_INCREMENTAL -DGC_ALWAYS_MULTITHREADED
+        -DGC_NO_THREADS_DISCOVERY
+    )
+    target_compile_definitions(bdwgc_portion PUBLIC -DGC_THREADS -DGC_BUILTIN_ATOMIC )
+    target_include_directories(bdwgc_portion PUBLIC "${bdwgc_root}/include")
 
-target_link_libraries(GameAssembly PRIVATE bdwgc_portion)
+    if(WIN32)
+        target_compile_definitions(bdwgc_portion PRIVATE
+            -D_CRT_SECURE_NO_DEPRECATE -DUSE_SPIN_LOCK
+        )
+    endif()
+
+    target_link_libraries(GameAssembly PRIVATE bdwgc_portion)
+
+    target_compile_definitions(GameAssembly PRIVATE -DCR_GARBAGE_COLLECT_HOST_STACKS)
+endif()
 
 if(UNIX)
     target_link_options(GameAssembly PRIVATE

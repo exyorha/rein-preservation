@@ -5,6 +5,7 @@
 #include <Translator/DiversionManager.h>
 #include <Translator/JITThreadContext.h>
 #include <Translator/thunking.h>
+#include <Translator/GCHooks.h>
 
 #include <il2cpp-tabledefs.h>
 
@@ -82,6 +83,14 @@ MethodDiversion::AllocatedClosure::~AllocatedClosure() {
 }
 
 void MethodDiversion::diversionHandler(const Diversion *diversion) {
+    #ifndef CR_GARBAGE_COLLECT_HOST_STACKS
+    /*
+     * If we are not capable of marking the host stacks, then we need to
+     * disable the ARM-side GC for the whole time the diversion is running.
+     */
+    GCDisablingScope disableGC;
+#endif
+
     auto this_ = static_cast<MethodDiversion *>(diversion->userdata);
 
     auto &context = JITThreadContext::get();

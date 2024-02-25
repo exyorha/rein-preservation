@@ -34,7 +34,9 @@ GlobalContext *GlobalContext::GlobalContextRegisterer::m_context = nullptr;
 
 GlobalContext::GlobalContext() : m_registerer(this) {
 
+#ifdef CR_GARBAGE_COLLECT_HOST_STACKS
     initializeHostGC();
+#endif
 
     auto directory = thisLibraryDirectory();
     if(getenv("ARM_DEBUG")) {

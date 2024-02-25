@@ -199,7 +199,8 @@ auto ARMArgumentPacker::getValueCategory(const Il2CppType *type, ffi_type **ffi)
         typeCategory == IL2CPP_TYPE_STRING ||
         typeCategory == IL2CPP_TYPE_SZARRAY ||
         typeCategory == IL2CPP_TYPE_I || // intptr_t, technically not a pointer but it doesn't matter
-        typeCategory == IL2CPP_TYPE_OBJECT
+        typeCategory == IL2CPP_TYPE_OBJECT ||
+        typeCategory == IL2CPP_TYPE_GENERICINST /* I think this *should* be correct but I'm not sure */
     ) {
         *ffi = &ffi_type_pointer;
         return ValueCategory::Integer;
