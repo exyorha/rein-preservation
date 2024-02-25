@@ -628,7 +628,7 @@ void UserContext::giveUserCostume(
 
     activeSkill->bind(1, m_userId);
     activeSkill->bind(2, costumeUUID);
-    activeSkill->bind(3, level);
+    activeSkill->bind(3, activeSkillLevel);
     activeSkill->exec();
 
     auto addCharacter = db().prepare(R"SQL(
