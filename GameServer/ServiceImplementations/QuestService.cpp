@@ -38,7 +38,7 @@ void QuestService::StartMainQuestImpl(UserContext &user, const ::apb::api::quest
     ::apb::api::quest::StartMainQuestResponse* response) {
 
     user.recordQuestStartAttributes(request->quest_id(), request->user_deck_number());
-    user.startOrRestartMainQuest(request->quest_id(), request->is_main_flow(), request->is_replay_flow(), request->is_battle_only());
+    user.startMainQuest(request->quest_id(), request->is_main_flow(), request->is_replay_flow(), request->is_battle_only());
 }
 
 ::grpc::Status QuestService::RestartMainQuest(::grpc::ServerContext* context,
@@ -53,12 +53,7 @@ void QuestService::RestartMainQuestImpl(UserContext &user,
 
     int32_t userDeckNumber;
     user.getOrResetAttributesAtStartOfQuest(request->quest_id(), userDeckNumber);
-
-    /*
-     * TODO: is it correct to always set is_replay_flow = false here?
-     */
-    user.startOrRestartMainQuest(request->quest_id(), request->is_main_flow(), false, std::nullopt);
-
+    response->set_deck_number(userDeckNumber);
 }
 
 ::grpc::Status QuestService::FinishMainQuest(::grpc::ServerContext* context,

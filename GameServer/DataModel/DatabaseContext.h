@@ -38,6 +38,7 @@ public:
     }
 
     std::optional<int32_t> evaluateNumericalParameterMap(int32_t mapId, int32_t value);
+    std::optional<int32_t> getNumericalParameterMapValue(int32_t mapId, int32_t key);
     int32_t evaluateNumericalFunction(int32_t functionId, int32_t input);
     static int32_t evaluateNumericalFunction(NumericalFunctionType type, const std::vector<int32_t> &parameters, int32_t input);
 

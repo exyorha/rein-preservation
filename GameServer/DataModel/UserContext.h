@@ -79,7 +79,7 @@ public:
     void updateMainFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId);
 
     void recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber);
-    void startOrRestartMainQuest(int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly);
+    void startMainQuest(int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly);
     void setMainQuestFlowStatus(QuestFlowType flowType);
     void getOrResetAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber);
     void getAndClearAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber);
@@ -146,6 +146,15 @@ private:
     );
 
     void updateWeaponUnlockedStory(int32_t weaponId);
+
+    void giveUserCostume(
+        int32_t costumeId,
+        int32_t limitBreakCount = 0,
+        int32_t level = 1,
+        int32_t activeSkillLevel = 1,
+        int32_t awakenCount = 0);
+    void giveUserCostumeEnhanced(int32_t costumeEnhancedId);
+
 
     int64_t m_userId;
 };

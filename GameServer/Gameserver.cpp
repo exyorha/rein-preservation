@@ -88,7 +88,9 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         sqlite::Transaction transaction(&m_db.db());
 
         UserContext ctx(m_db, 1);
-        ctx.givePossession(static_cast<int32_t>(PossessionType::MATERIAL), 100004, 1000);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::MATERIAL), 100004, 1000);
+        //
+        ctx.updateMainQuestProgress();
         transaction.commit();
     }
 #endif

@@ -264,58 +264,7 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
             if(count != 1)
                 throw std::runtime_error("Unexpected count value for COSTUME");
 
-            auto query = db().prepare(R"SQL(
-                INSERT INTO i_user_costume (
-                    user_id,
-                    user_costume_uuid,
-                    costume_id,
-                    acquisition_datetime
-                ) VALUES (
-                    ?,
-                    hex(randomblob(16)),
-                    ?,
-                    current_net_timestamp()
-                )
-                RETURNING user_costume_uuid
-            )SQL");
-
-            query->bind(1, m_userId);
-            query->bind(2, possessionId);
-            std::string costumeUUID;
-            while(query->step()) {
-                costumeUUID = query->columnText(0);
-            }
-
-            auto activeSkill = db().prepare(R"SQL(
-                INSERT INTO i_user_costume_active_skill (
-                    user_id,
-                    user_costume_uuid,
-                    acquisition_datetime
-                ) VALUES (
-                    ?,
-                    ?,
-                    current_net_timestamp()
-                )
-            )SQL");
-
-            activeSkill->bind(1, m_userId);
-            activeSkill->bind(2, costumeUUID);
-            activeSkill->exec();
-
-            auto addCharacter = db().prepare(R"SQL(
-                INSERT INTO i_user_character (user_id, character_id)
-                SELECT
-                    ? AS user_id,
-                    character_id
-                FROM
-                    m_costume
-                WHERE
-                    costume_id = ?
-                ON CONFLICT (user_id, character_id) DO NOTHING
-            )SQL");
-            addCharacter->bind(1, m_userId);
-            addCharacter->bind(2, possessionId);
-            addCharacter->exec();
+            giveUserCostume(possessionId);
         }
         break;
 
@@ -441,7 +390,7 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
         case PossessionType::PARTS:
         {
             if(count != 1)
-                throw std::runtime_error("Unexpected count value for WEAPON");
+                throw std::runtime_error("Unexpected count value for PARTS");
 
             auto query = db().prepare(R"SQL(
                 INSERT INTO i_user_parts (
@@ -518,6 +467,17 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
         }
         break;
 
+        case PossessionType::COSTUME_ENHANCED:
+        {
+
+            if(count != 1)
+                throw std::runtime_error("Unexpected count value for COSTUME_ENHANCED");
+
+            giveUserCostumeEnhanced(possessionId);
+
+        }
+        break;
+
         case PossessionType::FREE_GEM:
         {
             if(count <= 0)
@@ -561,6 +521,130 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
     }
 
     buildDefaultDeckIfNoneExists();
+}
+
+void UserContext::giveUserCostumeEnhanced(int32_t costumeEnhancedId) {
+    auto query = db().prepare(R"SQL(
+        SELECT
+            costume_id,
+            limit_break_count,
+            level,
+            active_skill_level,
+            awaken_count
+        FROM
+            m_costume_enhanced
+        WHERE
+            costume_enhanced_id = ?
+    )SQL");
+    query->bind(1, costumeEnhancedId);
+    if(!query->step())
+        throw std::runtime_error("no such enhanced costume");
+
+    auto costumeId = query->columnInt(0);
+    auto limitBreakCount = query->columnInt(1);
+    auto level = query->columnInt(2);
+    auto activeSkillLevel = query->columnInt(3);
+    auto awakenCount = query->columnInt(4);
+    query->reset();
+
+    giveUserCostume(costumeId, limitBreakCount, level, activeSkillLevel, awakenCount);
+}
+
+void UserContext::giveUserCostume(
+    int32_t costumeId,
+    int32_t limitBreakCount,
+    int32_t level,
+    int32_t activeSkillLevel,
+    int32_t awakenCount) {
+
+    auto getLevelMap = db().prepare(R"SQL(
+        SELECT
+            required_exp_for_level_up_numerical_parameter_map_id
+        FROM
+            m_costume,
+            m_costume_rarity ON m_costume_rarity.rarity_type = m_costume.rarity_type
+        WHERE
+            costume_id = ?
+    )SQL");
+
+    getLevelMap->bind(1, costumeId);
+    if(!getLevelMap->step())
+        throw std::runtime_error("no such costume");
+    auto expFunction = getLevelMap->columnInt(0);
+    getLevelMap->reset();
+
+    auto exp = getNumericalParameterMapValue(expFunction, level);
+    if(!exp.has_value())
+        throw std::runtime_error("costume level is not in the exp map");
+
+    auto query = db().prepare(R"SQL(
+        INSERT INTO i_user_costume (
+            user_id,
+            user_costume_uuid,
+            costume_id,
+            limit_break_count,
+            level,
+            exp,
+            acquisition_datetime,
+            awaken_count
+        ) VALUES (
+            ?,
+            hex(randomblob(16)),
+            ?,
+            ?,
+            ?,
+            ?,
+            current_net_timestamp(),
+            ?
+        )
+        RETURNING user_costume_uuid
+    )SQL");
+
+    query->bind(1, m_userId);
+    query->bind(2, costumeId);
+    query->bind(3, limitBreakCount);
+    query->bind(4, level);
+    query->bind(5, *exp);
+    query->bind(6, awakenCount);
+
+    std::string costumeUUID;
+    while(query->step()) {
+        costumeUUID = query->columnText(0);
+    }
+
+    auto activeSkill = db().prepare(R"SQL(
+        INSERT INTO i_user_costume_active_skill (
+            user_id,
+            user_costume_uuid,
+            level,
+            acquisition_datetime
+        ) VALUES (
+            ?,
+            ?,
+            ?,
+            current_net_timestamp()
+        )
+    )SQL");
+
+    activeSkill->bind(1, m_userId);
+    activeSkill->bind(2, costumeUUID);
+    activeSkill->bind(3, level);
+    activeSkill->exec();
+
+    auto addCharacter = db().prepare(R"SQL(
+        INSERT INTO i_user_character (user_id, character_id)
+        SELECT
+            ? AS user_id,
+            character_id
+        FROM
+            m_costume
+        WHERE
+            costume_id = ?
+        ON CONFLICT (user_id, character_id) DO NOTHING
+    )SQL");
+    addCharacter->bind(1, m_userId);
+    addCharacter->bind(2, costumeId);
+    addCharacter->exec();
 }
 
 void UserContext::replaceDeck(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::Deck *deckDefinition) {
@@ -724,7 +808,7 @@ void UserContext::giveUserDeckCharacterExperience(
     while(subWeapons->step()) {
         std::string subWeapon = subWeapons->columnText(0);
         if(!subWeapon.empty()) {
-            giveUserWeaponExperience(weaponUuid, characterExperience, costumeExperience);
+            giveUserWeaponExperience(subWeapon, characterExperience, costumeExperience);
         }
     }
 }
@@ -1287,7 +1371,7 @@ void UserContext::recordQuestStartAttributes(int32_t questId, int32_t userDeckNu
     updateStartAttributes->exec();
 }
 
-void UserContext::startOrRestartMainQuest(
+void UserContext::startMainQuest(
     int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly) {
 
     auto getRoute = db().prepare(R"SQL(
@@ -1367,7 +1451,7 @@ void UserContext::startOrRestartMainQuest(
     int64_t quest_state_type = 1; // 1 probably in progress, 2 probably completed???
 
     startQuest->bind(1, m_userId);
-    startQuest->bind(2, static_cast<int32_t>(questFlowType));
+    startQuest->bind(2, questId);
     startQuest->bind(3, quest_state_type);
     if(isBattleOnly.has_value()) {
         startQuest->bind(4, *isBattleOnly ? 1 : 0);

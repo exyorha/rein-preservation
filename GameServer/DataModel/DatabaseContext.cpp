@@ -47,6 +47,25 @@ std::optional<int32_t> DatabaseContext::evaluateNumericalParameterMap(int32_t ma
     return {};
 }
 
+std::optional<int32_t> DatabaseContext::getNumericalParameterMapValue(int32_t mapId, int32_t key) {
+    auto query = db().prepare(R"SQL(
+        SELECT
+            parameter_value
+        FROM
+            m_numerical_parameter_map
+        WHERE
+            numerical_parameter_map_id = ? AND
+            parameter_key = ?
+    )SQL");
+    query->bind(1, mapId);
+    query->bind(2, key);
+    if(query->step()) {
+        return query->columnInt(0);
+    }
+
+    return {};
+}
+
 std::optional<int64_t> DatabaseContext::authenticate(const std::string_view &sessionKey) {
     auto statement = db().prepare("SELECT user_id FROM internal_sessions WHERE session_id = ? AND expire_datetime >= unixepoch('now')");
     statement->bind(1, sessionKey);
