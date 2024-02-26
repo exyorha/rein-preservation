@@ -167,6 +167,28 @@ void DatabaseContext::queryCostumeEnhancementCost(int32_t costumeID, int32_t ite
     costumeEnhancementCost = evaluateNumericalFunction(costFunction, itemCount);
 }
 
+void DatabaseContext::queryWeaponEnhancementCost(int32_t weaponID, int32_t itemCount,
+                                                 int32_t &weaponEnhancementCost) {
+    auto query = db().prepare(R"SQL(
+        SELECT
+            m_weapon_rarity.enhancement_cost_by_material_numerical_function_id
+        FROM
+            m_weapon,
+            m_weapon_rarity ON m_weapon_rarity.rarity_type = m_weapon.rarity_type
+        WHERE
+            weapon_id = ?
+    )SQL");
+
+    query->bind(1, weaponID);
+    if(!query->step())
+        throw std::runtime_error("no such weapon");
+
+    auto costFunction = query->columnInt(0);
+    query->reset();
+
+    weaponEnhancementCost = evaluateNumericalFunction(costFunction, itemCount);
+}
+
 int32_t DatabaseContext::evaluateNumericalFunction(int32_t functionId, int32_t input) {
     auto queryFunction = db().prepare(R"SQL(
         SELECT

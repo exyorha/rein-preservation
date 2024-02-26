@@ -18,6 +18,11 @@ public:
         const ::apb::api::costume::EnhanceRequest* request,
         ::apb::api::costume::EnhanceResponse* response) override;
 
+    ::grpc::Status EnhanceActiveSkill(
+        ::grpc::ServerContext* context,
+        const ::apb::api::costume::EnhanceActiveSkillRequest* request,
+        ::apb::api::costume::EnhanceActiveSkillResponse* response) override;
+
     ::grpc::Status RegisterLevelBonusConfirmed(
         ::grpc::ServerContext* context,
         const ::apb::api::costume::RegisterLevelBonusConfirmedRequest* request,
@@ -29,6 +34,11 @@ private:
         UserContext &user,
         const ::apb::api::costume::EnhanceRequest* request,
         ::apb::api::costume::EnhanceResponse* response);
+
+    void EnhanceActiveSkillImpl(
+        UserContext &user,
+        const ::apb::api::costume::EnhanceActiveSkillRequest* request,
+        ::apb::api::costume::EnhanceActiveSkillResponse* response);
 
     void RegisterLevelBonusConfirmedImpl(
         UserContext &user,

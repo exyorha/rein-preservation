@@ -26,7 +26,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_omikujiService(m_db),
     m_naviCutInService(m_db),
     m_dokanService(m_db),
-    m_costumeService(m_db) {
+    m_costumeService(m_db),
+    m_weaponService(m_db) {
 
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
@@ -47,6 +48,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     grpcBuilder.RegisterService(&m_naviCutInService);
     grpcBuilder.RegisterService(&m_dokanService);
     grpcBuilder.RegisterService(&m_costumeService);
+    grpcBuilder.RegisterService(&m_weaponService);
     grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
     grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());
@@ -88,9 +90,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         sqlite::Transaction transaction(&m_db.db());
 
         UserContext ctx(m_db, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::MATERIAL), 100004, 1000);
-        //
-        ctx.updateMainQuestProgress();
+        ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34012, 1);
         transaction.commit();
     }
 #endif

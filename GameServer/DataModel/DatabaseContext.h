@@ -48,6 +48,7 @@ public:
     void authenticate(int64_t &outputUserId, std::string &outputSession, time_t &outputExpiration);
 
     void queryCostumeEnhancementCost(int32_t costumeID, int32_t itemCount, int32_t &costumeEnhancementCost);
+    void queryWeaponEnhancementCost(int32_t weaponID, int32_t itemCount, int32_t &weaponEnhancementCost);
 
 private:
     Database &m_db;

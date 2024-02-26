@@ -107,9 +107,19 @@ public:
     void queryCostumeEnhancementCost(const std::string &costumeUUID, int32_t itemCount,
                                      int32_t &costumeEnhancementCost);
 
+    void queryWeaponEnhancementCost(const std::string &weaponUUID, int32_t itemCount,
+                                     int32_t &weaponEnhancementCost);
+
     int32_t consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType);
 
+    void consumeMaterial(int32_t materialId, int32_t count);
     void consumeConsumableItem(int32_t consumableItemId, int32_t count);
+
+    void setWeaponProtected(const std::string_view &uuid, bool isProtected);
+
+    void enhanceCostumeActiveSkill(const std::string_view &uuid);
+
+    void enhanceWeaponSkill(const std::string_view &uuid, int32_t skillId);
 
 private:
 

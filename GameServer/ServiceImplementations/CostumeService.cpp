@@ -15,6 +15,14 @@ CostumeService::~CostumeService() = default;
     return inChangesetCall("CostumeService::Enhance", context, request, response, &CostumeService::EnhanceImpl);
 }
 
+::grpc::Status CostumeService::EnhanceActiveSkill(
+    ::grpc::ServerContext* context,
+    const ::apb::api::costume::EnhanceActiveSkillRequest* request,
+    ::apb::api::costume::EnhanceActiveSkillResponse* response) {
+
+    return inChangesetCall("CostumeService::EnhanceActiveSkill", context, request, response, &CostumeService::EnhanceActiveSkillImpl);
+}
+
 ::grpc::Status CostumeService::RegisterLevelBonusConfirmed(
     ::grpc::ServerContext* context,
     const ::apb::api::costume::RegisterLevelBonusConfirmedRequest* request,
@@ -51,6 +59,20 @@ void CostumeService::EnhanceImpl(
     user.consumeConsumableItem(user.consumableItemIdForGold(), costumeTotalEnhancementCost);
 
     user.giveUserCostumeExperience(request->user_costume_uuid(), 0, effectValue);
+}
+
+
+void CostumeService::EnhanceActiveSkillImpl(
+    UserContext &user,
+    const ::apb::api::costume::EnhanceActiveSkillRequest* request,
+    ::apb::api::costume::EnhanceActiveSkillResponse* response) {
+
+    if(request->add_level_count() < 0)
+        throw std::logic_error("bad level count");
+
+    for(int32_t levelToAdd = 0; levelToAdd < request->add_level_count(); levelToAdd++) {
+        user.enhanceCostumeActiveSkill(request->user_costume_uuid());
+    }
 }
 
 void CostumeService::RegisterLevelBonusConfirmedImpl(

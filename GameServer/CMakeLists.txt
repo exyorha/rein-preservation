@@ -122,6 +122,7 @@ add_executable(GameServer
     service/QuestService.proto
     service/TutorialService.proto
     service/UserService.proto
+    service/WeaponService.proto
 
     ServiceImplementations/BannerService.cpp
     ServiceImplementations/BannerService.h
@@ -179,6 +180,9 @@ add_executable(GameServer
 
     ServiceImplementations/UserService.cpp
     ServiceImplementations/UserService.h
+
+    ServiceImplementations/WeaponService.cpp
+    ServiceImplementations/WeaponService.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp
 )

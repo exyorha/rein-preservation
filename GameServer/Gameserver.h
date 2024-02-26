@@ -22,6 +22,7 @@
 #include "ServiceImplementations/NaviCutInService.h"
 #include "ServiceImplementations/DokanService.h"
 #include "ServiceImplementations/CostumeService.h"
+#include "ServiceImplementations/WeaponService.h"
 
 #include "DataModel/Database.h"
 
@@ -55,6 +56,7 @@ private:
     NaviCutInService m_naviCutInService;
     DokanService m_dokanService;
     CostumeService m_costumeService;
+    WeaponService m_weaponService;
     std::unique_ptr<grpc::Server> m_server;
 };
 

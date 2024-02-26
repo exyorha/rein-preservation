@@ -334,14 +334,25 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
                 ) VALUES (
                     ?,
                     ?,
-                    1
+                    ?
                 )
             )SQL");
 
             skill->bind(1, m_userId);
             skill->bind(2, weaponUuid);
-            skill->exec();
 
+            /*
+             * All weapons get two skill slots.
+             */
+            for(int slot: { 1, 2 }) {
+                skill->bind(3, slot);
+                skill->exec();
+                skill->reset();
+            }
+
+            /*
+             * Unevolved weapons only get one ability slot.
+             */
             auto ability = db().prepare(R"SQL(
                 INSERT INTO i_user_weapon_ability (
                     user_id,
@@ -2128,6 +2139,18 @@ void UserContext::queryCostumeEnhancementCost(const std::string &costumeUUID, in
 
 }
 
+void UserContext::queryWeaponEnhancementCost(const std::string &weaponUUID, int32_t itemCount,
+                                             int32_t &weaponEnhancementCost) {
+    auto query = db().prepare("SELECT weapon_id FROM i_user_weapon WHERE user_id = ? AND user_weapon_uuid = ?");
+    query->bind(1, m_userId);
+    query->bind(2, weaponUUID);
+    if(query->step())
+        return DatabaseContext::queryWeaponEnhancementCost(query->columnInt(0), itemCount, weaponEnhancementCost);
+
+    throw std::runtime_error("the user doesn't have such weapon");
+
+}
+
 int32_t UserContext::consumeEnhancementMaterialAndCalculateTotalEffectValue(int32_t materialId, int32_t materialCount, MaterialType requiredMaterialType) {
 
 
@@ -2180,6 +2203,43 @@ int32_t UserContext::consumeEnhancementMaterialAndCalculateTotalEffectValue(int3
     return value * materialCount;
 }
 
+void UserContext::consumeMaterial(int32_t materialId, int32_t count) {
+    if(count < 0)
+        throw std::logic_error("the count to consume is not valid");
+
+    if(count == 0)
+        return;
+
+    auto checkEnoughCount = db().prepare(R"SQL(
+        SELECT
+            count
+        FROM i_user_material
+        WHERE
+            user_id = ? AND
+            material_id = ? AND
+            count >= ?
+    )SQL");
+    checkEnoughCount->bind(1, m_userId);
+    checkEnoughCount->bind(2, materialId);
+    checkEnoughCount->bind(3, count);
+    if(!checkEnoughCount->step())
+        throw std::runtime_error("not enough of the consumable item available");
+
+    checkEnoughCount->reset();
+
+    auto consume = db().prepare(R"SQL(
+        UPDATE i_user_material SET
+            count = count - ?
+        WHERE
+            user_id = ? AND
+            material_id = ?
+    )SQL");
+    consume->bind(1, count);
+    consume->bind(2, m_userId);
+    consume->bind(3, materialId);
+    consume->exec();
+}
+
 void UserContext::consumeConsumableItem(int32_t consumableItemId, int32_t count) {
     if(count < 0)
         throw std::logic_error("the count to consume is not valid");
@@ -2215,4 +2275,171 @@ void UserContext::consumeConsumableItem(int32_t consumableItemId, int32_t count)
     consume->bind(2, m_userId);
     consume->bind(3, consumableItemId);
     consume->exec();
+}
+
+void UserContext::setWeaponProtected(const std::string_view &uuid, bool isProtected) {
+    auto query = db().prepare("UPDATE i_user_weapon SET protected = ? WHERE user_id = ? AND costume_uuid = ?");
+    query->bind(1, isProtected);
+    query->bind(2, m_userId);
+    query->bind(3, uuid);
+    query->exec();
+}
+
+void UserContext::enhanceCostumeActiveSkill(const std::string_view &uuid) {
+    auto queryStats = db().prepare(R"SQL(
+        SELECT
+            -- from i_user_costume_active_skill, current level
+            i_user_costume_active_skill.level AS skill_level,
+            -- from m_costume_rarity
+            active_skill_max_level_numerical_function_id,
+            active_skill_enhancement_cost_numerical_function_id,
+
+            (
+                SELECT
+                    costume_active_skill_enhancement_material_id
+                FROM
+                    m_costume_active_skill_group
+                WHERE
+                    costume_active_skill_group_id = m_costume.costume_active_skill_group_id AND
+                    costume_limit_break_count_lower_limit <= limit_break_count
+                ORDER BY costume_limit_break_count_lower_limit DESC
+                LIMIT 1
+            ) AS costume_active_skill_enhancement_material_id
+        FROM
+            i_user_costume,
+            i_user_costume_active_skill USING (user_id, user_costume_uuid),
+            m_costume USING (costume_id),
+            m_costume_rarity USING (rarity_type)
+        WHERE
+            user_id = ? AND -- TODO: parameter
+            user_costume_uuid = ?
+    )SQL");
+
+    queryStats->bind(1, m_userId);
+    queryStats->bind(2, uuid);
+    if(!queryStats->step())
+        throw std::runtime_error("no such costume");
+
+    auto currentSkillLevel = queryStats->columnInt(0);
+    auto maxLevelFunction = queryStats->columnInt(1);
+    auto enhancementCostFunction = queryStats->columnInt(2);
+    auto enhancementMaterial = queryStats->columnInt(3);
+    queryStats->reset();
+
+
+    /*
+     * Check to be constant 1 in Subsystem.Serval.CostumeServal::calcActiveSkillMaxLevel
+     */
+    auto maxLevel = evaluateNumericalFunction(maxLevelFunction, 1);
+    if(currentSkillLevel >= maxLevel)
+        throw std::runtime_error("already at the max level");
+
+    auto cost = evaluateNumericalFunction(enhancementCostFunction, currentSkillLevel + 1); /* checked to be current *plus one* */
+
+    consumeConsumableItem(consumableItemIdForGold(), cost);
+
+    auto listMaterials = db().prepare(R"SQL(
+        SELECT
+            material_id,
+            count
+        FROM
+            m_costume_active_skill_enhancement_material
+        WHERE
+            costume_active_skill_enhancement_material_id = ? AND
+            skill_level = ?
+        ORDER BY sort_order
+    )SQL");
+    listMaterials->bind(1, enhancementMaterial);
+    listMaterials->bind(2, currentSkillLevel); /* checked to be *current* */
+
+    while(listMaterials->step()) {
+        consumeMaterial(listMaterials->columnInt(0), listMaterials->columnInt(1));
+    }
+    listMaterials->reset();
+
+    auto updateLevel = db().prepare(R"SQL(
+        UPDATE i_user_costume_active_skill SET
+            level = level + 1
+        WHERE
+            user_id = ? AND
+            user_costume_uuid = ?
+    )SQL");
+    updateLevel->bind(1, m_userId);
+    updateLevel->bind(2, uuid);
+    updateLevel->exec();
+}
+
+void UserContext::enhanceWeaponSkill(const std::string_view &uuid, int32_t skillId) {
+    auto queryStats = db().prepare(R"SQL(
+        SELECT
+            i_user_weapon_skill.level AS skill_level,
+            max_skill_level_numerical_function_id,
+            skill_enhancement_cost_numerical_function_id,
+            weapon_skill_enhancement_material_id,
+            limit_break_count,
+            slot_number
+        FROM
+            i_user_weapon,
+            m_weapon USING (weapon_id),
+            m_weapon_rarity USING (rarity_type),
+            m_weapon_skill_group USING (weapon_skill_group_id),
+            i_user_weapon_skill USING (user_id, user_weapon_uuid, slot_number)
+        WHERE
+            user_id = ? AND
+            user_weapon_uuid = ? AND
+            skill_id = ?
+    )SQL");
+    queryStats->bind(1, m_userId);
+    queryStats->bind(2, uuid);
+    queryStats->bind(3, skillId);
+    if(!queryStats->step())
+        throw std::runtime_error("no such weapon or skill");
+
+    auto currentSkillLevel = queryStats->columnInt(0);
+    auto maxLevelFunction = queryStats->columnInt(1);
+    auto enhancementCostFunction = queryStats->columnInt(2);
+    auto enhancementMaterial = queryStats->columnInt(3);
+    auto limitBreakCount = queryStats->columnInt(4);
+    auto slotNumber = queryStats->columnInt(5);
+    queryStats->reset();
+
+    auto maxLevel = evaluateNumericalFunction(maxLevelFunction, limitBreakCount);
+    if(currentSkillLevel >= maxLevelFunction)
+        throw std::runtime_error("already at the max level");
+
+    auto cost = evaluateNumericalFunction(enhancementCostFunction, currentSkillLevel + 1); /* checked to be current *plus one* */
+
+    consumeConsumableItem(consumableItemIdForGold(), cost);
+
+    auto listMaterials = db().prepare(R"SQL(
+        SELECT
+            material_id,
+            count
+        FROM
+            m_weapon_skill_enhancement_material
+        WHERE
+            weapon_skill_enhancement_material_id = ? AND
+            skill_level = ?
+        ORDER BY sort_order
+    )SQL");
+    listMaterials->bind(1, enhancementMaterial);
+    listMaterials->bind(2, currentSkillLevel); /* checked to be *current* */
+
+    while(listMaterials->step()) {
+        consumeMaterial(listMaterials->columnInt(0), listMaterials->columnInt(1));
+    }
+    listMaterials->reset();
+
+    auto updateLevel = db().prepare(R"SQL(
+        UPDATE i_user_weapon_skill SET
+            level = level + 1
+        WHERE
+            user_id = ? AND
+            user_weapon_uuid = ? AND
+            slot_number = ?
+    )SQL");
+    updateLevel->bind(1, m_userId);
+    updateLevel->bind(2, uuid);
+    updateLevel->bind(3, slotNumber);
+    updateLevel->exec();
 }
