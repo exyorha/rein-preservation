@@ -11,7 +11,7 @@
 #include <spawn.h>
 #include <sys/wait.h>
 
-WebViewHostClient::WebViewHostClient(const std::string &hostExecutable) {
+WebViewHostClient::WebViewHostClient(const std::filesystem::path &executableDirectory) {
     std::optional<FileDescriptor> clientSideDescriptor;
     std::optional<FileDescriptor> browserSideDescriptor;
 
@@ -35,7 +35,7 @@ WebViewHostClient::WebViewHostClient(const std::string &hostExecutable) {
 
     {
         std::vector<std::string> hostInvocation;
-        hostInvocation.emplace_back(hostExecutable);
+        hostInvocation.emplace_back((executableDirectory / "webview" / "linux" / "WebViewHost").string());
         hostInvocation.emplace_back("--webview-rpc-client-socket=" + std::to_string(*browserSideDescriptor));
 
         std::vector<char *> pointers;

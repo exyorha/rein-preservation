@@ -3,13 +3,14 @@
 
 #include <google/protobuf/service.h>
 #include <sys/types.h>
+#include <filesystem>
 
 #include <WebView/WebViewProtocol.pb.h>
 #include <WebViewProtocolController.h>
 
 class WebViewHostClient {
 public:
-    explicit WebViewHostClient(const std::string &hostExecutable);
+    explicit WebViewHostClient(const std::filesystem::path &executableDirectory);
     ~WebViewHostClient();
 
     WebViewHostClient(const WebViewHostClient &other) = delete;

@@ -44,5 +44,5 @@ int64_t CEFWebViewImplementation::getParentWindowHandle() {
 }
 
 std::string CEFWebViewImplementation::getWebViewHostPath() {
-    return (std::filesystem::read_symlink("/proc/self/exe").parent_path() / "WebViewHost").string();
+    return (std::filesystem::read_symlink("/proc/self/exe").parent_path()).string();
 }

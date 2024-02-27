@@ -49,12 +49,25 @@ add_library(WebViewHostClient STATIC
 target_include_directories(WebViewHostClient PUBLIC Client/public)
 target_link_libraries(WebViewHostClient PUBLIC WebViewProtocol)
 
-install(TARGETS WebViewHost DESTINATION . COMPONENT GameAssembly)
+if(WIN32)
+  set(webview_directory "webview/windows")
+else()
+  set(webview_directory "webview/linux")
+endif()
+
+if(NOT WIN32)
+  set_target_properties(WebViewHost PROPERTIES
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "\$ORIGIN"
+  )
+endif()
+
+install(TARGETS WebViewHost DESTINATION ${webview_directory} COMPONENT GameAssembly)
 
 list(TRANSFORM CEF_BINARY_FILES PREPEND "${CEF_BINARY_DIR_RELEASE}/" OUTPUT_VARIABLE cef_binaries)
-install(FILES ${cef_binaries} DESTINATION . COMPONENT GameAssembly)
+install(FILES ${cef_binaries} DESTINATION ${webview_directory} COMPONENT GameAssembly)
 
 list(TRANSFORM CEF_RESOURCE_FILES PREPEND "${CEF_RESOURCE_DIR}/" OUTPUT_VARIABLE cef_resources)
 list(REMOVE_ITEM cef_resources "${CEF_RESOURCE_DIR}/locales")
-install(FILES ${cef_resources} DESTINATION . COMPONENT GameAssembly)
-install(FILES "${CEF_RESOURCE_DIR}/locales/en-US.pak" DESTINATION locales COMPONENT GameAssembly)
+install(FILES ${cef_resources} DESTINATION ${webview_directory} COMPONENT GameAssembly)
+install(FILES "${CEF_RESOURCE_DIR}/locales/en-US.pak" DESTINATION "${webview_directory}/locales" COMPONENT GameAssembly)
