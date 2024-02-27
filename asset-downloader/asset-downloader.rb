@@ -15,8 +15,6 @@ end
 downloader.uri_format = database.urlFormat
 
 database.assetBundleList.each_with_index do |asset, index|
-#    next if index < first_index
-
     path = downloader.acquire_file asset, 'assetbundle'
 end
 

@@ -7,6 +7,17 @@ require 'fileutils'
 
 require_relative 'protocol/Octo/Proto/Database_pb.rb'
 
+class Octo::Proto::Data
+
+    def storage_file_name(type)
+        path = File.join(type, name.gsub(")", "/"))
+        if File.extname(path).empty? && type == 'assetbundle'
+            path << ".unity3d"
+        end
+        path
+    end
+end
+
 class HttpConnectionPool
     ConnectionKey = Struct.new :host, :port, :use_tls
 
@@ -183,11 +194,9 @@ class OctoAssetDownloader
     end
 
     def acquire_file(descriptor, type)
-        local_path = File.join(@content_path, type, descriptor.name.gsub(")", "/"))
+        filename = descriptor.storage_file_name(type)
 
-        if File.extname(local_path).empty? && type == 'assetbundle'
-            local_path << ".unity3d"
-        end
+        local_path = File.join(@content_path, filename)
 
         if File.exist? local_path
             result, actual_md5 = validate_asset(local_path, descriptor, type == 'assetbundle')
