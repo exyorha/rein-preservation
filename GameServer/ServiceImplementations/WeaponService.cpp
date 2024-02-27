@@ -32,6 +32,13 @@ WeaponService::~WeaponService() = default;
     return inChangesetCall("WeaponService::EnhanceSkill", context, request, response, &WeaponService::EnhanceSkillImpl);
 }
 
+::grpc::Status WeaponService::EnhanceAbility(
+    ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceAbilityRequest* request,
+    ::apb::api::weapon::EnhanceAbilityResponse* response) {
+
+    return inChangesetCall("WeaponService::EnhanceAbility", context, request, response, &WeaponService::EnhanceAbilityImpl);
+}
+
 void WeaponService::ProtectImpl(UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) {
 
     for(const auto &uuid: request->user_weapon_uuid()) {
@@ -85,5 +92,17 @@ void WeaponService::EnhanceSkillImpl(
 
     for(int32_t levelToAdd = 0; levelToAdd < request->add_level_count(); levelToAdd++) {
         user.enhanceWeaponSkill(request->user_weapon_uuid(), request->skill_id());
+    }
+}
+
+void WeaponService::EnhanceAbilityImpl(
+    UserContext &user, const ::apb::api::weapon::EnhanceAbilityRequest* request,
+    ::apb::api::weapon::EnhanceAbilityResponse* response) {
+
+    if(request->add_level_count() < 0)
+        throw std::logic_error("bad level count");
+
+    for(int32_t levelToAdd = 0; levelToAdd < request->add_level_count(); levelToAdd++) {
+        user.enhanceWeaponAbility(request->user_weapon_uuid(), request->ability_id());
     }
 }

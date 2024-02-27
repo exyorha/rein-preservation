@@ -121,6 +121,8 @@ public:
 
     void enhanceWeaponSkill(const std::string_view &uuid, int32_t skillId);
 
+    void enhanceWeaponAbility(const std::string_view &uuid, int32_t Id);
+
 private:
 
     struct DeckInDatabaseRepresentation {

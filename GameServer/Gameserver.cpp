@@ -90,7 +90,13 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         sqlite::Transaction transaction(&m_db.db());
 
         UserContext ctx(m_db, 1);
-        ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34012, 1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34012, 1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON), 350641, 1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 32025, 1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320461, 1);
+        ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34043, 1);
+        ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340761, 1);
+
         transaction.commit();
     }
 #endif

@@ -29,6 +29,9 @@ public:
     ::grpc::Status EnhanceSkill(
         ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceSkillRequest* request, ::apb::api::weapon::EnhanceSkillResponse* response) override;
 
+    ::grpc::Status EnhanceAbility(
+        ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceAbilityRequest* request, ::apb::api::weapon::EnhanceAbilityResponse* response) override;
+
 private:
     void ProtectImpl(
         UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response);
@@ -42,6 +45,9 @@ private:
 
     void EnhanceSkillImpl(
         UserContext &user, const ::apb::api::weapon::EnhanceSkillRequest* request, ::apb::api::weapon::EnhanceSkillResponse* response);
+
+    void EnhanceAbilityImpl(
+        UserContext &user, const ::apb::api::weapon::EnhanceAbilityRequest* request, ::apb::api::weapon::EnhanceAbilityResponse* response);
 };
 
 #endif
