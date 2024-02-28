@@ -6,8 +6,8 @@ add_library(grpc_csharp_ext SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/include/gpr_export.h
 )
 
-target_include_directories(grpc_csharp_ext PUBLIC public ${CMAKE_CURRENT_BINARY_DIR}/include $<TARGET_PROPERTY:gRPC::grpc,INTERFACE_INCLUDE_DIRECTORIES>)
-target_link_libraries(grpc_csharp_ext PRIVATE gRPC::grpc)
+target_include_directories(grpc_csharp_ext PUBLIC public ${CMAKE_CURRENT_BINARY_DIR}/include $<TARGET_PROPERTY:gRPC::grpc_unsecure,INTERFACE_INCLUDE_DIRECTORIES>)
+target_link_libraries(grpc_csharp_ext PRIVATE gRPC::grpc_unsecure)
 
 set_target_properties(grpc_csharp_ext PROPERTIES
     OUTPUT_NAME "cr_grpc_csharp_ext"

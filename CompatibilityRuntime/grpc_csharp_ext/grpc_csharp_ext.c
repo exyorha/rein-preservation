@@ -16,6 +16,7 @@
  *
  */
 
+#include <grpc/grpc_security.h>
 #include <string.h>
 
 #include <grpc/byte_buffer_reader.h>
@@ -980,6 +981,7 @@ GPR_EXPORT void GPR_CALLTYPE grpcsharp_native_callback_dispatcher_init(
 
 /* Security */
 
+#ifdef CR_GRPC_SECURE
 static char* default_pem_root_certs = NULL;
 
 static grpc_ssl_roots_override_result override_ssl_roots_handler(
@@ -991,9 +993,11 @@ static grpc_ssl_roots_override_result override_ssl_roots_handler(
   *pem_root_certs = gpr_strdup(default_pem_root_certs);
   return GRPC_SSL_ROOTS_OVERRIDE_OK;
 }
+#endif
 
 GPR_EXPORT void GPR_CALLTYPE
 grpcsharp_override_default_ssl_roots(const char* pem_root_certs) {
+#ifdef CR_GRPC_SECURE
   /*
    * This currently wastes ~300kB of memory by keeping a copy of roots
    * in a static variable, but for desktop/server use, the overhead
@@ -1002,8 +1006,11 @@ grpcsharp_override_default_ssl_roots(const char* pem_root_certs) {
    */
   default_pem_root_certs = gpr_strdup(pem_root_certs);
   grpc_set_ssl_roots_override_callback(override_ssl_roots_handler);
+#endif
 }
 
+
+#ifdef CR_GRPC_SECURE
 static void grpcsharp_verify_peer_destroy_handler(void* userdata) {
   native_callback_dispatcher(userdata, NULL, NULL, (void*)1, NULL, NULL, NULL);
 }
@@ -1014,12 +1021,14 @@ static int grpcsharp_verify_peer_handler(const char* target_name,
                                     (void*)peer_pem, (void*)0, NULL, NULL,
                                     NULL);
 }
+#endif
 
 GPR_EXPORT grpc_channel_credentials* GPR_CALLTYPE
 grpcsharp_ssl_credentials_create(const char* pem_root_certs,
                                  const char* key_cert_pair_cert_chain,
                                  const char* key_cert_pair_private_key,
                                  void* verify_peer_callback_tag) {
+#ifdef CR_GRPC_SECURE
   grpc_ssl_pem_key_cert_pair key_cert_pair;
   verify_peer_options verify_options;
   grpc_ssl_pem_key_cert_pair* key_cert_pair_ptr = NULL;
@@ -1045,6 +1054,9 @@ grpcsharp_ssl_credentials_create(const char* pem_root_certs,
 
   return grpc_ssl_credentials_create(pem_root_certs, key_cert_pair_ptr,
                                      verify_options_ptr, NULL);
+#else
+  return grpc_insecure_credentials_create();
+#endif
 }
 
 GPR_EXPORT void GPR_CALLTYPE
@@ -1068,6 +1080,8 @@ grpcsharp_ssl_server_credentials_create(
     const char* pem_root_certs, const char** key_cert_pair_cert_chain_array,
     const char** key_cert_pair_private_key_array, size_t num_key_cert_pairs,
     grpc_ssl_client_certificate_request_type client_request_type) {
+
+#ifdef CR_GRPC_SECURE
   size_t i;
   grpc_server_credentials* creds;
   grpc_ssl_pem_key_cert_pair* key_cert_pairs =
@@ -1087,6 +1101,9 @@ grpcsharp_ssl_server_credentials_create(
                                                 client_request_type, NULL);
   gpr_free(key_cert_pairs);
   return creds;
+#else
+  return grpc_insecure_server_credentials_create();
+#endif
 }
 
 GPR_EXPORT void GPR_CALLTYPE

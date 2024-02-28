@@ -1,6 +1,8 @@
 #ifndef GRPC_CSHARP_EXT_H
 #define GRPC_CSHARP_EXT_H
 
+#undef CR_GRPC_SECURE
+
 #include <grpc/support/port_platform.h>
 
 #include <grpc/grpc.h>
