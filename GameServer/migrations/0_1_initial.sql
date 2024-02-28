@@ -4521,7 +4521,7 @@ END;
 CREATE TABLE i_user_cage_ornament_reward (
   user_id INTEGER NOT NULL,
   cage_ornament_id integer NOT NULL,
-  acquisition_datetime timestamp,
+  acquisition_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, cage_ornament_id)
 );

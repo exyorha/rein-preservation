@@ -4,6 +4,7 @@
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
 
+#include "ServiceImplementations/CageOrnamentService.h"
 #include "ServiceImplementations/GachaService.h"
 #include "ServiceImplementations/UserService.h"
 #include "ServiceImplementations/DataService.h"
@@ -23,6 +24,7 @@
 #include "ServiceImplementations/DokanService.h"
 #include "ServiceImplementations/CostumeService.h"
 #include "ServiceImplementations/WeaponService.h"
+#include "ServiceImplementations/CageOrnamentService.h"
 
 #include "DataModel/Database.h"
 
@@ -57,6 +59,7 @@ private:
     DokanService m_dokanService;
     CostumeService m_costumeService;
     WeaponService m_weaponService;
+    CageOrnamentService m_cageOrnamentService;
     std::unique_ptr<grpc::Server> m_server;
 };
 

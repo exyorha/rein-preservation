@@ -1349,6 +1349,8 @@ void UserContext::setUserTutorialProgress(int32_t tutorialType, int32_t progress
 
 void UserContext::updateMainFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId) {
 
+    leavePortalCage();
+
     auto updateMainFlow = db().prepare(R"SQL(
         UPDATE i_user_main_quest_main_flow_status SET
             current_quest_scene_id = ?,
@@ -2577,5 +2579,31 @@ void UserContext::leavePortalCage() {
             is_current_progress = 1
     )SQL");
     query->bind(1, m_userId);
+    query->exec();
+}
+
+void UserContext::recordCageOrnamentAccess(int32_t cageOrnamentId) {
+    /*
+     * TODO: It's currently unclear what's the difference between 'record access' and
+     * 'receive reward' for the cage ornaments. So we currently set acquisition_datetime
+     * to zero for RecordAccess calls so they can be located and fixed up later, if necessary.
+     *
+     * But it's definite that a i_user_cage_ornament_reward record *must* be
+     * made for a RecordAccess call, though.
+     */
+
+    auto query = db().prepare(R"SQL(
+        INSERT INTO i_user_cage_ornament_reward (
+            user_id,
+            cage_ornament_id,
+            acquisition_datetime
+        ) VALUES (
+            ?,
+            ?,
+            0
+        )
+    )SQL");
+    query->bind(1, m_userId);
+    query->bind(2, cageOrnamentId);
     query->exec();
 }

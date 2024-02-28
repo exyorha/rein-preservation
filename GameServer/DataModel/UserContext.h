@@ -127,6 +127,8 @@ public:
 
     void setMainQuestRoute(int32_t routeId);
 
+    void recordCageOrnamentAccess(int32_t cageOrnamentId);
+
 private:
 
     struct DeckInDatabaseRepresentation {
