@@ -126,3 +126,18 @@ void QuestService::UpdateMainQuestSceneProgressImpl(UserContext &user,
 
     user.updateMainQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
 }
+
+::grpc::Status QuestService::SetRoute(::grpc::ServerContext* context,
+    const ::apb::api::quest::SetRouteRequest* request, ::apb::api::quest::SetRouteResponse* response) {
+
+    return inChangesetCall("QuestService::SetRoute", context, request, response, &QuestService::SetRouteImpl);
+}
+
+void QuestService::SetRouteImpl(
+    UserContext &user,
+    const ::apb::api::quest::SetRouteRequest* request,
+    ::apb::api::quest::SetRouteResponse* response) {
+
+    user.setMainQuestRoute(request->main_quest_route_id());
+}
+

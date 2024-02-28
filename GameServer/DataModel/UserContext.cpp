@@ -1386,6 +1386,8 @@ void UserContext::recordQuestStartAttributes(int32_t questId, int32_t userDeckNu
 void UserContext::startMainQuest(
     int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly) {
 
+    leavePortalCage();
+
     auto getRoute = db().prepare(R"SQL(
         SELECT
             m_main_quest_chapter.main_quest_route_id
@@ -1394,7 +1396,6 @@ void UserContext::startMainQuest(
             m_main_quest_sequence_group ON m_main_quest_sequence_group.main_quest_sequence_id = m_main_quest_sequence.main_quest_sequence_id,
             m_main_quest_chapter ON m_main_quest_chapter.main_quest_sequence_group_id = m_main_quest_sequence_group.main_quest_sequence_group_id
         WHERE m_main_quest_sequence.quest_id = ?
-        LIMIT 1
     )SQL");
 
     getRoute->bind(1, questId);
@@ -1403,6 +1404,10 @@ void UserContext::startMainQuest(
     }
 
     auto route = getRoute->columnInt64(0);
+
+    if(getRoute->step())
+        throw std::runtime_error("this quest belongs to multiple routes");
+
     getRoute->reset();
 
     /*
@@ -1719,7 +1724,6 @@ void UserContext::updateMainQuestProgress() {
                 m_main_quest_sequence.quest_id
             FROM
                 m_main_quest_route,
-                m_main_quest_season ON m_main_quest_season.main_quest_season_id = m_main_quest_route.main_quest_season_id,
                 m_main_quest_chapter ON m_main_quest_chapter.main_quest_route_id = m_main_quest_route.main_quest_route_id,
                 m_main_quest_sequence_group ON m_main_quest_sequence_group.main_quest_sequence_group_id = m_main_quest_chapter.main_quest_sequence_group_id,
                 m_main_quest_sequence ON m_main_quest_sequence.main_quest_sequence_id = m_main_quest_sequence_group.main_quest_sequence_id
@@ -2532,4 +2536,46 @@ void UserContext::updatePortalCageSceneProgress(int32_t sceneId) {
     )SQL");
     updatePortalCage->bind(1, m_userId);
     updatePortalCage->exec();
+}
+
+void UserContext::setMainQuestRoute(int32_t routeId) {
+
+    auto getRouteSeason = db().prepare("SELECT main_quest_season_id FROM m_main_quest_route WHERE main_quest_route_id = ?");
+    getRouteSeason->bind(1, routeId);
+    if(!getRouteSeason->step())
+        throw std::runtime_error("no such route");
+
+    auto seasonId = getRouteSeason->columnInt(0);
+    getRouteSeason->reset();
+
+    auto updateUserRoute = db().prepare(R"SQL(
+        INSERT INTO i_user_main_quest_season_route (
+            user_id,
+            main_quest_season_id,
+            main_quest_route_id
+        ) VALUES (
+            ?,
+            ?,
+            ?
+        ) ON CONFLICT (user_id, main_quest_season_id) DO UPDATE SET
+            main_quest_route_id = excluded.main_quest_route_id
+    )SQL");
+    updateUserRoute->bind(1, m_userId);
+    updateUserRoute->bind(2, seasonId);
+    updateUserRoute->bind(3, routeId);
+    updateUserRoute->exec();
+
+    // TODO: do we need to update 'i_user_main_quest_main_flow_status' here?
+}
+
+void UserContext::leavePortalCage() {
+    auto query = db().prepare(R"SQL(
+        UPDATE i_user_portal_cage_status SET
+            is_current_progress = 0
+        WHERE
+            user_id = ? AND
+            is_current_progress = 1
+    )SQL");
+    query->bind(1, m_userId);
+    query->exec();
 }

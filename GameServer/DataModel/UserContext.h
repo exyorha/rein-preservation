@@ -125,6 +125,8 @@ public:
 
     void updatePortalCageSceneProgress(int32_t sceneId);
 
+    void setMainQuestRoute(int32_t routeId);
+
 private:
 
     struct DeckInDatabaseRepresentation {
@@ -169,6 +171,7 @@ private:
         int32_t awakenCount = 0);
     void giveUserCostumeEnhanced(int32_t costumeEnhancedId);
 
+    void leavePortalCage();
 
     int64_t m_userId;
 };

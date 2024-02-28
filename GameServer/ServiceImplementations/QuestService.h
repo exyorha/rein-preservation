@@ -28,7 +28,15 @@ public:
     ::grpc::Status FinishMainQuest(::grpc::ServerContext* context, const ::apb::api::quest::FinishMainQuestRequest* request,
                                    ::apb::api::quest::FinishMainQuestResponse* response) override;
 
-    ::grpc::Status UpdateMainQuestSceneProgress(::grpc::ServerContext* context, const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) override;
+    ::grpc::Status SetRoute(
+        ::grpc::ServerContext* context,
+        const ::apb::api::quest::SetRouteRequest* request,
+        ::apb::api::quest::SetRouteResponse* response) override;
+
+    ::grpc::Status UpdateMainQuestSceneProgress(
+        ::grpc::ServerContext* context,
+        const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
+        ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) override;
 
 private:
 
@@ -48,6 +56,11 @@ private:
     void UpdateMainQuestSceneProgressImpl(UserContext &user,
                                           const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
                                           ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response);
+
+    void SetRouteImpl(
+        UserContext &user,
+        const ::apb::api::quest::SetRouteRequest* request,
+        ::apb::api::quest::SetRouteResponse* response);
 
     void recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber);
 };
