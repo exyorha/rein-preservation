@@ -39,11 +39,10 @@ GlobalContext::GlobalContext() : m_registerer(this) {
 #endif
 
     auto directory = thisLibraryDirectory();
+    m_armlib.emplace(directory / "bionic.so.pe");
     if(getenv("ARM_DEBUG")) {
-        m_armlib.emplace(directory / "bionic.so");
         m_il2cpp.emplace(directory / "libil2cpp.so");
     } else {
-        m_armlib.emplace(directory / "bionic.so.pe");
         m_il2cpp.emplace(directory / "libil2cpp.so.pe");
     }
 

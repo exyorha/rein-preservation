@@ -670,6 +670,7 @@ target_link_options(bionic PRIVATE
     -Wl,--hash-style=sysv
     -Wl,-Bsymbolic
     -Wl,-z,norelro
+    -Wl,-s
 )
 
 target_link_libraries(bionic PRIVATE

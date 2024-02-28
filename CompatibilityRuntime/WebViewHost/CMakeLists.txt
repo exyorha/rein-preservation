@@ -45,6 +45,14 @@ target_link_libraries(WebViewHost PRIVATE libcef_lib libcef_dll_wrapper ${CEF_ST
 add_library(WebViewHostClient STATIC
   Client/public/WebViewHostClient.h
   Client/WebViewHostClient.cpp
+
+  Client/public/WebViewHostClientChannel.h
+
+  Client/public/WebViewHostClientChannelLinux.h
+  Client/WebViewHostClientChannelLinux.cpp
+
+  Client/public/WebViewHostClientConfiguration.h
+  Client/WebViewHostClientConfiguration.cpp
 )
 target_include_directories(WebViewHostClient PUBLIC Client/public)
 target_link_libraries(WebViewHostClient PUBLIC WebViewProtocol)

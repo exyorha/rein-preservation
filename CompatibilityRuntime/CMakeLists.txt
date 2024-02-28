@@ -81,3 +81,8 @@ add_subdirectory(GameExecutable)
 if(NOT WIN32)
     add_subdirectory(interrogator)
 endif()
+
+if(NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(bionic/build_integration)
+endif()
+

@@ -1,6 +1,6 @@
 #include <WebView/CEFWebViewImplementation.h>
 
-CEFWebViewImplementation::CEFWebViewImplementation() : m_client(getWebViewHostPath()) {
+CEFWebViewImplementation::CEFWebViewImplementation(const WebViewHostClientConfiguration &config) : m_client(config) {
 
 }
 

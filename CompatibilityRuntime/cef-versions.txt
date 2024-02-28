@@ -1,1 +1,2 @@
 https://cef-builds.spotifycdn.com/cef_binary_121.3.13%2Bg5c4a81b%2Bchromium-121.0.6167.184_linux64_minimal.tar.bz2
+https://cef-builds.spotifycdn.com/cef_binary_122.1.8%2Bg40272b5%2Bchromium-122.0.6261.69_windows64_minimal.tar.bz2

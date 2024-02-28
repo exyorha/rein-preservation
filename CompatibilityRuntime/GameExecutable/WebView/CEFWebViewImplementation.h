@@ -6,7 +6,7 @@
 
 class CEFWebViewImplementation final : public WebViewImplementation {
 public:
-    CEFWebViewImplementation();
+    explicit CEFWebViewImplementation(const WebViewHostClientConfiguration &configuration);
     ~CEFWebViewImplementation() override;
 
     void setLogLevel(int32_t level) override;

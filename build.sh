@@ -43,12 +43,16 @@ prepend_include() {
     fi
 }
 
+mkdir -p dl
+
 cmake \
     -S CompatibilityRuntime \
     -B CompatibilityRuntime-build -G "Kate - Ninja" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)"
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
+    -DCEF_ROOT="$(realpath -- cef_binary_121.3.13+g5c4a81b+chromium-121.0.6167.184_linux64_minimal)" \
+    -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529
 ln -sf ../CompatibilityRuntime-build/compile_commands.json CompatibilityRuntime
 cmake --build CompatibilityRuntime-build
 cmake --install CompatibilityRuntime-build --component GameAssembly
@@ -65,7 +69,7 @@ cmake --install GameServer-build --component GameServer
 
 #exit 0
 
-mkdir -p windows-build-deps dl
+mkdir -p windows-build-deps
 
 windows_boost_version=boost_1_84_0
 windows_ffi_version=libffi-3.4.4
@@ -180,7 +184,7 @@ if [ ! -f "${winprefix}/grpc_installed" ]; then
 fi
 
 cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
     -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
@@ -189,5 +193,5 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -G "Ninja"
 
 cmake --build CompatibilityRuntime-mingw-build
-cmake --install CompatibilityRuntime-mingw-build --component GameAssembly --strip
+cmake --install CompatibilityRuntime-mingw-build --component GameAssembly
 
