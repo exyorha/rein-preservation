@@ -58,7 +58,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         throw std::runtime_error("failed to create the gRPC server");
 #if 0
     std::ifstream stream;
-    stream.open("individual.sql", std::ios::in | std::ios::binary);
+    stream.open("after_first_season.sql", std::ios::in | std::ios::binary);
     stream.seekg(0, std::ios::end);
     std::vector<char> data(stream.tellg());
     stream.seekg(0);
@@ -94,9 +94,16 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON), 350641, 1);
         //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 32025, 1);
         //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320461, 1);
-        ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34043, 1);
-        ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340761, 1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34043, 1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340761, 1);
+        ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350011,1);
+        ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350531,1);
 
+    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340851,1);
+    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340741,1);
+
+    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320641,1);
+    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320561,1);
         transaction.commit();
     }
 #endif

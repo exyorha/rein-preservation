@@ -5,9 +5,59 @@ include(GenerateExportHeader)
 
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LZ4 REQUIRED IMPORTED_TARGET liblz4)
-pkg_check_modules(YAJL REQUIRED IMPORTED_TARGET yajl)
+
+if(WIN32 AND NOT TARGET protobuf::protoc)
+    message(STATUS "Trying to find the host 'protoc'")
+
+    find_program(HOST_PROTOC protoc REQUIRED)
+    add_executable(protobuf::protoc IMPORTED)
+    set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION "${HOST_PROTOC}")
+endif()
+
+if(WIN32 AND NOT TARGET gRPC::grpc_cpp_plugin)
+    message(STATUS "Trying to find the host 'grpc_cpp_plugin'")
+
+    find_program(HOST_GRPC_CPP_PLUGIN grpc_cpp_plugin REQUIRED)
+    add_executable(gRPC::grpc_cpp_plugin IMPORTED)
+    set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES IMPORTED_LOCATION "${HOST_GRPC_CPP_PLUGIN}")
+endif()
+
+add_library(yajl STATIC
+    ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/yajl_common.h
+    ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/yajl_gen.h
+    ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/yajl_parse.h
+    ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/yajl_tree.h
+    thirdparty/yajl/src/yajl.c
+    thirdparty/yajl/src/yajl_alloc.c
+    thirdparty/yajl/src/yajl_alloc.h
+    thirdparty/yajl/src/yajl_buf.c
+    thirdparty/yajl/src/yajl_buf.h
+    thirdparty/yajl/src/yajl_bytestack.h
+    thirdparty/yajl/src/yajl_encode.c
+    thirdparty/yajl/src/yajl_encode.h
+    thirdparty/yajl/src/yajl_gen.c
+    thirdparty/yajl/src/yajl_lex.c
+    thirdparty/yajl/src/yajl_lex.h
+    thirdparty/yajl/src/yajl_parser.c
+    thirdparty/yajl/src/yajl_parser.h
+    thirdparty/yajl/src/yajl_tree.c
+    #thirdparty/yajl/src/yajl_version.c
+)
+target_include_directories(yajl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl)
+target_include_directories(yajl PRIVATE thirdparty/yajl/src)
+
+foreach(yajl_api_header IN ITEMS yajl_common.h yajl_gen.h yajl_parse.h yajl_tree.h)
+    target_sources(yajl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/${yajl_api_header})
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/${yajl_api_header}
+        COMMAND cmake -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl
+        COMMAND cmake -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/yajl/src/api/${yajl_api_header}
+            ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/${yajl_api_header}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/yajl/src/api/${yajl_api_header}
+        VERBATIM
+    )
+endforeach()
 
 find_program(RUBY ruby REQUIRED)
 
@@ -201,8 +251,11 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE gRPC::grpc++_unsecure protobuf::libprotobuf sqlite3 master_database_ext_static
-    PkgConfig::YAJL)
+target_link_libraries(GameServer PRIVATE gRPC::grpc++_unsecure protobuf::libprotobuf sqlite3 master_database_ext_static yajl)
+
+if(MINGW)
+    target_link_options(GameServer PRIVATE -Wl,-Bstatic -static-libgcc)
+endif()
 
 file(GLOB migrations CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} migrations/*.sql)
 

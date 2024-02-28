@@ -16,11 +16,18 @@ public:
     ::grpc::Status GetGachaList(
         ::grpc::ServerContext* context, const ::apb::api::gacha::GetGachaListRequest* request, ::apb::api::gacha::GetGachaListResponse* response) override;
 
+    ::grpc::Status GetGacha(::grpc::ServerContext* context,
+                            const ::apb::api::gacha::GetGachaRequest* request,
+                            ::apb::api::gacha::GetGachaResponse* response) override;
+
     ::grpc::Status GetRewardGacha(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::apb::api::gacha::GetRewardGachaResponse* response) override;
 
 private:
     void GetGachaListImpl(
         UserContext &user, const ::apb::api::gacha::GetGachaListRequest* request, ::apb::api::gacha::GetGachaListResponse* response);
+
+    void GetGachaImpl(
+        UserContext &user, const ::apb::api::gacha::GetGachaRequest* request, ::apb::api::gacha::GetGachaResponse* response);
 
     void GetRewardGachaImpl(UserContext &user, const ::google::protobuf::Empty* request, ::apb::api::gacha::GetRewardGachaResponse* response);
 

@@ -12,7 +12,10 @@
 namespace sqlite {
 
     Database::Database(const std::filesystem::path &database, int flags, const std::string &vfs) : m_flattenNestedTransactions(false), m_transactionDepth(0) {
-        int status = sqlite3_open_v2(database.c_str(), &m_handle, flags, vfs.empty() ? nullptr : vfs.c_str());
+
+        int status = sqlite3_open_v2(
+            reinterpret_cast<const char *>(database.generic_u8string().c_str()),
+            &m_handle, flags, vfs.empty() ? nullptr : vfs.c_str());
 
         if (status != SQLITE_OK) {
             struct HandleHolder {

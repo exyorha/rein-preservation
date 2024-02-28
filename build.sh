@@ -195,3 +195,14 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
 cmake --build CompatibilityRuntime-mingw-build
 cmake --install CompatibilityRuntime-mingw-build --component GameAssembly
 
+
+cmake \
+    -S GameServer \
+    -B GameServer-mingw-build -G "Kate - Ninja" \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
+    -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
+    -DCMAKE_FIND_ROOT_PATH="$(realpath -- windows-build-root-path)"
+cmake --build GameServer-mingw-build
+cmake --install GameServer-mingw-build --component GameServer --strip

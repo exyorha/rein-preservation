@@ -2519,3 +2519,17 @@ void UserContext::enhanceWeaponAbility(const std::string_view &uuid, int32_t abi
     updateLevel->bind(3, slotNumber);
     updateLevel->exec();
 }
+
+void UserContext::updatePortalCageSceneProgress(int32_t sceneId) {
+    auto updatePortalCage = db().prepare(R"SQL(
+        INSERT INTO i_user_portal_cage_status (
+            user_id,
+            is_current_progress
+        ) VALUES (
+            ?,
+            1
+        ) ON CONFLICT DO UPDATE SET is_current_progress = excluded.is_current_progress
+    )SQL");
+    updatePortalCage->bind(1, m_userId);
+    updatePortalCage->exec();
+}

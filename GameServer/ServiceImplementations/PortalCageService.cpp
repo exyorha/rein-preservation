@@ -21,5 +21,5 @@ void PortalCageService::UpdatePortalCageSceneProgressImpl(
     const ::apb::api::portalcage::UpdatePortalCageSceneProgressRequest* request,
     ::apb::api::portalcage::UpdatePortalCageSceneProgressResponse* response) {
 
-    // TODO
+    user.updatePortalCageSceneProgress(request->portal_cage_scene_id());
 }

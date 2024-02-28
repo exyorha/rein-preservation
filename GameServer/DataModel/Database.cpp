@@ -225,9 +225,18 @@ std::filesystem::path Database::backupDatabasePath() const {
 }
 
 void Database::removeDatabase(const std::filesystem::path& path) {
-    std::remove(path.c_str());
-    std::remove((path.string() + "-journal").c_str());
-    std::remove((path.string() + "-wal").c_str());
-    std::remove((path.string() + "-shm").c_str());
-}
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
 
+    auto journalPath = path;
+    journalPath += std::filesystem::path("-journal");
+    std::filesystem::remove(journalPath);
+
+    auto walPath = path;
+    walPath += std::filesystem::path("-wal");
+    std::filesystem::remove(walPath);
+
+    auto shmPath = path;
+    shmPath += std::filesystem::path("-shm");
+    std::filesystem::remove(shmPath);
+}

@@ -123,6 +123,8 @@ public:
 
     void enhanceWeaponAbility(const std::string_view &uuid, int32_t Id);
 
+    void updatePortalCageSceneProgress(int32_t sceneId);
+
 private:
 
     struct DeckInDatabaseRepresentation {

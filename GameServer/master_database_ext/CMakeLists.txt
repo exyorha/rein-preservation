@@ -26,10 +26,15 @@ function(master_database_ext_create_target target type)
         MasterDatabaseCursor.cpp
         MasterDatabaseCursor.h
 
+        MasterDatabaseDecryption.h
+
         MasterDatabaseTable.cpp
         MasterDatabaseTable.h
 
         ${CMAKE_CURRENT_BINARY_DIR}/${target}_include/master_database_ext_export.h
+
+        ${PROJECT_SOURCE_DIR}/thirdparty/lz4/lib/lz4.c
+        ${PROJECT_SOURCE_DIR}/thirdparty/lz4/lib/lz4.h
     )
 
     if(${type} STREQUAL "STATIC")
@@ -37,14 +42,15 @@ function(master_database_ext_create_target target type)
     endif()
 
     target_include_directories(${target} PUBLIC public ${CMAKE_CURRENT_BINARY_DIR}/${target}_include)
-    target_include_directories(${target} PRIVATE $<TARGET_PROPERTY:sqlite3,INCLUDE_DIRECTORIES>)
+    target_include_directories(${target} PRIVATE $<TARGET_PROPERTY:sqlite3,INCLUDE_DIRECTORIES>
+        ${PROJECT_SOURCE_DIR}/thirdparty/lz4/lib)
     target_compile_definitions(${target} PRIVATE $<TARGET_PROPERTY:sqlite3,COMPILE_DEFINITIONS>)
 
     if(UNIX AND ${type} STREQUAL "SHARED")
         target_link_options(${target} PRIVATE -Wl,-z,defs,-z,now)
     endif()
 
-    target_link_libraries(${target} PRIVATE  OpenSSL::Crypto msgpack-cxx PkgConfig::LZ4)
+    target_link_libraries(${target} PRIVATE msgpack-cxx)
 
     set_target_properties(${target} PROPERTIES
         C_VISIBILITY_PRESET hidden
@@ -55,12 +61,20 @@ function(master_database_ext_create_target target type)
         POSITION_INDEPENDENT_CODE TRUE
     )
 
-
     GENERATE_EXPORT_HEADER(
         ${target}
         BASE_NAME master_database_ext
         EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/${target}_include/master_database_ext_export.h
     )
+
+    if(WIN32)
+
+        target_sources(${target} PRIVATE MasterDatabaseDecryptionWindows.cpp)
+        target_link_libraries(${target} PRIVATE bcrypt)
+    else()
+        target_sources(${target} PRIVATE MasterDatabaseDecryptionLinux.cpp)
+        target_link_libraries(${target} PRIVATE OpenSSL::Crypto)
+    endif()
 
 endfunction()
 

@@ -5618,9 +5618,9 @@ END;
 
 CREATE TABLE i_user_portal_cage_status (
   user_id INTEGER NOT NULL PRIMARY KEY,
-  is_current_progress boolean,
-  drop_item_start_datetime timestamp,
-  current_drop_item_count integer,
+  is_current_progress boolean NOT NULL DEFAULT 0,
+  drop_item_start_datetime timestamp NOT NULL DEFAULT 0,
+  current_drop_item_count integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
