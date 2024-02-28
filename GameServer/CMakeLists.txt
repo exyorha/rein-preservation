@@ -201,7 +201,7 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE gRPC::grpc++ protobuf::libprotobuf sqlite3 master_database_ext_static
+target_link_libraries(GameServer PRIVATE gRPC::grpc++_unsecure protobuf::libprotobuf sqlite3 master_database_ext_static
     PkgConfig::YAJL)
 
 file(GLOB migrations CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} migrations/*.sql)
