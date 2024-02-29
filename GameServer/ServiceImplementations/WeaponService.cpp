@@ -39,6 +39,13 @@ WeaponService::~WeaponService() = default;
     return inChangesetCall("WeaponService::EnhanceAbility", context, request, response, &WeaponService::EnhanceAbilityImpl);
 }
 
+::grpc::Status WeaponService::LimitBreakByMaterial(
+    ::grpc::ServerContext* context, const ::apb::api::weapon::LimitBreakByMaterialRequest* request,
+    ::apb::api::weapon::LimitBreakByMaterialResponse* response) {
+
+    return inChangesetCall("WeaponService::LimitBreakByMaterial", context, request, response, &WeaponService::LimitBreakByMaterialImpl);
+}
+
 void WeaponService::ProtectImpl(UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) {
 
     for(const auto &uuid: request->user_weapon_uuid()) {
@@ -105,4 +112,12 @@ void WeaponService::EnhanceAbilityImpl(
     for(int32_t levelToAdd = 0; levelToAdd < request->add_level_count(); levelToAdd++) {
         user.enhanceWeaponAbility(request->user_weapon_uuid(), request->ability_id());
     }
+}
+
+void WeaponService::LimitBreakByMaterialImpl(
+    UserContext &user, const ::apb::api::weapon::LimitBreakByMaterialRequest* request, ::apb::api::weapon::LimitBreakByMaterialResponse* response) {
+
+    user.weaponLimitBreak(
+        request->user_weapon_uuid(),
+        request->materials());
 }

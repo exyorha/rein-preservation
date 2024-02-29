@@ -15,6 +15,14 @@ CostumeService::~CostumeService() = default;
     return inChangesetCall("CostumeService::Enhance", context, request, response, &CostumeService::EnhanceImpl);
 }
 
+::grpc::Status CostumeService::LimitBreak(
+    ::grpc::ServerContext* context,
+    const ::apb::api::costume::LimitBreakRequest* request,
+    ::apb::api::costume::LimitBreakResponse* response) {
+
+    return inChangesetCall("CostumeService::LimitBreak", context, request, response, &CostumeService::LimitBreakImpl);
+}
+
 ::grpc::Status CostumeService::EnhanceActiveSkill(
     ::grpc::ServerContext* context,
     const ::apb::api::costume::EnhanceActiveSkillRequest* request,
@@ -61,6 +69,15 @@ void CostumeService::EnhanceImpl(
     user.giveUserCostumeExperience(request->user_costume_uuid(), 0, effectValue);
 }
 
+void CostumeService::LimitBreakImpl(
+    UserContext &user,
+    const ::apb::api::costume::LimitBreakRequest* request,
+    ::apb::api::costume::LimitBreakResponse* response) {
+
+    user.costumeLimitBreak(
+        request->user_costume_uuid(),
+        request->materials());
+}
 
 void CostumeService::EnhanceActiveSkillImpl(
     UserContext &user,

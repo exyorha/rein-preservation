@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <array>
 #include <string>
+#include <unordered_set>
 
 class Database;
 
@@ -24,6 +25,9 @@ namespace apb::api::quest {
 namespace google::protobuf {
     template <typename Element>
     class RepeatedPtrField;
+
+    template <typename K, typename V>
+    class Map;
 }
 
 class JSONWriter;
@@ -128,6 +132,12 @@ public:
     void setMainQuestRoute(int32_t routeId);
 
     void recordCageOrnamentAccess(int32_t cageOrnamentId);
+
+    void costumeLimitBreak(const std::string &costumeUUID,
+                           const google::protobuf::Map<int32_t, int32_t> &materialsToUse);
+
+    void weaponLimitBreak(const std::string &weaponUUID,
+                           const google::protobuf::Map<int32_t, int32_t> &materialsToUse);
 
 private:
 

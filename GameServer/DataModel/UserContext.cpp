@@ -2285,7 +2285,7 @@ void UserContext::consumeConsumableItem(int32_t consumableItemId, int32_t count)
 }
 
 void UserContext::setWeaponProtected(const std::string_view &uuid, bool isProtected) {
-    auto query = db().prepare("UPDATE i_user_weapon SET is_protected = ? WHERE user_id = ? AND costume_uuid = ?");
+    auto query = db().prepare("UPDATE i_user_weapon SET is_protected = ? WHERE user_id = ? AND user_weapon_uuid = ?");
     query->bind(1, isProtected);
     query->bind(2, m_userId);
     query->bind(3, uuid);
@@ -2606,4 +2606,138 @@ void UserContext::recordCageOrnamentAccess(int32_t cageOrnamentId) {
     query->bind(1, m_userId);
     query->bind(2, cageOrnamentId);
     query->exec();
+}
+
+void UserContext::costumeLimitBreak(const std::string &costumeUUID,
+                                    const google::protobuf::Map<int32_t, int32_t> &materialsToUse) {
+
+/*
+ * TODO: we probably could validate the material set, but it doesn't really matter.
+ */
+
+    auto getCostumeStatus = db().prepare(
+        "SELECT costume_id, limit_break_count FROM i_user_costume WHERE user_id = ? AND user_costume_uuid = ?"
+    );
+    getCostumeStatus->bind(1, m_userId);
+    getCostumeStatus->bind(2, costumeUUID);
+    if(!getCostumeStatus->step())
+        throw std::runtime_error("no such costume");
+
+    auto costumeId = getCostumeStatus->columnInt(0);
+    auto currentLimitBreakCount = getCostumeStatus->columnInt(1);
+    getCostumeStatus->reset();
+
+    if(currentLimitBreakCount >= getIntConfig("COSTUME_LIMIT_BREAK_AVAILABLE_COUNT"))
+        throw std::runtime_error("already at the maximum count of limit breaks");
+
+    auto getLimitBreakCostInformation = db().prepare(R"SQL(
+        SELECT
+            limit_break_cost_numerical_function_id
+        FROM
+            m_costume,
+            m_costume_rarity USING (rarity_type)
+        WHERE
+            costume_id = ?
+    )SQL");
+    getLimitBreakCostInformation->bind(1, costumeId);
+    if(!getLimitBreakCostInformation->step())
+        throw std::runtime_error("no such costume");
+
+    auto limitBreakCostNumericalFunctionId = getLimitBreakCostInformation->columnInt(0);
+    getLimitBreakCostInformation->reset();
+
+    int32_t materialCount = 0;
+
+    for(const auto &pair: materialsToUse) {
+        materialCount += pair.second;
+        consumeMaterial(pair.first, pair.second);
+    }
+
+
+    auto cost = evaluateNumericalFunction(limitBreakCostNumericalFunctionId, materialCount);
+
+    consumeConsumableItem(consumableItemIdForGold(), cost);
+
+    auto updateLimitBreakCount = db().prepare(R"SQL(
+        UPDATE i_user_costume SET
+            limit_break_count = limit_break_count + 1
+        WHERE
+            user_id = ? AND
+            user_costume_uuid = ?
+    )SQL");
+    updateLimitBreakCount->bind(1, m_userId);
+    updateLimitBreakCount->bind(2, costumeUUID);
+    updateLimitBreakCount->exec();
+
+    /*
+     * Force the level to reevaluate.
+     */
+    giveUserCostumeExperience(costumeUUID, 0, 0);
+}
+
+void UserContext::weaponLimitBreak(const std::string &weaponUUID,
+                                    const google::protobuf::Map<int32_t, int32_t> &materialsToUse) {
+
+/*
+ * TODO: we probably could validate the material set, but it doesn't really matter.
+ */
+
+    auto getCostumeStatus = db().prepare(
+        "SELECT weapon_id, limit_break_count FROM i_user_weapon WHERE user_id = ? AND user_weapon_uuid = ?"
+    );
+    getCostumeStatus->bind(1, m_userId);
+    getCostumeStatus->bind(2, weaponUUID);
+    if(!getCostumeStatus->step())
+        throw std::runtime_error("no such weapon");
+
+    auto weaponId = getCostumeStatus->columnInt(0);
+    auto currentLimitBreakCount = getCostumeStatus->columnInt(1);
+    getCostumeStatus->reset();
+
+    if(currentLimitBreakCount >= getIntConfig("WEAPON_LIMIT_BREAK_AVAILABLE_COUNT"))
+        throw std::runtime_error("already at the maximum count of limit breaks");
+
+    auto getLimitBreakCostInformation = db().prepare(R"SQL(
+        SELECT
+            limit_break_cost_by_material_numerical_function_id
+        FROM
+            m_weapon,
+            m_weapon_rarity USING (rarity_type)
+        WHERE
+            weapon_id = ?
+    )SQL");
+    getLimitBreakCostInformation->bind(1, weaponId);
+    if(!getLimitBreakCostInformation->step())
+        throw std::runtime_error("no such weapon");
+
+    auto limitBreakCostNumericalFunctionId = getLimitBreakCostInformation->columnInt(0);
+    getLimitBreakCostInformation->reset();
+
+    int32_t materialCount = 0;
+
+    for(const auto &pair: materialsToUse) {
+        materialCount += pair.second;
+        consumeMaterial(pair.first, pair.second);
+    }
+
+
+    auto cost = evaluateNumericalFunction(limitBreakCostNumericalFunctionId, materialCount);
+
+    consumeConsumableItem(consumableItemIdForGold(), cost);
+
+    auto updateLimitBreakCount = db().prepare(R"SQL(
+        UPDATE i_user_weapon SET
+            limit_break_count = limit_break_count + 1
+        WHERE
+            user_id = ? AND
+            user_weapon_uuid = ?
+    )SQL");
+    updateLimitBreakCount->bind(1, m_userId);
+    updateLimitBreakCount->bind(2, weaponUUID);
+    updateLimitBreakCount->exec();
+
+    /*
+     * Force the level to reevaluate.
+     */
+    giveUserWeaponExperience(weaponUUID, 0, 0);
 }

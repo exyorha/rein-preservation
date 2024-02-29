@@ -18,6 +18,11 @@ public:
         const ::apb::api::costume::EnhanceRequest* request,
         ::apb::api::costume::EnhanceResponse* response) override;
 
+    ::grpc::Status LimitBreak(
+        ::grpc::ServerContext* context,
+        const ::apb::api::costume::LimitBreakRequest* request,
+        ::apb::api::costume::LimitBreakResponse* response) override;
+
     ::grpc::Status EnhanceActiveSkill(
         ::grpc::ServerContext* context,
         const ::apb::api::costume::EnhanceActiveSkillRequest* request,
@@ -34,6 +39,11 @@ private:
         UserContext &user,
         const ::apb::api::costume::EnhanceRequest* request,
         ::apb::api::costume::EnhanceResponse* response);
+
+    void LimitBreakImpl(
+        UserContext &user,
+        const ::apb::api::costume::LimitBreakRequest* request,
+        ::apb::api::costume::LimitBreakResponse* response);
 
     void EnhanceActiveSkillImpl(
         UserContext &user,
