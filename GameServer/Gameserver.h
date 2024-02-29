@@ -25,6 +25,7 @@
 #include "ServiceImplementations/CostumeService.h"
 #include "ServiceImplementations/WeaponService.h"
 #include "ServiceImplementations/CageOrnamentService.h"
+#include "ServiceImplementations/CompanionService.h"
 
 #include "DataModel/Database.h"
 
@@ -60,6 +61,7 @@ private:
     CostumeService m_costumeService;
     WeaponService m_weaponService;
     CageOrnamentService m_cageOrnamentService;
+    CompanionService m_companionService;
     std::unique_ptr<grpc::Server> m_server;
 };
 

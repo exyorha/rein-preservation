@@ -156,6 +156,7 @@ add_executable(GameServer
     service/BattleService.proto
     service/CageOrnamentService.proto
     service/CharacterViewerService.proto
+    service/CompanionService.proto
     service/CostumeService.proto
     service/DataService.proto
     service/DeckService.proto
@@ -189,6 +190,9 @@ add_executable(GameServer
 
     ServiceImplementations/CommonService.cpp
     ServiceImplementations/CommonService.h
+
+    ServiceImplementations/CompanionService.cpp
+    ServiceImplementations/CompanionService.h
 
     ServiceImplementations/CostumeService.cpp
     ServiceImplementations/CostumeService.h

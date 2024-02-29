@@ -2741,3 +2741,66 @@ void UserContext::weaponLimitBreak(const std::string &weaponUUID,
      */
     giveUserWeaponExperience(weaponUUID, 0, 0);
 }
+
+void UserContext::enhanceCompanion(const std::string &companionUUID) {
+    auto queryCompanionParameters = db().prepare(R"SQL(
+        SELECT
+            level,
+            enhancement_cost_numerical_function_id,
+            companion_category_type
+        FROM
+            i_user_companion,
+            m_companion USING (companion_id),
+            m_companion_category USING (companion_category_type)
+        WHERE
+            user_id = ? AND
+            user_companion_uuid = ?
+    )SQL");
+    queryCompanionParameters->bind(1, m_userId);
+    queryCompanionParameters->bind(2, companionUUID);
+    if(!queryCompanionParameters->step())
+        throw std::runtime_error("no such companion");
+
+    auto currentLevel = queryCompanionParameters->columnInt(0);
+    auto enhancementCostFunction = queryCompanionParameters->columnInt(1);
+    auto categoryType = queryCompanionParameters->columnInt(2);
+
+    queryCompanionParameters->reset();
+
+    auto enhancementCost = evaluateNumericalFunction(enhancementCostFunction, currentLevel);
+    consumeConsumableItem(consumableItemIdForGold(), enhancementCost);
+
+    auto materialQuery = db().prepare(R"SQL(
+        SELECT
+            material_id,
+            count
+        FROM m_companion_enhancement_material
+        WHERE
+            companion_category_type = ? AND
+            level = ?
+        ORDER BY sort_order
+    )SQL");
+    materialQuery->bind(1, categoryType);
+    materialQuery->bind(2, currentLevel);
+
+
+    bool gotAnyMaterials = false;
+    while(materialQuery->step()) {
+        gotAnyMaterials = true;
+
+        auto material = materialQuery->columnInt(0);
+        auto count = materialQuery->columnInt(1);
+
+        consumeMaterial(material, count);
+    }
+
+    if(!gotAnyMaterials)
+        throw std::runtime_error("the companion cannot be enhanced past the current level");
+
+    auto updateLevel = db().prepare(R"SQL(
+        UPDATE i_user_companion SET level = level + 1 WHERE user_id = ? AND user_companion_uuid = ?
+    )SQL");
+    updateLevel->bind(1, m_userId);
+    updateLevel->bind(2, companionUUID);
+    updateLevel->exec();
+}

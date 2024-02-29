@@ -28,7 +28,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_dokanService(m_db),
     m_costumeService(m_db),
     m_weaponService(m_db),
-    m_cageOrnamentService(m_db) {
+    m_cageOrnamentService(m_db),
+    m_companionService(m_db) {
 
     grpc::ServerBuilder grpcBuilder;
     grpcBuilder.RegisterService(&m_userService);
@@ -51,6 +52,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     grpcBuilder.RegisterService(&m_costumeService);
     grpcBuilder.RegisterService(&m_weaponService);
     grpcBuilder.RegisterService(&m_cageOrnamentService);
+    grpcBuilder.RegisterService(&m_companionService);
     grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
 
     grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());

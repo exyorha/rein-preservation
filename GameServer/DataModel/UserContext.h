@@ -139,6 +139,8 @@ public:
     void weaponLimitBreak(const std::string &weaponUUID,
                            const google::protobuf::Map<int32_t, int32_t> &materialsToUse);
 
+    void enhanceCompanion(const std::string &companionUUID);
+
 private:
 
     struct DeckInDatabaseRepresentation {
