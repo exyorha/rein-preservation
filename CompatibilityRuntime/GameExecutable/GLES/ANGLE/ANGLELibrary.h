@@ -9,6 +9,8 @@
 
 #include <GLES/ANGLE/PlatformDynamicLibrary.h>
 
+#include <filesystem>
+
 class ANGLELibrary final : public PlatformDynamicLibrary {
 public:
     ANGLELibrary();
@@ -34,6 +36,11 @@ public:
 
     PFNEGLSWAPBUFFERSPROC eglSwapBuffers;
     PFNEGLSWAPINTERVALPROC eglSwapInterval;
+
+private:
+#ifndef _WIN32
+    static std::filesystem::path getANGLEPath();
+#endif
 };
 
 #endif

@@ -1,10 +1,11 @@
 #include <GLES/ANGLE/ANGLELibrary.h>
+#include <filesystem>
 
 ANGLELibrary::ANGLELibrary() :
 #ifdef _WIN32
     WindowsDynamicLibrary(L"ANGLE_libGLESv2.dll")
 #else
-    LinuxDynamicLibrary("ANGLE_libGLESv2.so", RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE)
+    LinuxDynamicLibrary(getANGLEPath().c_str(), RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE)
 #endif
 {
 
@@ -58,3 +59,12 @@ ANGLELibrary::ANGLELibrary() :
 }
 
 ANGLELibrary::~ANGLELibrary() = default;
+
+#ifndef _WIN32
+/*
+ * Loading by absolute path under Linux fixes running under RenderDoc.
+ */
+std::filesystem::path ANGLELibrary::getANGLEPath() {
+    return std::filesystem::read_symlink("/proc/self/exe").parent_path() / "ANGLE_libGLESv2.so";
+}
+#endif

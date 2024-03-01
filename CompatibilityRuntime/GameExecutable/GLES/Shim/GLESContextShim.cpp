@@ -81,21 +81,6 @@ void GLESContextShim::lateInitialize() {
                 (m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc") || m_extensionString->hasExtension("GL_ANGLE_texture_compression_dxt5")) &&
                 m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc_srgb");
         }
-#if 0
-        if(m_extensionString->hasExtension("GL_EXT_sRGB_write_control")) {
-            /*
-             * It appears that the game expects a strictly non-sRGB
-             * final framebuffer. Otherwise, it produces an overly
-             * bright image.
-             *
-             * This issue still requires further investigation.
-             */
-
-            m_extensionString->removeExtension("GL_EXT_sRGB_write_control");
-
-            reinterpret_cast<PFNGLDISABLEPROC>(m_nextContext->getProcAddress("glDisable"))(0x8DB9 /* GL_FRAMEBUFFER_SRGB_EXT */);
-        }
-#endif
     }
 }
 
