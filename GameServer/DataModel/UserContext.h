@@ -141,6 +141,11 @@ public:
 
     void enhanceCompanion(const std::string &companionUUID);
 
+    void setQuestSceneChoice(
+        int32_t questSceneId,
+        int32_t choiceNumber,
+        int32_t questFlowType);
+
 private:
 
     struct DeckInDatabaseRepresentation {

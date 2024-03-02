@@ -2804,3 +2804,72 @@ void UserContext::enhanceCompanion(const std::string &companionUUID) {
     updateLevel->bind(2, companionUUID);
     updateLevel->exec();
 }
+
+void UserContext::setQuestSceneChoice(
+    int32_t questSceneId,
+    int32_t choiceNumber,
+    int32_t questFlowType) {
+
+    /*
+     * TODO: This possibly needs to give items?
+     */
+
+    auto getChoiceData = db().prepare(R"SQL(
+        SELECT
+            m_quest_scene_choice.quest_scene_choice_effect_id,
+            quest_scene_choice_grouping_id
+        FROM
+            m_quest_scene_choice,
+            m_quest_scene_choice_effect USING(quest_scene_choice_effect_id)
+        WHERE
+            main_flow_quest_scene_id = ? AND
+            quest_flow_type = ? AND
+            choice_number = ?
+    )SQL");
+
+    getChoiceData->bind(1, questSceneId);
+    getChoiceData->bind(2, questFlowType);
+    getChoiceData->bind(3, choiceNumber);
+    if(!getChoiceData->step())
+        throw std::runtime_error("no such quest choice");
+
+    auto effectId = getChoiceData->columnInt(0);
+    auto groupingId = getChoiceData->columnInt(1);
+    getChoiceData->reset();
+
+    auto recordChoice = db().prepare(R"SQL(
+        INSERT INTO i_user_quest_scene_choice (
+            user_id,
+            quest_scene_choice_grouping_id,
+            quest_scene_choice_effect_id
+        ) VALUES (
+            ?,
+            ?,
+            ?
+        )
+        ON CONFLICT (user_id, quest_scene_choice_grouping_id) DO UPDATE SET
+            quest_scene_choice_effect_id = excluded.quest_scene_choice_effect_id
+    )SQL");
+    recordChoice->bind(1, m_userId);
+    recordChoice->bind(2, groupingId);
+    recordChoice->bind(3, effectId);
+    recordChoice->exec();
+
+    auto recordHistory = db().prepare(R"SQL(
+        INSERT INTO i_user_quest_scene_choice_history (
+            user_id,
+            quest_scene_choice_effect_id,
+            choice_datetime
+        ) VALUES (
+            ?,
+            ?,
+            current_net_timestamp()
+        )
+        ON CONFLICT (user_id, quest_scene_choice_effect_id) DO UPDATE SET
+            choice_datetime = excluded.choice_datetime
+    )SQL");
+
+    recordHistory->bind(1, m_userId);
+    recordHistory->bind(2, effectId);
+    recordHistory->exec();
+}

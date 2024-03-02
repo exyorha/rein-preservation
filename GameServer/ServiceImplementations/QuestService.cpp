@@ -152,3 +152,21 @@ void QuestService::SetRouteImpl(
     user.setMainQuestRoute(request->main_quest_route_id());
 }
 
+void QuestService::SetQuestSceneChoice(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::SetQuestSceneChoiceRequest* request,
+                        ::apb::api::quest::SetQuestSceneChoiceResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::SetQuestSceneChoice", controller, request, response, done, &QuestService::SetQuestSceneChoiceImpl);
+}
+
+void QuestService::SetQuestSceneChoiceImpl(
+    UserContext &user,
+    const ::apb::api::quest::SetQuestSceneChoiceRequest* request,
+    ::apb::api::quest::SetQuestSceneChoiceResponse* response) {
+
+    user.setQuestSceneChoice(
+        request->quest_scene_id(),
+        request->choice_number(),
+        request->quest_flow_type());
+}

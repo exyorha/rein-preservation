@@ -5852,7 +5852,7 @@ END;
 CREATE TABLE i_user_quest_scene_choice (
   user_id INTEGER NOT NULL,
   quest_scene_choice_grouping_id integer NOT NULL,
-  quest_scene_choice_effect_id integer,
+  quest_scene_choice_effect_id integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY (user_id, quest_scene_choice_grouping_id)
 );
@@ -5868,7 +5868,7 @@ END;
 CREATE TABLE i_user_quest_scene_choice_history (
   user_id INTEGER NOT NULL,
   quest_scene_choice_effect_id integer NOT NULL,
-  choice_datetime timestamp,
+  choice_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, quest_scene_choice_effect_id)
 );

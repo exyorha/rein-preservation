@@ -43,6 +43,11 @@ public:
                         ::apb::api::quest::SetRouteResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void SetQuestSceneChoice(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::SetQuestSceneChoiceRequest* request,
+                        ::apb::api::quest::SetQuestSceneChoiceResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
 private:
 
     void UpdateMainFlowSceneProgressImpl(UserContext &user,
@@ -66,6 +71,10 @@ private:
         UserContext &user,
         const ::apb::api::quest::SetRouteRequest* request,
         ::apb::api::quest::SetRouteResponse* response);
+
+    void SetQuestSceneChoiceImpl(UserContext &user,
+                        const ::apb::api::quest::SetQuestSceneChoiceRequest* request,
+                        ::apb::api::quest::SetQuestSceneChoiceResponse* response);
 
     void recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber);
 };
