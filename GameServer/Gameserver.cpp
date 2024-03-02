@@ -3,11 +3,20 @@
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Statement.h>
 
+#include <filesystem>
 #include <fstream>
 
-Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
+Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
+               const std::filesystem::path &octoListPath) :
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_logSink)),
-    m_http(&m_eventLoop, &m_gameAPI),
+    m_webServer(webRootPath()),
+    m_octoServices(octoListPath),
+    m_router(&m_webServer),
+    m_http(&m_eventLoop, &m_router),
 
     m_db(individualDatabasePath, masterDatabasePath),
     m_userService(m_db),
@@ -31,6 +40,15 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_weaponService(m_db),
     m_cageOrnamentService(m_db),
     m_companionService(m_db) {
+
+    m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
+    m_router.handleSubpath("/resources-api.app.nierreincarnation.com", &m_octoServices);
+
+    std::string path("/web.app.nierreincarnation.com/assets/release/");
+    path.append(m_db.masterDatabaseVersion());
+    path.append("/database.bin.e");
+
+    m_webServer.overridePath(std::move(path), std::filesystem::path(masterDatabasePath));
 
     m_gameAPI.registerService(&m_userService);
     m_gameAPI.registerService(&m_dataService);
@@ -111,4 +129,30 @@ Gameserver::~Gameserver() = default;
 
 void Gameserver::wait() {
     m_eventLoop.run();
+}
+
+std::filesystem::path Gameserver::webRootPath() {
+#ifdef _WIN32
+    std::vector<wchar_t> modulePathChars(PATH_MAX);
+    DWORD outLength;
+    DWORD error;
+
+    do {
+        outLength = GetModuleFileName(nullptr, modulePathChars.data(), modulePathChars.size());
+        if(outLength == 0) {
+            throw std::runtime_error("GetModuleFileName failed");
+        }
+
+        if(error == ERROR_INSUFFICIENT_BUFFER) {
+            modulePathChars.resize(modulePathChars.size() * 2);
+        }
+
+    } while(error == ERROR_INSUFFICIENT_BUFFER);
+
+    std::filesystem::path executablePath(modulePathChars.begin(), modulePathChars.end());
+#else
+    auto executablePath = std::filesystem::read_symlink("/proc/self/exe");
+#endif
+
+    return executablePath.parent_path() / "WebRoot";
 }

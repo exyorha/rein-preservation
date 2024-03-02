@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
     static const struct option options[]{
         { .name = "master-database",     .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "individual-database", .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "octo-list",           .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -27,6 +28,7 @@ int main(int argc, char **argv) {
 
     const char *masterDatabasePath = nullptr;
     const char *individualDatabasePath = nullptr;
+    const char *octoListPath = nullptr;
 
     while((result = getopt_long_only(argc, argv, "", options, &longind)) >= 0) {
         if(result == '?') {
@@ -43,6 +45,10 @@ int main(int argc, char **argv) {
             case 1:
                 individualDatabasePath = optarg;
                 break;
+
+            case 2:
+                octoListPath = optarg;
+                break;
         }
     }
 
@@ -56,7 +62,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    Gameserver server(individualDatabasePath, masterDatabasePath);
+    if(!octoListPath) {
+        fprintf(stderr, "%s: -octo-list must be specified\n", argv[0]);
+        return 1;
+    }
+
+    Gameserver server(individualDatabasePath, masterDatabasePath, octoListPath);
 
     server.listen("0.0.0.0", 8087);
 

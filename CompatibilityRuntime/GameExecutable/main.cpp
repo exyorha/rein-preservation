@@ -350,30 +350,6 @@ static void postInitialize() {
 
 }
 
-static void grpcRedirection(TranslatorGrpcChannelSetup *setup) {
-    printf("gRPC redirection: creating a channel to %s, attributes %p, credentials %p, secure %d\n",
-           setup->target, setup->args, setup->creds, setup->secure);
-
-#if 1
-    setup->target = "192.168.4.47:8087";
-    setup->creds = nullptr;
-    setup->secure = 0;
-#else
-
-    if(!gameserverInstance) {
-        fprintf(stderr, "the game server is not running\n");
-        abort();
-    }
-
-    setup->channel = gameserver_open_in_process_api_channel(gameserverInstance, setup->args);
-
-    if(!setup->channel) {
-        fprintf(stderr, "gameserver_open_in_process_api_channel has failed\n");
-        abort();
-    }
-#endif
-}
-
 static std::filesystem::path getExecutablePath() {
 #ifdef _WIN32
     return getPathToModule(nullptr);
@@ -445,7 +421,6 @@ bool gameEarlyInit() {
         return false;
 
     translator_set_post_initialize_callback(postInitialize);
-    translator_set_grpc_redirection_callback(grpcRedirection);
 
     return true;
 }

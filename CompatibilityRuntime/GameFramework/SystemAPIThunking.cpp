@@ -10,7 +10,6 @@
 
 #include "grpc_csharp_ext.h"
 #include "grpc_special_thunks.h"
-#include "grpc_channel_redirection.h"
 
 using namespace std::string_view_literals;
 
@@ -145,7 +144,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "grpcsharp_completion_queue_destroy", &thunkX86<grpcsharp_completion_queue_destroy> },
     { "grpcsharp_completion_queue_next", &thunkX86<grpcsharp_completion_queue_next> },
     { "grpcsharp_completion_queue_pluck", &thunkX86<grpcsharp_completion_queue_pluck> },
-    { "grpcsharp_insecure_channel_create", &thunkX86<grpcsharp_insecure_channel_create_with_redirection> },
+    { "grpcsharp_insecure_channel_create", &thunkX86<grpcsharp_insecure_channel_create> },
     { "grpcsharp_channel_destroy", &thunkX86<grpcsharp_channel_destroy> },
     { "grpcsharp_channel_check_connectivity_state", &thunkX86<grpcsharp_channel_check_connectivity_state> },
     { "grpcsharp_channel_watch_connectivity_state", &thunkX86Raw<grpcsharp_channel_watch_connectivity_state_raw_thunk> },
@@ -192,7 +191,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "grpcsharp_ssl_credentials_create", &thunkX86<grpcsharp_ssl_credentials_create> },
     { "grpcsharp_channel_credentials_release", &thunkX86<grpcsharp_channel_credentials_release> },
     { "grpcsharp_call_credentials_release", &thunkX86<grpcsharp_call_credentials_release> },
-    { "grpcsharp_secure_channel_create", &thunkX86<grpcsharp_secure_channel_create_with_redirection> },
+    { "grpcsharp_secure_channel_create", &thunkX86<grpcsharp_secure_channel_create> },
     { "grpcsharp_ssl_server_credentials_create", &thunkX86<grpcsharp_ssl_server_credentials_create> },
     { "grpcsharp_server_credentials_release", &thunkX86<grpcsharp_server_credentials_release> },
     { "grpcsharp_composite_channel_credentials_create", &thunkX86<grpcsharp_composite_channel_credentials_create> },

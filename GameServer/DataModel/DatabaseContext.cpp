@@ -99,7 +99,7 @@ int64_t DatabaseContext::registerUser() {
      */
 
     auto statement = db().prepare(R"SQL(
-        INSERT OR INTO i_user (
+        INSERT INTO i_user (
             user_id, register_datetime
         )
         VALUES (

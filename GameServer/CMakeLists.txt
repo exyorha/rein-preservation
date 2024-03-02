@@ -208,6 +208,18 @@ add_executable(GameServer
 
     main.cpp
 
+    WebServices/OctoWebServices.cpp
+    WebServices/OctoWebServices.h
+
+    WebServices/WebContentServer.cpp
+    WebServices/WebContentServer.h
+
+    WebServices/WebRoutable.cpp
+    WebServices/WebRoutable.h
+
+    WebServices/WebRouter.cpp
+    WebServices/WebRouter.h
+
     service/BannerService.proto
     service/BattleService.proto
     service/CageOrnamentService.proto
@@ -231,6 +243,8 @@ add_executable(GameServer
     service/TutorialService.proto
     service/UserService.proto
     service/WeaponService.proto
+
+    Octo/Proto/Database.proto
 
     ServiceImplementations/BannerService.cpp
     ServiceImplementations/BannerService.h
@@ -301,6 +315,9 @@ add_executable(GameServer
     ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp
 )
 target_include_directories(GameServer PRIVATE ${CMAKE_CURRENT_BINARY_DIR} .)
+if(WIN32)
+    target_compile_definitions(GameServer PRIVATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -DUNICODE -D_UNICODE)
+endif()
 
 protobuf_generate(TARGET GameServer)
 
@@ -329,4 +346,5 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 install(TARGETS GameServer DESTINATION . COMPONENT GameServer)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/WebRoot DESTINATION . COMPONENT GameServer)
 

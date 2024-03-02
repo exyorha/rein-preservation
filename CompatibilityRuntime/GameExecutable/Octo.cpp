@@ -48,6 +48,12 @@ static Il2CppString *Octo_Util_FileUtil_GetAndroidOctoRoot(Il2CppString *(*origi
     return stringFromUtf8(dataPath);
 }
 
+static Il2CppArray *Octo_Loader_OctoAPI_DecryptAES(Il2CppObject *this_, Il2CppArray *input, void *original) {
+    (void)this_;
+
+    return input;
+}
+
 void InitializeOcto() {
 
     translator_divert_method("Octo.dll::Octo.Caching.OctoBaseCaching::IsCached",
@@ -58,6 +64,12 @@ void InitializeOcto() {
 
     translator_divert_method("Octo.dll::Octo.Util.FileUtil::GetAndroidOctoRoot",
                              Octo_Util_FileUtil_GetAndroidOctoRoot);
+
+    /*
+     * Easier than implementing the encryption in the server.
+     */
+    translator_divert_method("Octo.dll::Octo.Loader.OctoAPI::DecryptAes",
+                             Octo_Loader_OctoAPI_DecryptAES);
 
     getPersistentDataPath = reinterpret_cast<GetPersistentDataPathPtr>(translator_resolve_native_icall("UnityEngine.Application::get_persistentDataPath()"));
 

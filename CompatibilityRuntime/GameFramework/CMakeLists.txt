@@ -35,8 +35,6 @@ add_library(GameAssembly SHARED
 
     translator_main.cpp
 
-    grpc_channel_redirection.cpp
-    grpc_channel_redirection.h
     grpc_special_thunks.cpp
     grpc_special_thunks.h
 

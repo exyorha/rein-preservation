@@ -23,19 +23,13 @@ void GRPCLikeServer::registerService(google::protobuf::Service *service) {
     m_services.emplace_back(service);
 }
 
-void GRPCLikeServer::handle(LLServices::HttpRequest &&request) {
+void GRPCLikeServer::handle(const std::string_view &path, LLServices::HttpRequest &&request) {
 
     GRPCLikeCall *call;
 
     try {
         if(request.command() != EVHTTP_REQ_POST)
             throw std::runtime_error("POST expected");
-
-        auto path = request.uri().path().value();
-        LogGRPCLikeServer.debug("full path: %.*s\n", static_cast<int>(path.size()), path.data());
-
-        if(path.empty() || path.front() != '/')
-            throw std::runtime_error("the path doesn't start with a slash");
 
         auto serviceNameDelimiter = path.find('/', 1);
         if(serviceNameDelimiter == std::string_view::npos)

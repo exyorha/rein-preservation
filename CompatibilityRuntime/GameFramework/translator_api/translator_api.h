@@ -5,21 +5,11 @@
 #include <il2cpp_export.h>
 #include <il2cpp-api.h>
 
-struct TranslatorGrpcChannelSetup {
-    void *creds; // 'grpc_channel_credentials'
-    const char *target;
-    const void* args; // 'grpc_channel_args'
-    int secure;
-    void *channel; // 'grpc_channel'
-};
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 typedef int (*TranslatorEngineMain)(void *arg);
-
-typedef void (*TranslatorGrpcRedirectionCallback)(TranslatorGrpcChannelSetup *setup);
 
 int IL2CPP_EXPORT translator_main(TranslatorEngineMain engineMain, void *arg);
 
@@ -34,8 +24,6 @@ IL2CPP_EXPORT void * translator_get_il2cpp_base_address(void);
 void IL2CPP_EXPORT translator_flush_instruction_cache(void *baseAddress, size_t size);
 
 void IL2CPP_EXPORT translator_divert_method(const char *method, Il2CppMethodPointer interposer);
-
-void IL2CPP_EXPORT translator_set_grpc_redirection_callback(TranslatorGrpcRedirectionCallback callback);
 
 #if defined(__cplusplus)
 }
