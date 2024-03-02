@@ -1,8 +1,12 @@
 #ifndef GAMESERVER_H
 #define GAMESERVER_H
 
-#include <grpc/grpc.h>
-#include <grpcpp/server.h>
+#include "LLServices/Logging/LogManager.h"
+#include "LLServices/Logging/ConsoleLogSink.h"
+#include "LLServices/Networking/EventLoop.h"
+#include "LLServices/Networking/HttpServer.h"
+
+#include "GRPC/GRPCLikeServer.h"
 
 #include "ServiceImplementations/CageOrnamentService.h"
 #include "ServiceImplementations/GachaService.h"
@@ -37,9 +41,19 @@ public:
     Gameserver(const Gameserver &other) = delete;
     Gameserver &operator =(const Gameserver &other) = delete;
 
+    inline void listen(const char *address, unsigned int port) {
+        return m_http.listen(address, port);
+    }
+
     void wait();
 
 private:
+    LLServices::ConsoleLogSink m_logSink;
+    LLServices::LogManagerScope m_logManagerScope;
+    LLServices::EventLoop m_eventLoop;
+    GRPCLikeServer m_gameAPI;
+    LLServices::HttpServer m_http;
+
     Database m_db;
     UserService m_userService;
     DataService m_dataService;
@@ -62,7 +76,6 @@ private:
     WeaponService m_weaponService;
     CageOrnamentService m_cageOrnamentService;
     CompanionService m_companionService;
-    std::unique_ptr<grpc::Server> m_server;
 };
 
 #endif

@@ -7,12 +7,13 @@ PortalCageService::PortalCageService(Database &db) :CommonService(db) {
 PortalCageService::~PortalCageService() = default;
 
 
-::grpc::Status PortalCageService::UpdatePortalCageSceneProgress(
-    ::grpc::ServerContext* context,
-    const ::apb::api::portalcage::UpdatePortalCageSceneProgressRequest* request,
-    ::apb::api::portalcage::UpdatePortalCageSceneProgressResponse* response) {
+void PortalCageService::UpdatePortalCageSceneProgress(::google::protobuf::RpcController* controller,
+                            const ::apb::api::portalcage::UpdatePortalCageSceneProgressRequest* request,
+                            ::apb::api::portalcage::UpdatePortalCageSceneProgressResponse* response,
+                            ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("PortalCageService::UpdatePortalCageSceneProgress", context, request, response,  &PortalCageService::UpdatePortalCageSceneProgressImpl);
+    return inChangesetCall("PortalCageService::UpdatePortalCageSceneProgress", controller, request, response, done,
+                           &PortalCageService::UpdatePortalCageSceneProgressImpl);
 
 }
 

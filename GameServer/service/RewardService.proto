@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option cc_generic_services = true;
+
 import "google/protobuf/empty.proto";
 import "service/DataService.proto";
 import "service/BigHuntService.proto";

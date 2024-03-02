@@ -1,14 +1,14 @@
 #ifndef SERVICE_IMPLEMENTATIONS_DATA_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_DATA_SERVICE_H
 
-#include <service/DataService.grpc.pb.h>
+#include <service/DataService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
 /*
  * The implementation is complete.
  */
-class DataService final : public apb::api::data::DataService::Service, public CommonService {
+class DataService final : public apb::api::data::DataService, public CommonService {
 public:
     explicit DataService(Database &db);
     ~DataService();
@@ -16,18 +16,25 @@ public:
     DataService(const DataService &other) = delete;
     DataService &operator =(const DataService &other) = delete;
 
-    ::grpc::Status GetLatestMasterDataVersion(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                              ::apb::api::data::MasterDataGetLatestVersionResponse* response) override;
+    void GetLatestMasterDataVersion(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::data::MasterDataGetLatestVersionResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status GetUserDataName(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                   ::apb::api::data::UserDataGetNameResponse* response) override;
+    void GetUserDataName(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::data::UserDataGetNameResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status GetUserDataNameV2(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                     ::apb::api::data::UserDataGetNameResponseV2* response) override;
+    void GetUserDataNameV2(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::data::UserDataGetNameResponseV2* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status GetUserData(::grpc::ServerContext* context,
-                               const ::apb::api::data::UserDataGetRequest* request,
-                               ::apb::api::data::UserDataGetResponse* response) override;
+    void GetUserData(::google::protobuf::RpcController* controller,
+                        const ::apb::api::data::UserDataGetRequest* request,
+                        ::apb::api::data::UserDataGetResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
     void GetLatestMasterDataVersionImpl(const ::google::protobuf::Empty* request,

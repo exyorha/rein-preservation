@@ -1,7 +1,7 @@
 #ifndef SERVICE_IMPLEMENTATIONS_COMMON_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_COMMON_SERVICE_H
 
-#include <grpcpp/server_context.h>
+#include <google/protobuf/service.h>
 
 #include <cstdio>
 
@@ -42,15 +42,16 @@ protected:
     }
 
     template<typename RequestType, typename ResponseType, typename OuterClass>
-    ::grpc::Status inCall(
+    void inCall(
         const char *callName,
-        ::grpc::ServerContext* context,
+        ::google::protobuf::RpcController* controller,
         const RequestType *request,
         ResponseType *response,
+        ::google::protobuf::Closure* done,
         void (OuterClass::*handler)(const RequestType *request, ResponseType *response)) {
 
-        return guardedCall(callName, [this, callName, handler, request, response, context]() {
-            addDateToContext(context);
+        guardedCall(callName, controller, done, [this, callName, handler, request, response, controller]() {
+            addDateToContext(controller);
 
             std::unique_lock<std::mutex> locker(m_db.dataModel().callMutex);
 
@@ -71,15 +72,16 @@ protected:
     }
 
     template<typename RequestType, typename ResponseType, typename OuterClass>
-    ::grpc::Status inAuthenticatedCall(
+    void inAuthenticatedCall(
         const char *callName,
-        ::grpc::ServerContext* context,
+        ::google::protobuf::RpcController* controller,
         const RequestType *request,
         ResponseType *response,
+        ::google::protobuf::Closure* done,
         void (OuterClass::*handler)(UserContext &context, const RequestType *request, ResponseType *response)) {
 
-        return guardedCall(callName, [this, callName, context, handler, request, response]() {
-            addDateToContext(context);
+        return guardedCall(callName, controller, done, [this, callName, controller, handler, request, response]() {
+            addDateToContext(controller);
 
             std::unique_lock<std::mutex> locker(m_db.dataModel().callMutex);
 
@@ -89,7 +91,7 @@ protected:
             {
                 sqlite::Transaction callTransaction(&m_db.db());
 
-                auto userId = authenticate(context);
+                auto userId = authenticate(controller);
 
                 UserContext ctx(m_db, userId);
 
@@ -106,15 +108,16 @@ protected:
     }
 
     template<typename RequestType, typename ResponseType, typename OuterClass>
-    ::grpc::Status inChangesetCall(
+    void inChangesetCall(
         const char *callName,
-        ::grpc::ServerContext* context,
+        ::google::protobuf::RpcController* controller,
         const RequestType *request,
         ResponseType *response,
+        ::google::protobuf::Closure* done,
         void (OuterClass::*handler)(UserContext &user, const RequestType *request, ResponseType *response)) {
 
-        return guardedCall(callName, [this, callName, context, handler, request, response]() {
-            addDateToContext(context);
+        return guardedCall(callName, controller, done, [this, callName, controller, handler, request, response]() {
+            addDateToContext(controller);
 
             std::unique_lock<std::mutex> locker(m_db.dataModel().callMutex);
 
@@ -126,7 +129,7 @@ protected:
             {
                 sqlite::Transaction callTransaction(&m_db.db());
 
-                auto userId = authenticate(context);
+                auto userId = authenticate(controller);
 
                 UserContext ctx(m_db, userId);
 
@@ -145,14 +148,17 @@ protected:
     }
 
 private:
-    ::grpc::Status guardedCall(const char *name, const std::function<void()> &body);
+    void guardedCall(const char *name,
+        ::google::protobuf::RpcController* controller,
+        ::google::protobuf::Closure* done,
+        const std::function<void()> &body);
 
-    void addDateToContext(::grpc::ServerContext* context);
+    void addDateToContext(::google::protobuf::RpcController* controller);
 
     /*
      * Returns user ID or throws an exception.
      */
-    int64_t authenticate(::grpc::ServerContext *context);
+    int64_t authenticate(::google::protobuf::RpcController* controller);
 
     DatabaseContext m_db;
 };

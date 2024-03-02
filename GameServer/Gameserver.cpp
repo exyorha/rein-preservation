@@ -3,11 +3,12 @@
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Statement.h>
 
-#include <grpc/grpc.h>
-#include <grpcpp/server_builder.h>
 #include <fstream>
 
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
+    m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_logSink)),
+    m_http(&m_eventLoop, &m_gameAPI),
+
     m_db(individualDatabasePath, masterDatabasePath),
     m_userService(m_db),
     m_dataService(m_db),
@@ -31,35 +32,28 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_cageOrnamentService(m_db),
     m_companionService(m_db) {
 
-    grpc::ServerBuilder grpcBuilder;
-    grpcBuilder.RegisterService(&m_userService);
-    grpcBuilder.RegisterService(&m_dataService);
-    grpcBuilder.RegisterService(&m_gamePlayService);
-    grpcBuilder.RegisterService(&m_questService);
-    grpcBuilder.RegisterService(&m_gimmickService);
-    grpcBuilder.RegisterService(&m_notificationService);
-    grpcBuilder.RegisterService(&m_gachaService);
-    grpcBuilder.RegisterService(&m_tutorialService);
-    grpcBuilder.RegisterService(&m_bannerService);
-    grpcBuilder.RegisterService(&m_battleService);
-    grpcBuilder.RegisterService(&m_deckService);
-    grpcBuilder.RegisterService(&m_loginBonusService);
-    grpcBuilder.RegisterService(&m_portalCageService);
-    grpcBuilder.RegisterService(&m_characterViewerService);
-    grpcBuilder.RegisterService(&m_omikujiService);
-    grpcBuilder.RegisterService(&m_naviCutInService);
-    grpcBuilder.RegisterService(&m_dokanService);
-    grpcBuilder.RegisterService(&m_costumeService);
-    grpcBuilder.RegisterService(&m_weaponService);
-    grpcBuilder.RegisterService(&m_cageOrnamentService);
-    grpcBuilder.RegisterService(&m_companionService);
-    grpcBuilder.SetSyncServerOption(grpc::ServerBuilder::NUM_CQS, 1);
+    m_gameAPI.registerService(&m_userService);
+    m_gameAPI.registerService(&m_dataService);
+    m_gameAPI.registerService(&m_gamePlayService);
+    m_gameAPI.registerService(&m_questService);
+    m_gameAPI.registerService(&m_gimmickService);
+    m_gameAPI.registerService(&m_notificationService);
+    m_gameAPI.registerService(&m_gachaService);
+    m_gameAPI.registerService(&m_tutorialService);
+    m_gameAPI.registerService(&m_bannerService);
+    m_gameAPI.registerService(&m_battleService);
+    m_gameAPI.registerService(&m_deckService);
+    m_gameAPI.registerService(&m_loginBonusService);
+    m_gameAPI.registerService(&m_portalCageService);
+    m_gameAPI.registerService(&m_characterViewerService);
+    m_gameAPI.registerService(&m_omikujiService);
+    m_gameAPI.registerService(&m_naviCutInService);
+    m_gameAPI.registerService(&m_dokanService);
+    m_gameAPI.registerService(&m_costumeService);
+    m_gameAPI.registerService(&m_weaponService);
+    m_gameAPI.registerService(&m_cageOrnamentService);
+    m_gameAPI.registerService(&m_companionService);
 
-    grpcBuilder.AddListeningPort("0.0.0.0:8087", grpc::InsecureServerCredentials());
-
-    m_server = grpcBuilder.BuildAndStart();
-    if(!m_server)
-        throw std::runtime_error("failed to create the gRPC server");
 #if 0
     std::ifstream stream;
     stream.open("after_first_season.sql", std::ios::in | std::ios::binary);
@@ -113,10 +107,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
 #endif
 }
 
-Gameserver::~Gameserver() {
-    m_server->Shutdown();
-}
+Gameserver::~Gameserver() = default;
 
 void Gameserver::wait() {
-    m_server->Wait();
+    m_eventLoop.run();
 }

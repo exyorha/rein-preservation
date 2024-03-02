@@ -8,22 +8,28 @@ GachaService::GachaService(Database &db) :CommonService(db) {
 GachaService::~GachaService() = default;
 
 
-::grpc::Status GachaService::GetGachaList(
-    ::grpc::ServerContext* context, const ::apb::api::gacha::GetGachaListRequest* request, ::apb::api::gacha::GetGachaListResponse* response) {
+void GachaService::GetGachaList(::google::protobuf::RpcController* controller,
+                        const ::apb::api::gacha::GetGachaListRequest* request,
+                        ::apb::api::gacha::GetGachaListResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("GachaService::GetGachaList", context, request, response, &GachaService::GetGachaListImpl);
+    return inChangesetCall("GachaService::GetGachaList", controller, request, response, done, &GachaService::GetGachaListImpl);
 }
 
-::grpc::Status GachaService::GetGacha(
-    ::grpc::ServerContext* context, const ::apb::api::gacha::GetGachaRequest* request, ::apb::api::gacha::GetGachaResponse* response) {
+void GachaService::GetGacha(::google::protobuf::RpcController* controller,
+                        const ::apb::api::gacha::GetGachaRequest* request,
+                        ::apb::api::gacha::GetGachaResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("GachaService::GetGacha", context, request, response, &GachaService::GetGachaImpl);
+    return inChangesetCall("GachaService::GetGacha", controller, request, response, done, &GachaService::GetGachaImpl);
 }
 
-::grpc::Status GachaService::GetRewardGacha(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                        ::apb::api::gacha::GetRewardGachaResponse* response) {
+void GachaService::GetRewardGacha(::google::protobuf::RpcController* controller,
+                            const ::google::protobuf::Empty* request,
+                            ::apb::api::gacha::GetRewardGachaResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("GachaService::GetRewardGacha", context, request, response, &GachaService::GetRewardGachaImpl);
+    return inChangesetCall("GachaService::GetRewardGacha", controller, request, response, done, &GachaService::GetRewardGachaImpl);
 }
 
 

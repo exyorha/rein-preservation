@@ -64,6 +64,32 @@ add_library(GameAssembly SHARED
     Interop/SavedICallContext.cpp
     Interop/SavedICallContext.h
 
+    MiniGRPC/public/grpc_csharp_ext.h
+
+    MiniGRPC/BatchContext.cpp
+    MiniGRPC/BatchContext.h
+    MiniGRPC/Call.cpp
+    MiniGRPC/Call.h
+    MiniGRPC/CallExecutor.cpp
+    MiniGRPC/CallExecutor.h
+    MiniGRPC/Channel.cpp
+    MiniGRPC/Channel.h
+    MiniGRPC/ChannelArgs.cpp
+    MiniGRPC/ChannelArgs.h
+    MiniGRPC/CompletionQueue.cpp
+    MiniGRPC/CompletionQueue.h
+    MiniGRPC/ExecutingCall.cpp
+    MiniGRPC/ExecutingCall.h
+    MiniGRPC/GCHandle.cpp
+    MiniGRPC/GCHandle.h
+    MiniGRPC/grpcsharp.h
+    MiniGRPC/grpcsharp_api.cpp
+    MiniGRPC/MetadataArray.cpp
+    MiniGRPC/MetadataArray.h
+    MiniGRPC/SliceBuffer.cpp
+    MiniGRPC/SliceBuffer.h
+    MiniGRPC/UnityTransport.cpp
+
     il2cpp-api-internal.h
     il2cpp_api.cpp
 
@@ -99,8 +125,8 @@ add_library(GameAssembly SHARED
 )
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
     ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
-target_include_directories(GameAssembly PRIVATE . ${PROJECT_SOURCE_DIR}/thirdparty/muslelf)
-target_link_libraries(GameAssembly PRIVATE dynarmic ffi grpc_csharp_ext)
+target_include_directories(GameAssembly PRIVATE . ${PROJECT_SOURCE_DIR}/thirdparty/muslelf MiniGRPC/public)
+target_link_libraries(GameAssembly PRIVATE dynarmic ffi Il2CppUtilities)
 
 if(NOT WIN32)
     target_sources(GameAssembly PRIVATE

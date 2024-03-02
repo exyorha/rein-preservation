@@ -28,6 +28,8 @@ extern "C" {
 
 #include <Translator/GCHooks.h>
 
+#include <Il2CppUtilities.h>
+
 const uint32_t GlobalContext::PageSize = queryPageSize();
 
 GlobalContext *GlobalContext::GlobalContextRegisterer::m_context = nullptr;
@@ -89,6 +91,8 @@ GlobalContext::GlobalContext() : m_registerer(this) {
 
     printf("Running il2cpp constructors\n");
     m_il2cpp->runConstructors();
+
+    Il2CppVMCharacteristics::initialize();
 }
 
 GlobalContext::~GlobalContext() {

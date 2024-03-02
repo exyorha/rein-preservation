@@ -8,25 +8,28 @@ DeckService::DeckService(Database &db) : CommonService(db) {
 
 DeckService::~DeckService() = default;
 
-::grpc::Status DeckService::UpdateName(::grpc::ServerContext* context,
-                                        const ::apb::api::deck::UpdateNameRequest* request,
-                                        ::apb::api::deck::UpdateNameResponse* response) {
+void DeckService::UpdateName(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::UpdateNameRequest* request,
+                        ::apb::api::deck::UpdateNameResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("DeckService::UpdateName", context, request, response, &DeckService::UpdateNameImpl);
+    return inChangesetCall("DeckService::UpdateName", controller, request, response, done, &DeckService::UpdateNameImpl);
 }
 
-::grpc::Status DeckService::ReplaceDeck(::grpc::ServerContext* context,
-                                        const ::apb::api::deck::ReplaceDeckRequest* request,
-                                        ::apb::api::deck::ReplaceDeckResponse* response) {
+void DeckService::ReplaceDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::ReplaceDeckRequest* request,
+                        ::apb::api::deck::ReplaceDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("DeckService::ReplaceDeck", context, request, response, &DeckService::ReplaceDeckImpl);
+    return inChangesetCall("DeckService::ReplaceDeck", controller, request, response, done, &DeckService::ReplaceDeckImpl);
 }
 
-::grpc::Status DeckService::RefreshDeckPower(::grpc::ServerContext* context,
-                                        const ::apb::api::deck::RefreshDeckPowerRequest* request,
-                                        ::apb::api::deck::RefreshDeckPowerResponse* response) {
+void DeckService::RefreshDeckPower(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::RefreshDeckPowerRequest* request,
+                        ::apb::api::deck::RefreshDeckPowerResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("DeckService::RefreshDeckPower", context, request, response, &DeckService::RefreshDeckPowerImpl);
+    return inChangesetCall("DeckService::RefreshDeckPower", controller, request, response, done, &DeckService::RefreshDeckPowerImpl);
 }
 
 

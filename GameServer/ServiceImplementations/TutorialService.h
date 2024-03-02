@@ -1,14 +1,14 @@
 #ifndef SERVICE_IMPLEMENTATIONS_TUTORIAL_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_TUTORIAL_SERVICE_H
 
-#include <service/TutorialService.grpc.pb.h>
+#include <service/TutorialService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
 /*
  * All methods are present.
  */
-class TutorialService final : public apb::api::tutorial::TutorialService::Service, public CommonService {
+class TutorialService final : public apb::api::tutorial::TutorialService, public CommonService {
 public:
     explicit TutorialService(Database &db);
     ~TutorialService();
@@ -16,12 +16,15 @@ public:
     TutorialService(const TutorialService &other) = delete;
     TutorialService &operator =(const TutorialService &other) = delete;
 
-    ::grpc::Status SetTutorialProgress(::grpc::ServerContext* context,
-                                       const ::apb::api::tutorial::SetTutorialProgressRequest* request, ::apb::api::tutorial::SetTutorialProgressResponse* response) override;
+    void SetTutorialProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::tutorial::SetTutorialProgressRequest* request,
+                        ::apb::api::tutorial::SetTutorialProgressResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status SetTutorialProgressAndReplaceDeck(::grpc::ServerContext* context,
-                                       const ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckRequest* request,
-                                       ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckResponse* response) override;
+    void SetTutorialProgressAndReplaceDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckRequest* request,
+                        ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
     void SetTutorialProgressImpl(UserContext &user,

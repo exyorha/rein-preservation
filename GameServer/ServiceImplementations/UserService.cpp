@@ -3,19 +3,18 @@
 #include <DataModel/Database.h>
 #include <DataModel/Sqlite/Statement.h>
 
-#include <grpcpp/support/status.h>
-
 UserService::UserService(Database &db) : CommonService(db) {
 
 }
 
 UserService::~UserService() = default;
 
-::grpc::Status UserService::RegisterUser(::grpc::ServerContext* context,
-                                         const ::apb::api::user::RegisterUserRequest* request,
-                                         ::apb::api::user::RegisterUserResponse* response) {
+void UserService::RegisterUser(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::RegisterUserRequest* request,
+                        ::apb::api::user::RegisterUserResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inCall("UserService::RegisterUser", context, request, response, &UserService::RegisterUserImpl);
+    return inCall("UserService::RegisterUser", controller, request, response, done, &UserService::RegisterUserImpl);
 
 }
 
@@ -26,8 +25,12 @@ void UserService::RegisterUserImpl(const ::apb::api::user::RegisterUserRequest* 
     response->set_signature("signature");
 }
 
-::grpc::Status UserService::Auth(::grpc::ServerContext* context, const ::apb::api::user::AuthUserRequest* request, ::apb::api::user::AuthUserResponse* response) {
-    return inCall("UserService::Auth", context, request, response, &UserService::AuthImpl);
+void UserService::Auth(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::AuthUserRequest* request,
+                        ::apb::api::user::AuthUserResponse* response,
+                        ::google::protobuf::Closure* done)  {
+
+    return inCall("UserService::Auth", controller, request, response, done, &UserService::AuthImpl);
 }
 
 void UserService::AuthImpl(const ::apb::api::user::AuthUserRequest* request, ::apb::api::user::AuthUserResponse* response) {
@@ -45,10 +48,13 @@ void UserService::AuthImpl(const ::apb::api::user::AuthUserRequest* request, ::a
     expire.set_seconds(expiration);
 }
 
-::grpc::Status UserService::GameStart(::grpc::ServerContext* context, const ::google::protobuf::Empty * request,
-                                      ::apb::api::user::GameStartResponse* response) {
+void UserService::GameStart(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::user::GameStartResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("UserService::GameStart", context, request, response, &UserService::GameStartImpl);
+    return inChangesetCall("UserService::GameStart", controller, request, response, done,
+                           &UserService::GameStartImpl);
 }
 
 void UserService::GameStartImpl(UserContext &user, const ::google::protobuf::Empty * request, ::apb::api::user::GameStartResponse* response) {
@@ -57,11 +63,12 @@ void UserService::GameStartImpl(UserContext &user, const ::google::protobuf::Emp
 
 }
 
-::grpc::Status UserService::SetUserName(
-    ::grpc::ServerContext* context, const ::apb::api::user::SetUserNameRequest* request,
-    ::apb::api::user::SetUserNameResponse* response) {
+void UserService::SetUserName(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::SetUserNameRequest* request,
+                        ::apb::api::user::SetUserNameResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("UserService::SetUserName", context, request, response, &UserService::SetUserNameImpl);
+    return inChangesetCall("UserService::SetUserName", controller, request, response, done, &UserService::SetUserNameImpl);
 }
 
 void UserService::SetUserNameImpl(UserContext &user, const ::apb::api::user::SetUserNameRequest* request, ::apb::api::user::SetUserNameResponse* response) {
@@ -70,10 +77,12 @@ void UserService::SetUserNameImpl(UserContext &user, const ::apb::api::user::Set
 }
 
 
-::grpc::Status UserService::SetUserMessage(::grpc::ServerContext* context, const ::apb::api::user::SetUserMessageRequest* request,
-                                           ::apb::api::user::SetUserMessageResponse* response) {
+void UserService::SetUserMessage(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::SetUserMessageRequest* request,
+                        ::apb::api::user::SetUserMessageResponse* response,
+                        ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("UserService::SetUserMessage", context, request, response, &UserService::SetUserMessageImpl);
+    return inChangesetCall("UserService::SetUserMessage", controller, request, response, done, &UserService::SetUserMessageImpl);
 }
 
 
@@ -83,11 +92,13 @@ void UserService::SetUserMessageImpl(UserContext &user, const ::apb::api::user::
     user.setUserMessage(request->message());
 }
 
-::grpc::Status UserService::SetUserFavoriteCostumeId(::grpc::ServerContext* context,
-                                                     const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
-                                                     ::apb::api::user::SetUserFavoriteCostumeIdResponse* response) {
+void UserService::SetUserFavoriteCostumeId(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
+                        ::apb::api::user::SetUserFavoriteCostumeIdResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("UserService::SetUserFavoriteCostumeId", context, request, response, &UserService::SetUserFavoriteCostumeIdImpl);
+    return inChangesetCall("UserService::SetUserFavoriteCostumeId", controller, request, response, done,
+                           &UserService::SetUserFavoriteCostumeIdImpl);
 }
 
 void UserService::SetUserFavoriteCostumeIdImpl(UserContext &user, const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
@@ -96,10 +107,12 @@ void UserService::SetUserFavoriteCostumeIdImpl(UserContext &user, const ::apb::a
     user.setUserFavoriteCostume(request->favorite_costume_id());
 }
 
-::grpc::Status UserService::GetAndroidArgs(::grpc::ServerContext* context,
-                                           const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response) {
+void UserService::GetAndroidArgs(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::GetAndroidArgsRequest* request,
+                        ::apb::api::user::GetAndroidArgsResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inCall("UserService::GetAndroidArgs", context, request, response, &UserService::GetAndroidArgsImpl);
+    return inCall("UserService::GetAndroidArgs", controller, request, response, done, &UserService::GetAndroidArgsImpl);
 }
 
 void UserService::GetAndroidArgsImpl(const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response) {

@@ -7,36 +7,37 @@ CostumeService::CostumeService(Database &db) : CommonService(db) {
 
 CostumeService::~CostumeService() = default;
 
-::grpc::Status CostumeService::Enhance(
-    ::grpc::ServerContext* context,
-    const ::apb::api::costume::EnhanceRequest* request,
-    ::apb::api::costume::EnhanceResponse* response) {
+void CostumeService::Enhance(::google::protobuf::RpcController* controller,
+                        const ::apb::api::costume::EnhanceRequest* request,
+                        ::apb::api::costume::EnhanceResponse* response,
+                        ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("CostumeService::Enhance", context, request, response, &CostumeService::EnhanceImpl);
+    return inChangesetCall("CostumeService::Enhance", controller, request, response, done, &CostumeService::EnhanceImpl);
 }
 
-::grpc::Status CostumeService::LimitBreak(
-    ::grpc::ServerContext* context,
-    const ::apb::api::costume::LimitBreakRequest* request,
-    ::apb::api::costume::LimitBreakResponse* response) {
+void CostumeService::LimitBreak(::google::protobuf::RpcController* controller,
+                        const ::apb::api::costume::LimitBreakRequest* request,
+                        ::apb::api::costume::LimitBreakResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("CostumeService::LimitBreak", context, request, response, &CostumeService::LimitBreakImpl);
+    return inChangesetCall("CostumeService::LimitBreak", controller, request, response, done, &CostumeService::LimitBreakImpl);
 }
 
-::grpc::Status CostumeService::EnhanceActiveSkill(
-    ::grpc::ServerContext* context,
-    const ::apb::api::costume::EnhanceActiveSkillRequest* request,
-    ::apb::api::costume::EnhanceActiveSkillResponse* response) {
+void CostumeService::EnhanceActiveSkill(::google::protobuf::RpcController* controller,
+                        const ::apb::api::costume::EnhanceActiveSkillRequest* request,
+                        ::apb::api::costume::EnhanceActiveSkillResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("CostumeService::EnhanceActiveSkill", context, request, response, &CostumeService::EnhanceActiveSkillImpl);
+    return inChangesetCall("CostumeService::EnhanceActiveSkill", controller, request, response, done,
+                           &CostumeService::EnhanceActiveSkillImpl);
 }
 
-::grpc::Status CostumeService::RegisterLevelBonusConfirmed(
-    ::grpc::ServerContext* context,
-    const ::apb::api::costume::RegisterLevelBonusConfirmedRequest* request,
-    ::apb::api::costume::RegisterLevelBonusConfirmedResponse* response) {
+void CostumeService::RegisterLevelBonusConfirmed(::google::protobuf::RpcController* controller,
+                        const ::apb::api::costume::RegisterLevelBonusConfirmedRequest* request,
+                        ::apb::api::costume::RegisterLevelBonusConfirmedResponse* response,
+                        ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("CostumeService::RegisterLevelBonusConfirmed", context, request, response, &CostumeService::RegisterLevelBonusConfirmedImpl);
+    return inChangesetCall("CostumeService::RegisterLevelBonusConfirmed", controller, request, response, done, &CostumeService::RegisterLevelBonusConfirmedImpl);
 }
 
 void CostumeService::EnhanceImpl(

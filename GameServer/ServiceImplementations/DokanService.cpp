@@ -8,11 +8,12 @@ DokanService::DokanService(Database &db) : CommonService(db) {
 
 DokanService::~DokanService() = default;
 
-::grpc::Status DokanService::RegisterDokanConfirmed(
-    ::grpc::ServerContext* context,
-    const ::apb::api::dokan::RegisterDokanConfirmedRequest* request,
-    ::apb::api::dokan::RegisterDokanConfirmedResponse* response) {
-    return inChangesetCall("DokanService::RegisterDokanConfirmed", context, request, response, &DokanService::RegisterDokanConfirmedImpl);
+void DokanService::RegisterDokanConfirmed(::google::protobuf::RpcController* controller,
+                            const ::apb::api::dokan::RegisterDokanConfirmedRequest* request,
+                            ::apb::api::dokan::RegisterDokanConfirmedResponse* response,
+                            ::google::protobuf::Closure* done) {
+    return inChangesetCall("DokanService::RegisterDokanConfirmed", controller, request, response, done,
+                           &DokanService::RegisterDokanConfirmedImpl);
 }
 
 void DokanService::RegisterDokanConfirmedImpl(

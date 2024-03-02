@@ -9,12 +9,12 @@ OmikujiService::OmikujiService(Database &db) : CommonService(db) {
 OmikujiService::~OmikujiService() = default;
 
 
-::grpc::Status OmikujiService::OmikujiDraw(
-    ::grpc::ServerContext* context,
-    const ::apb::api::omikuji::OmikujiDrawRequest* request,
-    ::apb::api::omikuji::OmikujiDrawResponse* response) {
+void OmikujiService::OmikujiDraw(::google::protobuf::RpcController* controller,
+                            const ::apb::api::omikuji::OmikujiDrawRequest* request,
+                            ::apb::api::omikuji::OmikujiDrawResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("OmikujiService::OmikujiDraw", context, request, response, &OmikujiService::OmikujiDrawImpl);
+    return inChangesetCall("OmikujiService::OmikujiDraw", controller, request, response, done, &OmikujiService::OmikujiDrawImpl);
 }
 
 void OmikujiService::OmikujiDrawImpl(

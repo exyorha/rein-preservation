@@ -1,11 +1,11 @@
 #ifndef SERVICE_IMPLEMENTATIONS_BATTLE_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_BATTLE_SERVICE_H
 
-#include <service/BattleService.grpc.pb.h>
+#include <service/BattleService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
-class BattleService final : public apb::api::battle::BattleService::Service, public CommonService {
+class BattleService final : public apb::api::battle::BattleService, public CommonService {
 public:
     explicit BattleService(Database &db);
     ~BattleService();
@@ -13,13 +13,15 @@ public:
     BattleService(const BattleService &other) = delete;
     BattleService &operator =(const BattleService &other) = delete;
 
-    ::grpc::Status StartWave(::grpc::ServerContext* context,
-                                 const ::apb::api::battle::StartWaveRequest* request,
-                                 ::apb::api::battle::StartWaveResponse* response) override;
+    void StartWave(::google::protobuf::RpcController* controller,
+                        const ::apb::api::battle::StartWaveRequest* request,
+                        ::apb::api::battle::StartWaveResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status FinishWave(::grpc::ServerContext* context,
-                                 const ::apb::api::battle::FinishWaveRequest* request,
-                                 ::apb::api::battle::FinishWaveResponse* response) override;
+    void FinishWave(::google::protobuf::RpcController* controller,
+                        const ::apb::api::battle::FinishWaveRequest* request,
+                        ::apb::api::battle::FinishWaveResponse* response,
+                        ::google::protobuf::Closure* done) override;
 private:
     void StartWaveImpl(UserContext &user,
                            const ::apb::api::battle::StartWaveRequest* request,

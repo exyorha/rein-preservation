@@ -4,7 +4,10 @@ project(GameServer)
 include(GenerateExportHeader)
 
 find_package(Protobuf CONFIG REQUIRED)
-find_package(gRPC CONFIG REQUIRED)
+
+if(NOT WIN32)
+    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+endif()
 
 if(WIN32 AND NOT TARGET protobuf::protoc)
     message(STATUS "Trying to find the host 'protoc'")
@@ -12,14 +15,6 @@ if(WIN32 AND NOT TARGET protobuf::protoc)
     find_program(HOST_PROTOC protoc REQUIRED)
     add_executable(protobuf::protoc IMPORTED)
     set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION "${HOST_PROTOC}")
-endif()
-
-if(WIN32 AND NOT TARGET gRPC::grpc_cpp_plugin)
-    message(STATUS "Trying to find the host 'grpc_cpp_plugin'")
-
-    find_program(HOST_GRPC_CPP_PLUGIN grpc_cpp_plugin REQUIRED)
-    add_executable(gRPC::grpc_cpp_plugin IMPORTED)
-    set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES IMPORTED_LOCATION "${HOST_GRPC_CPP_PLUGIN}")
 endif()
 
 add_library(yajl STATIC
@@ -82,6 +77,19 @@ set(MSGPACK_CXX20 TRUE CACHE BOOL "Using c++20 compiler" FORCE)
 set(MSGPACK_USE_BOOST FALSE CACHE BOOL "Use Boost libraried" FORCE)
 set(MSGPACK_BUILD_DOCS FALSE CACHE BOOL "Build Doxygen documentation" FORCE)
 add_subdirectory(thirdparty/msgpack-c)
+
+# We bundle a very new version of libevent for the websocket support, so we want static linking.
+set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "Set library type to SHARED/STATIC/BOTH (default SHARED for MSVC, otherwise BOTH)" FORCE)
+
+set(EVENT__DISABLE_BENCHMARK ON CACHE BOOL "Defines if libevent should build without the benchmark executables" FORCE)
+set(EVENT__DISABLE_TESTS ON CACHE BOOL "If tests should be compiled or not" FORCE)
+set(EVENT__DISABLE_REGRESS ON CACHE BOOL "Disable the regress tests" FORCE)
+set(EVENT__DISABLE_SAMPLES ON CACHE BOOL "Disable sample files" FORCE)
+set(EVENT__DISABLE_OPENSSL ON CACHE STRING "OpenSSL library support: AUTO (use if present), ON (ignore), OFF (require presence)" FORCE)
+set(EVENT__DISABLE_MBEDTLS ON CACHE STRING "Mbed TLS library support: AUTO (use if present), ON (ignore), OFF (require presence)" FORCE)
+
+
+add_subdirectory(thirdparty/libevent)
 
 add_subdirectory(master_database_ext)
 
@@ -147,8 +155,56 @@ add_executable(GameServer
     Gameserver.cpp
     Gameserver.h
 
+    GRPC/GRPCLikeCall.cpp
+    GRPC/GRPCLikeCall.h
+    GRPC/GRPCLikeServer.cpp
+    GRPC/GRPCLikeServer.h
+    GRPC/PBInputOverLLBuffer.cpp
+    GRPC/PBInputOverLLBuffer.h
+    GRPC/PBOutputOverLLBuffer.cpp
+    GRPC/PBOutputOverLLBuffer.h
+
     JSONWriter.cpp
     JSONWriter.h
+
+    LLServices/Logging/ConsoleLogSink.cpp
+    LLServices/Logging/ConsoleLogSink.h
+    LLServices/Logging/LogFacility.cpp
+    LLServices/Logging/LogFacility.h
+    LLServices/Logging/LogLevel.h
+    LLServices/Logging/LogManager.cpp
+    LLServices/Logging/LogManager.h
+    LLServices/Logging/LogSink.cpp
+    LLServices/Logging/LogSink.h
+    LLServices/Networking/AfterWaitListener.cpp
+    LLServices/Networking/AfterWaitListener.h
+    LLServices/Networking/AfterWaitNotifier.cpp
+    LLServices/Networking/AfterWaitNotifier.h
+    LLServices/Networking/BeforeWaitListener.cpp
+    LLServices/Networking/BeforeWaitListener.h
+    LLServices/Networking/BeforeWaitNotifier.cpp
+    LLServices/Networking/BeforeWaitListener.h
+    LLServices/Networking/Buffer.cpp
+    LLServices/Networking/Buffer.h
+    LLServices/Networking/DeferredDeletable.cpp
+    LLServices/Networking/DeferredDeletable.h
+    LLServices/Networking/EventLoop.cpp
+    LLServices/Networking/EventLoop.h
+    LLServices/Networking/EventTypes.h
+    LLServices/Networking/HttpRequest.cpp
+    LLServices/Networking/HttpRequest.h
+    LLServices/Networking/HttpRequestHandler.cpp
+    LLServices/Networking/HttpRequestHandler.h
+    LLServices/Networking/HttpServer.cpp
+    LLServices/Networking/HttpServer.h
+    LLServices/Networking/KeyValuePairs.cpp
+    LLServices/Networking/KeyValuePairs.h
+    LLServices/Networking/PossiblyUnownedPointer.h
+    LLServices/Networking/URI.cpp
+    LLServices/Networking/URI.h
+    LLServices/Networking/URIString.cpp
+    LLServices/Networking/URIString.h
+    LLServices/ThreadSingleton.h
 
     main.cpp
 
@@ -247,19 +303,15 @@ add_executable(GameServer
 target_include_directories(GameServer PRIVATE ${CMAKE_CURRENT_BINARY_DIR} .)
 
 protobuf_generate(TARGET GameServer)
-protobuf_generate(
-    TARGET GameServer
-    LANGUAGE grpc
-    PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
-    GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
-)
 
 set_target_properties(GameServer PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE gRPC::grpc++_unsecure protobuf::libprotobuf sqlite3 master_database_ext_static yajl)
+target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event)
+target_include_directories(GameServer PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/libevent/include
+    ${PROJECT_BINARY_DIR}/thirdparty/libevent/include)
 
 if(MINGW)
     target_link_options(GameServer PRIVATE -Wl,-Bstatic -static-libgcc)

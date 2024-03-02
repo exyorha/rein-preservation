@@ -7,11 +7,13 @@ CageOrnamentService::CageOrnamentService(Database &db) : CommonService(db) {
 CageOrnamentService::~CageOrnamentService() = default;
 
 
-::grpc::Status CageOrnamentService::RecordAccess(
-    ::grpc::ServerContext* context, const ::apb::api::cageornament::RecordAccessRequest* request,
-    ::apb::api::cageornament::RecordAccessResponse* response) {
+void CageOrnamentService::RecordAccess(::google::protobuf::RpcController* controller,
+                        const ::apb::api::cageornament::RecordAccessRequest* request,
+                        ::apb::api::cageornament::RecordAccessResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("CageOrnamentService::RecordAccess", context, request, response, &CageOrnamentService::RecordAccessImpl);
+    return inChangesetCall("CageOrnamentService::RecordAccess", controller, request, response, done,
+                           &CageOrnamentService::RecordAccessImpl);
 }
 
 void CageOrnamentService::RecordAccessImpl(

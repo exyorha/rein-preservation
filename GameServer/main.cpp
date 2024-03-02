@@ -5,7 +5,16 @@
 
 #include <getopt.h>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 int main(int argc, char **argv) {
+
+#ifdef _WIN32
+      WSADATA wsa_data;
+      WSAStartup(MAKEWORD(2, 2), &wsa_data);
+#endif
 
     static const struct option options[]{
         { .name = "master-database",     .has_arg = required_argument, .flag = nullptr, .val = 0 },
@@ -48,6 +57,8 @@ int main(int argc, char **argv) {
     }
 
     Gameserver server(individualDatabasePath, masterDatabasePath);
+
+    server.listen("0.0.0.0", 8087);
 
     server.wait();
 

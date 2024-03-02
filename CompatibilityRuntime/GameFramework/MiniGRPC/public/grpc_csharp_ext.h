@@ -1,26 +1,13 @@
 #ifndef GRPC_CSHARP_EXT_H
 #define GRPC_CSHARP_EXT_H
 
-#undef CR_GRPC_SECURE
-
-#include <grpc/support/port_platform.h>
-
-#include <grpc/grpc.h>
-#include <grpc/grpc_security.h>
-
-#include <gpr_export.h>
+#include <stdint.h>
+#include <string.h>
 
 struct grpcsharp_batch_context;
 
 typedef struct grpcsharp_batch_context grpcsharp_batch_context;
 typedef struct grpcsharp_request_call_context grpcsharp_request_call_context;
-
-#if 0
-#ifdef GPR_WINDOWS
-#define GPR_EXPORT __declspec(dllexport)
-#define GPR_CALLTYPE __stdcall
-#endif
-#endif
 
 #ifndef GPR_EXPORT
 #define GPR_EXPORT
@@ -40,6 +27,95 @@ typedef void(GPR_CALLTYPE* grpcsharp_log_func)(const char* file, int32_t line,
                                                const char* msg);
 
 typedef void(GPR_CALLTYPE* test_callback_funcptr)(int32_t success);
+
+typedef struct grpc_metadata_array grpc_metadata_array;
+typedef int grpc_status_code;
+typedef struct grpc_call grpc_call;
+
+typedef int32_t gpr_clock_type;
+typedef struct gpr_timespec {
+    int64_t tv_sec;
+    int32_t tv_nsec;
+    gpr_clock_type clock_type;
+} gpr_timespec;
+
+typedef struct grpc_completion_queue grpc_completion_queue;
+
+/** The type of completion (for grpc_event) */
+typedef enum grpc_completion_type {
+  /** Shutting down */
+  GRPC_QUEUE_SHUTDOWN,
+  /** No event before timeout */
+  GRPC_QUEUE_TIMEOUT,
+  /** Operation completion */
+  GRPC_OP_COMPLETE
+} grpc_completion_type;
+
+/** The result of an operation.
+
+    Returned by a completion queue when the operation started with tag. */
+typedef struct grpc_event {
+  /** The type of the completion. */
+  grpc_completion_type type;
+  /** If the grpc_completion_type is GRPC_OP_COMPLETE, this field indicates
+      whether the operation was successful or not; 0 in case of failure and
+      non-zero in case of success.
+      If grpc_completion_type is GRPC_QUEUE_SHUTDOWN or GRPC_QUEUE_TIMEOUT, this
+      field is guaranteed to be 0 */
+  int success;
+  /** The tag passed to grpc_call_start_batch etc to start this operation.
+      *Only* GRPC_OP_COMPLETE has a tag. For all other grpc_completion_type
+      values, tag is uninitialized. */
+  void* tag;
+} grpc_event;
+
+/** Connectivity state of a channel. */
+typedef enum {
+  /** channel is idle */
+  GRPC_CHANNEL_IDLE,
+  /** channel is connecting */
+  GRPC_CHANNEL_CONNECTING,
+  /** channel is ready for work */
+  GRPC_CHANNEL_READY,
+  /** channel has seen a failure but expects to recover */
+  GRPC_CHANNEL_TRANSIENT_FAILURE,
+  /** channel has seen a failure that it cannot recover from */
+  GRPC_CHANNEL_SHUTDOWN
+} grpc_connectivity_state;
+
+typedef struct grpc_channel grpc_channel;
+
+typedef struct grpc_channel_args grpc_channel_args;
+
+typedef int32_t grpc_call_error;
+
+typedef struct grpc_slice_buffer grpc_slice_buffer;
+
+typedef struct grpc_call_credentials grpc_call_credentials;
+
+typedef struct grpc_server grpc_server;
+
+typedef struct grpc_server_credentials grpc_server_credentials;
+
+typedef struct grpc_channel_credentials grpc_channel_credentials;
+
+typedef int32_t grpc_ssl_client_certificate_request_type;
+
+typedef struct grpc_metadata grpc_metadata;
+
+typedef void (*grpc_credentials_plugin_metadata_cb)(
+    void* user_data, const grpc_metadata* creds_md, size_t num_creds_md,
+    grpc_status_code status, const char* error_details);
+
+typedef struct grpc_auth_context grpc_auth_context;
+
+typedef struct grpc_auth_property grpc_auth_property;
+
+typedef struct grpc_auth_property_iterator {
+  const grpc_auth_context* ctx;
+  size_t index;
+  const char* name;
+} grpc_auth_property_iterator;
 
 #if defined(__cplusplus)
 extern "C" {

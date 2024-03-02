@@ -1,14 +1,14 @@
 #ifndef SERVICE_IMPLEMENTATIONS_DOKAN_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_DOKAN_SERVICE_H
 
-#include <service/DokanService.grpc.pb.h>
+#include <service/DokanService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
 /*
  * All methods are defined.
  */
-class DokanService final : public apb::api::dokan::DokanService::Service, public CommonService {
+class DokanService final : public apb::api::dokan::DokanService, public CommonService {
 public:
     explicit DokanService(Database &db);
     ~DokanService();
@@ -16,10 +16,10 @@ public:
     DokanService(const DokanService &other) = delete;
     DokanService &operator =(const DokanService &other) = delete;
 
-    ::grpc::Status RegisterDokanConfirmed(
-        ::grpc::ServerContext* context,
-        const ::apb::api::dokan::RegisterDokanConfirmedRequest* request,
-        ::apb::api::dokan::RegisterDokanConfirmedResponse* response) override;
+    void RegisterDokanConfirmed(::google::protobuf::RpcController* controller,
+                            const ::apb::api::dokan::RegisterDokanConfirmedRequest* request,
+                            ::apb::api::dokan::RegisterDokanConfirmedResponse* response,
+                            ::google::protobuf::Closure* done) override;
 
 private:
 

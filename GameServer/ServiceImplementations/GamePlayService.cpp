@@ -10,12 +10,13 @@ GamePlayService::GamePlayService(Database &db) : CommonService(db) {
 
 GamePlayService::~GamePlayService() = default;
 
+void GamePlayService::CheckBeforeGamePlay(::google::protobuf::RpcController* controller,
+                            const ::apb::api::gameplay::CheckBeforeGamePlayRequest* request,
+                            ::apb::api::gameplay::CheckBeforeGamePlayResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-::grpc::Status GamePlayService::CheckBeforeGamePlay(::grpc::ServerContext* context,
-                                    const ::apb::api::gameplay::CheckBeforeGamePlayRequest* request,
-                                    ::apb::api::gameplay::CheckBeforeGamePlayResponse* response) {
-
-    return inChangesetCall("GamePlayService::CheckBeforeGamePlay", context, request, response, &GamePlayService::CheckBeforeGamePlayImpl);
+    return inChangesetCall("GamePlayService::CheckBeforeGamePlay", controller, request, response, done,
+                           &GamePlayService::CheckBeforeGamePlayImpl);
 
 }
 

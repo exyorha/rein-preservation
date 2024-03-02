@@ -1,4 +1,5 @@
 #include "Database.h"
+#include "LLServices/Logging/LogFacility.h"
 
 #include <master_database_ext.h>
 
@@ -19,11 +20,13 @@ const char* const Database::m_setupQueries[]{
     "INSERT OR IGNORE INTO schema_version (id, version) VALUES (1, 0)"
 };
 
+LLServices::LogFacility LogDatabase("Database");
+
 Database::Database(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
     m_db(individualDatabasePath) {
 
-    printf("GameServer: initializing database: individual database: '%s', master database: '%s'\n", individualDatabasePath.c_str(),
-           masterDatabasePath.c_str());
+    LogDatabase.info("Individual database: '%s', master database: '%s'\n", individualDatabasePath.generic_string().c_str(),
+                     masterDatabasePath.generic_string().c_str());
 
     struct ErrorHolder {
         char *error = nullptr;
@@ -95,7 +98,7 @@ void Database::runMigrations() {
     schemaQuery.reset();
 
     if (currentVersion < m_currentSchemaVersion) {
-        printf("Database requires schema update from %d to %d\n", currentVersion, m_currentSchemaVersion);
+        LogDatabase.info("Database requires schema update from %d to %d\n", currentVersion, m_currentSchemaVersion);
 
         if (!restoredFromBackup)
             createDatabaseBackup();
@@ -115,7 +118,7 @@ void Database::runMigrations() {
             if (!migration)
                 throw std::logic_error("migration not found");
 
-            printf("Migrating database from schema revision %d to %d\n", migration->fromVersion, migration->toVersion);
+            LogDatabase.info("Migrating database from schema revision %d to %d\n", migration->fromVersion, migration->toVersion);
 
             sqlite::Transaction transaction(&m_db);
 
@@ -135,13 +138,14 @@ void Database::runMigrations() {
             currentVersion = migration->toVersion;
         }
 
-        printf("Finished with migrations, removing backup\n");
+        LogDatabase.info("Finished with migrations, removing backup\n");
 
         removeDatabase(backupDatabasePath());
 
     }
     else if (currentVersion > m_currentSchemaVersion) {
-        fprintf(stderr, "Database is newer than expected: expected version %d, current version %d\n", m_currentSchemaVersion, currentVersion);
+        LogDatabase.error("Database is newer than expected: expected version %d, current version %d\n",
+                          m_currentSchemaVersion, currentVersion);
     }
 }
 
@@ -153,7 +157,7 @@ int Database::statementProfileCallback(unsigned int type, void *context, void *s
         auto sql = static_cast<const char *>(sqlParam);
 
         if(strncmp(sql, "--", 2) == 0) {
-            printf("SQL: %s\n", sql);
+            LogDatabase.debug("SQL: %s\n", sql);
         } else {
             struct ManagedString {
                 char *ptr = nullptr;
@@ -166,10 +170,10 @@ int Database::statementProfileCallback(unsigned int type, void *context, void *s
             expandedSql.ptr = sqlite3_expanded_sql(statement);
             if(expandedSql.ptr) {
 
-                printf("SQL: %s\n", expandedSql.ptr);
+                LogDatabase.debug("SQL: %s\n", expandedSql.ptr);
             } else {
 
-                printf("SQL: %s\n", sql);
+                LogDatabase.debug("SQL: %s\n", sql);
             }
         }
 

@@ -38,9 +38,6 @@ add_executable(GameExecutable
 
     main.cpp
 
-    Il2CppUtilities.cpp
-    Il2CppUtilities.h
-
     Input.cpp
     Input.h
 
@@ -134,7 +131,6 @@ if(WIN32)
         EntryPointWindows.cpp
 
         FastAESWindows.cpp
-        Il2CppUtilitiesWindows.cpp
         WindowsHelpers.cpp
         WindowsHelpers.h
 
@@ -161,14 +157,13 @@ if(WIN32)
 else()
     target_sources(GameExecutable PRIVATE
         FastAESOpenSSL.cpp
-        Il2CppUtilitiesIconv.cpp
     )
 
-    target_link_libraries(GameExecutable PRIVATE Iconv::Iconv OpenSSL::Crypto)
+    target_link_libraries(GameExecutable PRIVATE OpenSSL::Crypto)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly protobuf::libprotobuf)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly protobuf::libprotobuf Il2CppUtilities)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

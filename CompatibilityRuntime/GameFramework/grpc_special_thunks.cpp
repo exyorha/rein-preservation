@@ -3,7 +3,6 @@
 
 #include <Translator/JITThreadContext.h>
 #include <Translator/thunking.h>
-#include <grpc/grpc_security.h>
 
 // GPR_EXPORT gpr_timespec GPR_CALLTYPE
 // gprsharp_convert_clock_type(gpr_timespec t, gpr_clock_type target_clock) ;

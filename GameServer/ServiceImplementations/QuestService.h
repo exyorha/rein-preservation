@@ -1,13 +1,11 @@
 #ifndef SERVICE_IMPLEMENTATIONS_QUEST_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_QUEST_SERVICE_H
 
-#include "service/QuestService.pb.h"
-#include <google/protobuf/reflection.h>
-#include <service/QuestService.grpc.pb.h>
+#include <service/QuestService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
-class QuestService final : public apb::api::quest::QuestService::Service, public CommonService {
+class QuestService final : public apb::api::quest::QuestService, public CommonService {
 public:
     explicit QuestService(Database &db);
     ~QuestService();
@@ -15,28 +13,35 @@ public:
     QuestService(const QuestService &other) = delete;
     QuestService &operator =(const QuestService &other) = delete;
 
-    ::grpc::Status UpdateMainFlowSceneProgress(::grpc::ServerContext* context,
-                                               const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
-                                               ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response) override;
+    void UpdateMainFlowSceneProgress(::google::protobuf::RpcController* controller,
+                            const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
+                            ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response,
+                            ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status StartMainQuest(::grpc::ServerContext* context,
-                                  const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response) override;
+    void UpdateMainQuestSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status RestartMainQuest(::grpc::ServerContext* context,
-                                    const ::apb::api::quest::RestartMainQuestRequest* request, ::apb::api::quest::RestartMainQuestResponse* response) override;
+    void StartMainQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::StartMainQuestRequest* request,
+                        ::apb::api::quest::StartMainQuestResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status FinishMainQuest(::grpc::ServerContext* context, const ::apb::api::quest::FinishMainQuestRequest* request,
-                                   ::apb::api::quest::FinishMainQuestResponse* response) override;
+    void RestartMainQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::RestartMainQuestRequest* request,
+                        ::apb::api::quest::RestartMainQuestResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status SetRoute(
-        ::grpc::ServerContext* context,
-        const ::apb::api::quest::SetRouteRequest* request,
-        ::apb::api::quest::SetRouteResponse* response) override;
+    void FinishMainQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::FinishMainQuestRequest* request,
+                        ::apb::api::quest::FinishMainQuestResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status UpdateMainQuestSceneProgress(
-        ::grpc::ServerContext* context,
-        const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
-        ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) override;
+    void SetRoute(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::SetRouteRequest* request,
+                        ::apb::api::quest::SetRouteResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
 

@@ -6,44 +6,54 @@ WeaponService::WeaponService(Database &db) : CommonService(db) {
 
 WeaponService::~WeaponService() = default;
 
-::grpc::Status WeaponService::Protect(
-    ::grpc::ServerContext* context, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) {
+void WeaponService::Protect(::google::protobuf::RpcController* controller,
+                        const ::apb::api::weapon::ProtectRequest* request,
+                        ::apb::api::weapon::ProtectResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("WeaponService::Protect", context, request, response, &WeaponService::ProtectImpl);
+    return inChangesetCall("WeaponService::Protect", controller, request, response, done, &WeaponService::ProtectImpl);
 }
 
-::grpc::Status WeaponService::Unprotect(
-    ::grpc::ServerContext* context, const ::apb::api::weapon::UnprotectRequest* request, ::apb::api::weapon::UnprotectResponse* response) {
+void WeaponService::Unprotect(::google::protobuf::RpcController* controller,
+                        const ::apb::api::weapon::UnprotectRequest* request,
+                        ::apb::api::weapon::UnprotectResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("WeaponService::Unprotect", context, request, response, &WeaponService::UnprotectImpl);
+    return inChangesetCall("WeaponService::Unprotect", controller, request, response, done, &WeaponService::UnprotectImpl);
 }
 
-::grpc::Status WeaponService::EnhanceByMaterial(
-    ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceByMaterialRequest* request,
-    ::apb::api::weapon::EnhanceByMaterialResponse* response) {
+void WeaponService::EnhanceByMaterial(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EnhanceByMaterialRequest* request,
+                            ::apb::api::weapon::EnhanceByMaterialResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("WeaponService::EnhanceByMaterial", context, request, response, &WeaponService::EnhanceByMaterialImpl);
+    return inChangesetCall("WeaponService::EnhanceByMaterial", controller, request, response, done,
+                           &WeaponService::EnhanceByMaterialImpl);
 }
 
-::grpc::Status WeaponService::EnhanceSkill(
-    ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceSkillRequest* request,
-    ::apb::api::weapon::EnhanceSkillResponse* response) {
+void WeaponService::EnhanceSkill(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EnhanceSkillRequest* request,
+                            ::apb::api::weapon::EnhanceSkillResponse* response,
+                            ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("WeaponService::EnhanceSkill", context, request, response, &WeaponService::EnhanceSkillImpl);
+    return inChangesetCall("WeaponService::EnhanceSkill", controller, request, response, done, &WeaponService::EnhanceSkillImpl);
 }
 
-::grpc::Status WeaponService::EnhanceAbility(
-    ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceAbilityRequest* request,
-    ::apb::api::weapon::EnhanceAbilityResponse* response) {
+void WeaponService::EnhanceAbility(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EnhanceAbilityRequest* request,
+                            ::apb::api::weapon::EnhanceAbilityResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("WeaponService::EnhanceAbility", context, request, response, &WeaponService::EnhanceAbilityImpl);
+    return inChangesetCall("WeaponService::EnhanceAbility", controller, request, response, done, &WeaponService::EnhanceAbilityImpl);
 }
 
-::grpc::Status WeaponService::LimitBreakByMaterial(
-    ::grpc::ServerContext* context, const ::apb::api::weapon::LimitBreakByMaterialRequest* request,
-    ::apb::api::weapon::LimitBreakByMaterialResponse* response) {
+void WeaponService::LimitBreakByMaterial(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::LimitBreakByMaterialRequest* request,
+                            ::apb::api::weapon::LimitBreakByMaterialResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("WeaponService::LimitBreakByMaterial", context, request, response, &WeaponService::LimitBreakByMaterialImpl);
+    return inChangesetCall("WeaponService::LimitBreakByMaterial", controller, request, response,
+                           done, &WeaponService::LimitBreakByMaterialImpl);
 }
 
 void WeaponService::ProtectImpl(UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) {

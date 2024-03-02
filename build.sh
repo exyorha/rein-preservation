@@ -67,15 +67,12 @@ ln -sf ../GameServer-build/compile_commands.json GameServer
 cmake --build GameServer-build
 cmake --install GameServer-build --component GameServer
 
-#exit 0
-
 mkdir -p windows-build-deps
 
 windows_boost_version=boost_1_84_0
 windows_ffi_version=libffi-3.4.4
 windows_abseil_version=abseil-cpp-20240116.1
 windows_protobuf_version=protobuf-25.2
-windows_grpc_version=1.61.1
 windows_zlib_version=zlib-1.3.1
 
 download_and_unpack_windows_dependency "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z"
@@ -148,41 +145,6 @@ if [ ! -f "${winprefix}/protobuf_installed" ]; then
     touch "${winprefix}/protobuf_installed"
 fi
 
-if [ ! -d "windows-build-deps/grpc-${windows_grpc_version}" ]; then
-    git clone "https://github.com/grpc/grpc.git" "windows-build-deps/grpc-${windows_grpc_version}.part" \
-        --single-branch --branch "v${windows_grpc_version}" --depth 1 --recurse-submodules --shallow-submodules
-
-    mv "windows-build-deps/grpc-${windows_grpc_version}.part" "windows-build-deps/grpc-${windows_grpc_version}"
-fi
-
-if [ ! -f "${winprefix}/grpc_installed" ]; then
-
-    if ! (cd "windows-build-deps/grpc-${windows_grpc_version}" && (git log -n 1 | grep -q 'mingw build fix')); then
-        patchpath=$(realpath -- "grpc-mingw-build-fix.patch")
-        (cd "windows-build-deps/grpc-${windows_grpc_version}" && git am "$patchpath")
-    fi
-
-    prepend_include "#include <stdint.h>" "windows-build-deps/grpc-${windows_grpc_version}/third_party/re2/util/pcre.h"
-    prepend_include "#include <intrin.h>" \
-        "windows-build-deps/grpc-${windows_grpc_version}/third_party/boringssl-with-bazel/src/third_party/fiat/curve25519_64_adx.h"
-
-    cmake -S "windows-build-deps/grpc-${windows_grpc_version}" -B "windows-build-deps/grpc_build" \
-        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${winprefix}" \
-        -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
-        -DCMAKE_FIND_ROOT_PATH="${winprefix}" \
-        -DBUILD_SHARED_LIBS=OFF -DgRPC_ABSL_PROVIDER=package -DgRPC_PROTOBUF_PROVIDER=package \
-        -DgRPC_BUILD_CODEGEN=OFF \
-        -DgRPC_ZLIB_PROVIDER=package \
-        -DRE2_BUILD_TESTING=OFF \
-        -DOPENSSL_NO_ASM=ON
-
-    echo -e "%:\n\ttrue" > "windows-build-deps/grpc_build/third_party/boringssl-with-bazel/CMakeFiles/bssl.dir/build.make"
-
-    cmake --build "windows-build-deps/grpc_build" --parallel 8 --target install
-
-    touch "${winprefix}/grpc_installed"
-fi
-
 cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
@@ -194,7 +156,6 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
 
 cmake --build CompatibilityRuntime-mingw-build
 cmake --install CompatibilityRuntime-mingw-build --component GameAssembly
-
 
 cmake \
     -S GameServer \

@@ -8,11 +8,12 @@ BannerService::BannerService(Database &db) : CommonService(db) {
 
 BannerService::~BannerService() = default;
 
-::grpc::Status BannerService::GetMamaBanner(
-    ::grpc::ServerContext* context, const ::apb::api::banner::GetMamaBannerRequest* request,
-    ::apb::api::banner::GetMamaBannerResponse* response) {
+void BannerService::GetMamaBanner(::google::protobuf::RpcController* controller,
+                       const ::apb::api::banner::GetMamaBannerRequest* request,
+                       ::apb::api::banner::GetMamaBannerResponse* response,
+                       ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("BannerService::GetMamaBanner", context, request, response, &BannerService::GetMamaBannerImpl);
+    return inChangesetCall("BannerService::GetMamaBanner", controller, request, response, done, &BannerService::GetMamaBannerImpl);
 }
 
 void BannerService::GetMamaBannerImpl(

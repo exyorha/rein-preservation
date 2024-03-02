@@ -7,12 +7,13 @@ CharacterViewerService::CharacterViewerService(Database &db) :CommonService(db) 
 CharacterViewerService::~CharacterViewerService() = default;
 
 
-::grpc::Status CharacterViewerService::CharacterViewerTop(
-    ::grpc::ServerContext* context,
-    const ::google::protobuf::Empty* request,
-    ::apb::api::characterviewer::CharacterViewerTopResponse* response) {
+void CharacterViewerService::CharacterViewerTop(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::characterviewer::CharacterViewerTopResponse* response,
+                        ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("CharacterViewerService::CharacterViewerTop", context, request, response,  &CharacterViewerService::CharacterViewerTopImpl);
+    return inChangesetCall("CharacterViewerService::CharacterViewerTop", controller, request, response, done,
+                           &CharacterViewerService::CharacterViewerTopImpl);
 
 }
 

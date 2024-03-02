@@ -1,14 +1,14 @@
 #ifndef SERVICE_IMPLEMENTATIONS_CHARACTER_VIEWER_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_CHARACTER_VIEWER_SERVICE_H
 
-#include <service/CharacterViewerService.grpc.pb.h>
+#include <service/CharacterViewerService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
 /*
  * All methods are defined.
  */
-class CharacterViewerService final : public apb::api::characterviewer::CharacterViewerService::Service, public CommonService {
+class CharacterViewerService final : public apb::api::characterviewer::CharacterViewerService, public CommonService {
 public:
     explicit CharacterViewerService(Database &db);
     ~CharacterViewerService();
@@ -16,10 +16,10 @@ public:
     CharacterViewerService(const CharacterViewerService &other) = delete;
     CharacterViewerService &operator =(const CharacterViewerService &other) = delete;
 
-    ::grpc::Status CharacterViewerTop(
-        ::grpc::ServerContext* context,
-        const ::google::protobuf::Empty* request,
-        ::apb::api::characterviewer::CharacterViewerTopResponse* response) override;
+    void CharacterViewerTop(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::characterviewer::CharacterViewerTopResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
     void CharacterViewerTopImpl(

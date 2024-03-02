@@ -1,11 +1,11 @@
 #ifndef SERVICE_IMPLEMENTATIONS_DECK_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_DECK_SERVICE_H
 
-#include <service/DeckService.grpc.pb.h>
+#include <service/DeckService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
-class DeckService final : public apb::api::deck::DeckService::Service, public CommonService {
+class DeckService final : public apb::api::deck::DeckService, public CommonService {
 public:
     explicit DeckService(Database &db);
     ~DeckService();
@@ -13,17 +13,20 @@ public:
     DeckService(const DeckService &other) = delete;
     DeckService &operator =(const DeckService &other) = delete;
 
-    ::grpc::Status UpdateName(::grpc::ServerContext* context,
-                              const ::apb::api::deck::UpdateNameRequest* request,
-                              ::apb::api::deck::UpdateNameResponse* response) override;
+    void UpdateName(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::UpdateNameRequest* request,
+                        ::apb::api::deck::UpdateNameResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status ReplaceDeck(::grpc::ServerContext* context,
-                               const ::apb::api::deck::ReplaceDeckRequest* request,
-                               ::apb::api::deck::ReplaceDeckResponse* response) override;
+    void ReplaceDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::ReplaceDeckRequest* request,
+                        ::apb::api::deck::ReplaceDeckResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status RefreshDeckPower(::grpc::ServerContext* context,
-                                    const ::apb::api::deck::RefreshDeckPowerRequest* request,
-                                    ::apb::api::deck::RefreshDeckPowerResponse* response) override;
+    void RefreshDeckPower(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::RefreshDeckPowerRequest* request,
+                        ::apb::api::deck::RefreshDeckPowerResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
     void UpdateNameImpl(UserContext &user,

@@ -9,10 +9,13 @@ NaviCutInService::NaviCutInService(Database &db) :CommonService(db) {
 NaviCutInService::~NaviCutInService() = default;
 
 
-::grpc::Status NaviCutInService::RegisterPlayed(::grpc::ServerContext* context, const ::apb::api::navicutin::RegisterPlayedRequest* request,
-                                        ::apb::api::navicutin::RegisterPlayedResponse* response) {
+void NaviCutInService::RegisterPlayed(::google::protobuf::RpcController* controller,
+                        const ::apb::api::navicutin::RegisterPlayedRequest* request,
+                        ::apb::api::navicutin::RegisterPlayedResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("NaviCutInService::RegisterPlayed", context, request, response, &NaviCutInService::RegisterPlayedImpl);
+    return inChangesetCall("NaviCutInService::RegisterPlayed", controller, request, response, done,
+                           &NaviCutInService::RegisterPlayedImpl);
 }
 
 void NaviCutInService::RegisterPlayedImpl(

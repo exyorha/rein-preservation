@@ -11,11 +11,13 @@ DataService::DataService(Database &db) : CommonService(db) {
 
 DataService::~DataService() = default;
 
-::grpc::Status DataService::GetLatestMasterDataVersion(::grpc::ServerContext* context,
-                                                       const ::google::protobuf::Empty* request,
-                                                       ::apb::api::data::MasterDataGetLatestVersionResponse* response) {
+void DataService::GetLatestMasterDataVersion(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::data::MasterDataGetLatestVersionResponse* response,
+                        ::google::protobuf::Closure* done)  {
 
-    return inCall("DataService::GetLatestMasterDataVersion", context, request, response, &DataService::GetLatestMasterDataVersionImpl);
+    return inCall("DataService::GetLatestMasterDataVersion", controller, request, response, done,
+                  &DataService::GetLatestMasterDataVersionImpl);
 }
 
 
@@ -25,10 +27,12 @@ void DataService::GetLatestMasterDataVersionImpl(const ::google::protobuf::Empty
     response->set_latest_master_data_version(global().dataModel().masterDatabaseVersion());
 }
 
-::grpc::Status DataService::GetUserDataName(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                            ::apb::api::data::UserDataGetNameResponse* response) {
+void DataService::GetUserDataName(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::data::UserDataGetNameResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inCall("DataService::GetUserDataName", context, request, response, &DataService::GetUserDataNameImpl);
+    return inCall("DataService::GetUserDataName", controller, request, response, done, &DataService::GetUserDataNameImpl);
 }
 
 void DataService::GetUserDataNameImpl(const ::google::protobuf::Empty* request, ::apb::api::data::UserDataGetNameResponse* response) {
@@ -41,10 +45,12 @@ void DataService::GetUserDataNameImpl(const ::google::protobuf::Empty* request, 
 }
 
 
-::grpc::Status DataService::GetUserDataNameV2(::grpc::ServerContext* context, const ::google::protobuf::Empty* request,
-                                              ::apb::api::data::UserDataGetNameResponseV2* response) {
+void DataService::GetUserDataNameV2(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::data::UserDataGetNameResponseV2* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inCall("DataService::GetUserDataNameV2", context, request, response, &DataService::GetUserDataNameV2Impl);
+    return inCall("DataService::GetUserDataNameV2", controller, request, response, done, &DataService::GetUserDataNameV2Impl);
 }
 
 void DataService::GetUserDataNameV2Impl(const ::google::protobuf::Empty* request,
@@ -69,11 +75,12 @@ void DataService::GetUserDataNameV2Impl(const ::google::protobuf::Empty* request
     }
 }
 
-::grpc::Status DataService::GetUserData(::grpc::ServerContext* context,
-                                        const ::apb::api::data::UserDataGetRequest* request,
-                                        ::apb::api::data::UserDataGetResponse* response) {
+void DataService::GetUserData(::google::protobuf::RpcController* controller,
+                        const ::apb::api::data::UserDataGetRequest* request,
+                        ::apb::api::data::UserDataGetResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inAuthenticatedCall("DataService::GetUserData", context, request, response, &DataService::GetUserDataImpl);
+    return inAuthenticatedCall("DataService::GetUserData", controller, request, response, done, &DataService::GetUserDataImpl);
 }
 
 

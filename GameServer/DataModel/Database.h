@@ -6,6 +6,10 @@
 
 #include <DataModel/Sqlite/Database.h>
 
+namespace LLServices {
+    class LogFacility;
+}
+
 class Database {
 public:
     Database(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath);
@@ -51,5 +55,7 @@ private:
     static const unsigned int m_currentSchemaVersion;
     std::string m_masterDatabaseVersion;
 };
+
+extern LLServices::LogFacility LogDatabase;
 
 #endif

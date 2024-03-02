@@ -8,11 +8,12 @@ BattleService::BattleService(Database &db) : CommonService(db) {
 
 BattleService::~BattleService() = default;
 
-::grpc::Status BattleService::StartWave(
-    ::grpc::ServerContext* context, const ::apb::api::battle::StartWaveRequest* request,
-    ::apb::api::battle::StartWaveResponse* response) {
+void BattleService::StartWave(::google::protobuf::RpcController* controller,
+                        const ::apb::api::battle::StartWaveRequest* request,
+                        ::apb::api::battle::StartWaveResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("BattleService::StartWave", context, request, response, &BattleService::StartWaveImpl);
+    return inChangesetCall("BattleService::StartWave", controller, request, response, done, &BattleService::StartWaveImpl);
 }
 
 void BattleService::StartWaveImpl(
@@ -21,11 +22,12 @@ void BattleService::StartWaveImpl(
 
 }
 
-::grpc::Status BattleService::FinishWave(
-    ::grpc::ServerContext* context, const ::apb::api::battle::FinishWaveRequest* request,
-    ::apb::api::battle::FinishWaveResponse* response) {
+void BattleService::FinishWave(::google::protobuf::RpcController* controller,
+                        const ::apb::api::battle::FinishWaveRequest* request,
+                        ::apb::api::battle::FinishWaveResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("BattleService::FinishWave", context, request, response, &BattleService::FinishWaveImpl);
+    return inChangesetCall("BattleService::FinishWave", controller, request, response, done, &BattleService::FinishWaveImpl);
 }
 
 void BattleService::FinishWaveImpl(

@@ -16,3 +16,6 @@
 [submodule "GameServer/thirdparty/yajl"]
 	path = GameServer/thirdparty/yajl
 	url = https://github.com/lloyd/yajl.git
+[submodule "GameServer/thirdparty/libevent"]
+	path = GameServer/thirdparty/libevent
+	url = https://github.com/libevent/libevent.git

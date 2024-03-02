@@ -1,14 +1,11 @@
 #ifndef SERVICE_IMPLEMENTATIONS_WEAPON_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_WEAPON_SERVICE_H
 
-#include <service/WeaponService.grpc.pb.h>
+#include <service/WeaponService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
-/*
- * All methods are defined.
- */
-class WeaponService final : public apb::api::weapon::WeaponService::Service, public CommonService {
+class WeaponService final : public apb::api::weapon::WeaponService, public CommonService {
 public:
     explicit WeaponService(Database &db);
     ~WeaponService();
@@ -16,24 +13,35 @@ public:
     WeaponService(const WeaponService &other) = delete;
     WeaponService &operator =(const WeaponService &other) = delete;
 
-    ::grpc::Status Protect(
-        ::grpc::ServerContext* context, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) override;
+    void Protect(::google::protobuf::RpcController* controller,
+                        const ::apb::api::weapon::ProtectRequest* request,
+                        ::apb::api::weapon::ProtectResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status Unprotect(
-        ::grpc::ServerContext* context, const ::apb::api::weapon::UnprotectRequest* request, ::apb::api::weapon::UnprotectResponse* response) override;
+    void Unprotect(::google::protobuf::RpcController* controller,
+                        const ::apb::api::weapon::UnprotectRequest* request,
+                        ::apb::api::weapon::UnprotectResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status EnhanceByMaterial(
-        ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceByMaterialRequest* request,
-        ::apb::api::weapon::EnhanceByMaterialResponse* response) override;
+    void EnhanceByMaterial(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EnhanceByMaterialRequest* request,
+                            ::apb::api::weapon::EnhanceByMaterialResponse* response,
+                            ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status EnhanceSkill(
-        ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceSkillRequest* request, ::apb::api::weapon::EnhanceSkillResponse* response) override;
+    void EnhanceSkill(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EnhanceSkillRequest* request,
+                            ::apb::api::weapon::EnhanceSkillResponse* response,
+                            ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status EnhanceAbility(
-        ::grpc::ServerContext* context, const ::apb::api::weapon::EnhanceAbilityRequest* request, ::apb::api::weapon::EnhanceAbilityResponse* response) override;
+    void EnhanceAbility(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EnhanceAbilityRequest* request,
+                            ::apb::api::weapon::EnhanceAbilityResponse* response,
+                            ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status LimitBreakByMaterial(
-        ::grpc::ServerContext* context, const ::apb::api::weapon::LimitBreakByMaterialRequest* request, ::apb::api::weapon::LimitBreakByMaterialResponse* response) override;
+    void LimitBreakByMaterial(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::LimitBreakByMaterialRequest* request,
+                            ::apb::api::weapon::LimitBreakByMaterialResponse* response,
+                            ::google::protobuf::Closure* done) override;
 
 private:
     void ProtectImpl(

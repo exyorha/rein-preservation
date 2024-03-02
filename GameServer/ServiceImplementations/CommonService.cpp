@@ -1,5 +1,9 @@
 #include <ServiceImplementations/CommonService.h>
 
+#include <GRPC/GRPCLikeCall.h>
+
+#include <LLServices/Networking/KeyValuePairs.h>
+
 #include <DataModel/Database.h>
 #include <DataModel/Sqlite/Statement.h>
 
@@ -15,43 +19,44 @@ CommonService::CommonService(Database &db) : m_db(db) {
 
 CommonService::~CommonService() = default;
 
-::grpc::Status CommonService::guardedCall(const char *callName, const std::function<void()> &body) {
+void CommonService::guardedCall(const char *callName,
+        ::google::protobuf::RpcController* controller,
+        ::google::protobuf::Closure* done,
+        const std::function<void()> &body) {
     try {
 
         body();
-
-        return grpc::Status::OK;
     } catch(const std::exception &e) {
 
         fprintf(stderr, "An exception occurred while processing %s: %s\n", callName, e.what());
 
-        return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
+        controller->SetFailed(e.what());
 
     } catch(...) {
         fprintf(stderr, "An exception occurred while processing %s: unknown\n", callName);
-        return grpc::Status(grpc::StatusCode::INTERNAL, "unknown");
+
+        controller->SetFailed("no message available");
 
     }
+
+    done->Run();
 }
 
-int64_t CommonService::authenticate(::grpc::ServerContext *context) {
-    const auto &metadata = context->client_metadata();
-    auto it = metadata.find("x-apb-session-key");
-    if(it == metadata.end())
+int64_t CommonService::authenticate(::google::protobuf::RpcController*controller) {
+    auto header = static_cast<GRPCLikeCall *>(controller)->httpRequest().inputHeaders().find("x-apb-session-key");
+    if(!header)
         throw std::runtime_error("'x-apb-session-key' not specified");
 
-    const auto &session = it->second;
-
-    auto result = m_db.authenticate(std::string_view(session.begin(), session.end()));
+    auto result = m_db.authenticate(header);
     if(result.has_value())
         return *result;
 
     throw std::runtime_error("bad session key");
 }
 
-void CommonService::addDateToContext(::grpc::ServerContext* context) {
-    context->AddTrailingMetadata(
+void CommonService::addDateToContext(::google::protobuf::RpcController *controller) {
+    static_cast<GRPCLikeCall *>(controller)->httpRequest().outputHeaders().add(
         "x-apb-response-datetime",
-        std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
-    );
+        std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()).c_str());
 }
+

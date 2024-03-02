@@ -7,12 +7,13 @@ LoginBonusService::LoginBonusService(Database &db) :CommonService(db) {
 LoginBonusService::~LoginBonusService() = default;
 
 
-::grpc::Status LoginBonusService::ReceiveStamp(
-        ::grpc::ServerContext* context,
-        const ::google::protobuf::Empty* request,
-        ::apb::api::loginBonus::ReceiveStampResponse* response) {
+void LoginBonusService::ReceiveStamp(::google::protobuf::RpcController* controller,
+                            const ::google::protobuf::Empty* request,
+                            ::apb::api::loginBonus::ReceiveStampResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("LoginBonusService::ReceiveStamp", context, request, response, &LoginBonusService::ReceiveStampImpl);
+    return inChangesetCall("LoginBonusService::ReceiveStamp", controller, request, response, done,
+                           &LoginBonusService::ReceiveStampImpl);
 }
 
 void LoginBonusService::ReceiveStampImpl(UserContext &user, const ::google::protobuf::Empty* request,

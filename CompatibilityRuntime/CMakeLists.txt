@@ -38,9 +38,6 @@ target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 
 find_package(Protobuf CONFIG REQUIRED)
 
-find_package(gRPC CONFIG REQUIRED)
-add_subdirectory(grpc_csharp_ext)
-
 if(NOT WIN32)
     find_package(PkgConfig)
 
@@ -73,6 +70,8 @@ if(CEF_ROOT)
     add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
     add_subdirectory(WebViewHost)
 endif()
+
+add_subdirectory(Il2CppUtilities)
 
 add_subdirectory(GameFramework)
 

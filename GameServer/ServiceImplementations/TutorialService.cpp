@@ -8,19 +8,22 @@ TutorialService::TutorialService(Database &db) : CommonService(db) {
 
 TutorialService::~TutorialService() = default;
 
-::grpc::Status TutorialService::SetTutorialProgress(
-    ::grpc::ServerContext* context, const ::apb::api::tutorial::SetTutorialProgressRequest* request,
-    ::apb::api::tutorial::SetTutorialProgressResponse* response) {
+void TutorialService::SetTutorialProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::tutorial::SetTutorialProgressRequest* request,
+                        ::apb::api::tutorial::SetTutorialProgressResponse* response,
+                        ::google::protobuf::Closure* done)  {
 
-    return inChangesetCall("TutorialService::SetTutorialProgress", context, request, response, &TutorialService::SetTutorialProgressImpl);
+    return inChangesetCall("TutorialService::SetTutorialProgress", controller, request, response,
+                           done, &TutorialService::SetTutorialProgressImpl);
 }
 
-::grpc::Status TutorialService::SetTutorialProgressAndReplaceDeck(
-    ::grpc::ServerContext* context, const ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckRequest* request,
-    ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckResponse* response) {
+void TutorialService::SetTutorialProgressAndReplaceDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckRequest* request,
+                        ::apb::api::tutorial::SetTutorialProgressAndReplaceDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("TutorialService::SetTutorialProgressAndReplaceDeck", context, request, response,
-                           &TutorialService::SetTutorialProgressAndReplaceDeckImpl);
+    return inChangesetCall("TutorialService::SetTutorialProgressAndReplaceDeck", controller, request, response,
+                           done, &TutorialService::SetTutorialProgressAndReplaceDeckImpl);
 }
 
 void TutorialService::SetTutorialProgressImpl(

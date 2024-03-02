@@ -1,11 +1,11 @@
 #ifndef SERVICE_IMPLEMENTATIONS_USER_SERVICE_H
 #define SERVICE_IMPLEMENTATIONS_USER_SERVICE_H
 
-#include <service/UserService.grpc.pb.h>
+#include <service/UserService.pb.h>
 
 #include <ServiceImplementations/CommonService.h>
 
-class UserService final : public apb::api::user::UserService::Service, public CommonService {
+class UserService final : public apb::api::user::UserService, public CommonService {
 public:
     explicit UserService(Database &db);
     ~UserService();
@@ -13,24 +13,40 @@ public:
     UserService(const UserService &other) = delete;
     UserService &operator =(const UserService &other) = delete;
 
-    ::grpc::Status RegisterUser(::grpc::ServerContext* context,
-                                const ::apb::api::user::RegisterUserRequest* request, ::apb::api::user::RegisterUserResponse* response) override;
+    void RegisterUser(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::RegisterUserRequest* request,
+                        ::apb::api::user::RegisterUserResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status Auth(::grpc::ServerContext* context, const ::apb::api::user::AuthUserRequest* request, ::apb::api::user::AuthUserResponse* response) override;
+    void Auth(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::AuthUserRequest* request,
+                        ::apb::api::user::AuthUserResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status GameStart(::grpc::ServerContext* context, const ::google::protobuf::Empty * request, ::apb::api::user::GameStartResponse* response) override;
+    void GameStart(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::user::GameStartResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status SetUserName(::grpc::ServerContext* context, const ::apb::api::user::SetUserNameRequest* request,
-                               ::apb::api::user::SetUserNameResponse* response) override;
+    void SetUserName(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::SetUserNameRequest* request,
+                        ::apb::api::user::SetUserNameResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status SetUserMessage(::grpc::ServerContext* context,
-                                  const ::apb::api::user::SetUserMessageRequest* request, ::apb::api::user::SetUserMessageResponse* response) override;
+    void SetUserMessage(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::SetUserMessageRequest* request,
+                        ::apb::api::user::SetUserMessageResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status SetUserFavoriteCostumeId(::grpc::ServerContext* context, const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
-                                            ::apb::api::user::SetUserFavoriteCostumeIdResponse* response) override;
+    void SetUserFavoriteCostumeId(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
+                        ::apb::api::user::SetUserFavoriteCostumeIdResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
-    ::grpc::Status GetAndroidArgs(::grpc::ServerContext* context,
-                                  const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response) override;
+  void GetAndroidArgs(::google::protobuf::RpcController* controller,
+                        const ::apb::api::user::GetAndroidArgsRequest* request,
+                        ::apb::api::user::GetAndroidArgsResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
     void RegisterUserImpl(const ::apb::api::user::RegisterUserRequest* request, ::apb::api::user::RegisterUserResponse* response);

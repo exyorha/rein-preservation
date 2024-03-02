@@ -8,10 +8,13 @@ GimmickService::GimmickService(Database &db) : CommonService(db) {
 
 GimmickService::~GimmickService() = default;
 
-::grpc::Status GimmickService::InitSequenceSchedule(::grpc::ServerContext* context,
-        const ::google::protobuf::Empty* request, ::apb::api::gimmick::InitSequenceScheduleResponse* response) {
+void GimmickService::InitSequenceSchedule(::google::protobuf::RpcController* controller,
+                            const ::google::protobuf::Empty* request,
+                            ::apb::api::gimmick::InitSequenceScheduleResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("GimmickService::InitSequenceSchedule", context, request, response, &GimmickService::InitSequenceScheduleImpl);
+    return inChangesetCall("GimmickService::InitSequenceSchedule", controller, request, response,
+                           done, &GimmickService::InitSequenceScheduleImpl);
 }
 
 void GimmickService::InitSequenceScheduleImpl(

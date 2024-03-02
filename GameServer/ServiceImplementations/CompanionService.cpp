@@ -6,12 +6,12 @@ CompanionService::CompanionService(Database &db) : CommonService(db) {
 
 CompanionService::~CompanionService() = default;
 
-::grpc::Status CompanionService::Enhance(
-    ::grpc::ServerContext* context,
-    const ::apb::api::companion::EnhanceRequest* request,
-    ::apb::api::companion::EnhanceResponse* response) {
+void CompanionService::Enhance(::google::protobuf::RpcController* controller,
+                        const ::apb::api::companion::EnhanceRequest* request,
+                        ::apb::api::companion::EnhanceResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("CompanionService::Enhance", context, request, response, &CompanionService::EnhanceImpl);
+    return inChangesetCall("CompanionService::Enhance", controller, request, response, done, &CompanionService::EnhanceImpl);
 }
 
 

@@ -12,11 +12,12 @@ QuestService::QuestService(Database &db) : CommonService(db) {
 QuestService::~QuestService() = default;
 
 
-::grpc::Status QuestService::UpdateMainFlowSceneProgress(::grpc::ServerContext* context,
-                                            const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
-                                            ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response) {
+void QuestService::UpdateMainFlowSceneProgress(::google::protobuf::RpcController* controller,
+                            const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
+                            ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response,
+                            ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::UpdateMainFlowSceneProgress", context, request, response, &QuestService::UpdateMainFlowSceneProgressImpl);
+    return inChangesetCall("QuestService::UpdateMainFlowSceneProgress", controller, request, response, done, &QuestService::UpdateMainFlowSceneProgressImpl);
 }
 
 
@@ -28,10 +29,12 @@ void QuestService::UpdateMainFlowSceneProgressImpl(UserContext &user,
     user.updateMainFlowSceneProgress(request->quest_scene_id(), request->quest_scene_id());
 }
 
-::grpc::Status QuestService::StartMainQuest(::grpc::ServerContext* context,
-        const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response) {
+void QuestService::StartMainQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::StartMainQuestRequest* request,
+                        ::apb::api::quest::StartMainQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::StartMainQuest", context, request, response, &QuestService::StartMainQuestImpl);
+    return inChangesetCall("QuestService::StartMainQuest", controller, request, response, done, &QuestService::StartMainQuestImpl);
 }
 
 void QuestService::StartMainQuestImpl(UserContext &user, const ::apb::api::quest::StartMainQuestRequest* request,
@@ -41,10 +44,12 @@ void QuestService::StartMainQuestImpl(UserContext &user, const ::apb::api::quest
     user.startMainQuest(request->quest_id(), request->is_main_flow(), request->is_replay_flow(), request->is_battle_only());
 }
 
-::grpc::Status QuestService::RestartMainQuest(::grpc::ServerContext* context,
-                                    const ::apb::api::quest::RestartMainQuestRequest* request, ::apb::api::quest::RestartMainQuestResponse* response) {
+void QuestService::RestartMainQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::RestartMainQuestRequest* request,
+                        ::apb::api::quest::RestartMainQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::RestartMainQuest", context, request, response, &QuestService::RestartMainQuestImpl);
+    return inChangesetCall("QuestService::RestartMainQuest", controller, request, response, done, &QuestService::RestartMainQuestImpl);
 }
 
 void QuestService::RestartMainQuestImpl(UserContext &user,
@@ -56,10 +61,12 @@ void QuestService::RestartMainQuestImpl(UserContext &user,
     response->set_deck_number(userDeckNumber);
 }
 
-::grpc::Status QuestService::FinishMainQuest(::grpc::ServerContext* context,
-        const ::apb::api::quest::FinishMainQuestRequest* request, ::apb::api::quest::FinishMainQuestResponse* response) {
+void QuestService::FinishMainQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::FinishMainQuestRequest* request,
+                        ::apb::api::quest::FinishMainQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::FinishMainQuest", context, request, response, &QuestService::FinishMainQuestImpl);
+    return inChangesetCall("QuestService::FinishMainQuest", controller, request, response, done, &QuestService::FinishMainQuestImpl);
 }
 
 
@@ -111,10 +118,12 @@ void QuestService::FinishMainQuestImpl(UserContext &user, const ::apb::api::ques
     user.updateMainQuestProgress();
 }
 
-::grpc::Status QuestService::UpdateMainQuestSceneProgress(::grpc::ServerContext* context,
-    const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) {
+void QuestService::UpdateMainQuestSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::UpdateMainQuestSceneProgress", context, request, response, &QuestService::UpdateMainQuestSceneProgressImpl);
+    return inChangesetCall("QuestService::UpdateMainQuestSceneProgress", controller, request, response, done, &QuestService::UpdateMainQuestSceneProgressImpl);
 }
 
 void QuestService::UpdateMainQuestSceneProgressImpl(UserContext &user,
@@ -127,10 +136,12 @@ void QuestService::UpdateMainQuestSceneProgressImpl(UserContext &user,
     user.updateMainQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
 }
 
-::grpc::Status QuestService::SetRoute(::grpc::ServerContext* context,
-    const ::apb::api::quest::SetRouteRequest* request, ::apb::api::quest::SetRouteResponse* response) {
+void QuestService::SetRoute(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::SetRouteRequest* request,
+                        ::apb::api::quest::SetRouteResponse* response,
+                        ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::SetRoute", context, request, response, &QuestService::SetRouteImpl);
+    return inChangesetCall("QuestService::SetRoute", controller, request, response, done, &QuestService::SetRouteImpl);
 }
 
 void QuestService::SetRouteImpl(
