@@ -134,15 +134,23 @@ namespace minigrpc {
 
         m_webRequest.emplace(webRequestObject);
 
-        for(const auto &header: requestData.requestMetadata) {
-            auto key = il2cpp_string_new_len(header.first.data(), header.first.size());
-            auto value = il2cpp_string_new_len(header.second.data(), header.second.size());
+        setWebRequestHeader(webRequestObject, "Content-Type", "application/octet-stream");
 
-            std::array<void *, 2> args{ key, value };
-            invoke(webRequestObject, UnityWebRequest_SetRequestHeader, args.data());
+        for(const auto &header: requestData.requestMetadata) {
+            setWebRequestHeader(webRequestObject, header.first, header.second);
         }
 
         invoke(webRequestObject, UnityWebRequest_SendWebRequest, nullptr);
+    }
+
+    void ExecutingCall::setWebRequestHeader(Il2CppObject *webRequestObject, const std::string_view &keyString, const std::string_view &valueString) {
+
+        std::array<void *, 2> args{
+            stringFromUtf8(keyString),
+            stringFromUtf8(valueString)
+        };
+
+        invoke(webRequestObject, UnityWebRequest_SetRequestHeader, args.data());
     }
 
     bool ExecutingCall::UnityRequestSetup::isDone() const {

@@ -82,6 +82,8 @@ namespace minigrpc {
 
         static Il2CppObject *invoke(void *onObject, const MethodInfo *method, void **args);
 
+        static void setWebRequestHeader(Il2CppObject *object, const std::string_view &key, const std::string_view &value);
+
         CompletionQueue *m_cq;
         BatchContext *m_context;
         std::optional<RequestData> m_request;
