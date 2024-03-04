@@ -157,9 +157,13 @@ private:
         std::array<std::string, 3> characterUUIDs;
     };
 
-    enum [[deprecated("needs review, there should be a proper database enum for this or something")]] QuestStateType : int32_t {
-        QuestStateType_MainFlowInProgress = 1, // Verified
-        QuestStateType_MainFlowComplete = 2 // Verified
+    /*
+     * This is a guess, but appears to be correct.
+     */
+    enum class QuestStateType : int32_t {
+        NotStarted = 0,
+        InProgress,
+        Cleared = 2
     };
 
     void replaceDeckCharacters(DeckInDatabaseRepresentation &storedDeck,

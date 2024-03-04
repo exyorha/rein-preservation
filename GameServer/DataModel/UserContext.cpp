@@ -1414,18 +1414,14 @@ void UserContext::commonStartQuest(int32_t questId, const std::optional<bool> &i
             current_net_timestamp()
         )
         ON CONFLICT DO UPDATE SET
-            quest_state_type = MAX(quest_state_type, excluded.quest_state_type),
+            quest_state_type = excluded.quest_state_type,
             is_battle_only = COALESCE(excluded.is_battle_only, is_battle_only),
             latest_start_datetime = excluded.latest_start_datetime
     )SQL");
 
-
-    // TODO: quest_state_type???
-    int64_t quest_state_type = 1; // 1 probably in progress, 2 probably completed???
-
     startQuest->bind(1, m_userId);
     startQuest->bind(2, questId);
-    startQuest->bind(3, quest_state_type);
+    startQuest->bind(3, static_cast<int32_t>(QuestStateType::InProgress));
     if(isBattleOnly.has_value()) {
         startQuest->bind(4, *isBattleOnly ? 1 : 0);
     } else {
@@ -1564,13 +1560,13 @@ void UserContext::retireQuest(int32_t questId) {
     auto updateQuest = db().prepare(R"SQL(
         UPDATE i_user_quest SET
             quest_state_type = ?
-        WHERE user_id = ? AND quest_id = ? AND quest_state_type = 1
+        WHERE user_id = ? AND quest_id = ? AND quest_state_type = ?
     )SQL");
-    int64_t quest_state_type = 0; // is this always correct???
 
-    updateQuest->bind(1, quest_state_type),
+    updateQuest->bind(1, static_cast<int32_t>(QuestStateType::NotStarted));
     updateQuest->bind(2, m_userId);
     updateQuest->bind(3, questId);
+    updateQuest->bind(4, static_cast<int32_t>(QuestStateType::InProgress));
     updateQuest->exec();
 }
 
@@ -1579,8 +1575,6 @@ void UserContext::finishQuest(
     int32_t userDeckNumber,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards) {
-
-    int64_t quest_state_type = QuestStateType_MainFlowComplete; // is this always correct???
 
     auto getQuestRewardInfo = db().prepare(R"SQL(
         SELECT
@@ -1617,13 +1611,14 @@ void UserContext::finishQuest(
             quest_state_type = ?,
             clear_count = clear_count + 1,
             last_clear_datetime = current_net_timestamp()
-        WHERE user_id = ? AND quest_id = ? AND quest_state_type = 1
+        WHERE user_id = ? AND quest_id = ? AND quest_state_type = ?
         RETURNING clear_count
     )SQL");
 
-    updateQuest->bind(1, QuestStateType_MainFlowComplete),
+    updateQuest->bind(1, static_cast<int32_t>(QuestStateType::Cleared));
     updateQuest->bind(2, m_userId);
     updateQuest->bind(3, questId);
+    updateQuest->bind(4, static_cast<int32_t>(QuestStateType::InProgress));
     while(updateQuest->step()) {
         auto clearCount = updateQuest->columnInt(0);
         if(clearCount == 1 && questFirstClearRewardGroupId != 0) {
@@ -1727,7 +1722,7 @@ void UserContext::updateMainQuestProgress() {
             auto questId = allQuestsInOrder->columnInt64(0);
 
             checkIfThisQuestComplete->bind(2, questId);
-            int32_t stateType = 0;
+            int32_t stateType = static_cast<int32_t>(QuestStateType::NotStarted);
 
             if(checkIfThisQuestComplete->step()) {
                 stateType = checkIfThisQuestComplete->columnInt(0);
@@ -1736,7 +1731,7 @@ void UserContext::updateMainQuestProgress() {
 
             printf("route quest %ld has state_type %d\n", questId, stateType);
 
-            if(stateType < 2) {
+            if(stateType < static_cast<int32_t>(QuestStateType::Cleared)) {
                 /*
                  * The quest is not complete.
                  */
@@ -2053,7 +2048,7 @@ bool UserContext::isQuestCleared(int32_t questId) {
     auto query = db().prepare("SELECT quest_state_type FROM i_user_quest WHERE quest_id = ?");
     query->bind(1, questId);
     if(query->step()) {
-        return query->columnInt(0) >= 2;
+        return query->columnInt(0) >= static_cast<int32_t>(QuestStateType::Cleared);
     }
 
     return false;
