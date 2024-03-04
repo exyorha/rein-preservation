@@ -5136,9 +5136,9 @@ END;
 
 CREATE TABLE i_user_extra_quest_progress_status (
   user_id INTEGER NOT NULL PRIMARY KEY,
-  current_quest_id integer,
-  current_quest_scene_id integer,
-  head_quest_scene_id integer,
+  current_quest_id integer NOT NULL DEFAULT 0,
+  current_quest_scene_id integer NOT NULL DEFAULT 0,
+  head_quest_scene_id integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5322,7 +5322,7 @@ END;
 
 CREATE TABLE i_user_main_quest_flow_status (
   user_id INTEGER NOT NULL PRIMARY KEY,
-  current_quest_flow_type integer,
+  current_quest_flow_type integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5351,9 +5351,9 @@ END;
 
 CREATE TABLE i_user_main_quest_progress_status (
   user_id INTEGER NOT NULL PRIMARY KEY,
-  current_quest_scene_id integer,
-  head_quest_scene_id integer,
-  current_quest_flow_type integer,
+  current_quest_scene_id integer NOT NULL,
+  head_quest_scene_id integer NOT NULL,
+  current_quest_flow_type integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1
 );
 
@@ -5366,8 +5366,8 @@ END;
 
 CREATE TABLE i_user_main_quest_replay_flow_status (
   user_id INTEGER NOT NULL PRIMARY KEY,
-  current_head_quest_scene_id integer,
-  current_quest_scene_id integer,
+  current_head_quest_scene_id integer NOT NULL,
+  current_quest_scene_id integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1
 );
 

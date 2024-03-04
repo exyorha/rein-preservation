@@ -88,7 +88,7 @@ public:
     void getOrResetAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber);
     void getAndClearAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber);
     void retireQuest(int32_t questId);
-    void finishMainQuest(
+    void finishQuest(
         int32_t questId,
         int32_t userDeckNumber,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
@@ -146,6 +146,11 @@ public:
         int32_t choiceNumber,
         int32_t questFlowType);
 
+    void setExtraQuestProgressStatus(int32_t currentQuestId, int32_t currentQuestSceneId, int32_t headQuestSceneId);
+    void updateExtraQuestSceneProgress(int32_t currentQuestSceneId, int32_t headQuestSceneId);
+
+    void startExtraQuest(int32_t questId);
+
 private:
 
     struct DeckInDatabaseRepresentation {
@@ -191,6 +196,8 @@ private:
     void giveUserCostumeEnhanced(int32_t costumeEnhancedId);
 
     void leavePortalCage();
+
+    void commonStartQuest(int32_t questId, const std::optional<bool> &isBattleOnly = std::nullopt);
 
     int64_t m_userId;
 };

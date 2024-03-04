@@ -50,6 +50,10 @@ public:
     void queryCostumeEnhancementCost(int32_t costumeID, int32_t itemCount, int32_t &costumeEnhancementCost);
     void queryWeaponEnhancementCost(int32_t weaponID, int32_t itemCount, int32_t &weaponEnhancementCost);
 
+protected:
+    int32_t getFirstQuestScene(int32_t questId);
+    int32_t getMainQuestRouteId(int32_t questId);
+
 private:
     Database &m_db;
 };

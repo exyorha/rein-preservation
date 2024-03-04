@@ -29,6 +29,42 @@ void QuestService::UpdateMainFlowSceneProgressImpl(UserContext &user,
     user.updateMainFlowSceneProgress(request->quest_scene_id(), request->quest_scene_id());
 }
 
+void QuestService::UpdateMainQuestSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::UpdateMainQuestSceneProgress", controller, request, response, done, &QuestService::UpdateMainQuestSceneProgressImpl);
+}
+
+void QuestService::UpdateMainQuestSceneProgressImpl(UserContext &user,
+    const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) {
+
+    /*
+     * TODO: what's the difference between the 'current' and 'head' scene ID?
+     */
+
+    user.updateMainQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
+}
+
+void QuestService::UpdateExtraQuestSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateExtraQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateExtraQuestSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::UpdateExtraQuestSceneProgress", controller, request, response, done, &QuestService::UpdateExtraQuestSceneProgressImpl);
+}
+
+void QuestService::UpdateExtraQuestSceneProgressImpl(UserContext &user,
+    const ::apb::api::quest::UpdateExtraQuestSceneProgressRequest* request, ::apb::api::quest::UpdateExtraQuestSceneProgressResponse* response) {
+
+    /*
+     * TODO: what's the difference between the 'current' and 'head' scene ID?
+     */
+
+    user.updateExtraQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
+}
+
 void QuestService::StartMainQuest(::google::protobuf::RpcController* controller,
                         const ::apb::api::quest::StartMainQuestRequest* request,
                         ::apb::api::quest::StartMainQuestResponse* response,
@@ -104,11 +140,13 @@ void QuestService::FinishMainQuestImpl(UserContext &user, const ::apb::api::ques
         if(request->is_auto_orbit())
             throw std::runtime_error("auto orbit flag is not implemented");
 
-        user.finishMainQuest(request->quest_id(),
-                             userDeckNumber,
-                             response->mutable_first_clear_reward(),
-                             response->mutable_drop_reward());
+        user.finishQuest(request->quest_id(),
+                         userDeckNumber,
+                         response->mutable_first_clear_reward(),
+                         response->mutable_drop_reward());
 
+        user.setMainQuestFlowStatus(QuestFlowType::MAIN_FLOW);
+        user.updateUserUnlocks();
     }
 
     user.setMainQuestProgressStatus(0, 0, QuestFlowType::UNKNOWN);
@@ -118,22 +156,72 @@ void QuestService::FinishMainQuestImpl(UserContext &user, const ::apb::api::ques
     user.updateMainQuestProgress();
 }
 
-void QuestService::UpdateMainQuestSceneProgress(::google::protobuf::RpcController* controller,
-                        const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
-                        ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response,
+
+void QuestService::StartExtraQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::StartExtraQuestRequest* request,
+                        ::apb::api::quest::StartExtraQuestResponse* response,
                         ::google::protobuf::Closure* done) {
 
-    return inChangesetCall("QuestService::UpdateMainQuestSceneProgress", controller, request, response, done, &QuestService::UpdateMainQuestSceneProgressImpl);
+    return inChangesetCall("QuestService::StartExtraQuest", controller, request, response, done, &QuestService::StartExtraQuestImpl);
 }
 
-void QuestService::UpdateMainQuestSceneProgressImpl(UserContext &user,
-    const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request, ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response) {
+void QuestService::StartExtraQuestImpl(UserContext &user, const ::apb::api::quest::StartExtraQuestRequest* request,
+    ::apb::api::quest::StartExtraQuestResponse* response) {
 
-    /*
-     * TODO: what's the difference between the 'current' and 'head' scene ID?
-     */
+    user.recordQuestStartAttributes(request->quest_id(), request->user_deck_number());
+    user.startExtraQuest(request->quest_id());
+}
 
-    user.updateMainQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
+void QuestService::RestartExtraQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::RestartExtraQuestRequest* request,
+                        ::apb::api::quest::RestartExtraQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::RestartExtraQuest", controller, request, response, done, &QuestService::RestartExtraQuestImpl);
+}
+
+void QuestService::RestartExtraQuestImpl(UserContext &user,
+                        const ::apb::api::quest::RestartExtraQuestRequest* request,
+                        ::apb::api::quest::RestartExtraQuestResponse* response) {
+
+    int32_t userDeckNumber;
+    user.getOrResetAttributesAtStartOfQuest(request->quest_id(), userDeckNumber);
+    response->set_deck_number(userDeckNumber);
+}
+
+void QuestService::FinishExtraQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::FinishExtraQuestRequest* request,
+                        ::apb::api::quest::FinishExtraQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::FinishExtraQuest", controller, request, response, done, &QuestService::FinishExtraQuestImpl);
+}
+
+
+void QuestService::FinishExtraQuestImpl(UserContext &user, const ::apb::api::quest::FinishExtraQuestRequest* request,
+                                              ::apb::api::quest::FinishExtraQuestResponse* response) {
+
+    int32_t userDeckNumber;
+    user.getAndClearAttributesAtStartOfQuest(request->quest_id(), userDeckNumber);
+
+    if(request->is_retired()) {
+        user.retireQuest(request->quest_id());
+
+    } else {
+
+        if(request->is_annihilated())
+            throw std::runtime_error("annihilation flag is not implemented");
+
+        user.finishQuest(request->quest_id(),
+                             userDeckNumber,
+                             response->mutable_first_clear_reward(),
+                             response->mutable_drop_reward());
+
+        user.updateUserUnlocks();
+
+    }
+
+    user.setExtraQuestProgressStatus(0, 0, 0);
 }
 
 void QuestService::SetRoute(::google::protobuf::RpcController* controller,

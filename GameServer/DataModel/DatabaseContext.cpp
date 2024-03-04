@@ -244,3 +244,50 @@ int32_t DatabaseContext::evaluateNumericalFunction(NumericalFunctionType type, c
             throw std::runtime_error("unsupported numerical function: " + std::to_string(static_cast<int32_t>(type)));
     }
 }
+
+int32_t DatabaseContext::getMainQuestRouteId(int32_t questId) {
+
+    auto getRoute = db().prepare(R"SQL(
+        SELECT
+            m_main_quest_chapter.main_quest_route_id
+        FROM
+            m_main_quest_sequence,
+            m_main_quest_sequence_group ON m_main_quest_sequence_group.main_quest_sequence_id = m_main_quest_sequence.main_quest_sequence_id,
+            m_main_quest_chapter ON m_main_quest_chapter.main_quest_sequence_group_id = m_main_quest_sequence_group.main_quest_sequence_group_id
+        WHERE m_main_quest_sequence.quest_id = ?
+    )SQL");
+
+    getRoute->bind(1, questId);
+    if(!getRoute->step()) {
+        throw std::runtime_error("the quest was not found");
+    }
+
+    auto route = getRoute->columnInt64(0);
+
+    if(getRoute->step())
+        throw std::runtime_error("this quest belongs to multiple routes");
+
+    getRoute->reset();
+
+    return route;
+}
+
+int32_t DatabaseContext::getFirstQuestScene(int32_t questId) {
+
+    auto getFirstScene = db().prepare(R"SQL(
+        SELECT
+            quest_scene_id
+        FROM
+            m_quest_scene
+        WHERE
+            quest_id = ?
+        ORDER BY sort_order
+        LIMIT 1
+    )SQL");
+
+    getFirstScene->bind(1, questId);
+    if(!getFirstScene->step())
+        throw std::runtime_error("the quest was not found or has no scenes");
+
+    return getFirstScene->columnInt(0);
+}

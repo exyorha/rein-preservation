@@ -1385,65 +1385,19 @@ void UserContext::recordQuestStartAttributes(int32_t questId, int32_t userDeckNu
     updateStartAttributes->exec();
 }
 
-void UserContext::startMainQuest(
-    int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly) {
+void UserContext::startExtraQuest(int32_t questId) {
 
     leavePortalCage();
 
-    auto getRoute = db().prepare(R"SQL(
-        SELECT
-            m_main_quest_chapter.main_quest_route_id
-        FROM
-            m_main_quest_sequence,
-            m_main_quest_sequence_group ON m_main_quest_sequence_group.main_quest_sequence_id = m_main_quest_sequence.main_quest_sequence_id,
-            m_main_quest_chapter ON m_main_quest_chapter.main_quest_sequence_group_id = m_main_quest_sequence_group.main_quest_sequence_group_id
-        WHERE m_main_quest_sequence.quest_id = ?
-    )SQL");
+    auto firstScene = getFirstQuestScene(questId);
 
-    getRoute->bind(1, questId);
-    if(!getRoute->step()) {
-        throw std::runtime_error("the quest was not found");
-    }
+    setExtraQuestProgressStatus(questId, firstScene, firstScene);
 
-    auto route = getRoute->columnInt64(0);
-
-    if(getRoute->step())
-        throw std::runtime_error("this quest belongs to multiple routes");
-
-    getRoute->reset();
-
-    /*
-     * TODO: we currently select the first scene in a quest, and this is probably incorrect
-     */
-    /*
-     * TODO: what's the distinction between 'current' scene and 'head' scene? Is it the 'highest reached?'
-     */
-
-    auto getFirstScene = db().prepare(R"SQL(
-        SELECT
-            quest_scene_id
-        FROM
-            m_quest_scene
-        WHERE
-            quest_id = ?
-        ORDER BY sort_order
-        LIMIT 1
-    )SQL");
-
-    getFirstScene->bind(1, questId);
-    if(!getFirstScene->step())
-        throw std::runtime_error("the quest was not found or has no scenes");
-
-    auto firstScene = getFirstScene->columnInt64(0);
+    commonStartQuest(questId);
+}
 
 
-    /*
-     * TODO: questFlowType (0 - no active, 1 probably main, replay - ??)
-     */
-    QuestFlowType questFlowType = QuestFlowType::MAIN_FLOW;
-    setMainQuestFlowStatus(questFlowType);
-
-    setMainQuestProgressStatus(firstScene, firstScene, questFlowType);
+void UserContext::commonStartQuest(int32_t questId, const std::optional<bool> &isBattleOnly) {
 
     auto startQuest = db().prepare(R"SQL(
         INSERT INTO i_user_quest (
@@ -1478,6 +1432,33 @@ void UserContext::startMainQuest(
         startQuest->bindNull(4);
     }
     startQuest->exec();
+}
+
+void UserContext::startMainQuest(
+    int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly) {
+
+    leavePortalCage();
+
+    auto route = getMainQuestRouteId(questId);
+
+    /*
+     * TODO: we currently select the first scene in a quest, and this is probably incorrect
+     */
+    /*
+     * TODO: what's the distinction between 'current' scene and 'head' scene? Is it the 'highest reached?'
+     */
+
+    auto firstScene = getFirstQuestScene(questId);
+
+    /*
+     * TODO: questFlowType (0 - no active, 1 probably main, replay - ??)
+     */
+    QuestFlowType questFlowType = QuestFlowType::MAIN_FLOW;
+    setMainQuestFlowStatus(questFlowType);
+
+    setMainQuestProgressStatus(firstScene, firstScene, questFlowType);
+
+    commonStartQuest(questId, isBattleOnly);
 
     if(isMainFlow) {
 
@@ -1593,7 +1574,7 @@ void UserContext::retireQuest(int32_t questId) {
     updateQuest->exec();
 }
 
-void UserContext::finishMainQuest(
+void UserContext::finishQuest(
     int32_t questId,
     int32_t userDeckNumber,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
@@ -1692,9 +1673,6 @@ void UserContext::finishMainQuest(
         givePossession(type, id, count, dropRewards);
     }
 
-    setMainQuestFlowStatus(QuestFlowType::MAIN_FLOW);
-
-    updateUserUnlocks();
 }
 
 
@@ -2873,3 +2851,47 @@ void UserContext::setQuestSceneChoice(
     recordHistory->bind(2, effectId);
     recordHistory->exec();
 }
+
+void UserContext::setExtraQuestProgressStatus(int32_t currentQuestId, int32_t currentQuestSceneId, int32_t headQuestSceneId) {
+    auto setStatus = db().prepare(R"SQL(
+        INSERT INTO i_user_extra_quest_progress_status (
+            user_id,
+            current_quest_id,
+            current_quest_scene_id,
+            head_quest_scene_id
+        ) VALUES (
+            ?, ?, ?, ?
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+            current_quest_id = excluded.current_quest_id,
+            current_quest_scene_id = excluded.current_quest_scene_id,
+            head_quest_scene_id = excluded.head_quest_scene_id
+    )SQL");
+    setStatus->bind(1, m_userId);
+    setStatus->bind(2, currentQuestId);
+    setStatus->bind(3, currentQuestSceneId);
+    setStatus->bind(4, headQuestSceneId);
+    setStatus->exec();
+}
+
+void UserContext::updateExtraQuestSceneProgress(int32_t currentQuestSceneId, int32_t headQuestSceneId) {
+    auto updateProgress = db().prepare(R"SQL(
+        UPDATE i_user_extra_quest_progress_status SET
+            current_quest_scene_id = ? AND
+            head_quest_scene_id = ?
+        WHERE
+            user_id = ? AND
+            current_quest_id > 0
+        RETURNING current_quest_id
+    )SQL");
+
+    updateProgress->bind(1, currentQuestSceneId);
+    updateProgress->bind(2, headQuestSceneId);
+    updateProgress->bind(3, m_userId);
+
+    if(!updateProgress->step())
+        throw std::runtime_error("no extra quest is currently active");
+
+    updateProgress->exec();
+}
+
