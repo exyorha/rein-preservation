@@ -42,6 +42,10 @@ public:
 
     void replaceDeck(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::Deck *deckDefinition);
 
+    void readDeck(int32_t deckType, int32_t userDeckNumber, apb::api::deck::Deck *deckDefinition);
+
+    void deleteDeck(int32_t deckType, int32_t userDeckNumber);
+
     void updateDeckName(int32_t deckType, int32_t userDeckNumber, const std::string_view &deckName);
 
     void refreshDeckPower(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::DeckPower &power);
@@ -202,6 +206,10 @@ private:
     void leavePortalCage();
 
     void commonStartQuest(int32_t questId, const std::optional<bool> &isBattleOnly = std::nullopt);
+
+    void readDeckRepresentation(int32_t deckType, int32_t userDeckNumber, DeckInDatabaseRepresentation &deck);
+    void readDeckCharacterRepresentation(const std::string_view &deckCharacterUUID, apb::api::deck::DeckCharacter *character);
+    void deleteDeckCharacter(const std::string_view &deckCharacterUUID);
 
     int64_t m_userId;
 };

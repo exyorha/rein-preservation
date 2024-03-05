@@ -24,6 +24,22 @@ void DeckService::ReplaceDeck(::google::protobuf::RpcController* controller,
     return inChangesetCall("DeckService::ReplaceDeck", controller, request, response, done, &DeckService::ReplaceDeckImpl);
 }
 
+void DeckService::CopyDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::CopyDeckRequest* request,
+                        ::apb::api::deck::CopyDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::CopyDeck", controller, request, response, done, &DeckService::CopyDeckImpl);
+}
+
+void DeckService::RemoveDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::RemoveDeckRequest* request,
+                        ::apb::api::deck::RemoveDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::RemoveDeck", controller, request, response, done, &DeckService::RemoveDeckImpl);
+}
+
 void DeckService::RefreshDeckPower(::google::protobuf::RpcController* controller,
                         const ::apb::api::deck::RefreshDeckPowerRequest* request,
                         ::apb::api::deck::RefreshDeckPowerResponse* response,
@@ -45,6 +61,22 @@ void DeckService::ReplaceDeckImpl(UserContext &user,
                                   ::apb::api::deck::ReplaceDeckResponse* response) {
 
     user.replaceDeck(request->deck_type(), request->user_deck_number(), request->has_deck() ? &request->deck() : nullptr);
+}
+
+void DeckService::CopyDeckImpl(UserContext &user,
+                               const ::apb::api::deck::CopyDeckRequest* request,
+                               ::apb::api::deck::CopyDeckResponse* response) {
+
+    apb::api::deck::Deck deck;
+    user.readDeck(request->from_deck_type(), request->from_user_deck_number(), &deck);
+    user.replaceDeck(request->to_deck_type(), request->to_user_deck_number(), &deck);
+}
+
+void DeckService::RemoveDeckImpl(UserContext &user,
+                               const ::apb::api::deck::RemoveDeckRequest* request,
+                               ::apb::api::deck::RemoveDeckResponse* response) {
+
+    user.deleteDeck(request->deck_type(), request->user_deck_number());
 }
 
 void DeckService::RefreshDeckPowerImpl(UserContext &user,

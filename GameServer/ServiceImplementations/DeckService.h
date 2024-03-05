@@ -23,10 +23,21 @@ public:
                         ::apb::api::deck::ReplaceDeckResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void CopyDeck(::google::protobuf::RpcController* controller,
+                  const ::apb::api::deck::CopyDeckRequest* request,
+                  ::apb::api::deck::CopyDeckResponse* response,
+                  ::google::protobuf::Closure* done) override;
+
+    void RemoveDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::RemoveDeckRequest* request,
+                        ::apb::api::deck::RemoveDeckResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void RefreshDeckPower(::google::protobuf::RpcController* controller,
                         const ::apb::api::deck::RefreshDeckPowerRequest* request,
                         ::apb::api::deck::RefreshDeckPowerResponse* response,
                         ::google::protobuf::Closure* done) override;
+
 
 private:
     void UpdateNameImpl(UserContext &user,
@@ -36,6 +47,14 @@ private:
     void ReplaceDeckImpl(UserContext &user,
                          const ::apb::api::deck::ReplaceDeckRequest* request,
                          ::apb::api::deck::ReplaceDeckResponse* response);
+
+    void CopyDeckImpl(UserContext &user,
+                      const ::apb::api::deck::CopyDeckRequest* request,
+                      ::apb::api::deck::CopyDeckResponse* response);
+
+    void RemoveDeckImpl(UserContext &user,
+                        const ::apb::api::deck::RemoveDeckRequest* request,
+                        ::apb::api::deck::RemoveDeckResponse* response);
 
     void RefreshDeckPowerImpl(UserContext &user,
                               const ::apb::api::deck::RefreshDeckPowerRequest* request,

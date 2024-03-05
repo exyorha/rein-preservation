@@ -658,9 +658,26 @@ void UserContext::giveUserCostume(
     addCharacter->exec();
 }
 
-void UserContext::replaceDeck(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::Deck *deckDefinition) {
 
+void UserContext::readDeck(int32_t deckType, int32_t userDeckNumber, apb::api::deck::Deck *deckDefinition) {
     DeckInDatabaseRepresentation deck;
+
+    readDeckRepresentation(deckType, userDeckNumber, deck);
+
+    if(!deck.characterUUIDs[0].empty()) {
+        readDeckCharacterRepresentation(deck.characterUUIDs[0], deckDefinition->mutable_character_01());
+    }
+
+    if(!deck.characterUUIDs[1].empty()) {
+        readDeckCharacterRepresentation(deck.characterUUIDs[1], deckDefinition->mutable_character_02());
+    }
+
+    if(!deck.characterUUIDs[2].empty()) {
+        readDeckCharacterRepresentation(deck.characterUUIDs[2], deckDefinition->mutable_character_03());
+    }
+}
+
+void UserContext::readDeckRepresentation(int32_t deckType, int32_t userDeckNumber, DeckInDatabaseRepresentation &deck) {
 
     auto getExistingDeck = db().prepare(R"SQL(
         SELECT
@@ -684,6 +701,82 @@ void UserContext::replaceDeck(int32_t deckType, int32_t userDeckNumber, const ap
         deck.characterUUIDs[1] = getExistingDeck->columnText(1);
         deck.characterUUIDs[2] = getExistingDeck->columnText(2);
     }
+}
+
+void UserContext::readDeckCharacterRepresentation(const std::string_view &deckCharacterUUID, apb::api::deck::DeckCharacter *character) {
+    auto queryCharacter = db().prepare(R"SQL(
+        SELECT
+            user_costume_uuid,
+            main_user_weapon_uuid,
+            user_companion_uuid,
+            user_thought_uuid
+        FROM i_user_deck_character
+        WHERE
+            user_id = ? AND
+            user_deck_character_uuid = ?
+    )SQL");
+    queryCharacter->bind(1, m_userId);
+    queryCharacter->bind(2, deckCharacterUUID);
+    if(queryCharacter->step()) {
+        character->set_user_costume_uuid(queryCharacter->columnText(0));
+        character->set_main_user_weapon_uuid(queryCharacter->columnText(1));
+        character->set_user_companion_uuid(queryCharacter->columnText(2));
+        character->set_user_thought_uuid(queryCharacter->columnText(3));
+    }
+    queryCharacter->reset();
+
+    auto queryDressupCostume = db().prepare(R"SQL(
+        SELECT
+            dressup_costume_id
+        FROM i_user_deck_character_dressup_costume
+        WHERE
+            user_id = ? AND
+            user_deck_character_uuid = ?
+    )SQL");
+    queryDressupCostume->bind(1, m_userId);
+    queryDressupCostume->bind(2, deckCharacterUUID);
+    if(queryDressupCostume->step()) {
+        character->set_dressup_costume_id(queryDressupCostume->columnInt(0));
+    }
+    queryDressupCostume->reset();
+
+    auto queryParts = db().prepare(R"SQL(
+        SELECT
+            user_parts_uuid
+        FROM i_user_deck_parts_group
+        WHERE
+            user_id = ? AND
+            user_deck_character_uuid = ?
+        ORDER BY sort_order
+    )SQL");
+    queryParts->bind(1, m_userId);
+    queryParts->bind(2, deckCharacterUUID);
+    while(queryParts->step()) {
+        character->add_user_parts_uuid(queryParts->columnText(0));
+    }
+    queryParts->reset();
+
+    auto querySubWeapons = db().prepare(R"SQL(
+        SELECT
+            user_weapon_uuid
+        FROM i_user_deck_sub_weapon_group
+        WHERE
+            user_id = ? AND
+            user_deck_character_uuid = ?
+        ORDER BY sort_order
+    )SQL");
+    querySubWeapons->bind(1, m_userId);
+    querySubWeapons->bind(2, deckCharacterUUID);
+    while(querySubWeapons->step()) {
+        character->add_sub_user_weapon_uuid(querySubWeapons->columnText(0));
+    }
+    querySubWeapons->reset();
+}
+
+void UserContext::replaceDeck(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::Deck *deckDefinition) {
+
+    DeckInDatabaseRepresentation deck;
+    readDeckRepresentation(deckType, userDeckNumber, deck);
 
     replaceDeckCharacters(deck, deckDefinition);
 
@@ -713,6 +806,51 @@ void UserContext::replaceDeck(int32_t deckType, int32_t userDeckNumber, const ap
     updateDeck->exec();
 }
 
+void UserContext::deleteDeck(int32_t deckType, int32_t userDeckNumber) {
+    DeckInDatabaseRepresentation deck;
+
+    readDeckRepresentation(deckType, userDeckNumber, deck);
+
+    if(!deck.characterUUIDs[0].empty()) {
+        deleteDeckCharacter(deck.characterUUIDs[0]);
+    }
+
+    if(!deck.characterUUIDs[1].empty()) {
+        deleteDeckCharacter(deck.characterUUIDs[1]);
+    }
+
+    if(!deck.characterUUIDs[2].empty()) {
+        deleteDeckCharacter(deck.characterUUIDs[2]);
+    }
+
+    auto deleteDeck = db().prepare("DELETE FROM i_user_deck WHERE user_id = ? AND deck_type = ? AND user_deck_number = ?");
+    deleteDeck->bind(1, m_userId);
+    deleteDeck->bind(2, deckType);
+    deleteDeck->bind(3, userDeckNumber);
+    deleteDeck->exec();
+}
+
+void UserContext::deleteDeckCharacter(const std::string_view &deckCharacterUUID) {
+    auto deleteSubWeapons = db().prepare("DELETE FROM i_user_deck_sub_weapon_group WHERE user_id = ? AND user_deck_character_uuid = ?");
+    deleteSubWeapons->bind(1, m_userId);
+    deleteSubWeapons->bind(2, deckCharacterUUID);
+    deleteSubWeapons->exec();
+
+    auto deleteParts = db().prepare("DELETE FROM i_user_deck_parts_group WHERE user_id = ? AND user_deck_character_uuid = ?");
+    deleteParts->bind(1, m_userId);
+    deleteParts->bind(2, deckCharacterUUID);
+    deleteParts->exec();
+
+    auto deleteDressupCostume = db().prepare("DELETE FROM i_user_deck_character_dressup_costume WHERE user_id = ? AND user_deck_character_uuid = ?");
+    deleteDressupCostume->bind(1, m_userId);
+    deleteDressupCostume->bind(2, deckCharacterUUID);
+    deleteDressupCostume->exec();
+
+    auto deleteCharacter = db().prepare("DELETE FROM i_user_deck_character WHERE user_id = ? AND user_deck_character_uuid = ?");
+    deleteCharacter->bind(1, m_userId);
+    deleteCharacter->bind(2, deckCharacterUUID);
+    deleteCharacter->exec();
+}
 
 void UserContext::giveUserExperience(int32_t experience) {
     if(experience < 0)
