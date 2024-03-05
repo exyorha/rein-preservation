@@ -28,6 +28,11 @@ public:
                         ::apb::api::quest::UpdateExtraQuestSceneProgressResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void UpdateEventQuestSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateEventQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateEventQuestSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void StartMainQuest(::google::protobuf::RpcController* controller,
                         const ::apb::api::quest::StartMainQuestRequest* request,
                         ::apb::api::quest::StartMainQuestResponse* response,
@@ -58,6 +63,21 @@ public:
                         ::apb::api::quest::FinishExtraQuestResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void StartEventQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::StartEventQuestRequest* request,
+                        ::apb::api::quest::StartEventQuestResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
+    void RestartEventQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::RestartEventQuestRequest* request,
+                        ::apb::api::quest::RestartEventQuestResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
+    void FinishEventQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::FinishEventQuestRequest* request,
+                        ::apb::api::quest::FinishEventQuestResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void SetRoute(::google::protobuf::RpcController* controller,
                         const ::apb::api::quest::SetRouteRequest* request,
                         ::apb::api::quest::SetRouteResponse* response,
@@ -82,6 +102,10 @@ private:
                                            const ::apb::api::quest::UpdateExtraQuestSceneProgressRequest* request,
                                            ::apb::api::quest::UpdateExtraQuestSceneProgressResponse* response);
 
+    void UpdateEventQuestSceneProgressImpl(UserContext &user,
+                                           const ::apb::api::quest::UpdateEventQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateEventQuestSceneProgressResponse* response);
+
     void StartMainQuestImpl(UserContext &user, const ::apb::api::quest::StartMainQuestRequest* request, ::apb::api::quest::StartMainQuestResponse* response);
 
     void RestartMainQuestImpl(UserContext &user,
@@ -101,6 +125,18 @@ private:
     void FinishExtraQuestImpl(UserContext &user,
                             const ::apb::api::quest::FinishExtraQuestRequest* request,
                         ::apb::api::quest::FinishExtraQuestResponse* response);
+
+    void StartEventQuestImpl(UserContext &user,
+                            const ::apb::api::quest::StartEventQuestRequest* request,
+                        ::apb::api::quest::StartEventQuestResponse* response);
+
+    void RestartEventQuestImpl(UserContext &user,
+                           const ::apb::api::quest::RestartEventQuestRequest* request,
+                        ::apb::api::quest::RestartEventQuestResponse* response);
+
+    void FinishEventQuestImpl(UserContext &user,
+                              const ::apb::api::quest::FinishEventQuestRequest* request,
+                        ::apb::api::quest::FinishEventQuestResponse* response);
 
     void SetRouteImpl(
         UserContext &user,

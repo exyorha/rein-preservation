@@ -65,6 +65,24 @@ void QuestService::UpdateExtraQuestSceneProgressImpl(UserContext &user,
     user.updateExtraQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
 }
 
+void QuestService::UpdateEventQuestSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateEventQuestSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateEventQuestSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::UpdateEventQuestSceneProgress", controller, request, response, done, &QuestService::UpdateEventQuestSceneProgressImpl);
+}
+
+void QuestService::UpdateEventQuestSceneProgressImpl(UserContext &user,
+    const ::apb::api::quest::UpdateEventQuestSceneProgressRequest* request, ::apb::api::quest::UpdateEventQuestSceneProgressResponse* response) {
+
+    /*
+     * TODO: what's the difference between the 'current' and 'head' scene ID?
+     */
+
+    user.updateEventQuestSceneProgress(request->quest_scene_id(), request->quest_scene_id());
+}
+
 void QuestService::StartMainQuest(::google::protobuf::RpcController* controller,
                         const ::apb::api::quest::StartMainQuestRequest* request,
                         ::apb::api::quest::StartMainQuestResponse* response,
@@ -141,6 +159,7 @@ void QuestService::FinishMainQuestImpl(UserContext &user, const ::apb::api::ques
             throw std::runtime_error("auto orbit flag is not implemented");
 
         user.finishQuest(request->quest_id(),
+                         static_cast<int32_t>(DeckType::QUEST),
                          userDeckNumber,
                          response->mutable_first_clear_reward(),
                          response->mutable_drop_reward());
@@ -213,6 +232,7 @@ void QuestService::FinishExtraQuestImpl(UserContext &user, const ::apb::api::que
             throw std::runtime_error("annihilation flag is not implemented");
 
         user.finishQuest(request->quest_id(),
+                         static_cast<int32_t>(DeckType::QUEST),
                              userDeckNumber,
                              response->mutable_first_clear_reward(),
                              response->mutable_drop_reward());
@@ -222,6 +242,76 @@ void QuestService::FinishExtraQuestImpl(UserContext &user, const ::apb::api::que
     }
 
     user.setExtraQuestProgressStatus(0, 0, 0);
+}
+
+void QuestService::StartEventQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::StartEventQuestRequest* request,
+                        ::apb::api::quest::StartEventQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::StartEventQuest", controller, request, response, done, &QuestService::StartEventQuestImpl);
+}
+
+void QuestService::StartEventQuestImpl(UserContext &user, const ::apb::api::quest::StartEventQuestRequest* request,
+    ::apb::api::quest::StartEventQuestResponse* response) {
+
+    // TODO: auto orbit???
+
+    user.recordQuestStartAttributes(request->quest_id(), request->user_deck_number());
+    user.startEventQuest(request->event_quest_chapter_id(), request->quest_id(), request->is_battle_only());
+}
+
+void QuestService::RestartEventQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::RestartEventQuestRequest* request,
+                        ::apb::api::quest::RestartEventQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::RestartEventQuest", controller, request, response, done, &QuestService::RestartEventQuestImpl);
+}
+
+void QuestService::RestartEventQuestImpl(UserContext &user,
+                        const ::apb::api::quest::RestartEventQuestRequest* request,
+                        ::apb::api::quest::RestartEventQuestResponse* response) {
+
+    int32_t userDeckNumber;
+    user.getOrResetAttributesAtStartOfQuest(request->quest_id(), userDeckNumber);
+    response->set_deck_number(userDeckNumber);
+}
+
+void QuestService::FinishEventQuest(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::FinishEventQuestRequest* request,
+                        ::apb::api::quest::FinishEventQuestResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::FinishEventQuest", controller, request, response, done, &QuestService::FinishEventQuestImpl);
+}
+
+
+void QuestService::FinishEventQuestImpl(UserContext &user, const ::apb::api::quest::FinishEventQuestRequest* request,
+                                              ::apb::api::quest::FinishEventQuestResponse* response) {
+
+    int32_t userDeckNumber;
+    user.getAndClearAttributesAtStartOfQuest(request->quest_id(), userDeckNumber);
+
+    if(request->is_retired()) {
+        user.retireQuest(request->quest_id());
+
+    } else {
+
+        if(request->is_annihilated())
+            throw std::runtime_error("annihilation flag is not implemented");
+
+        user.finishQuest(request->quest_id(),
+                         static_cast<int32_t>(DeckType::RESTRICTED_QUEST), /*  TODO: Is it always restricted???? */
+                             userDeckNumber,
+                             response->mutable_first_clear_reward(),
+                             response->mutable_drop_reward());
+
+        user.updateUserUnlocks();
+
+    }
+
+    user.setEventQuestProgressStatus(0, 0, 0, 0);
 }
 
 void QuestService::SetRoute(::google::protobuf::RpcController* controller,

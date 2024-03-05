@@ -5073,10 +5073,10 @@ END;
 
 CREATE TABLE i_user_event_quest_progress_status (
   user_id INTEGER NOT NULL PRIMARY KEY,
-  current_event_quest_chapter_id integer,
-  current_quest_id integer,
-  current_quest_scene_id integer,
-  head_quest_scene_id integer,
+  current_event_quest_chapter_id integer NOT NULL DEFAULT 0,
+  current_quest_id integer NOT NULL DEFAULT 0,
+  current_quest_scene_id integer NOT NULL DEFAULT 0,
+  head_quest_scene_id integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1
 );
 

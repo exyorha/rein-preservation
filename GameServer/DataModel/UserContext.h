@@ -94,6 +94,7 @@ public:
     void retireQuest(int32_t questId);
     void finishQuest(
         int32_t questId,
+        int32_t deckType,
         int32_t userDeckNumber,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards);
@@ -154,6 +155,12 @@ public:
     void updateExtraQuestSceneProgress(int32_t currentQuestSceneId, int32_t headQuestSceneId);
 
     void startExtraQuest(int32_t questId);
+
+    void updateEventQuestSceneProgress(int32_t currentQuestSceneId, int32_t headQuestSceneId);
+
+    void setEventQuestProgressStatus(int32_t eventQuestChapterId, int32_t currentQuestId, int32_t currentQuestSceneId, int32_t headQuestSceneId);
+
+    void startEventQuest(int32_t eventQuestChapterId, int32_t questId, const std::optional<bool> &isBattleOnly);
 
 private:
 

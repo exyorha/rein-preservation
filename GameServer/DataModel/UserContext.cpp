@@ -1525,8 +1525,6 @@ void UserContext::recordQuestStartAttributes(int32_t questId, int32_t userDeckNu
 
 void UserContext::startExtraQuest(int32_t questId) {
 
-    leavePortalCage();
-
     auto firstScene = getFirstQuestScene(questId);
 
     setExtraQuestProgressStatus(questId, firstScene, firstScene);
@@ -1534,6 +1532,14 @@ void UserContext::startExtraQuest(int32_t questId) {
     commonStartQuest(questId);
 }
 
+void UserContext::startEventQuest(int32_t eventQuestChapterId, int32_t questId, const std::optional<bool> &isBattleOnly) {
+
+    auto firstScene = getFirstQuestScene(questId);
+
+    setEventQuestProgressStatus(eventQuestChapterId, questId, firstScene, firstScene);
+
+    commonStartQuest(questId, isBattleOnly);
+}
 
 void UserContext::commonStartQuest(int32_t questId, const std::optional<bool> &isBattleOnly) {
 
@@ -1710,6 +1716,7 @@ void UserContext::retireQuest(int32_t questId) {
 
 void UserContext::finishQuest(
     int32_t questId,
+    int32_t deckType,
     int32_t userDeckNumber,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards) {
@@ -1777,7 +1784,7 @@ void UserContext::finishQuest(
     }
 
     if(userDeckNumber != 0) {
-        giveUserDeckExperience(static_cast<int32_t>(DeckType::QUEST),
+        giveUserDeckExperience(deckType,
                                userDeckNumber,
                                characterExperience,
                                costumeExperience);
@@ -3007,10 +3014,36 @@ void UserContext::setExtraQuestProgressStatus(int32_t currentQuestId, int32_t cu
     setStatus->exec();
 }
 
+void UserContext::setEventQuestProgressStatus(int32_t eventQuestChapterId, int32_t currentQuestId, int32_t currentQuestSceneId,
+                                              int32_t headQuestSceneId) {
+    auto setStatus = db().prepare(R"SQL(
+        INSERT INTO i_user_event_quest_progress_status (
+            user_id,
+            current_event_quest_chapter_id,
+            current_quest_id,
+            current_quest_scene_id,
+            head_quest_scene_id
+        ) VALUES (
+            ?, ?, ?, ?, ?
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+            current_quest_id = excluded.current_quest_id,
+            current_event_quest_chapter_id = excluded.current_event_quest_chapter_id,
+            current_quest_scene_id = excluded.current_quest_scene_id,
+            head_quest_scene_id = excluded.head_quest_scene_id
+    )SQL");
+    setStatus->bind(1, m_userId);
+    setStatus->bind(2, eventQuestChapterId);
+    setStatus->bind(3, currentQuestId);
+    setStatus->bind(4, currentQuestSceneId);
+    setStatus->bind(5, headQuestSceneId);
+    setStatus->exec();
+}
+
 void UserContext::updateExtraQuestSceneProgress(int32_t currentQuestSceneId, int32_t headQuestSceneId) {
     auto updateProgress = db().prepare(R"SQL(
         UPDATE i_user_extra_quest_progress_status SET
-            current_quest_scene_id = ? AND
+            current_quest_scene_id = ?,
             head_quest_scene_id = ?
         WHERE
             user_id = ? AND
@@ -3024,6 +3057,27 @@ void UserContext::updateExtraQuestSceneProgress(int32_t currentQuestSceneId, int
 
     if(!updateProgress->step())
         throw std::runtime_error("no extra quest is currently active");
+
+    updateProgress->exec();
+}
+
+void UserContext::updateEventQuestSceneProgress(int32_t currentQuestSceneId, int32_t headQuestSceneId) {
+    auto updateProgress = db().prepare(R"SQL(
+        UPDATE i_user_event_quest_progress_status SET
+            current_quest_scene_id = ?,
+            head_quest_scene_id = ?
+        WHERE
+            user_id = ? AND
+            current_quest_id > 0
+        RETURNING current_quest_id
+    )SQL");
+
+    updateProgress->bind(1, currentQuestSceneId);
+    updateProgress->bind(2, headQuestSceneId);
+    updateProgress->bind(3, m_userId);
+
+    if(!updateProgress->step())
+        throw std::runtime_error("no event quest is currently active");
 
     updateProgress->exec();
 }
