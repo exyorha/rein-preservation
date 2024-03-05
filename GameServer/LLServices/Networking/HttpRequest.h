@@ -1,7 +1,7 @@
 #ifndef NETWORKING_HTTP_REQUEST_H
 #define NETWORKING_HTTP_REQUEST_H
 
-#include <event2/http.h>
+#include <LLServices/Networking/EventTypes.h>
 
 struct evhttp_request;
 
@@ -10,6 +10,8 @@ namespace LLServices {
     class URI;
     class KeyValuePairs;
     class Buffer;
+    class WebSocketConnection;
+    class WebSocketConnectionListener;
 
     class HttpRequest {
     public:
@@ -61,6 +63,8 @@ namespace LLServices {
         void sendReplyStartChunked(int error, const char *reason);
         void sendReplyChunk(Buffer &chunk);
         void sendReplyEnd();
+
+        WebSocketConnection startWebSocket(WebSocketConnectionListener *listener, int options = 0);
 
     private:
 

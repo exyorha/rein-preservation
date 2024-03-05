@@ -11,9 +11,9 @@
 #endif
 
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               const std::filesystem::path &octoListPath) :
+               const std::filesystem::path &octoListPath, const std::filesystem::path &webRoot) :
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_logSink)),
-    m_webServer(webRootPath()),
+    m_webServer(webRoot),
     m_octoServices(octoListPath),
     m_router(&m_webServer),
     m_http(&m_eventLoop, &m_router),
@@ -43,6 +43,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
 
     m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
     m_router.handleSubpath("/resources-api.app.nierreincarnation.com", &m_octoServices);
+    m_router.handleSubpath("/server-cli", &m_cliService);
 
     std::string path("/web.app.nierreincarnation.com/assets/release/");
     path.append(m_db.masterDatabaseVersion());
@@ -131,7 +132,7 @@ void Gameserver::wait() {
     m_eventLoop.run();
 }
 
-std::filesystem::path Gameserver::webRootPath() {
+std::filesystem::path Gameserver::defaultWebRootPath() {
 #ifdef _WIN32
     std::vector<wchar_t> modulePathChars(PATH_MAX);
     DWORD outLength;

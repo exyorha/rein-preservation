@@ -109,7 +109,8 @@ namespace LLServices {
 
     struct EvWSConnectionDeleter {
         inline void operator()(struct evws_connection *ptr) const {
-            evws_connection_free(ptr);
+            evws_connection_set_closecb(ptr, nullptr, nullptr);
+            evws_close(ptr, WS_CR_NONE);
         }
     };
 
@@ -131,6 +132,7 @@ namespace LLServices {
     };
 
     using BufferPtr = std::unique_ptr<struct evbuffer, BufferDeleter>;
+
 }
 
 #endif

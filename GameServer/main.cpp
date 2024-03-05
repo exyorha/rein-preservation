@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
         { .name = "master-database",     .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "individual-database", .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "octo-list",           .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "web-root",            .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -29,6 +30,7 @@ int main(int argc, char **argv) {
     const char *masterDatabasePath = nullptr;
     const char *individualDatabasePath = nullptr;
     const char *octoListPath = nullptr;
+    const char *webroot = nullptr;
 
     while((result = getopt_long_only(argc, argv, "", options, &longind)) >= 0) {
         if(result == '?') {
@@ -49,6 +51,10 @@ int main(int argc, char **argv) {
             case 2:
                 octoListPath = optarg;
                 break;
+
+            case 3:
+                webroot = optarg;
+                break;
         }
     }
 
@@ -67,7 +73,14 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    Gameserver server(individualDatabasePath, masterDatabasePath, octoListPath);
+    std::filesystem::path webRootPath;
+    if(webroot) {
+        webRootPath = webroot;
+    } else {
+        webRootPath = Gameserver::defaultWebRootPath();
+    }
+
+    Gameserver server(individualDatabasePath, masterDatabasePath, octoListPath, webRootPath);
 
     server.listen("0.0.0.0", 8087);
 

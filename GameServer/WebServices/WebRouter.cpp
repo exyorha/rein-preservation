@@ -18,6 +18,9 @@ void WebRouter::handle(LLServices::HttpRequest &&request) {
         return;
     }
 
+    if(path == "/")
+        path = "/index.xml";
+
     auto cleanPath = *path;
 
     for(const auto &subpath: m_subpaths) {

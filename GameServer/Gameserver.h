@@ -9,6 +9,7 @@
 #include "WebServices/WebRouter.h"
 #include "WebServices/WebContentServer.h"
 #include "WebServices/OctoWebServices.h"
+#include "WebServices/ServerCLIService.h"
 
 #include "GRPC/GRPCLikeServer.h"
 
@@ -40,7 +41,7 @@
 struct Gameserver {
 public:
     Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               const std::filesystem::path &octoListPath);
+               const std::filesystem::path &octoListPath, const std::filesystem::path &webRoot);
     ~Gameserver();
 
     Gameserver(const Gameserver &other) = delete;
@@ -52,15 +53,16 @@ public:
 
     void wait();
 
-private:
-    static std::filesystem::path webRootPath();
+    static std::filesystem::path defaultWebRootPath();
 
+private:
     LLServices::ConsoleLogSink m_logSink;
     LLServices::LogManagerScope m_logManagerScope;
     LLServices::EventLoop m_eventLoop;
     GRPCLikeServer m_gameAPI;
     WebContentServer m_webServer;
     OctoWebServices m_octoServices;
+    ServerCLIService m_cliService;
     WebRouter m_router;
     LLServices::HttpServer m_http;
 

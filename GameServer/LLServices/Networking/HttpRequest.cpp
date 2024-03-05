@@ -1,7 +1,10 @@
 #include "LLServices/Networking/HttpRequest.h"
+#include "LLServices/Networking/EventTypes.h"
 #include "LLServices/Networking/URI.h"
 #include "LLServices/Networking/KeyValuePairs.h"
 #include "LLServices/Networking/Buffer.h"
+#include "LLServices/Networking/WebSocketConnectionListener.h"
+#include "LLServices/Networking/WebSocketConnection.h"
 
 #include "event2/http.h"
 
@@ -97,5 +100,21 @@ namespace LLServices {
 
         if(!owned)
             m_handle = nullptr;
+    }
+
+    WebSocketConnection HttpRequest::startWebSocket(WebSocketConnectionListener *listener, int options) {
+        bool owned = evhttp_request_is_owned(m_handle);
+
+        auto rawConnection = evws_new_session(
+            m_handle,
+            WebSocketConnectionListener::messageCallback,
+            listener->contextPointerForCallbacks(),
+            options);
+
+        if(rawConnection) {
+            evws_connection_set_closecb(rawConnection, WebSocketConnectionListener::closeCallback, listener->contextPointerForCallbacks());
+        }
+
+        return WebSocketConnection(EvWSConnectionPtr(rawConnection));
     }
 }

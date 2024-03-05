@@ -204,12 +204,22 @@ add_executable(GameServer
     LLServices/Networking/URI.h
     LLServices/Networking/URIString.cpp
     LLServices/Networking/URIString.h
+    LLServices/Networking/WebSocketConnection.cpp
+    LLServices/Networking/WebSocketConnection.h
+    LLServices/Networking/WebSocketConnectionListener.cpp
+    LLServices/Networking/WebSocketConnectionListener.h
     LLServices/ThreadSingleton.h
 
     main.cpp
 
     WebServices/OctoWebServices.cpp
     WebServices/OctoWebServices.h
+
+    WebServices/ServerCLIConnection.cpp
+    WebServices/ServerCLIConnection.h
+
+    WebServices/ServerCLIService.cpp
+    WebServices/ServerCLIService.h
 
     WebServices/WebContentServer.cpp
     WebServices/WebContentServer.h

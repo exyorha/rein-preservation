@@ -1,0 +1,9 @@
+#server-cli .log {
+    white-space: pre;
+    padding: 0.5em;
+    border: solid 1px black;
+    overflow-x: auto;
+    overflow-y: visible;
+    max-height: 10em;
+    font-family: monospace;
+}
