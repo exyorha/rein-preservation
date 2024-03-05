@@ -4,13 +4,9 @@
 
 namespace minigrpc {
 
-    BatchContext::BatchContext() {
-        printf("BatchContext(%p): created\n", this);
-    }
+    BatchContext::BatchContext() = default;
 
-    BatchContext::~BatchContext() {
-        printf("BatchContext(%p): destroyed\n", this);
-    }
+    BatchContext::~BatchContext() = default;
 
     void BatchContext::reset() {
         m_result.emplace<std::monostate>();
@@ -29,7 +25,6 @@ namespace minigrpc {
     const std::string &BatchContext::error() const {
         return std::get<Failure>(m_result);
     }
-
 
     size_t BatchContext::responseSize() const {
         return m_responseData.size();
