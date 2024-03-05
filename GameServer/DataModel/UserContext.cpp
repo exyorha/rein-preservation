@@ -1716,7 +1716,6 @@ void UserContext::retireQuest(int32_t questId) {
 
 void UserContext::finishQuest(
     int32_t questId,
-    int32_t deckType,
     int32_t userDeckNumber,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards) {
@@ -1728,28 +1727,30 @@ void UserContext::finishQuest(
             gold,
             user_exp,
             character_exp,
-            costume_exp
+            costume_exp,
+            quest_deck_restriction_group_id
         FROM
             m_quest
         WHERE quest_id = ?
     )SQL");
 
-    int32_t questFirstClearRewardGroupId = 0;
-    int32_t questPickupRewardGroupId = 0;
-    int32_t gold = 0;
-    int32_t userExperience = 0;
-    int32_t characterExperience = 0;
-    int32_t costumeExperience = 0;
-
     getQuestRewardInfo->bind(1, questId);
-    if(getQuestRewardInfo->step()) {
-        questFirstClearRewardGroupId = getQuestRewardInfo->columnInt(0);
-        questPickupRewardGroupId = getQuestRewardInfo->columnInt(1);
-        gold = getQuestRewardInfo->columnInt(2);
-        userExperience = getQuestRewardInfo->columnInt(3);
-        characterExperience = getQuestRewardInfo->columnInt(4);
-        costumeExperience = getQuestRewardInfo->columnInt(5);
-    }
+    if(!getQuestRewardInfo->step())
+        throw std::runtime_error("no such quest");
+
+    auto questFirstClearRewardGroupId = getQuestRewardInfo->columnInt(0);
+    auto questPickupRewardGroupId = getQuestRewardInfo->columnInt(1);
+    auto gold = getQuestRewardInfo->columnInt(2);
+    auto userExperience = getQuestRewardInfo->columnInt(3);
+    auto characterExperience = getQuestRewardInfo->columnInt(4);
+    auto costumeExperience = getQuestRewardInfo->columnInt(5);
+    auto restrictionGroup = getQuestRewardInfo->columnInt(6);
+
+    int32_t deckType;
+    if(restrictionGroup == 0)
+        deckType = static_cast<int32_t>(DeckType::QUEST);
+    else
+        deckType = static_cast<int32_t>(DeckType::RESTRICTED_QUEST);
 
     auto updateQuest = db().prepare(R"SQL(
         UPDATE i_user_quest SET

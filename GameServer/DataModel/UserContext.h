@@ -94,7 +94,6 @@ public:
     void retireQuest(int32_t questId);
     void finishQuest(
         int32_t questId,
-        int32_t deckType,
         int32_t userDeckNumber,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards);

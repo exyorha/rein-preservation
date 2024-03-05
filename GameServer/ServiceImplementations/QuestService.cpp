@@ -159,7 +159,6 @@ void QuestService::FinishMainQuestImpl(UserContext &user, const ::apb::api::ques
             throw std::runtime_error("auto orbit flag is not implemented");
 
         user.finishQuest(request->quest_id(),
-                         static_cast<int32_t>(DeckType::QUEST),
                          userDeckNumber,
                          response->mutable_first_clear_reward(),
                          response->mutable_drop_reward());
@@ -232,7 +231,6 @@ void QuestService::FinishExtraQuestImpl(UserContext &user, const ::apb::api::que
             throw std::runtime_error("annihilation flag is not implemented");
 
         user.finishQuest(request->quest_id(),
-                         static_cast<int32_t>(DeckType::QUEST),
                              userDeckNumber,
                              response->mutable_first_clear_reward(),
                              response->mutable_drop_reward());
@@ -302,7 +300,6 @@ void QuestService::FinishEventQuestImpl(UserContext &user, const ::apb::api::que
             throw std::runtime_error("annihilation flag is not implemented");
 
         user.finishQuest(request->quest_id(),
-                         static_cast<int32_t>(DeckType::RESTRICTED_QUEST), /*  TODO: Is it always restricted???? */
                              userDeckNumber,
                              response->mutable_first_clear_reward(),
                              response->mutable_drop_reward());
