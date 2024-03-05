@@ -71,27 +71,5 @@ static void *UnityWebRequest_SetUrl(
     printf("UnityWebRequest: request rewritten from '%s' to '%s'\n", input.c_str(), redirected.c_str());
 
     return original(thisPointer, stringFromUtf8(redirected));
-
-
-    auto conv = stringToUtf8(url);
-
-    printf("Web Request for '%s'\n", conv.c_str());
-
-    if(conv.starts_with("file://") && conv[7] != '/') {
-        // Happens on Windows, needs an extra slash
-        conv.insert(conv.begin() + 7, '/');
-
-        url = nullptr;
-
-        printf("file URL fixed: '%s'\n", conv.c_str());
-    }
-
-    if(!url) {
-
-        url = stringFromUtf8(conv);
-
-    }
-
-    return original(thisPointer, url);
 }
 INTERPOSE_ICALL("UnityEngine.Networking.UnityWebRequest::SetUrl", UnityWebRequest_SetUrl)

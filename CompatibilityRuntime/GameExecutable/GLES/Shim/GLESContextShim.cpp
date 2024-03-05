@@ -217,7 +217,6 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexImage2D(GLenum target, GLi
             format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
 
-        printf("Recompressed upload via glCompressedTexImage2D, width: %d, height: %d\n", width, height);
         shim->m_nextSymbols->glCompressedTexImage2D(target, level, format, width, height, 0,
                                                        compressed.size(), compressed.data());
 
@@ -261,17 +260,12 @@ void GL_APIENTRY GLESContextShim::shim_glCompressedTexSubImage2D(GLenum target, 
             format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
 
-        printf("Recompressed upload via glCompressedTexSubImage2D, xoff: %d, yoff: %d, width: %d, height: %d\n",
-               xoffset, yoffset, width, height);
-
         shim->m_nextSymbols->glCompressedTexSubImage2D(target, level, xoffset, yoffset,
                                                        width,
                                                        height, format,
                                                        compressed.size(), compressed.data());
     } else {
 
-        printf("Decompressed upload via glCompressedTexSubImage2D, xoff: %d, yoff: %d, width: %d, height: %d\n",
-               xoffset, yoffset, width, height);
         shim->m_nextSymbols->glTexSubImage2D(target, level, xoffset, yoffset, width, height,
                                                         GL_RGBA, GL_UNSIGNED_BYTE, outputRaster.data());
     }
