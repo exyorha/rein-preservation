@@ -34,6 +34,7 @@ private:
 
     ANGLELibrary m_angle;
     InitializedEGLDisplay m_display;
+    static const EGLint m_displayAttributes[];
 };
 
 #endif

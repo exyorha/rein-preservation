@@ -14,7 +14,13 @@
 
 #include <vector>
 
-WGLImplementationANGLE::WGLImplementationANGLE() : m_display(m_angle) {
+const EGLint WGLImplementationANGLE::m_displayAttributes[]{
+    EGL_PLATFORM_ANGLE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE,
+    EGL_EXPERIMENTAL_PRESENT_PATH_ANGLE, EGL_EXPERIMENTAL_PRESENT_PATH_FAST_ANGLE,
+    EGL_NONE
+};
+
+WGLImplementationANGLE::WGLImplementationANGLE() : m_display(m_angle, EGL_DEFAULT_DISPLAY, m_displayAttributes) {
 
 }
 

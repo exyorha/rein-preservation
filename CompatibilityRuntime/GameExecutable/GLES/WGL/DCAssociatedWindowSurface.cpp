@@ -50,8 +50,7 @@ DCAssociatedWindowSurface::DCAssociatedWindowSurface(const ANGLELibrary &angle,
         surfaceAttributes.emplace_back(EGL_RENDER_BUFFER);
         surfaceAttributes.emplace_back(EGL_SINGLE_BUFFER);
     }
-
-    surfaceAttributes.push_back(EGL_NONE);
+    surfaceAttributes.emplace_back(EGL_NONE);
 
     m_surface = std::make_unique<EGLWindowSurface>(
         angle, display, m_config, window, surfaceAttributes.data());
