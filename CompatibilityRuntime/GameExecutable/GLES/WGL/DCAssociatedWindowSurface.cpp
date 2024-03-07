@@ -28,10 +28,10 @@ DCAssociatedWindowSurface::DCAssociatedWindowSurface(const ANGLELibrary &angle,
      * NOTE: basic wglCreateContext doesn't support MSAA.
      */
     std::vector<EGLint> configAttributes{
-        EGL_RED_SIZE, formatDescriptor.cRedBits,
-        EGL_GREEN_SIZE, formatDescriptor.cGreenBits,
-        EGL_BLUE_SIZE, formatDescriptor.cBlueBits,
-        EGL_ALPHA_SIZE, formatDescriptor.cAlphaBits,
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, 8,
         EGL_DEPTH_SIZE, formatDescriptor.cDepthBits,
         EGL_STENCIL_SIZE, formatDescriptor.cStencilBits,
         EGL_NONE
