@@ -387,6 +387,8 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
             GLESContextShim::AlwaysEmulateASTC = true;
         } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
             GLESContextShim::NeverRecompressASTC = true;
+        } else if(strcmp(argv[index], "-disable-touch-emulation") == 0) {
+            EmulateTouchInput = false;
         }
 
 #ifdef _WIN32

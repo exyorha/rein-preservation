@@ -5,4 +5,6 @@
 
 void InitializeInput(void);
 
+extern bool EmulateTouchInput;
+
 #endif
