@@ -18,6 +18,11 @@ public:
                             ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response,
                             ::google::protobuf::Closure* done) override;
 
+    void UpdateReplayFlowSceneProgress(::google::protobuf::RpcController* controller,
+                        const ::apb::api::quest::UpdateReplayFlowSceneProgressRequest* request,
+                        ::apb::api::quest::UpdateReplayFlowSceneProgressResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void UpdateMainQuestSceneProgress(::google::protobuf::RpcController* controller,
                         const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,
                         ::apb::api::quest::UpdateMainQuestSceneProgressResponse* response,
@@ -93,6 +98,10 @@ private:
     void UpdateMainFlowSceneProgressImpl(UserContext &user,
                                          const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
                                          ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response);
+
+    void UpdateReplayFlowSceneProgressImpl(UserContext &user,
+                                           const ::apb::api::quest::UpdateReplayFlowSceneProgressRequest* request,
+                                           ::apb::api::quest::UpdateReplayFlowSceneProgressResponse* response);
 
     void UpdateMainQuestSceneProgressImpl(UserContext &user,
                                           const ::apb::api::quest::UpdateMainQuestSceneProgressRequest* request,

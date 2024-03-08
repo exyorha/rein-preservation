@@ -86,6 +86,8 @@ public:
 
     void updateMainFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId);
 
+    void updateReplayFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId);
+
     void recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber);
     void startMainQuest(int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly);
     void setMainQuestFlowStatus(QuestFlowType flowType);

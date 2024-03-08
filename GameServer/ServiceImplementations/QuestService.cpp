@@ -20,13 +20,28 @@ void QuestService::UpdateMainFlowSceneProgress(::google::protobuf::RpcController
     return inChangesetCall("QuestService::UpdateMainFlowSceneProgress", controller, request, response, done, &QuestService::UpdateMainFlowSceneProgressImpl);
 }
 
-
 void QuestService::UpdateMainFlowSceneProgressImpl(UserContext &user,
                                         const ::apb::api::quest::UpdateMainFlowSceneProgressRequest* request,
                                      ::apb::api::quest::UpdateMainFlowSceneProgressResponse* response) {
 
     // TODO: difference between current_quest_scene_id and head_quest_scene_id?
     user.updateMainFlowSceneProgress(request->quest_scene_id(), request->quest_scene_id());
+}
+
+void QuestService::UpdateReplayFlowSceneProgress(::google::protobuf::RpcController* controller,
+                            const ::apb::api::quest::UpdateReplayFlowSceneProgressRequest* request,
+                            ::apb::api::quest::UpdateReplayFlowSceneProgressResponse* response,
+                            ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::UpdateReplayFlowSceneProgress", controller, request, response, done, &QuestService::UpdateReplayFlowSceneProgressImpl);
+}
+
+void QuestService::UpdateReplayFlowSceneProgressImpl(UserContext &user,
+                                        const ::apb::api::quest::UpdateReplayFlowSceneProgressRequest* request,
+                                     ::apb::api::quest::UpdateReplayFlowSceneProgressResponse* response) {
+
+    // TODO: difference between current_quest_scene_id and head_quest_scene_id?
+    user.updateReplayFlowSceneProgress(request->quest_scene_id(), request->quest_scene_id());
 }
 
 void QuestService::UpdateMainQuestSceneProgress(::google::protobuf::RpcController* controller,

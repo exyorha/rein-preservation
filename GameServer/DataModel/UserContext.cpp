@@ -1500,7 +1500,37 @@ void UserContext::updateMainFlowSceneProgress(int32_t currentSceneId, int32_t he
     updateMainFlow->bind(2, headSceneId);
     updateMainFlow->bind(3, m_userId);
     updateMainFlow->exec();
+
+    setMainQuestFlowStatus(QuestFlowType::MAIN_FLOW);
 }
+
+void UserContext::updateReplayFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId) {
+    /*
+     * TODO: does this need anything special for the 'B side' of sun/moon?
+     */
+
+    leavePortalCage();
+
+    auto updateReplayFlow = db().prepare(R"SQL(
+        INSERT INTO i_user_main_quest_replay_flow_status (
+            user_id,
+            current_quest_scene_id,
+            current_head_quest_scene_id
+        ) VALUES (
+            ?, ?, ?
+        ) ON CONFLICT (user_id) DO UPDATE SET
+            current_quest_scene_id = excluded.current_quest_scene_id,
+            current_head_quest_scene_id = excluded.current_head_quest_scene_id
+    )SQL");
+
+    updateReplayFlow->bind(1, m_userId);
+    updateReplayFlow->bind(2, currentSceneId);
+    updateReplayFlow->bind(3, headSceneId);
+    updateReplayFlow->exec();
+
+    setMainQuestFlowStatus(QuestFlowType::REPLAY_FLOW);
+}
+
 
 void UserContext::recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber) {
 

@@ -17,7 +17,7 @@
                 <xsl:apply-templates />
 
                 <form id="server-cli">
-                    <div class="log"></div>
+                    <div class="log" />
 
                     <input class="commandline" type="text" name="command" />
 

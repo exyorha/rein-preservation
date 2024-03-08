@@ -10,13 +10,12 @@
 }
 
 #server-cli .log {
+    border: solid 1px black;
+    overflow: auto;
+    flex: 1;
     white-space: pre;
     padding: 0.5em;
-    border: solid 1px black;
-    overflow-x: auto;
-    overflow-y: visible;
     font-family: monospace;
-    flex: 1;
 }
 
 #server-cli input[name='command'] {
