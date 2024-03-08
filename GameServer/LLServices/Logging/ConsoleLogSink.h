@@ -11,7 +11,7 @@ namespace LLServices {
         ConsoleLogSink();
         ~ConsoleLogSink();
 
-        void emitMessage(LogLevel level, const char *facility, const std::string_view &message) noexcept override;
+        void emitMessage(const std::string_view &message) noexcept override;
     };
 }
 

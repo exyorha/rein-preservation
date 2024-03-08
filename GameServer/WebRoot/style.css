@@ -1,9 +1,60 @@
+#server-cli {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5em;
+    height: 50%;
+}
+
 #server-cli .log {
     white-space: pre;
     padding: 0.5em;
     border: solid 1px black;
     overflow-x: auto;
     overflow-y: visible;
-    max-height: 10em;
     font-family: monospace;
+    flex: 1;
 }
+
+#server-cli input[name='command'] {
+    margin-top: 0.5em;
+}
+
+#server-cli .overlay-message {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+#server-cli .overlay-message span {
+    background-color: rgb(255, 255, 255);
+    padding: 0.5em;
+    border-radius: 0.5em;
+}
+
+#server-cli .overlay-message.connecting-overlay-message {
+    display: flex;
+}
+
+#server-cli .overlay-message.disconnected-overlay-message {
+    display: none;
+}
+
+#server-cli.connected .overlay-message.connecting-overlay-message,
+#server-cli.disconnected .overlay-message.connecting-overlay-message {
+    display: none !important;
+}
+
+#server-cli.disconnected .overlay-message.disconnected-overlay-message {
+    display: flex !important;
+}
+

@@ -15,7 +15,8 @@ namespace LLServices {
         LogSink(const LogSink &other) = delete;
         LogSink &operator =(const LogSink &other) = delete;
 
-        virtual void emitMessage(LogLevel level, const char *facility, const std::string_view &message) noexcept = 0;
+        void emitMessage(LogLevel level, const char *facility, const std::string_view &message) noexcept;
+        virtual void emitMessage(const std::string_view &message) noexcept = 0;
     };
 }
 

@@ -18,10 +18,19 @@
 
                 <form id="server-cli">
                     <div class="log"></div>
+
+                    <input class="commandline" type="text" name="command" />
+
+                    <div class="overlay-message connecting-overlay-message">
+                        <span>Connecting to the server...</span>
+                    </div>
+
+                    <div class="overlay-message disconnected-overlay-message">
+                        <span>Disconnected from the server. Please reload the page.</span>
+                    </div>
                 </form>
 
                 <script type="text/javascript" src="/dynamic.js"></script>
-
             </body>
         </html>
     </xsl:template>

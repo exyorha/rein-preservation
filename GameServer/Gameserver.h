@@ -57,12 +57,12 @@ public:
 
 private:
     LLServices::ConsoleLogSink m_logSink;
+    ServerCLIService m_cliService;
     LLServices::LogManagerScope m_logManagerScope;
     LLServices::EventLoop m_eventLoop;
     GRPCLikeServer m_gameAPI;
     WebContentServer m_webServer;
     OctoWebServices m_octoServices;
-    ServerCLIService m_cliService;
     WebRouter m_router;
     LLServices::HttpServer m_http;
 

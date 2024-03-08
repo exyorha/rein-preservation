@@ -8,28 +8,7 @@ namespace LLServices {
 
     ConsoleLogSink::~ConsoleLogSink() = default;
 
-    void ConsoleLogSink::emitMessage(LogLevel level, const char *facility, const std::string_view &message) noexcept {
-        const char *levelStr;
-
-        switch(level) {
-            case LogLevel::Debug:
-            default:
-                levelStr = "debug";
-                break;
-
-            case LogLevel::Info:
-                levelStr = "info";
-                break;
-
-            case LogLevel::Warning:
-                levelStr = "warn";
-                break;
-
-            case LogLevel::Error:
-                levelStr = "error";
-                break;
-        }
-
-        fprintf(stderr, "%-5s %s: %.*s\n", levelStr, facility, static_cast<int>(message.size()), message.data());
+    void ConsoleLogSink::emitMessage(const std::string_view &message) noexcept {
+        fwrite(message.data(), 1, message.size(), stderr);
     }
 }

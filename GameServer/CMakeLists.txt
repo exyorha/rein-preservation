@@ -208,9 +208,14 @@ add_executable(GameServer
     LLServices/Networking/WebSocketConnection.h
     LLServices/Networking/WebSocketConnectionListener.cpp
     LLServices/Networking/WebSocketConnectionListener.h
+    LLServices/RingBuffer.cpp
+    LLServices/RingBuffer.h
     LLServices/ThreadSingleton.h
 
     main.cpp
+
+    ServerCommandLine.cpp
+    ServerCommandLine.h
 
     WebServices/OctoWebServices.cpp
     WebServices/OctoWebServices.h

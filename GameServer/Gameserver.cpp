@@ -12,7 +12,8 @@
 
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
                const std::filesystem::path &octoListPath, const std::filesystem::path &webRoot) :
-    m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_logSink)),
+    m_cliService(&m_logSink),
+    m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
     m_webServer(webRoot),
     m_octoServices(octoListPath),
     m_router(&m_webServer),
@@ -113,14 +114,15 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
         //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320461, 1);
         //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34043, 1);
         //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340761, 1);
-        ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350011,1);
-        ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350531,1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350011,1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350531,1);
 
-    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340851,1);
-    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340741,1);
+    //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340851,1);
+    //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340741,1);
 
-    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320641,1);
-    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320561,1);
+    //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320641,1);
+    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350711,1);
+        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME),35038,1);
         transaction.commit();
     }
 #endif

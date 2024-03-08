@@ -103,13 +103,18 @@ namespace LLServices {
     }
 
     WebSocketConnection HttpRequest::startWebSocket(WebSocketConnectionListener *listener, int options) {
-        bool owned = evhttp_request_is_owned(m_handle);
-
         auto rawConnection = evws_new_session(
             m_handle,
             WebSocketConnectionListener::messageCallback,
             listener->contextPointerForCallbacks(),
             options);
+
+        /*
+         * This connection always dies at this point, even if it's owned.
+         * This is probably a libevent bug.
+         */
+
+        m_handle = nullptr;
 
         if(rawConnection) {
             evws_connection_set_closecb(rawConnection, WebSocketConnectionListener::closeCallback, listener->contextPointerForCallbacks());

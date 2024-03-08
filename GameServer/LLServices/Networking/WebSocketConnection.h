@@ -21,6 +21,9 @@ namespace LLServices {
             return static_cast<bool>(m_connection);
         }
 
+        void sendText(const char *text);
+        void sendBinary(const char *packetData, size_t packetLen);
+
     private:
         EvWSConnectionPtr m_connection;
     };
