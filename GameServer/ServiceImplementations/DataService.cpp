@@ -3,7 +3,7 @@
 #include <DataModel/Sqlite/Statement.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
 
-#include "JSONWriter.h"
+#include <LLServices/JSON/JSONWriter.h>
 
 DataService::DataService(Database &db) : CommonService(db) {
 
@@ -88,7 +88,7 @@ void DataService::GetUserDataImpl(UserContext &user,
                                   const ::apb::api::data::UserDataGetRequest* request,
                                   ::apb::api::data::UserDataGetResponse* response) {
 
-    JSONWriter json;
+    LLServices::JSONWriter json;
 
     for(const auto &tableName: request->table_name()) {
         user.serializeTable(tableName, json);

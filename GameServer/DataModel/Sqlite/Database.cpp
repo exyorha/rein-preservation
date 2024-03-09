@@ -223,4 +223,11 @@ namespace sqlite {
 			Error::raiseError(result, m_handle);
 		}
 	}
+
+    void Database::checkpoint(const char *databaseName, int mode, int *outLogSize, int *framesCheckpointed) {
+        auto result = sqlite3_wal_checkpoint_v2(m_handle, databaseName, mode, outLogSize, framesCheckpointed);
+        if(result != SQLITE_OK) {
+			Error::raiseError(result, m_handle);
+		}
+    }
 }

@@ -2,7 +2,7 @@
 #define DATA_MODEL_TABLE_CHANGESET_WRITER_H
 
 #include <service/DataService.pb.h>
-#include "JSONWriter.h"
+#include <LLServices/JSON/JSONWriter.h>
 
 namespace sqlite {
     class Database;
@@ -35,8 +35,8 @@ private:
     std::vector<std::string> m_rawColumnNames;
     std::vector<bool> m_columnIsBoolean;
     ::apb::api::data::DiffData *m_diff;
-    JSONWriter m_updateWriter;
-    JSONWriter m_deleteWriter;
+    LLServices::JSONWriter m_updateWriter;
+    LLServices::JSONWriter m_deleteWriter;
     std::unique_ptr<sqlite::Statement> m_selectWholeRecord;
 };
 

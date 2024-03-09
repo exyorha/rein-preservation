@@ -2,14 +2,15 @@
 #include <DataModel/DatabaseContext.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
 #include <DataModel/Zlib.h>
-
+#include <DataModel/DatabaseBackupDeserializer.h>
 #include <DataModel/Sqlite/Statement.h>
 
 #include <stdexcept>
 #include <cmath>
 #include <fstream>
 
-#include "JSONWriter.h"
+#include <LLServices/JSON/JSONWriter.h>
+#include <LLServices/JSON/StreamingJSONParser.h>
 
 DatabaseContext::DatabaseContext(Database &db) : m_db(db) {
 
@@ -296,7 +297,7 @@ int32_t DatabaseContext::getFirstQuestScene(int32_t questId) {
     return getFirstScene->columnInt(0);
 }
 
-void DatabaseContext::serializeTable(const std::string_view &tableEntityName, JSONWriter &json, std::optional<int64_t> limitToUser) {
+void DatabaseContext::serializeTable(const std::string_view &tableEntityName, LLServices::JSONWriter &json, std::optional<int64_t> limitToUser) {
 
     json.writeArrayOpen();
 
@@ -343,9 +344,37 @@ void DatabaseContext::serializeTable(const std::string_view &tableEntityName, JS
     json.writeArrayClose();
 }
 
+void DatabaseContext::restoreJSONBackup(const std::filesystem::path &input) {
+    std::string backupJSON;
+
+    {
+        std::string backupData;
+
+        std::ifstream stream;
+        stream.exceptions(std::ios::failbit | std::ios::eofbit | std::ios::badbit);
+        stream.open(input, std::ios::in | std::ios::binary);
+
+        stream.seekg(0, std::ios::end);
+        auto length = static_cast<size_t>(stream.tellg());
+        backupData.resize(length);
+
+        stream.seekg(0);
+
+        stream.read(backupData.data(), backupData.size());
+
+        backupJSON = inflate(backupData, true);
+    }
+
+    DatabaseBackupDeserializer deserializer(db());
+
+    LLServices::StreamingJSONParser parser(deserializer);
+    if(!parser.parseChunk(backupJSON) || !parser.finish())
+        throw std::runtime_error("failed to parse the backup file");
+}
+
 void DatabaseContext::writeJSONBackup(const std::filesystem::path &output) {
 
-    JSONWriter writer;
+    LLServices::JSONWriter writer;
     writer.writeMapOpen();
 
     for(const auto &table: getUserDataName()) {

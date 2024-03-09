@@ -156,9 +156,6 @@ void TableChangesetWriter::writeEntry(sqlite::ChangesetIterator &it, const sqlit
         }
 
         default:
-            /*
-             * TODO: it's not currently known how deletes should be represented
-             */
             throw std::runtime_error("TableChangesetWriter::writeEntry: unimplemented change operation: " + std::to_string(op.operation));
     }
 }

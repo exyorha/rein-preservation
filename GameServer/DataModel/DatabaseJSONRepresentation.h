@@ -9,14 +9,17 @@ namespace sqlite {
     class Statement;
 }
 
-class JSONWriter;
+namespace LLServices {
+    class JSONWriter;
+}
 
-void writeSQLiteColumnValue(JSONWriter &writer, sqlite::Statement &statement, int columnIndex);
+void writeSQLiteColumnValue(LLServices::JSONWriter &writer, sqlite::Statement &statement, int columnIndex);
 
-void writeSQLiteValue(JSONWriter &writer, sqlite3_value *value, bool isBoolean = false);
+void writeSQLiteValue(LLServices::JSONWriter &writer, sqlite3_value *value, bool isBoolean = false);
 
 std::string tableNameToEntityName(const std::string_view &name);
 std::string columnNameToEntityFieldName(const std::string_view &name);
 std::string entityNameToTableNameChecked(const std::string_view &entityName);
+std::string entityFieldNameToColumnName(const std::string_view &name);
 
 #endif

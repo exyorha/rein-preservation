@@ -124,6 +124,9 @@ add_executable(GameServer
     DataModel/Database.cpp
     DataModel/Database.h
 
+    DataModel/DatabaseBackupDeserializer.cpp
+    DataModel/DatabaseBackupDeserializer.h
+
     DataModel/DatabaseContext.cpp
     DataModel/DatabaseContext.h
 
@@ -194,9 +197,12 @@ add_executable(GameServer
     GRPC/PBOutputOverLLBuffer.cpp
     GRPC/PBOutputOverLLBuffer.h
 
-    JSONWriter.cpp
-    JSONWriter.h
-
+    LLServices/JSON/JSONWriter.cpp
+    LLServices/JSON/JSONWriter.h
+    LLServices/JSON/StreamingJSONCallback.cpp
+    LLServices/JSON/StreamingJSONCallback.h
+    LLServices/JSON/StreamingJSONParser.cpp
+    LLServices/JSON/StreamingJSONParser.h
     LLServices/Logging/ConsoleLogSink.cpp
     LLServices/Logging/ConsoleLogSink.h
     LLServices/Logging/LogFacility.cpp

@@ -5,8 +5,6 @@
 #include <DataModel/Sqlite/Statement.h>
 #include <DataModel/Sqlite/Transaction.h>
 
-#include <JSONWriter.h>
-
 #include <service/DeckService.pb.h>
 #include <service/QuestService.pb.h>
 
@@ -1203,7 +1201,7 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
     }
 }
 
-void UserContext::serializeTable(const std::string &tableEntityName, JSONWriter &json) {
+void UserContext::serializeTable(const std::string &tableEntityName, LLServices::JSONWriter &json) {
     DatabaseContext::serializeTable(tableEntityName, json, m_userId);
 }
 

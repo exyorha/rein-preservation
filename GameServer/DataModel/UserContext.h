@@ -30,7 +30,9 @@ namespace google::protobuf {
     class Map;
 }
 
-class JSONWriter;
+namespace LLServices {
+    class JSONWriter;
+}
 
 class UserContext final : public DatabaseContext {
 public:
@@ -65,7 +67,7 @@ public:
     void giveUserWeaponExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience);
     void giveUserCharacterExperience(int32_t characterId, int32_t characterExperience);
 
-    void serializeTable(const std::string &tableEntityName, JSONWriter &writer);
+    void serializeTable(const std::string &tableEntityName, LLServices::JSONWriter &writer);
 
     void registerDokanConfirmed(int32_t dokanId);
 

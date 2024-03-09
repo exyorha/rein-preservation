@@ -61,6 +61,8 @@ namespace sqlite {
 
         void busyTimeout(int timeout);
 
+        void checkpoint(const char *databaseName, int mode, int *outLogSize = nullptr, int *framesCheckpointed = nullptr);
+
     private:
         static int callbackCollationCompare(void *handle, int string1Len, const void *string1, int string2Len, const void *string2);
         static void callbackCollationDestroy(void *handle);

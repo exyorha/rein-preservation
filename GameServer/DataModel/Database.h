@@ -37,6 +37,12 @@ public:
 
     std::filesystem::path databaseDirectory() const;
 
+    inline const std::filesystem::path &masterDatabase() const {
+        return m_masterDatabase;
+    }
+
+    void restoreFromDB(Database &other);
+
 private:
     sqlite::Database m_db;
 
@@ -56,7 +62,7 @@ private:
 
     static int statementProfileCallback(unsigned int type, void *context, void *statement, void *sql);
 
-    void runMigrations();
+    void runMigrations(bool transient);
 
     static const char *const m_initSQL;
     static const char* const m_setupQueries[];
@@ -64,6 +70,7 @@ private:
     static const unsigned int m_currentSchemaVersion;
     std::string m_masterDatabaseVersion;
     std::optional<time_t> m_timeOffset;
+    std::filesystem::path m_masterDatabase;
 };
 
 extern LLServices::LogFacility LogDatabase;

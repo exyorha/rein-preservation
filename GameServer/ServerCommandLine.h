@@ -33,6 +33,7 @@ private:
     void commandHelp(WordListParser &parser);
     void commandBackup(WordListParser &parser);
     void commandBackups(WordListParser &parser);
+    void commandRestore(WordListParser &parser);
 
     std::filesystem::path backupLocation() const;
 

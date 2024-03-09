@@ -9,7 +9,10 @@
 #include <filesystem>
 
 class Database;
-class JSONWriter;
+
+namespace LLServices {
+    class JSONWriter;
+}
 
 class DatabaseContext {
 public:
@@ -53,8 +56,9 @@ public:
     void queryWeaponEnhancementCost(int32_t weaponID, int32_t itemCount, int32_t &weaponEnhancementCost);
 
     void writeJSONBackup(const std::filesystem::path &output);
+    void restoreJSONBackup(const std::filesystem::path &input);
 
-    void serializeTable(const std::string_view &tableEntityName, JSONWriter &writer, std::optional<int64_t> limitToUser);
+    void serializeTable(const std::string_view &tableEntityName, LLServices::JSONWriter &writer, std::optional<int64_t> limitToUser);
 
 protected:
     int32_t getFirstQuestScene(int32_t questId);

@@ -23,10 +23,13 @@ const char* const Database::m_setupQueries[]{
 LLServices::LogFacility LogDatabase("Database");
 
 Database::Database(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
-    m_db(individualDatabasePath) {
+    m_db(individualDatabasePath), m_masterDatabase(masterDatabasePath) {
 
-    LogDatabase.info("Individual database: '%s', master database: '%s'\n", individualDatabasePath.generic_string().c_str(),
-                     masterDatabasePath.generic_string().c_str());
+    bool transient = individualDatabasePath.empty();
+
+    if(!transient)
+        LogDatabase.info("Individual database: '%s', master database: '%s'\n", individualDatabasePath.generic_string().c_str(),
+                        masterDatabasePath.generic_string().c_str());
 
     struct ErrorHolder {
         char *error = nullptr;
@@ -53,7 +56,8 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
 
     m_db.createFunction(std::make_unique<CurrentNETTimestampFunction>());
 
-    sqlite3_trace_v2(m_db.handle(), SQLITE_TRACE_STMT, statementProfileCallback, this);
+    if(!transient)
+        sqlite3_trace_v2(m_db.handle(), SQLITE_TRACE_STMT, statementProfileCallback, this);
 
     const char* query = m_initSQL;
     while (*query) {
@@ -69,7 +73,7 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
         if(view.starts_with(runMigrationsQuery)) {
             query += runMigrationsQuery.size();
 
-            runMigrations();
+            runMigrations(transient);
         } else {
             auto statement = m_db.prepare(query, 0, &query);
             while (statement->step());
@@ -84,11 +88,14 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
     std::stringstream fullVersion;
     fullVersion << type << "/" << version;
     m_masterDatabaseVersion = fullVersion.str();
+
 }
 
-void Database::runMigrations() {
+void Database::runMigrations(bool transient) {
 
-    auto restoredFromBackup = restoreDatabaseBackup();
+    bool restoredFromBackup = false;
+    if(!transient)
+        restoredFromBackup = restoreDatabaseBackup();
 
     auto schemaQuery = m_db.prepare("SELECT version FROM schema_version WHERE id = 1");
     int currentVersion = 0;
@@ -100,7 +107,7 @@ void Database::runMigrations() {
     if (currentVersion < m_currentSchemaVersion) {
         LogDatabase.info("Database requires schema update from %d to %d\n", currentVersion, m_currentSchemaVersion);
 
-        if (!restoredFromBackup)
+        if (!restoredFromBackup && !transient)
             createDatabaseBackup();
 
         auto updateSchema = m_db.prepare("UPDATE schema_version SET version = ? WHERE id = 1");
@@ -140,7 +147,8 @@ void Database::runMigrations() {
 
         LogDatabase.info("Finished with migrations, removing backup\n");
 
-        removeDatabase(backupDatabasePath());
+        if(!transient)
+            removeDatabase(backupDatabasePath());
 
     }
     else if (currentVersion > m_currentSchemaVersion) {
@@ -251,4 +259,13 @@ void Database::removeDatabase(const std::filesystem::path& path) {
 
 time_t Database::realWorldTime() const {
     return time(nullptr);
+}
+
+void Database::restoreFromDB(Database &other) {
+    {
+        sqlite::Backup backup(m_db, "main", other.db(), "main");
+        backup.step();
+    }
+
+    m_db.checkpoint("main", SQLITE_CHECKPOINT_TRUNCATE);
 }

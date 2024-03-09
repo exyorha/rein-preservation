@@ -3,7 +3,7 @@
 
 #include <cstring>
 
-#include "JSONWriter.h"
+#include <LLServices/JSON/JSONWriter.h>
 
 static std::string internalCapitalize(const std::string_view &name, bool capitalizeFirst) {
     bool capitalizeNext = capitalizeFirst;
@@ -28,15 +28,8 @@ static std::string internalCapitalize(const std::string_view &name, bool capital
     return output;
 }
 
-std::string tableNameToEntityName(const std::string_view &name) {
-    return internalCapitalize(name, true);
-}
+static std::string internalToUnderscores(const std::string_view &entityName) {
 
-std::string columnNameToEntityFieldName(const std::string_view &name) {
-    return internalCapitalize(name, false);
-}
-
-std::string entityNameToTableNameChecked(const std::string_view &entityName) {
     std::string output;
     output.reserve(entityName.size() + entityName.size() / 4);
 
@@ -46,12 +39,27 @@ std::string entityNameToTableNameChecked(const std::string_view &entityName) {
                 output.push_back('_');
 
             output.push_back(ch - 'A' + 'a');
-        } else if(ch >= 'a' && ch <= 'z') {
+        } else if((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
             output.push_back(ch);
         } else {
             throw std::runtime_error("unacceptable characters in the entity name");
         }
     }
+
+    return output;
+}
+
+
+std::string tableNameToEntityName(const std::string_view &name) {
+    return internalCapitalize(name, true);
+}
+
+std::string columnNameToEntityFieldName(const std::string_view &name) {
+    return internalCapitalize(name, false);
+}
+
+std::string entityNameToTableNameChecked(const std::string_view &entityName) {
+    std::string output = internalToUnderscores(entityName);
 
     if(!output.starts_with("i_"))
         throw std::runtime_error("attempted to access a non-individual table");
@@ -59,7 +67,11 @@ std::string entityNameToTableNameChecked(const std::string_view &entityName) {
     return output;
 }
 
-void writeSQLiteColumnValue(JSONWriter &writer, sqlite::Statement &statement, int columnIndex) {
+std::string entityFieldNameToColumnName(const std::string_view &name) {
+    return internalToUnderscores(name);
+}
+
+void writeSQLiteColumnValue(LLServices::JSONWriter &writer, sqlite::Statement &statement, int columnIndex) {
     auto type = statement.columnType(columnIndex);
 
     switch(type) {
@@ -97,7 +109,7 @@ void writeSQLiteColumnValue(JSONWriter &writer, sqlite::Statement &statement, in
     }
 }
 
-void writeSQLiteValue(JSONWriter &writer, sqlite3_value *value, bool isBoolean) {
+void writeSQLiteValue(LLServices::JSONWriter &writer, sqlite3_value *value, bool isBoolean) {
     switch(sqlite3_value_type(value)) {
         case SQLITE_INTEGER:
         {

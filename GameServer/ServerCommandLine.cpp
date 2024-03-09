@@ -1,5 +1,8 @@
 #include "ServerCommandLine.h"
 #include "DataModel/DatabaseContext.h"
+#include "DataModel/Sqlite/Transaction.h"
+#include "DataModel/Sqlite/Statement.h"
+
 #include "WordListParser.h"
 
 #include "DataModel/Database.h"
@@ -18,6 +21,7 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
         .handler = &ServerCommandLine::commandBackup
     },
     { .cmd = "backups", .help = "output the list of available backups", .handler = &ServerCommandLine::commandBackups },
+    { .cmd = "restore", .help = "restore a previous version of the database (save file)", .handler = &ServerCommandLine::commandRestore }
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -115,6 +119,44 @@ void ServerCommandLine::commandBackups(WordListParser &parser) {
         LogCLI.info("Once any are made, the backup files will be stored in the following directory: %s",
                     reinterpret_cast<const char *>(pathU8.data()));
     }
+}
+
+void ServerCommandLine::commandRestore(WordListParser &parser) {
+
+    if(parser.isAtEnd()) {
+        LogCLI.error("Please specify the name of the backup file to be restored. Try 'backups' for the list.");
+        return;
+    }
+
+    auto name = parser.getRestOfTheString();
+    std::u8string_view u8name(reinterpret_cast<const char8_t *>(name.data()), name.size());
+
+    std::filesystem::path backupLocation = this->backupLocation();
+    backupLocation /= u8name;
+    backupLocation += ".dbjson";
+
+    if(!std::filesystem::exists(backupLocation)) {
+        LogCLI.error("The specified backup file doesn't exist. Try 'backups' for the list.");
+        return;
+    }
+
+    {
+        Database restoredDB(std::filesystem::path(), m_db.masterDatabase());
+        {
+            sqlite::Transaction restoreTransaction(&restoredDB.db());
+            DatabaseContext restoredContext(restoredDB);
+
+            restoredContext.restoreJSONBackup(backupLocation);
+            restoreTransaction.commit();
+        }
+
+        restoredDB.db().checkpoint("main", SQLITE_CHECKPOINT_TRUNCATE);
+        restoredDB.db().prepare("VACUUM")->exec();
+
+        m_db.restoreFromDB(restoredDB);
+    }
+
+    LogCLI.debug("The backup has been successfully restored.");
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {
