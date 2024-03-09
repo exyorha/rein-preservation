@@ -244,3 +244,7 @@ void Database::removeDatabase(const std::filesystem::path& path) {
     shmPath += std::filesystem::path("-shm");
     std::filesystem::remove(shmPath);
 }
+
+time_t Database::realWorldTime() const {
+    return time(nullptr);
+}

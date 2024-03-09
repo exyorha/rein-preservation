@@ -59,5 +59,47 @@
         }
     };
 
+    var ServerTimeClock = function(initialServerTime, serverTimeOffset) {
+        if(serverTimeOffset === null) {
+            this._serverTimeOffset = 0;
+        } else {
+            this._serverTimeOffset = serverTimeOffset * 1000;
+        }
+
+        this._clientToServerTimeOffset = Date.now() - (initialServerTime * 1000);
+
+        console.log("Server-client time discrepancy:", this._clientToServerTimeOffset, "milliseconds");
+
+        this._updateTimeDisplay();
+
+        var classes = document.getElementById('server-time').classList;
+        classes.add('operational');
+
+        if(this._serverTimeOffset != 0) {
+            classes.add('time-traveling');
+        }
+
+        setInterval(this._updateTimeDisplay.bind(this), 1000);
+    };
+
+    ServerTimeClock.prototype._updateTimeDisplay = function() {
+        var currentRealWorldTime = new Date(Date.now() - this._clientToServerTimeOffset);
+        var currentServerTime = new Date(Date.now() - this._clientToServerTimeOffset + this._serverTimeOffset);
+
+        document.getElementById('real-world-time-value').innerText = currentRealWorldTime.toLocaleString();
+        document.getElementById('server-time-value').innerText = currentServerTime.toLocaleString();
+    };
+
     new ServerCliComponent(document.getElementById('server-cli'));
+
+    if(typeof document.body.dataset.serverTime !== 'undefined') {
+        var serverTime = parseInt(document.body.dataset.serverTime, 10);
+        var timeOffset = null;
+
+        if(typeof document.body.dataset.serverTimeOffset !== 'undefined') {
+            timeOffset = parseInt(document.body.dataset.serverTimeOffset, 10);
+        }
+
+        new ServerTimeClock(serverTime, timeOffset);
+    }
 })();

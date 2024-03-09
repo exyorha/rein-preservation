@@ -16,10 +16,11 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
     m_webServer(webRoot),
     m_octoServices(octoListPath),
+    m_db(individualDatabasePath, masterDatabasePath),
+    m_dbViewer(m_octoServices.revision(), m_db),
     m_router(&m_webServer),
     m_http(&m_eventLoop, &m_router),
 
-    m_db(individualDatabasePath, masterDatabasePath),
     m_userService(m_db),
     m_dataService(m_db),
     m_gamePlayService(m_db),
@@ -45,6 +46,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
     m_router.handleSubpath("/resources-api.app.nierreincarnation.com", &m_octoServices);
     m_router.handleSubpath("/server-cli", &m_cliService);
+    m_router.handleSubpath("/database", &m_dbViewer);
 
     std::string path("/web.app.nierreincarnation.com/assets/release/");
     path.append(m_db.masterDatabaseVersion());

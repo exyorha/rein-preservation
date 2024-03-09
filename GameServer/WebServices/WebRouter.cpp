@@ -19,7 +19,7 @@ void WebRouter::handle(LLServices::HttpRequest &&request) {
     }
 
     if(path == "/")
-        path = "/index.xml";
+        path = "/database";
 
     auto cleanPath = *path;
 

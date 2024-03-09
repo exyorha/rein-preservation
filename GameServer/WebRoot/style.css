@@ -1,3 +1,41 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+}
+
+.page-header {
+    background-color: #445;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 1em 0;
+}
+
+.page-header .title {
+    margin: 0 0.5em;
+    font-size: 2.5em;
+}
+
+#server-time {
+    margin: 0 1em 0 auto;
+    display: none;
+}
+
+#server-time .time-travel-notice {
+    color: #ee0;
+}
+
+#server-time.operational {
+    display: block;
+}
+
+#server-time .time-travel-container {
+    display: none;
+}
+#server-time.time-traveling .time-travel-container {
+    display: block;
+}
+
 #server-cli {
     display: flex;
     flex-direction: column;
@@ -56,4 +94,3 @@
 #server-cli.disconnected .overlay-message.disconnected-overlay-message {
     display: flex !important;
 }
-

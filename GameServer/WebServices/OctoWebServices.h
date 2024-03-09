@@ -25,6 +25,10 @@ public:
 
     void handle(const std::string_view &path, LLServices::HttpRequest &&request) override;
 
+    inline int32_t revision() const {
+        return m_db.revision();
+    }
+
 private:
     static unsigned int parseNumber(const std::sub_match<const char *> &match);
     static unsigned int parseNumber(const std::string_view &match);

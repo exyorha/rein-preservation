@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <mutex>
+#include <optional>
 
 #include <DataModel/Sqlite/Database.h>
 
@@ -26,6 +27,12 @@ public:
 
     inline const std::string &masterDatabaseVersion() const {
         return m_masterDatabaseVersion;
+    }
+
+    time_t realWorldTime() const;
+
+    inline std::optional<time_t> timeOffset() const {
+        return m_timeOffset;
     }
 
 private:
@@ -54,6 +61,7 @@ private:
     static const DatabaseMigration m_migrations[];
     static const unsigned int m_currentSchemaVersion;
     std::string m_masterDatabaseVersion;
+    std::optional<time_t> m_timeOffset;
 };
 
 extern LLServices::LogFacility LogDatabase;

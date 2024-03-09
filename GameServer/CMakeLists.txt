@@ -93,7 +93,26 @@ add_subdirectory(thirdparty/libevent)
 
 add_subdirectory(master_database_ext)
 
+execute_process(
+    COMMAND git describe --always --dirty
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE SERVER_GITVERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+configure_file(gitversion.h.in ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h @ONLY)
+
 add_executable(GameServer
+    DatabaseViewer/DatabaseViewerResponse.cpp
+    DatabaseViewer/DatabaseViewerResponse.h
+    DatabaseViewer/DatabaseViewerService.cpp
+    DatabaseViewer/DatabaseViewerService.h
+    DatabaseViewer/UTF8Helpers.cpp
+    DatabaseViewer/UTF8Helpers.h
+    DatabaseViewer/XMLFile.cpp
+    DatabaseViewer/XMLFile.h
+    DatabaseViewer/TextXMLWriter.cpp
+    DatabaseViewer/TextXMLWriter.h
+
     DataModel/ChangesetCapturingScope.cpp
     DataModel/ChangesetCapturingScope.h
 
@@ -328,6 +347,7 @@ add_executable(GameServer
     ServiceImplementations/WeaponService.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h
 )
 target_include_directories(GameServer PRIVATE ${CMAKE_CURRENT_BINARY_DIR} .)
 if(WIN32)

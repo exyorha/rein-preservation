@@ -38,6 +38,8 @@
 
 #include "DataModel/Database.h"
 
+#include "DatabaseViewer/DatabaseViewerService.h"
+
 struct Gameserver {
 public:
     Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
@@ -63,10 +65,11 @@ private:
     GRPCLikeServer m_gameAPI;
     WebContentServer m_webServer;
     OctoWebServices m_octoServices;
+    Database m_db;
+    DatabaseViewerService m_dbViewer;
     WebRouter m_router;
     LLServices::HttpServer m_http;
 
-    Database m_db;
     UserService m_userService;
     DataService m_dataService;
     GamePlayService m_gamePlayService;
