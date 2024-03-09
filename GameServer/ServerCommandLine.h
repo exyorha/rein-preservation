@@ -3,6 +3,8 @@
 
 #include <string_view>
 
+#include <filesystem>
+
 namespace LLServices {
     class LogFacility;
 }
@@ -30,6 +32,9 @@ private:
 
     void commandHelp(WordListParser &parser);
     void commandBackup(WordListParser &parser);
+    void commandBackups(WordListParser &parser);
+
+    std::filesystem::path backupLocation() const;
 
     Database &m_db;
     static const Command m_commands[];

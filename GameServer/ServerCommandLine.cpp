@@ -16,7 +16,8 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
     { .cmd = "help", .help = "output the list of supported commands", .handler = &ServerCommandLine::commandHelp },
     { .cmd = "backup", .help = "back up the database (save file). If a name is not specified, it'll be picked automatically",
         .handler = &ServerCommandLine::commandBackup
-    }
+    },
+    { .cmd = "backups", .help = "output the list of available backups", .handler = &ServerCommandLine::commandBackups },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -36,6 +37,15 @@ void ServerCommandLine::commandHelp(WordListParser &parser) {
                     static_cast<int>(command.help.size()),
                     command.help.data());
     }
+}
+
+std::filesystem::path ServerCommandLine::backupLocation() const {
+
+    std::filesystem::path backupLocation = m_db.databaseDirectory() / "backups";
+
+    std::filesystem::create_directories(backupLocation);
+
+    return backupLocation;
 }
 
 void ServerCommandLine::commandBackup(WordListParser &parser) {
@@ -60,23 +70,51 @@ void ServerCommandLine::commandBackup(WordListParser &parser) {
         backupName = parser.getRestOfTheString();
     }
 
-
-
-
-    std::filesystem::path backupLocation = m_db.databaseDirectory() / "backups";
-
-    std::filesystem::create_directories(backupLocation);
-
+    auto backupLocation = this->backupLocation();
     backupLocation /= std::u8string_view(reinterpret_cast<const char8_t *>(backupName.data()), backupName.size());
     backupLocation += ".dbjson";
 
     DatabaseContext ctx(m_db);
     ctx.writeJSONBackup(backupLocation);
 
-    LogCLI.info("the backup file '%s' has been created and saved at:", backupName.c_str());
+    LogCLI.info("The backup file '%s' has been created and saved at:", backupName.c_str());
 
     auto finalPath = backupLocation.generic_u8string();
     LogCLI.info("%s", reinterpret_cast<const char *>(finalPath.c_str()));
+}
+
+void ServerCommandLine::commandBackups(WordListParser &parser) {
+
+    bool hasAnyFiles = false;
+
+    auto backupLocation = this->backupLocation();
+
+    auto pathU8 = backupLocation.u8string();
+
+    for(const auto &entry: std::filesystem::directory_iterator(backupLocation)) {
+        const auto &path = entry.path();
+
+        if(!entry.is_regular_file() || !path.has_extension() || path.extension() != ".dbjson")
+            continue;
+
+        if(!hasAnyFiles) {
+            hasAnyFiles = true;
+            LogCLI.info("Available backup files that can be restored with the 'restore' command:");
+        }
+
+        auto name = path.stem().u8string();
+        LogCLI.info("%s", reinterpret_cast<const char *>(name.c_str()));
+    }
+
+    if(hasAnyFiles) {
+        LogCLI.info("\nThe backup files are stored in the following directory: %s",
+                    reinterpret_cast<const char *>(pathU8.data()));
+    } else {
+        LogCLI.info("No backup files have been made yet. Backups can be created with the 'backup' command.");
+
+        LogCLI.info("Once any are made, the backup files will be stored in the following directory: %s",
+                    reinterpret_cast<const char *>(pathU8.data()));
+    }
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {
