@@ -6,8 +6,10 @@
 
 #include <algorithm>
 
-ServerCLIService::ServerCLIService(LLServices::LogSink *nextLogSink) : m_nextLogSink(nextLogSink),
-    m_logBufferStorage(512 * 1024), m_logBuffer(m_logBufferStorage.data(), m_logBufferStorage.size()) {
+ServerCLIService::ServerCLIService(LLServices::LogSink *nextLogSink) :
+    m_nextLogSink(nextLogSink),
+    m_logBufferStorage(512 * 1024),
+    m_logBuffer(m_logBufferStorage.data(), m_logBufferStorage.size()) {
 
 }
 
@@ -72,4 +74,8 @@ void ServerCLIService::addConnection(ServerCLIConnection *connection) {
 
 void ServerCLIService::removeConnection(ServerCLIConnection *connection) {
     m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), connection), m_connections.end());
+}
+
+void ServerCLIService::initCLI(Database &db) {
+    m_cli.emplace(db);
 }

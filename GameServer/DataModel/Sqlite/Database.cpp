@@ -140,12 +140,12 @@ namespace sqlite {
         delete static_cast<Function *>(handle);
     }
 
-    std::string Database::filename(const std::string &databaseName) const {
-        const char *rawFilename = sqlite3_db_filename(m_handle, databaseName.c_str());
+    std::u8string Database::filename(const std::string &databaseName) const {
+        const char8_t *rawFilename = reinterpret_cast<const char8_t *>(sqlite3_db_filename(m_handle, databaseName.c_str()));
         if (rawFilename)
             return rawFilename;
         else
-            return std::string();
+            return std::u8string();
     }
 
     bool Database::readonly(const std::string &databaseName) const {

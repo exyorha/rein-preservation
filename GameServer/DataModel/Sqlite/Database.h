@@ -27,7 +27,7 @@ namespace sqlite {
         inline sqlite3 *handle() const { return m_handle; }
         inline operator sqlite3 *() const { return m_handle; }
 
-        std::string filename(const std::string &databaseName) const;
+        std::u8string filename(const std::string &databaseName) const;
         bool readonly(const std::string &databaseName) const;
         bool isInAutocommitMode() const;
         int changes() const;

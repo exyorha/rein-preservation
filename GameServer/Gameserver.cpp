@@ -43,6 +43,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_cageOrnamentService(m_db),
     m_companionService(m_db) {
 
+    m_cliService.initCLI(m_db);
+
     m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
     m_router.handleSubpath("/resources-api.app.nierreincarnation.com", &m_octoServices);
     m_router.handleSubpath("/server-cli", &m_cliService);

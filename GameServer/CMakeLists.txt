@@ -5,6 +5,8 @@ include(GenerateExportHeader)
 
 find_package(Protobuf CONFIG REQUIRED)
 
+find_package(ZLIB REQUIRED)
+
 if(NOT WIN32)
     find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 endif()
@@ -171,6 +173,15 @@ add_executable(GameServer
     DataModel/Sqlite/Value.cpp
     DataModel/Sqlite/Value.h
 
+    DataModel/Zlib.cpp
+    DataModel/Zlib.h
+
+    DataModel/ZlibException.cpp
+    DataModel/ZlibException.h
+
+    DataModel/ZlibStream.cpp
+    DataModel/ZlibStream.h
+
     Gameserver.cpp
     Gameserver.h
 
@@ -253,6 +264,9 @@ add_executable(GameServer
 
     WebServices/WebRouter.cpp
     WebServices/WebRouter.h
+
+    WordListParser.cpp
+    WordListParser.h
 
     service/BannerService.proto
     service/BattleService.proto
@@ -361,7 +375,7 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event)
+target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB)
 target_include_directories(GameServer PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/libevent/include
     ${PROJECT_BINARY_DIR}/thirdparty/libevent/include)
 

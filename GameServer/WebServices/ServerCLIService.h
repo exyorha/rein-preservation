@@ -9,7 +9,9 @@
 #include "ServerCommandLine.h"
 
 #include <vector>
+#include <optional>
 
+class Database;
 class ServerCLIConnection;
 
 class ServerCLIService final : public WebRoutable, public LLServices::LogSink {
@@ -29,15 +31,17 @@ public:
     void removeConnection(ServerCLIConnection *connection);
 
     inline ServerCommandLine &cli() {
-        return m_cli;
+        return m_cli.value();
     }
+
+    void initCLI(Database &db);
 
 private:
     LLServices::LogSink *m_nextLogSink;
     std::vector<unsigned char> m_logBufferStorage;
     LLServices::RingBuffer m_logBuffer;
     std::vector<ServerCLIConnection *> m_connections;
-    ServerCommandLine m_cli;
+    std::optional<ServerCommandLine> m_cli;
 };
 
 #endif

@@ -1204,44 +1204,7 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
 }
 
 void UserContext::serializeTable(const std::string &tableEntityName, JSONWriter &json) {
-    json.writeArrayOpen();
-
-    std::stringstream query;
-    query << "SELECT * FROM " << entityNameToTableNameChecked(tableEntityName) << " WHERE user_id = ?";
-    auto statement = db().prepare(query.str());
-    statement->bind(1, m_userId);
-
-    auto colCount = statement->columnCount();
-
-    std::optional<std::vector<std::string>> columnNames;
-
-    while(statement->step()) {
-        json.writeMapOpen();
-
-        if(!columnNames.has_value()) {
-            columnNames.emplace();
-
-            columnNames->reserve(colCount);
-
-            for(int colIndex = 0; colIndex < colCount; colIndex++) {
-                auto columnName = statement->columnName(colIndex);
-
-                columnNames->emplace_back(columnNameToEntityFieldName(columnName));
-            }
-        }
-
-        for(int colIndex = 0; colIndex < colCount; colIndex++) {
-            const auto &columnName = (*columnNames)[colIndex];
-
-            json.writeString(columnName);
-
-            writeSQLiteColumnValue(json, *statement, colIndex);
-        }
-
-        json.writeMapClose();
-    }
-
-    json.writeArrayClose();
+    DatabaseContext::serializeTable(tableEntityName, json, m_userId);
 }
 
 void UserContext::updateDeckName(int32_t deckType, int32_t userDeckNumber, const std::string_view &deckName) {

@@ -35,6 +35,8 @@ public:
         return m_timeOffset;
     }
 
+    std::filesystem::path databaseDirectory() const;
+
 private:
     sqlite::Database m_db;
 

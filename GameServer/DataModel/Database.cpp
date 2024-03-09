@@ -220,6 +220,10 @@ bool Database::restoreDatabaseBackup() {
     return true;
 }
 
+std::filesystem::path Database::databaseDirectory() const {
+    return std::filesystem::path(m_db.filename("main")).parent_path();
+}
+
 std::filesystem::path Database::backupDatabasePath() const {
     std::filesystem::path dbPath = m_db.filename("main");
 

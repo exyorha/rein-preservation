@@ -1,11 +1,15 @@
 #include "DataModel/DatabaseEnums.h"
 #include <DataModel/DatabaseContext.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
+#include <DataModel/Zlib.h>
 
 #include <DataModel/Sqlite/Statement.h>
 
 #include <stdexcept>
 #include <cmath>
+#include <fstream>
+
+#include "JSONWriter.h"
 
 DatabaseContext::DatabaseContext(Database &db) : m_db(db) {
 
@@ -290,4 +294,72 @@ int32_t DatabaseContext::getFirstQuestScene(int32_t questId) {
         throw std::runtime_error("the quest was not found or has no scenes");
 
     return getFirstScene->columnInt(0);
+}
+
+void DatabaseContext::serializeTable(const std::string_view &tableEntityName, JSONWriter &json, std::optional<int64_t> limitToUser) {
+
+    json.writeArrayOpen();
+
+    std::stringstream query;
+    query << "SELECT * FROM " << entityNameToTableNameChecked(tableEntityName);
+    if(limitToUser.has_value()) {
+        query << " WHERE user_id = ?";
+    }
+    auto statement = db().prepare(query.str());
+    if(limitToUser.has_value()) {
+        statement->bind(1, *limitToUser);
+    }
+
+    auto colCount = statement->columnCount();
+
+    std::optional<std::vector<std::string>> columnNames;
+
+    while(statement->step()) {
+        json.writeMapOpen();
+
+        if(!columnNames.has_value()) {
+            columnNames.emplace();
+
+            columnNames->reserve(colCount);
+
+            for(int colIndex = 0; colIndex < colCount; colIndex++) {
+                auto columnName = statement->columnName(colIndex);
+
+                columnNames->emplace_back(columnNameToEntityFieldName(columnName));
+            }
+        }
+
+        for(int colIndex = 0; colIndex < colCount; colIndex++) {
+            const auto &columnName = (*columnNames)[colIndex];
+
+            json.writeString(columnName);
+
+            writeSQLiteColumnValue(json, *statement, colIndex);
+        }
+
+        json.writeMapClose();
+    }
+
+    json.writeArrayClose();
+}
+
+void DatabaseContext::writeJSONBackup(const std::filesystem::path &output) {
+
+    JSONWriter writer;
+    writer.writeMapOpen();
+
+    for(const auto &table: getUserDataName()) {
+        writer.writeString(table);
+        serializeTable(table, writer, std::nullopt);
+    }
+
+    writer.writeMapClose();
+
+    auto compressed = deflate(writer.output(), true);
+
+    std::ofstream stream;
+    stream.exceptions(std::ios::failbit | std::ios::eofbit | std::ios::badbit);
+    stream.open(output, std::ios::out | std::ios::trunc | std::ios::binary);
+
+    stream.write(compressed.data(), compressed.size());
 }
