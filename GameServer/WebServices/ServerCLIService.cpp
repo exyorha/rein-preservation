@@ -3,6 +3,7 @@
 
 #include "LLServices/Networking/HttpRequest.h"
 #include "LLServices/Networking/WebSocketConnection.h"
+#include "LLServices/Networking/KeyValuePairs.h"
 
 #include <algorithm>
 
@@ -25,6 +26,12 @@ void ServerCLIService::handle(const std::string_view &routedPath, LLServices::Ht
         request.sendError(405, "Method Not Allowed");
         return;
     }
+
+    /*
+     * This is a hack for firefox that does 'Connection: keep-alive, upgrade', while libevent only understands strictly 'Connection: upgrade'
+     */
+    request.inputHeaders().remove("Connection");
+    request.inputHeaders().add("Connection", "upgrade");
 
     auto cliConnection = std::make_unique<ServerCLIConnection>(this);
 
