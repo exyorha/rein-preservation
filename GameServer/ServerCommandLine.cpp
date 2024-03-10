@@ -21,7 +21,10 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
         .handler = &ServerCommandLine::commandBackup
     },
     { .cmd = "backups", .help = "output the list of available backups", .handler = &ServerCommandLine::commandBackups },
-    { .cmd = "restore", .help = "restore a previous version of the database (save file)", .handler = &ServerCommandLine::commandRestore }
+    { .cmd = "restore", .help = "restore a previous version of the database (save file)", .handler = &ServerCommandLine::commandRestore },
+    { .cmd = "timetravel", .help = "adjusts the server time to be different from the real-world time",
+        .handler = &ServerCommandLine::commandTimeTravel },
+    { .cmd = "present", .help = "adjusts the server time back to the real-world time", .handler = &ServerCommandLine::commandPresent },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -157,6 +160,60 @@ void ServerCommandLine::commandRestore(WordListParser &parser) {
     }
 
     LogCLI.debug("The backup has been successfully restored.");
+}
+
+void ServerCommandLine::commandTimeTravel(WordListParser &parser) {
+    /*
+     * Calculate the time offset using SQLite's time functions, since their
+     * syntax is friendly enough.
+     */
+
+    std::stringstream query;
+
+    query << "SELECT CAST(round((unixepoch(";
+
+    std::vector<std::string> args;
+    while(!parser.isAtEnd()) {
+        if(!args.empty())
+            query << ", ";
+
+        args.emplace_back(parser.getStringWord());
+
+        query << "?";
+    }
+
+    if(!args.empty()) {
+        query << ", ";
+    }
+
+    query << "'subsec') - unixepoch('subsec')) * 1000) AS INT)";
+
+    auto statement = m_db.db().prepare(query.str());
+    int index = 1;
+    for(const auto &arg: args) {
+        statement->bind(index, arg);
+        index++;
+    }
+
+    /*
+     * On error, this will return an empty string.
+     */
+    std::optional<int64_t> offset;
+    if(!statement->step() || statement->columnType(0) != SQLITE_INTEGER)
+        throw std::runtime_error("unable to parse the time specification");
+
+    offset.emplace(statement->columnInt64(0));
+
+    statement->reset();
+
+    if(offset.has_value() && *offset == 0)
+        offset.reset();
+
+    m_db.setTimeOffset(offset);
+}
+
+void ServerCommandLine::commandPresent(WordListParser &parser) {
+    m_db.setTimeOffset(std::nullopt);
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {

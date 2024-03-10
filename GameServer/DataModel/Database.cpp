@@ -12,6 +12,7 @@
 
 #include <optional>
 #include <cstring>
+#include <system_error>
 
 const char* const Database::m_setupQueries[]{
     "PRAGMA journal_mode = WAL",
@@ -54,7 +55,7 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
         statement->reset();
     }
 
-    m_db.createFunction(std::make_unique<CurrentNETTimestampFunction>());
+    m_db.createFunction(std::make_unique<CurrentNETTimestampFunction>(*this));
 
     if(!transient)
         sqlite3_trace_v2(m_db.handle(), SQLITE_TRACE_STMT, statementProfileCallback, this);
@@ -88,6 +89,8 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
     std::stringstream fullVersion;
     fullVersion << type << "/" << version;
     m_masterDatabaseVersion = fullVersion.str();
+
+    loadDynamicConfig();
 
 }
 
@@ -257,8 +260,10 @@ void Database::removeDatabase(const std::filesystem::path& path) {
     std::filesystem::remove(shmPath);
 }
 
-time_t Database::realWorldTime() const {
-    return time(nullptr);
+int64_t Database::realWorldTime() const {
+    auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
+    return time.count();
 }
 
 void Database::restoreFromDB(Database &other) {
@@ -268,4 +273,90 @@ void Database::restoreFromDB(Database &other) {
     }
 
     m_db.checkpoint("main", SQLITE_CHECKPOINT_TRUNCATE);
+
+    loadDynamicConfig();
+}
+
+void Database::loadDynamicConfig() {
+    auto query = db().prepare("SELECT time_offset FROM internal_time_offset");
+
+    std::optional<int64_t> timeOffset;
+    if(query->step()) {
+        timeOffset.emplace(query->columnInt64(0));
+    }
+    query->reset();
+
+    setTimeOffset(timeOffset, false);
+}
+
+void Database::setTimeOffset(const std::optional<int64_t> &timeOffset, bool saveToDatabase) {
+    if(saveToDatabase) {
+        sqlite::Transaction transaction(&m_db);
+
+        if(timeOffset.has_value()) {
+            auto statement = db().prepare(R"SQL(
+                INSERT INTO internal_time_offset (
+                    rowid,
+                    time_offset
+                ) VALUES (
+                    1,
+                    ?
+                ) ON CONFLICT (rowid) DO UPDATE SET time_offset = excluded.time_offset
+            )SQL");
+
+            statement->bind(1, *timeOffset);
+            statement->exec();
+        } else {
+            auto statement = db().prepare("DELETE FROM internal_time_offset");
+            statement->exec();
+        }
+
+        transaction.commit();
+    }
+
+    m_timeOffset = timeOffset;
+
+    struct MessageAndOffset {
+        const char *message;
+        int64_t offset;
+    };
+
+    auto currentTimeMilliseconds = realWorldTime();
+
+    std::vector<MessageAndOffset> messages;
+
+
+    if(m_timeOffset.has_value()) {
+        LogDatabase.info("The server time is currently configured to be different from the real-world time.");
+
+        messages.emplace_back(MessageAndOffset{ .message = "Current real-world time: %s (UTC)", .offset = 0 });
+        messages.emplace_back(MessageAndOffset{ .message = "Current server time:     %s (UTC)", .offset = *timeOffset });
+    } else {
+        messages.emplace_back(MessageAndOffset{ .message = "Current server time:     %s (UTC)", .offset = 0 });
+    }
+
+    for(const auto &message: messages) {
+
+        time_t timeSeconds = (currentTimeMilliseconds + message.offset) / 1000;
+        struct tm tmparts;
+#ifdef _WIN32
+        gmtime_s(&tmparts, &timeSeconds);
+#else
+        gmtime_r(&timeSeconds, &tmparts);
+#endif
+
+        char time[64];
+        strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &tmparts);
+
+        LogDatabase.info(message.message, time);
+    }
+}
+
+int64_t Database::serverTime() const {
+    auto time = realWorldTime();
+
+    if(m_timeOffset.has_value())
+        time += *m_timeOffset;
+
+    return time;
 }

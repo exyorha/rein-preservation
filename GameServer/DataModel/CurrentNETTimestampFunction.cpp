@@ -1,4 +1,5 @@
 #include <DataModel/CurrentNETTimestampFunction.h>
+#include <DataModel/Database.h>
 
 #include <DataModel/Sqlite/Context.h>
 
@@ -6,7 +7,9 @@
 
 #include <chrono>
 
-CurrentNETTimestampFunction::CurrentNETTimestampFunction() = default;
+CurrentNETTimestampFunction::CurrentNETTimestampFunction(Database &db) : m_db(db) {
+
+}
 
 CurrentNETTimestampFunction::~CurrentNETTimestampFunction() = default;
 
@@ -24,5 +27,5 @@ int CurrentNETTimestampFunction::textRepresentation() const {
 }
 
 void CurrentNETTimestampFunction::evaluate(sqlite::Context &context, const std::vector<sqlite::Value> &arguments) {
-    sqlite3_result_int64(context, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    sqlite3_result_int64(context, m_db.serverTime());
 }

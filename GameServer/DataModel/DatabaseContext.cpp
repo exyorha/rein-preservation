@@ -72,7 +72,7 @@ std::optional<int32_t> DatabaseContext::getNumericalParameterMapValue(int32_t ma
 }
 
 std::optional<int64_t> DatabaseContext::authenticate(const std::string_view &sessionKey) {
-    auto statement = db().prepare("SELECT user_id FROM internal_sessions WHERE session_id = ? AND expire_datetime >= unixepoch('now')");
+    auto statement = db().prepare("SELECT user_id FROM internal_sessions WHERE session_id = ? AND expire_datetime >= current_net_timestamp() / 1000");
     statement->bind(1, sessionKey);
 
     if(statement->step()) {
@@ -125,7 +125,7 @@ void DatabaseContext::authenticate(int64_t &outputUserId, std::string &outputSes
     db().prepare("INSERT OR IGNORE INTO i_user (user_id, register_datetime) VALUES (1, current_net_timestamp())")->exec();
 
     auto makeSession = db().prepare(R"SQL(
-        INSERT INTO internal_sessions (session_id, user_id, expire_datetime) VALUES (hex(randomblob(16)), ?, unixepoch('now', '10 hours'))
+        INSERT INTO internal_sessions (session_id, user_id, expire_datetime) VALUES (hex(randomblob(16)), ?, unixepoch(current_net_timestamp() / 1000, 'unixepoch', '10 hours'))
         RETURNING session_id, user_id, expire_datetime
     )SQL");
 

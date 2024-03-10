@@ -3,9 +3,11 @@
 
 #include <DataModel/Sqlite/ScalarFunction.h>
 
+class Database;
+
 class CurrentNETTimestampFunction final : public sqlite::ScalarFunction {
 public:
-    CurrentNETTimestampFunction();
+    explicit CurrentNETTimestampFunction(Database &db);
     ~CurrentNETTimestampFunction() override;
 
     const char *name() const override;
@@ -13,6 +15,9 @@ public:
     int textRepresentation() const override;
 
     void evaluate(sqlite::Context &context, const std::vector<sqlite::Value> &arguments) override;
+
+private:
+    Database &m_db;
 };
 
 #endif

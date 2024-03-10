@@ -11,8 +11,6 @@
 
 #include <cstdio>
 
-#include <chrono>
-
 CommonService::CommonService(Database &db) : m_db(db) {
 
 }
@@ -55,8 +53,7 @@ int64_t CommonService::authenticate(::google::protobuf::RpcController*controller
 }
 
 void CommonService::addDateToContext(::google::protobuf::RpcController *controller) {
-    static_cast<GRPCLikeCall *>(controller)->httpRequest().outputHeaders().add(
-        "x-apb-response-datetime",
-        std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()).c_str());
+    static_cast<GRPCLikeCall *>(controller)->httpRequest().outputHeaders().add("x-apb-response-datetime",
+                                                                               std::to_string(m_db.dataModel().serverTime()).c_str());
 }
 

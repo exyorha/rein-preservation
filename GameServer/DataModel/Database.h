@@ -29,10 +29,15 @@ public:
         return m_masterDatabaseVersion;
     }
 
-    time_t realWorldTime() const;
+    int64_t realWorldTime() const;
+    int64_t serverTime() const;
 
-    inline std::optional<time_t> timeOffset() const {
+    inline std::optional<int64_t> timeOffset() const {
         return m_timeOffset;
+    }
+
+    inline void setTimeOffset(const std::optional<int64_t> &timeOffset) {
+        setTimeOffset(timeOffset, true);
     }
 
     std::filesystem::path databaseDirectory() const;
@@ -64,12 +69,16 @@ private:
 
     void runMigrations(bool transient);
 
+    void loadDynamicConfig();
+
+    void setTimeOffset(const std::optional<int64_t> &timeOffset, bool saveToDatabase);
+
     static const char *const m_initSQL;
     static const char* const m_setupQueries[];
     static const DatabaseMigration m_migrations[];
     static const unsigned int m_currentSchemaVersion;
     std::string m_masterDatabaseVersion;
-    std::optional<time_t> m_timeOffset;
+    std::optional<int64_t> m_timeOffset;
     std::filesystem::path m_masterDatabase;
 };
 

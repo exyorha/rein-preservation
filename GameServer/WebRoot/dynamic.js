@@ -63,10 +63,10 @@
         if(serverTimeOffset === null) {
             this._serverTimeOffset = 0;
         } else {
-            this._serverTimeOffset = serverTimeOffset * 1000;
+            this._serverTimeOffset = serverTimeOffset;
         }
 
-        this._clientToServerTimeOffset = Date.now() - (initialServerTime * 1000);
+        this._clientToServerTimeOffset = Date.now() - initialServerTime;
 
         console.log("Server-client time discrepancy:", this._clientToServerTimeOffset, "milliseconds");
 

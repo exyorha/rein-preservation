@@ -6184,3 +6184,7 @@ CREATE TABLE internal_user_quest_last_start_attributes (
   user_deck_number INTEGER NOT NULL,
   PRIMARY KEY(user_id, quest_id)
 );
+
+CREATE TABLE internal_time_offset (
+  time_offset INTEGER NOT NULL DEFAULT 0
+);
