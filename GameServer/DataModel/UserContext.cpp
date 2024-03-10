@@ -10,7 +10,7 @@
 
 #include <string>
 
-UserContext::UserContext(Database &db, int64_t userId) : DatabaseContext(db), m_userId(userId) {
+UserContext::UserContext(Database &db, int64_t userId) : DatabaseContext(db), m_userId(userId), m_log(makeFacilityString(userId)) {
 
 }
 
@@ -19,6 +19,12 @@ UserContext::UserContext(DatabaseContext &context, int64_t userId) : UserContext
 }
 
 UserContext::~UserContext() = default;
+
+std::string UserContext::makeFacilityString(int64_t userId) {
+    std::stringstream facility;
+    facility << "UserContext(" << userId << ")";
+    return facility.str();
+}
 
 /*
  * This is needed for e.g. the mama menu tutorial to operate correctly
@@ -48,8 +54,8 @@ void UserContext::buildDefaultDeckIfNoneExists() {
         }
 
         if(!existingCostume.empty() && !existingWeapon.empty()) {
-            printf("User %ld has no decks, but has at least one costume (%s) and a weapon (%s). Building the default deck\n",
-                   m_userId, existingCostume.c_str(), existingWeapon.c_str());
+            m_log.info("user has no decks, but has at least one costume (%s) and a weapon (%s). Building the default deck\n",
+                       existingCostume.c_str(), existingWeapon.c_str());
 
             DeckInDatabaseRepresentation deckRepresentation;
 
@@ -246,8 +252,8 @@ void UserContext::replaceDeckCharacter(std::string &characterUUID,
 
 void UserContext::givePossession(int32_t possessionType, int32_t possessionId, int32_t count,
                                  google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards) {
-    printf("QuestService: giving to %ld: possession type %d, id %d, count %d\n",
-           m_userId, possessionType, possessionId, count);
+    m_log.debug("giving possession type %d, id %d, count %d\n",
+            possessionType, possessionId, count);
 
     if(addToQuestRewards) {
         auto reward = addToQuestRewards->Add();
@@ -854,7 +860,7 @@ void UserContext::giveUserExperience(int32_t experience) {
     if(experience < 0)
         throw std::logic_error("experience cannot be negative");
 
-    printf("Giving user %ld %d experience\n", m_userId, experience);
+    m_log.debug("giving %d experience\n", experience);
 
     auto query = db().prepare("UPDATE i_user_status SET exp = exp + ? WHERE user_id = ? RETURNING exp, level");
     int32_t currentTotalExp = 0, currentLevel = 0;
@@ -869,7 +875,7 @@ void UserContext::giveUserExperience(int32_t experience) {
     auto newLevel = evaluateNumericalParameterMap(userLevelExpNumericalParameterMapID(), currentTotalExp);
     // TODO: clamp by max level (if one exists)
     if(newLevel.has_value() && *newLevel != currentLevel) {
-        printf("User %ld has leveled up: %d -> %d\n", m_userId, currentLevel, *newLevel);
+        m_log.debug("user has leveled up: %d -> %d\n", currentLevel, *newLevel);
         auto updateLevel = db().prepare("UPDATE i_user_status SET level = ? WHERE user_id = ?");
         updateLevel->bind(1, *newLevel);
         updateLevel->bind(2, m_userId);
@@ -961,8 +967,8 @@ void UserContext::giveUserDeckCharacterExperience(
 }
 
 void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience) {
-    printf("Giving user %ld costume %s %d character experience and %d costume experience\n",
-           m_userId, userCostumeUuid.c_str(), characterExperience, costumeExperience);
+    m_log.debug("giving costume %s %d character experience and %d costume experience",
+        userCostumeUuid.c_str(), characterExperience, costumeExperience);
 
     auto updateExperience = db().prepare(R"SQL(
         UPDATE i_user_costume SET exp = exp + ?
@@ -1016,8 +1022,8 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
     }
 
     if(newLevel.has_value() && *newLevel != currentLevel) {
-        printf("User %ld costume %s has leveled up: %d -> %d\n",
-           m_userId, userCostumeUuid.c_str(), currentLevel, *newLevel);
+        m_log.debug("costume %s has leveled up: %d -> %d",
+           userCostumeUuid.c_str(), currentLevel, *newLevel);
 
         auto updateLevel = db().prepare("UPDATE i_user_costume SET level = ? WHERE user_id = ? AND user_costume_uuid = ?");
         updateLevel->bind(1, *newLevel);
@@ -1062,9 +1068,7 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
             updateLevelBonus->exec();
         }
 
-        /*
-         * TODO: level unlocks (if that needs to be done on the server - it probably needs to be
-         */
+        reevaluateCharacterCostumeLevelBonuses(characterId);
     }
 
     if(characterExperience != 0) {
@@ -1074,8 +1078,7 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
 
 
 void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t characterExperience) {
-    printf("Giving user %ld character %d %d character experience\n",
-           m_userId, characterId, characterExperience);
+    m_log.debug("Giving character %d %d character experience", characterId, characterExperience);
 
     auto updateExperience = db().prepare(R"SQL(
         UPDATE i_user_character SET exp = exp + ?
@@ -1116,8 +1119,7 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
     }
 
     if(newLevel.has_value() && *newLevel != currentLevel) {
-        printf("User %ld character %d has leveled up: %d -> %d\n",
-           m_userId, characterId, currentLevel, *newLevel);
+        m_log.debug("character %d has leveled up: %d -> %d\n", characterId, currentLevel, *newLevel);
 
         auto updateLevel = db().prepare("UPDATE i_user_character SET level = ? WHERE user_id = ? AND character_id = ?");
         updateLevel->bind(1, *newLevel);
@@ -1131,8 +1133,7 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
 }
 
 void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, int32_t characterExperience, int32_t costumeExperience) {
-    printf("Giving user %ld weapon %s %d character experience and %d costume experience\n",
-           m_userId, userWeaponUuid.c_str(), characterExperience, costumeExperience);
+    m_log.debug("Giving weapon %s %d character experience and %d costume experience", userWeaponUuid.c_str(), characterExperience, costumeExperience);
 
     auto updateExperience = db().prepare(R"SQL(
         UPDATE i_user_weapon SET exp = exp + ?
@@ -1178,8 +1179,7 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
         newLevel = std::min(*newLevel, maxLevel);
     }
     if(newLevel.has_value() && *newLevel != currentLevel) {
-        printf("User %ld weapon %s has leveled up: %d -> %d\n",
-           m_userId, userWeaponUuid.c_str(), currentLevel, *newLevel);
+        m_log.debug("weapon %s has leveled up: %d -> %d", userWeaponUuid.c_str(), currentLevel, *newLevel);
 
         auto updateLevel = db().prepare("UPDATE i_user_weapon SET level = ? WHERE user_id = ? AND user_weapon_uuid = ?");
         updateLevel->bind(1, *newLevel);
@@ -1373,7 +1373,7 @@ void UserContext::gameStart() {
         "UPDATE i_user SET game_start_datetime = current_net_timestamp() WHERE user_id = ? AND game_start_datetime < register_datetime",
         "INSERT OR IGNORE INTO i_user_tutorial_progress (user_id, tutorial_type, progress_phase, choice_id) VALUES (?, 1, 1, 0)",
         "INSERT OR IGNORE INTO i_user_setting (user_id) VALUES (?)",
-        "INSERT OR IGNORE INTO i_user_main_quest_main_flow_status (user_id) VALUES (?)"
+        "INSERT OR IGNORE INTO i_user_main_quest_main_flow_status (user_id) VALUES (?)",
     }) {
         auto query = db().prepare(userInitQuery);
         query->bind(1, m_userId);
@@ -1384,6 +1384,17 @@ void UserContext::gameStart() {
      * TODO: IUserShopReplaceableLineup is updated here
      * TODO: IUserShopReplaceable is updated here
      */
+}
+
+void UserContext::beforeGamePlay() {
+    /*
+     * Reset stamina if it was set in the future.
+     */
+    auto query = db().prepare(
+        "UPDATE i_user_status SET stamina_milli_value = 50000 WHERE user_id = ? AND stamina_update_datetime >= current_net_timestamp()"
+    );
+    query->bind(1, m_userId);
+    query->exec();
 }
 
 void UserContext::setUserName(const std::string_view &userName) {
@@ -1659,9 +1670,7 @@ void UserContext::getOrResetAttributesAtStartOfQuest(int32_t questId, int32_t &u
     if(getAttributesAtStart->step()) {
         userDeckNumber = getAttributesAtStart->columnInt(0);
     } else {
-        fprintf(stderr, "UserContext::getAttributesAtStartOfQuest (%ld, %d): the quest is not running\n",
-                m_userId,
-                questId);
+        m_log.error("getAttributesAtStartOfQuest (%d): the quest is not running\n", questId);
 
         userDeckNumber = 1;
 
@@ -1694,14 +1703,15 @@ void UserContext::getAndClearAttributesAtStartOfQuest(int32_t questId, int32_t &
 void UserContext::retireQuest(int32_t questId) {
     auto updateQuest = db().prepare(R"SQL(
         UPDATE i_user_quest SET
-            quest_state_type = ?
+            quest_state_type = CASE clear_count WHEN 0 THEN ? ELSE ? END
         WHERE user_id = ? AND quest_id = ? AND quest_state_type = ?
     )SQL");
 
     updateQuest->bind(1, static_cast<int32_t>(QuestStateType::NotStarted));
-    updateQuest->bind(2, m_userId);
-    updateQuest->bind(3, questId);
-    updateQuest->bind(4, static_cast<int32_t>(QuestStateType::InProgress));
+    updateQuest->bind(2, static_cast<int32_t>(QuestStateType::Cleared));
+    updateQuest->bind(3, m_userId);
+    updateQuest->bind(4, questId);
+    updateQuest->bind(5, static_cast<int32_t>(QuestStateType::InProgress));
     updateQuest->exec();
 }
 
@@ -1823,7 +1833,7 @@ void UserContext::updateMainQuestProgress() {
     if(getCurrentRoute->step())
         route = getCurrentRoute->columnInt64(0);
 
-    printf("Current route: %ld\n", route);
+    m_log.debug("current route: %ld", route);
 
     if(route != 0) {
         /*
@@ -1866,7 +1876,7 @@ void UserContext::updateMainQuestProgress() {
             }
             checkIfThisQuestComplete->reset();
 
-            printf("route quest %ld has state_type %d\n", questId, stateType);
+            m_log.debug("route quest %ld has state_type %d", questId, stateType);
 
             if(stateType < static_cast<int32_t>(QuestStateType::Cleared)) {
                 /*
@@ -1880,7 +1890,7 @@ void UserContext::updateMainQuestProgress() {
         allQuestsInOrder->reset();
 
         if(foundIncompleteQuest != 0) {
-            printf("setting the main quest flow to start from %ld\n", foundIncompleteQuest);
+            m_log.debug("setting the main quest flow to start from %ld", foundIncompleteQuest);
 
             int64_t firstScene = 0 ;
             auto getFirstScene = db().prepare("SELECT quest_scene_id FROM m_quest_scene WHERE quest_id = ? ORDER BY sort_order LIMIT 1");
@@ -1888,7 +1898,7 @@ void UserContext::updateMainQuestProgress() {
             if(getFirstScene->step())
                 firstScene = getFirstScene->columnInt64(0);
 
-            printf("first scene: %ld\n", firstScene);
+            m_log.debug("first scene: %ld", firstScene);
 
             if(firstScene != 0) {
 
@@ -1968,7 +1978,7 @@ void UserContext::issueFirstClearRewardGroup(int64_t firstClearGroupId,
                                               google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards,
                                               google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestDropRewards) {
 
-    printf("QuestService: issuing first clear reward group %ld to user %ld\n", firstClearGroupId, m_userId);
+    m_log.debug("issuing first clear reward group %ld", firstClearGroupId);
 
     auto getRewardGroup = db().prepare(R"SQL(
         SELECT
@@ -1994,8 +2004,8 @@ void UserContext::issueFirstClearRewardGroup(int64_t firstClearGroupId,
          * TODO: reward type handling
          */
 
-        printf("QuestService: awarding first clear reward to %ld: reward type %d, possession type %d, possession id %d, count %d, is pickup? %d\n",
-               m_userId, rewardType, possessionType, possessionId, count, isPickup);
+        m_log.debug("awarding first clear reward: reward type %d, possession type %d, possession id %d, count %d, is pickup? %d",
+               rewardType, possessionType, possessionId, count, isPickup);
 
         auto list = addToQuestRewards;
         if(isPickup) {
@@ -2078,8 +2088,8 @@ void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
     }
     getUserWeaponStory->reset();
 
-    printf("User %ld has weapon %d, story release condition group ID: %d currently released story index: %d\n",
-            m_userId, weaponId,
+    m_log.debug("weapon %d, story release condition group ID: %d currently released story index: %d",
+            weaponId,
             weaponStoryReleaseConditionGroupId, releasedMaxStoryIndex);
 
     getConditionsToReleaseNextStories->bind(1, weaponStoryReleaseConditionGroupId);
@@ -2095,7 +2105,7 @@ void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
         auto conditionValue = getConditionsToReleaseNextStories->columnInt(2);
         auto releaseConditionOperationGroupId = getConditionsToReleaseNextStories->columnInt(3);
 
-        printf("Next story index to release: %d, condition type: %d, condition value: %d, release condition operation group ID: %d\n",
+        m_log.debug("next story index to release: %d, condition type: %d, condition value: %d, release condition operation group ID: %d",
                 nextStoryIndex, weaponStoryReleaseConditionType, conditionValue, releaseConditionOperationGroupId);
 
         bool released;
@@ -2124,7 +2134,7 @@ void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
                     released = released && thisReleased;
                 }
 
-            } else if(conditionOperationType ==ConditionOperationType::OR) {
+            } else if(conditionOperationType == ConditionOperationType::OR) {
 
                 released = false;
 
@@ -2137,7 +2147,7 @@ void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
                 }
 
             } else {
-                fprintf(stderr, "unsupported weapon story condition operation type: %d\n", conditionOperationType);
+                m_log.error("unsupported weapon story condition operation type: %d", conditionOperationType);
                 break;
             }
 
@@ -2154,7 +2164,7 @@ void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
         if(!released)
             break;
 
-        printf("Weapon story index %d should be released\n", nextStoryIndex);
+        m_log.debug("weapon story index %d should be released", nextStoryIndex);
         newlyReleasedStoryIndex.emplace(nextStoryIndex);
 
     }
@@ -2162,7 +2172,7 @@ void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
     getConditionsToReleaseNextStories->reset();
 
     if(newlyReleasedStoryIndex.has_value()) {
-        printf("Updating released story index for %d to %d\n", weaponId, *newlyReleasedStoryIndex);
+        m_log.debug("updating released story index for %d to %d", weaponId, *newlyReleasedStoryIndex);
 
         update->bind(2, weaponId);
         update->bind(3, *newlyReleasedStoryIndex);
@@ -2179,6 +2189,16 @@ void UserContext::updateUserUnlocks() {
         auto weaponId = getUserWeapons->columnInt(0);
         updateWeaponUnlockedStory(weaponId);
     }
+    getUserWeapons->reset();
+
+    auto getUserCharacters = db().prepare("SELECT character_id FROM i_user_character WHERE user_id = ?");
+    getUserCharacters->bind(1, m_userId);
+
+    while(getUserCharacters->step()) {
+        auto characterId = getUserCharacters->columnInt(0);
+        reevaluateCharacterCostumeLevelBonuses(characterId);
+    }
+    getUserCharacters->reset();
 }
 
 bool UserContext::isQuestCleared(int32_t questId) {
@@ -2223,7 +2243,7 @@ bool UserContext::isWeaponStoryReleaseConditionSatisfied(
         // MAIN_FLOW_SCENE_PROGRESS is problematic to implement, but appears unused anyway
 
         default:
-            fprintf(stderr, "UserContext::isWeaponStoryReleaseConditionSatisfied: unsupported condition type %d\n", type);
+            m_log.error("isWeaponStoryReleaseConditionSatisfied: unsupported condition type %d", type);
             return false;
     }
 }
@@ -3074,3 +3094,110 @@ void UserContext::updateEventQuestSceneProgress(int32_t currentQuestSceneId, int
     updateProgress->exec();
 }
 
+void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
+    m_log.debug("reevaluating character %d costume level bonuses", character);
+
+    auto getCostumes = db().prepare(
+        "SELECT costume_level_bonus_id, level FROM i_user_costume, m_costume USING (costume_id) WHERE user_id = ? AND character_id = ?"
+    );
+    getCostumes->bind(1, m_userId);
+    getCostumes->bind(2, character);
+
+    auto getBonuses = db().prepare(
+        "SELECT costume_level_bonus_type, effect_value FROM m_costume_level_bonus WHERE costume_level_bonus_id = ? AND level <= ?"
+    );
+
+    /*
+     * While support for multiplicative bonuses exists in the database
+     * schema, it's never actually used: there's no costumes with
+     * multiplicative bonuses configured, the client never fetches the
+     * corresponding aggregated record, and the live server always fills it
+     * with zeroes. We don't emit it at all.
+     */
+    struct AggregatedBonuses {
+        int32_t hp = 0;
+        int32_t attack = 0;
+        int32_t vitality = 0;
+        int32_t agility = 0;
+        int32_t criticalRatio = 0;
+        int32_t criticalAttack = 0;
+    } bonuses;
+
+    while(getCostumes->step()) {
+        auto costumeLevelBonusId = getCostumes->columnInt(0);
+        auto costumeLevel = getCostumes->columnInt(1);
+
+        getBonuses->bind(1, costumeLevelBonusId);
+        getBonuses->bind(2, costumeLevel);
+
+        m_log.debug("  including a costume: level %d, bonus ID %d", costumeLevel, costumeLevelBonusId);
+
+        while(getBonuses->step()) {
+            auto bonusType = static_cast<CostumeLevelBonusType>(getBonuses->columnInt(0));
+            auto bonusValue = static_cast<int32_t>(getBonuses->columnInt(1));
+
+            switch(bonusType) {
+            case CostumeLevelBonusType::AGILITY_ADD:
+                bonuses.agility += bonusValue;
+                break;
+
+            case CostumeLevelBonusType::ATTACK_ADD:
+                bonuses.attack += bonusValue;
+                break;
+
+            case CostumeLevelBonusType::CRITICAL_ATTACK_ADD:
+                bonuses.criticalAttack += bonusValue;
+                break;
+
+            case CostumeLevelBonusType::CRITICAL_RATIO_ADD:
+                bonuses.criticalRatio += bonusValue;
+                break;
+
+            case CostumeLevelBonusType::HP_ADD:
+                bonuses.hp += bonusValue;
+                break;
+
+            case CostumeLevelBonusType::VITALITY_ADD:
+                bonuses.vitality += bonusValue;
+                break;
+
+            default:
+                throw std::runtime_error("unsupported bonus type " + std::to_string(static_cast<int32_t>(bonusType)));
+            }
+        }
+
+        getBonuses->reset();
+    }
+
+    auto storeBonuses = db().prepare(R"SQL(
+        INSERT INTO i_user_character_costume_level_bonus (
+            user_id,
+            character_id,
+            status_calculation_type,
+            hp,
+            attack,
+            vitality,
+            agility,
+            critical_ratio,
+            critical_attack
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ) ON CONFLICT (user_id, character_id, status_calculation_type) DO UPDATE SET
+            hp = excluded.hp,
+            attack = excluded.attack,
+            vitality = excluded.vitality,
+            agility = excluded.agility,
+            critical_ratio = excluded.critical_ratio,
+            critical_attack = excluded.critical_attack
+    )SQL");
+    storeBonuses->bind(1, m_userId);
+    storeBonuses->bind(2, character);
+    storeBonuses->bind(3, static_cast<int32_t>(StatusCalculationType::ADD));
+    storeBonuses->bind(4, bonuses.hp);
+    storeBonuses->bind(5, bonuses.attack);
+    storeBonuses->bind(6, bonuses.vitality);
+    storeBonuses->bind(7, bonuses.agility);
+    storeBonuses->bind(8, bonuses.criticalRatio);
+    storeBonuses->bind(9, bonuses.criticalAttack);
+    storeBonuses->exec();
+}

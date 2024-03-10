@@ -55,5 +55,7 @@ void GamePlayService::CheckBeforeGamePlayImpl(UserContext &user,
     }
 
     user.updateUserUnlocks();
+
+    user.beforeGamePlay();
 }
 

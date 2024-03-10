@@ -4,6 +4,8 @@
 #include <DataModel/DatabaseContext.h>
 #include <DataModel/DatabaseEnums.h>
 
+#include <LLServices/Logging/LogFacility.h>
+
 #include <cstdint>
 #include <array>
 #include <string>
@@ -78,6 +80,7 @@ public:
 
     void registerOmikujiDraw(int32_t omikujiId);
 
+    void beforeGamePlay();
     void gameStart();
 
     void setUserName(const std::string_view &userName);
@@ -221,7 +224,12 @@ private:
     void readDeckCharacterRepresentation(const std::string_view &deckCharacterUUID, apb::api::deck::DeckCharacter *character);
     void deleteDeckCharacter(const std::string_view &deckCharacterUUID);
 
+    void reevaluateCharacterCostumeLevelBonuses(int32_t characterId);
+
+    static std::string makeFacilityString(int64_t userId);
+
     int64_t m_userId;
+    LLServices::LogFacility m_log;
 };
 
 #endif

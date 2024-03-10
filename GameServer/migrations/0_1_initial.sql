@@ -4621,15 +4621,15 @@ END;
 CREATE TABLE i_user_character_costume_level_bonus (
   user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
-  status_calculation_type integer,
-  hp integer,
-  attack integer,
-  vitality integer,
-  agility integer,
-  critical_ratio integer,
-  critical_attack integer,
+  status_calculation_type integer NOT NULL,
+  hp integer NOT NULL DEFAULT 0,
+  attack integer NOT NULL DEFAULT 0,
+  vitality integer NOT NULL DEFAULT 0,
+  agility integer NOT NULL DEFAULT 0,
+  critical_ratio integer NOT NULL DEFAULT 0,
+  critical_attack integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_id, character_id)
+  PRIMARY KEY(user_id, character_id, status_calculation_type)
 );
 CREATE INDEX i_user_character_costume_level_bonus_user_id ON i_user_character_costume_level_bonus(user_id);
 
