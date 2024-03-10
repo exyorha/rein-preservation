@@ -35,6 +35,7 @@
 #include "ServiceImplementations/WeaponService.h"
 #include "ServiceImplementations/CageOrnamentService.h"
 #include "ServiceImplementations/CompanionService.h"
+#include "ServiceImplementations/CharacterService.h"
 
 #include "DataModel/Database.h"
 
@@ -91,6 +92,7 @@ private:
     WeaponService m_weaponService;
     CageOrnamentService m_cageOrnamentService;
     CompanionService m_companionService;
+    CharacterService m_characterService;
 };
 
 #endif

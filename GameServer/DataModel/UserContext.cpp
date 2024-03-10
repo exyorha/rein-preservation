@@ -1014,9 +1014,25 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
     if(newLevel.has_value()) {
         auto maxLevel = evaluateNumericalFunction(maxLevelFunction, limitBreakCount);
 
-        /*
-         * TODO: rebirth needs to be *added* here.
-         */
+        auto getAddedMaxLevelsFromCharacterRebirths = db().prepare(R"SQL(
+            SELECT
+                COALESCE(SUM(costume_level_limit_up), 0)
+            FROM
+                m_character_rebirth,
+                m_character_rebirth_step_group USING (character_rebirth_step_group_id) LEFT JOIN
+                i_user_character_rebirth USING (character_id)
+            WHERE
+                user_id = ? AND
+                character_id = ? AND
+                COALESCE(rebirth_count, 0) > before_rebirth_count
+        )SQL");
+
+        getAddedMaxLevelsFromCharacterRebirths->bind(1, m_userId);
+        getAddedMaxLevelsFromCharacterRebirths->bind(2, characterId);
+
+        if(getAddedMaxLevelsFromCharacterRebirths->step()) {
+            maxLevel += getAddedMaxLevelsFromCharacterRebirths->columnInt(0);
+        }
 
         newLevel = std::min<int32_t>(*newLevel, maxLevel);
     }
@@ -3200,4 +3216,87 @@ void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
     storeBonuses->bind(8, bonuses.criticalRatio);
     storeBonuses->bind(9, bonuses.criticalAttack);
     storeBonuses->exec();
+}
+
+void UserContext::rebirthCharacter(int32_t characterId) {
+    int32_t rebirthCount = 0;
+
+    auto getCurrentRebirthCount = db().prepare("SELECT rebirth_count FROM i_user_character_rebirth WHERE user_id = ? AND character_id = ?");
+    getCurrentRebirthCount->bind(1, m_userId);
+    getCurrentRebirthCount->bind(2, characterId);
+    if(getCurrentRebirthCount->step()) {
+        rebirthCount = getCurrentRebirthCount->columnInt(0);
+    }
+
+    getCurrentRebirthCount->reset();
+
+    if(rebirthCount >= getIntConfig("CHARACTER_REBIRTH_AVAILABLE_COUNT"))
+        throw std::runtime_error("the character is already at the max number of rebirths");
+
+    auto getRebirthMaterialGroup = db().prepare(R"SQL(
+        SELECT
+            character_rebirth_material_group_id
+        FROM
+            m_character_rebirth,
+            m_character_rebirth_step_group USING (character_rebirth_step_group_id)
+        WHERE
+            character_id = ? AND
+            before_rebirth_count = ?
+    )SQL");
+    getRebirthMaterialGroup->bind(1, characterId);
+    getRebirthMaterialGroup->bind(2, rebirthCount);
+    if(!getRebirthMaterialGroup->step())
+        throw std::runtime_error("no such rebirth step");
+
+    auto rebirthMaterialGroupId = getRebirthMaterialGroup->columnInt(0);
+    getRebirthMaterialGroup->reset();
+
+    auto getMaterials = db().prepare(
+        "SELECT material_id, count FROM m_character_rebirth_material_group WHERE character_rebirth_material_group_id = ? ORDER BY sort_order"
+    );
+    getMaterials->bind(1, rebirthMaterialGroupId);
+
+    while(getMaterials->step()) {
+        auto materialId = getMaterials->columnInt(0);
+        auto count = getMaterials->columnInt(1);
+
+        consumeMaterial(materialId, count);
+    }
+
+    consumeConsumableItem(consumableItemIdForGold(), getIntConfig("CHARACTER_REBIRTH_CONSUME_GOLD"));
+
+    auto updateRebirths = db().prepare(R"SQL(
+        INSERT INTO i_user_character_rebirth (
+            user_id,
+            character_id,
+            rebirth_count
+        ) VALUES (
+            ?, ?, ?
+        )
+        ON CONFLICT (user_id, character_id) DO UPDATE SET
+            rebirth_count = excluded.rebirth_count
+    )SQL");
+
+    updateRebirths->bind(1, m_userId);
+    updateRebirths->bind(2, characterId);
+    updateRebirths->bind(3, rebirthCount + 1);
+    updateRebirths->exec();
+
+    /*
+     * Rebirthing a character increases the level limit of all the costumes
+     * of that character, so the costumes of the character just reborn need
+     * their levels reevaluated.
+     */
+
+    auto getCostumeUUIDs = db().prepare(
+        "SELECT user_costume_uuid FROM i_user_costume, m_costume USING (costume_id) WHERE user_id = ? AND character_id = ?"
+    );
+
+    getCostumeUUIDs->bind(1, m_userId);
+    getCostumeUUIDs->bind(2, characterId);
+    while(getCostumeUUIDs->step()) {
+        auto costumeUUID = getCostumeUUIDs->columnText(0);
+
+        giveUserCostumeExperience(costumeUUID, 0, 0);
+    }
 }

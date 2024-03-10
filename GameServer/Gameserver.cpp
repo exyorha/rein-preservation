@@ -41,7 +41,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_costumeService(m_db),
     m_weaponService(m_db),
     m_cageOrnamentService(m_db),
-    m_companionService(m_db) {
+    m_companionService(m_db),
+    m_characterService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -77,6 +78,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_weaponService);
     m_gameAPI.registerService(&m_cageOrnamentService);
     m_gameAPI.registerService(&m_companionService);
+    m_gameAPI.registerService(&m_characterService);
 
 #if 0
     std::ifstream stream;

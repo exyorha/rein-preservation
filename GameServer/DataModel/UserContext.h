@@ -168,6 +168,8 @@ public:
 
     void startEventQuest(int32_t eventQuestChapterId, int32_t questId, const std::optional<bool> &isBattleOnly);
 
+    void rebirthCharacter(int32_t characterId);
+
 private:
 
     struct DeckInDatabaseRepresentation {

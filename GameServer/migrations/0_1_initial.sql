@@ -4642,7 +4642,7 @@ END;
 CREATE TABLE i_user_character_rebirth (
   user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
-  rebirth_count integer,
+  rebirth_count integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, character_id)
 );
@@ -4657,7 +4657,7 @@ END;
 CREATE TABLE i_user_character_viewer_field (
   user_id INTEGER NOT NULL,
   character_viewer_field_id integer NOT NULL,
-  release_datetime timestamp,
+  release_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, character_viewer_field_id)
 );
