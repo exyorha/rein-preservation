@@ -36,6 +36,7 @@
 #include "ServiceImplementations/CageOrnamentService.h"
 #include "ServiceImplementations/CompanionService.h"
 #include "ServiceImplementations/CharacterService.h"
+#include "ServiceImplementations/CharacterBoardService.h"
 
 #include "DataModel/Database.h"
 
@@ -93,6 +94,7 @@ private:
     CageOrnamentService m_cageOrnamentService;
     CompanionService m_companionService;
     CharacterService m_characterService;
+    CharacterBoardService m_characterBoardService;
 };
 
 #endif

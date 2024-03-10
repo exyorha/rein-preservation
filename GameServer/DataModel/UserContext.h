@@ -38,6 +38,10 @@ namespace LLServices {
 
 class UserContext final : public DatabaseContext {
 public:
+    struct CharacterBoardDeferredUpdate {
+        std::unordered_set<int32_t> charactersToRecalculate;
+    };
+
     UserContext(Database &database, int64_t userId);
     UserContext(DatabaseContext &context, int64_t userId);
     ~UserContext() override;
@@ -56,6 +60,8 @@ public:
 
     void givePossession(int32_t possessionType, int32_t possessionId, int32_t count,
                         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr);
+
+    void takePossession(int32_t possessionType, int32_t possessionId, int32_t count);
 
     void giveUserExperience(int32_t experience);
 
@@ -170,6 +176,9 @@ public:
 
     void rebirthCharacter(int32_t characterId);
 
+    void releaseCharacterBoardPanel(int32_t panelId, CharacterBoardDeferredUpdate &update);
+    void finalizeCharacterBoardUpdate(const CharacterBoardDeferredUpdate &update);
+
 private:
 
     struct DeckInDatabaseRepresentation {
@@ -184,6 +193,20 @@ private:
         InProgress,
         Cleared = 2
     };
+
+    struct AggregatedBonuses {
+        int32_t hp = 0;
+        int32_t attack = 0;
+        int32_t vitality = 0;
+        int32_t agility = 0;
+        int32_t criticalRatio = 0;
+        int32_t criticalAttack = 0;
+
+        template<typename T>
+        void apply(T bonusType, int32_t bonusValue);
+    };
+
+    using CharacterBoardReleaseStatus = std::array<uint32_t, 4>;
 
     void replaceDeckCharacters(DeckInDatabaseRepresentation &storedDeck,
                                const ::apb::api::deck::Deck *deck);
@@ -227,6 +250,13 @@ private:
     void deleteDeckCharacter(const std::string_view &deckCharacterUUID);
 
     void reevaluateCharacterCostumeLevelBonuses(int32_t characterId);
+
+    CharacterBoardReleaseStatus queryCharacterBoardReleaseStatus(int32_t characterBoardId);
+    void storeCharacterBoardReleaseStatus(int32_t characterBoardId, const CharacterBoardReleaseStatus &status);
+
+    static void splitCharacterBoardSortOrder(int32_t sortOrder, uint32_t &word, uint32_t &bit);
+    static bool isCharacterBoardPanelReleased(const CharacterBoardReleaseStatus &status, int32_t sortOrder);
+    static void setCharacterBoardPanelReleased(CharacterBoardReleaseStatus &status, int32_t sortOrder, bool released);
 
     static std::string makeFacilityString(int64_t userId);
 

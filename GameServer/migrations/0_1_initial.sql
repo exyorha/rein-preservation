@@ -4552,10 +4552,10 @@ END;
 CREATE TABLE i_user_character_board (
   user_id INTEGER NOT NULL,
   character_board_id integer NOT NULL,
-  panel_release_bit1 integer,
-  panel_release_bit2 integer,
-  panel_release_bit3 integer,
-  panel_release_bit4 integer,
+  panel_release_bit1 integer NOT NULL DEFAULT 0,
+  panel_release_bit2 integer NOT NULL DEFAULT 0,
+  panel_release_bit3 integer NOT NULL DEFAULT 0,
+  panel_release_bit4 integer NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, character_board_id)
 );
@@ -4571,7 +4571,7 @@ CREATE TABLE i_user_character_board_ability (
   user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
   ability_id integer NOT NULL,
-  level integer,
+  level integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, character_id, ability_id)
 );
@@ -4600,15 +4600,15 @@ END;
 CREATE TABLE i_user_character_board_status_up (
   user_id INTEGER NOT NULL,
   character_id integer NOT NULL,
-  status_calculation_type integer,
-  hp integer,
-  attack integer,
-  vitality integer,
-  agility integer,
-  critical_ratio integer,
-  critical_attack integer,
+  status_calculation_type integer NOT NULL,
+  hp integer NOT NULL,
+  attack integer NOT NULL,
+  vitality integer NOT NULL,
+  agility integer NOT NULL,
+  critical_ratio integer NOT NULL,
+  critical_attack integer NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_id, character_id)
+  PRIMARY KEY(user_id, character_id, status_calculation_type)
 );
 CREATE INDEX i_user_character_board_status_up_user_id ON i_user_character_board_status_up (user_id);
 

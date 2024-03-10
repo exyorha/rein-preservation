@@ -277,6 +277,7 @@ add_executable(GameServer
     service/BannerService.proto
     service/BattleService.proto
     service/CageOrnamentService.proto
+    service/CharacterBoardService.proto
     service/CharacterService.proto
     service/CharacterViewerService.proto
     service/CompanionService.proto
@@ -309,6 +310,9 @@ add_executable(GameServer
 
     ServiceImplementations/CageOrnamentService.cpp
     ServiceImplementations/CageOrnamentService.h
+
+    ServiceImplementations/CharacterBoardService.cpp
+    ServiceImplementations/CharacterBoardService.h
 
     ServiceImplementations/CharacterService.cpp
     ServiceImplementations/CharacterService.h

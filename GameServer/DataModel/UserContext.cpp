@@ -3110,6 +3110,47 @@ void UserContext::updateEventQuestSceneProgress(int32_t currentQuestSceneId, int
     updateProgress->exec();
 }
 
+template<typename T>
+void UserContext::AggregatedBonuses::apply(T bonusType, int32_t bonusValue) {
+    /*
+     * While support for multiplicative bonuses exists in the database
+     * schema, it's never actually used: there's no costumes or character
+     * board panels with multiplicative bonuses configured, the client never
+     * fetches the corresponding aggregated records, and the live server
+     * always fills them with zeroes. We don't emit them at all.
+     */
+
+
+    switch(bonusType) {
+    case T::AGILITY_ADD:
+        agility += bonusValue;
+        break;
+
+    case T::ATTACK_ADD:
+        attack += bonusValue;
+        break;
+
+    case T::CRITICAL_ATTACK_ADD:
+        criticalAttack += bonusValue;
+        break;
+
+    case T::CRITICAL_RATIO_ADD:
+        criticalRatio += bonusValue;
+        break;
+
+    case T::HP_ADD:
+        hp += bonusValue;
+        break;
+
+    case T::VITALITY_ADD:
+        vitality += bonusValue;
+        break;
+
+    default:
+        throw std::runtime_error("unsupported bonus type " + std::to_string(static_cast<int32_t>(bonusType)));
+    }
+}
+
 void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
     m_log.debug("reevaluating character %d costume level bonuses", character);
 
@@ -3123,21 +3164,7 @@ void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
         "SELECT costume_level_bonus_type, effect_value FROM m_costume_level_bonus WHERE costume_level_bonus_id = ? AND level <= ?"
     );
 
-    /*
-     * While support for multiplicative bonuses exists in the database
-     * schema, it's never actually used: there's no costumes with
-     * multiplicative bonuses configured, the client never fetches the
-     * corresponding aggregated record, and the live server always fills it
-     * with zeroes. We don't emit it at all.
-     */
-    struct AggregatedBonuses {
-        int32_t hp = 0;
-        int32_t attack = 0;
-        int32_t vitality = 0;
-        int32_t agility = 0;
-        int32_t criticalRatio = 0;
-        int32_t criticalAttack = 0;
-    } bonuses;
+    AggregatedBonuses bonuses;
 
     while(getCostumes->step()) {
         auto costumeLevelBonusId = getCostumes->columnInt(0);
@@ -3152,34 +3179,7 @@ void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
             auto bonusType = static_cast<CostumeLevelBonusType>(getBonuses->columnInt(0));
             auto bonusValue = static_cast<int32_t>(getBonuses->columnInt(1));
 
-            switch(bonusType) {
-            case CostumeLevelBonusType::AGILITY_ADD:
-                bonuses.agility += bonusValue;
-                break;
-
-            case CostumeLevelBonusType::ATTACK_ADD:
-                bonuses.attack += bonusValue;
-                break;
-
-            case CostumeLevelBonusType::CRITICAL_ATTACK_ADD:
-                bonuses.criticalAttack += bonusValue;
-                break;
-
-            case CostumeLevelBonusType::CRITICAL_RATIO_ADD:
-                bonuses.criticalRatio += bonusValue;
-                break;
-
-            case CostumeLevelBonusType::HP_ADD:
-                bonuses.hp += bonusValue;
-                break;
-
-            case CostumeLevelBonusType::VITALITY_ADD:
-                bonuses.vitality += bonusValue;
-                break;
-
-            default:
-                throw std::runtime_error("unsupported bonus type " + std::to_string(static_cast<int32_t>(bonusType)));
-            }
+            bonuses.apply(bonusType, bonusValue);
         }
 
         getBonuses->reset();
@@ -3299,4 +3299,425 @@ void UserContext::rebirthCharacter(int32_t characterId) {
 
         giveUserCostumeExperience(costumeUUID, 0, 0);
     }
+}
+
+auto UserContext::queryCharacterBoardReleaseStatus(int32_t characterBoardId) -> CharacterBoardReleaseStatus  {
+    auto queryReleaseStatus = db().prepare(R"SQL(
+        SELECT
+            panel_release_bit1, panel_release_bit2, panel_release_bit3, panel_release_bit4
+        FROM i_user_character_board
+        WHERE
+            user_id = ? AND
+            character_board_id = ?
+    )SQL");
+    queryReleaseStatus->bind(1, m_userId);
+    queryReleaseStatus->bind(2, characterBoardId);
+
+    std::array<uint32_t, 4> releasedPanels{ 0, 0, 0, 0 };
+    /*
+     * For bug compatibility, we need to store uint32_t bitmasks as int32_t's,
+     * i.e. make values with the highest bit go negative.
+     */
+
+    if(queryReleaseStatus->step()) {
+        releasedPanels[0] = static_cast<uint32_t>(queryReleaseStatus->columnInt(0));
+        releasedPanels[1] = static_cast<uint32_t>(queryReleaseStatus->columnInt(1));
+        releasedPanels[2] = static_cast<uint32_t>(queryReleaseStatus->columnInt(2));
+        releasedPanels[3] = static_cast<uint32_t>(queryReleaseStatus->columnInt(3));
+    }
+
+    return releasedPanels;
+}
+
+void UserContext::storeCharacterBoardReleaseStatus(int32_t characterBoardId, const CharacterBoardReleaseStatus &status) {
+    /*
+     * For bug compatibility, we need to store uint32_t bitmasks as int32_t's,
+     * i.e. make values with the highest bit go negative.
+     */
+    auto storeReleaseStatus = db().prepare(R"SQL(
+        INSERT INTO i_user_character_board (
+            user_id,
+            character_board_id,
+            panel_release_bit1,
+            panel_release_bit2,
+            panel_release_bit3,
+            panel_release_bit4
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?
+        ) ON CONFLICT (user_id, character_board_id) DO UPDATE SET
+            panel_release_bit1 = excluded.panel_release_bit1,
+            panel_release_bit2 = excluded.panel_release_bit2,
+            panel_release_bit3 = excluded.panel_release_bit3,
+            panel_release_bit4 = excluded.panel_release_bit4
+    )SQL");
+    storeReleaseStatus->bind(1, m_userId);
+    storeReleaseStatus->bind(2, characterBoardId);
+    storeReleaseStatus->bind(3, static_cast<int32_t>(status[0]));
+    storeReleaseStatus->bind(4, static_cast<int32_t>(status[1]));
+    storeReleaseStatus->bind(5, static_cast<int32_t>(status[2]));
+    storeReleaseStatus->bind(6, static_cast<int32_t>(status[3]));
+    storeReleaseStatus->exec();
+}
+
+void UserContext::splitCharacterBoardSortOrder(int32_t sortOrder, uint32_t &word, uint32_t &bit) {
+
+    if(sortOrder < 1 || sortOrder > 4 * 32) {
+        throw std::logic_error("character board panel sort order is out of range");
+    }
+
+    auto index = static_cast<uint32_t>(sortOrder - 1);
+    word = index / 32;
+    bit = index % 32;
+}
+
+bool UserContext::isCharacterBoardPanelReleased(const CharacterBoardReleaseStatus &status, int32_t sortOrder) {
+    uint32_t word, bit;
+
+    splitCharacterBoardSortOrder(sortOrder, word, bit);
+
+    return (status[word] & (1U << bit)) != 0;
+}
+
+void UserContext::setCharacterBoardPanelReleased(CharacterBoardReleaseStatus &status, int32_t sortOrder, bool released) {
+    uint32_t word, bit;
+
+    splitCharacterBoardSortOrder(sortOrder, word, bit);
+
+    if(released)
+        status[word] |= (1U << bit);
+    else
+        status[word] &= ~(1U << bit);
+}
+
+void UserContext::releaseCharacterBoardPanel(int32_t panelId, CharacterBoardDeferredUpdate &update) {
+    /*
+     * Query the basic information about the panel:
+     *   - which board it belongs to, and the index on the panel,
+     *   - which character it belongs to.
+     */
+    auto queryPanelInfo = db().prepare(R"SQL(
+        SELECT
+            character_id,
+            character_board_id,
+            m_character_board_panel.sort_order AS panel_sort_order,
+            character_board_panel_release_possession_group_id,
+            character_board_panel_release_reward_group_id
+        FROM
+            m_character_board_panel,
+            m_character_board USING (character_board_id),
+            m_character_board_group USING (character_board_group_id),
+            m_character_board_assignment USING (character_board_category_id)
+        WHERE
+            character_board_panel_id = ?
+    )SQL");
+    queryPanelInfo->bind(1, panelId);
+
+    if(!queryPanelInfo->step())
+        throw std::runtime_error("no such panel: " + std::to_string(panelId));
+
+    auto characterId = queryPanelInfo->columnInt(0);
+    auto characterBoardId = queryPanelInfo->columnInt(1);
+    auto panelSortOrder = queryPanelInfo->columnInt(2);
+    auto releasePossessionGroupId = queryPanelInfo->columnInt(3);
+    auto releaseRewardGroupId = queryPanelInfo->columnInt(4);
+
+    queryPanelInfo->reset();
+
+    update.charactersToRecalculate.emplace(characterId);
+
+    /*
+     * Query the already released panels of this board.
+     */
+    auto alreadyReleased = queryCharacterBoardReleaseStatus(characterBoardId);
+
+    if(isCharacterBoardPanelReleased(alreadyReleased, panelSortOrder))
+        throw std::logic_error("the panel is already released");
+
+    setCharacterBoardPanelReleased(alreadyReleased, panelSortOrder, true);
+    storeCharacterBoardReleaseStatus(characterBoardId, alreadyReleased);
+
+    /*
+     * We don't bother checking the unlock conditions, since the client checks
+     * them, and as usual, we trust the client.
+     */
+
+    if(releasePossessionGroupId != 0) {
+        /*
+         * Take the required possessions.
+         */
+
+        auto queryCost = db().prepare(R"SQL(
+            SELECT
+                possession_type,
+                possession_id,
+                count
+            FROM m_character_board_panel_release_possession_group
+            WHERE character_board_panel_release_possession_group_id = ?
+            ORDER BY sort_order
+        )SQL");
+
+        queryCost->bind(1, releasePossessionGroupId);
+        while(queryCost->step()) {
+            auto possessionType = queryCost->columnInt(0);
+            auto possessionId = queryCost->columnInt(1);
+            auto count = queryCost->columnInt(2);
+            takePossession(possessionType, possessionId, count);
+        }
+    }
+
+    if(releaseRewardGroupId != 0) {
+
+        /*
+         * Give out the panel release rewards.
+         */
+
+        auto queryRewards = db().prepare(R"SQL(
+            SELECT
+                possession_type,
+                possession_id,
+                count
+            FROM m_character_board_panel_release_reward_group
+            WHERE character_board_panel_release_reward_group_id = ?
+            ORDER BY sort_order
+        )SQL");
+        queryRewards->bind(1, releaseRewardGroupId);
+        while(queryRewards->step()) {
+            auto possessionType = queryRewards->columnInt(0);
+            auto possessionId = queryRewards->columnInt(1);
+            auto count = queryRewards->columnInt(2);
+            givePossession(possessionType, possessionId, count);
+        }
+    }
+}
+
+void UserContext::finalizeCharacterBoardUpdate(const CharacterBoardDeferredUpdate &update) {
+    auto queryBoards = db().prepare(R"SQL(
+        SELECT character_board_id
+        FROM
+            m_character_board_assignment,
+            m_character_board_group USING (character_board_category_id),
+            m_character_board USING (character_board_group_id)
+        WHERE
+            character_id = ? AND
+            character_board_group_type = ?
+    )SQL");
+
+    auto queryPanelEffects = db().prepare(R"SQL(
+        SELECT
+            m_character_board_panel.sort_order AS panel_sort_order,
+            character_board_effect_type,
+            character_board_effect_id,
+            effect_value
+        FROM
+            m_character_board_panel,
+            m_character_board_panel_release_effect_group USING (character_board_panel_release_effect_group_id)
+        WHERE character_board_id = ?
+        ORDER BY m_character_board_panel_release_effect_group.sort_order
+    )SQL");
+
+    auto queryStatusUpdate = db().prepare(R"SQL(
+        SELECT
+            character_board_status_up_type
+        FROM
+            m_character_board_status_up,
+            m_character_board_effect_target_group USING (character_board_effect_target_group_id)
+        WHERE
+            character_board_status_up_id = ? AND
+            group_index = 1 AND
+            character_board_effect_target_type = 1 AND
+            target_value = ?
+    )SQL");
+
+    auto queryAbility = db().prepare(R"SQL(
+        SELECT
+            ability_id
+        FROM
+            m_character_board_ability,
+            m_character_board_effect_target_group USING (character_board_effect_target_group_id)
+        WHERE
+            character_board_ability_id = ? AND
+            group_index = 1 AND
+            character_board_effect_target_type = 1 AND
+            target_value = ?
+    )SQL");
+
+    auto queryAbilityMaxLevel = db().prepare(
+        "SELECT max_level FROM m_character_board_ability_max_level WHERE character_id = ? AND ability_id = ?"
+    );
+
+    auto insertCharacterBoardAbilityLevel = db().prepare(R"SQL(
+        INSERT INTO i_user_character_board_ability (
+            user_id,
+            character_id,
+            ability_id,
+            level
+        ) VALUES (
+            ?, ?, ?, ?
+        ) ON CONFLICT (user_id, character_id, ability_id) DO UPDATE SET
+            level = excluded.level
+    )SQL");
+
+    auto insertCharacterBoardStatusUpdates = db().prepare(R"SQL(
+        INSERT INTO i_user_character_board_status_up (
+            user_id,
+            character_id,
+            status_calculation_type,
+            hp,
+            attack,
+            vitality,
+            agility,
+            critical_ratio,
+            critical_attack
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ) ON CONFLICT (user_id, character_id, status_calculation_type) DO UPDATE SET
+            hp = excluded.hp,
+            attack = excluded.attack,
+            vitality = excluded.vitality,
+            agility = excluded.agility,
+            critical_ratio = excluded.critical_ratio,
+            critical_attack = excluded.critical_attack
+    )SQL");
+
+    for(auto characterId: update.charactersToRecalculate) {
+        std::unordered_map<int32_t, int32_t> abilityLevels;
+
+        /*
+         * Bonus calculation effectively duplicates the costume level bonus
+         * calculation, but this technically uses different enums.
+         */
+        AggregatedBonuses bonuses;
+
+        /*
+         * Query all boards.
+         * TODO: character board groups have two types, BASIC and BIG_HUNT.
+         * It's currently unclear what BIG_HUNT does, so we only take BASIC
+         * in the account.
+         */
+
+        queryBoards->bind(1, characterId);
+        queryBoards->bind(2, static_cast<int32_t>(CharacterBoardGroupType::BASIC));
+        while(queryBoards->step()) {
+            auto boardId = queryBoards->columnInt(0);
+
+            auto boardCompletion = queryCharacterBoardReleaseStatus(boardId);
+
+            /*
+             * Query the effects of the panels of this board.
+             */
+
+            queryPanelEffects->bind(1, boardId);
+            while(queryPanelEffects->step()) {
+                auto panelSortOrder = queryPanelEffects->columnInt(0);
+                if(!isCharacterBoardPanelReleased(boardCompletion, panelSortOrder))
+                    continue;
+
+                /*
+                 * This panel is released, and is taking effect.
+                 */
+
+                auto effectType = static_cast<CharacterBoardEffectType>(queryPanelEffects->columnInt(1));
+                auto effectId = queryPanelEffects->columnInt(2);
+                auto effectValue = queryPanelEffects->columnInt(3);
+
+                /*
+                 * Most of m_character_board_effect_target_group seems to
+                 * have static or predictable values. We assert that they
+                 * are matching out expectations in the WHERE condition
+                 * for the following queries, for both ABILITY and STATUS_UP.
+                 */
+
+                if(effectType == CharacterBoardEffectType::ABILITY) {
+                    queryAbility->bind(1, effectId);
+                    queryAbility->bind(2, characterId);
+                    if(!queryAbility->step())
+                        throw std::logic_error("no such character board ability: " + std::to_string(effectId));
+
+                    auto abilityId = queryAbility->columnInt(0);
+                    queryAbility->reset();
+
+                    auto result = abilityLevels.emplace(abilityId, effectValue);
+                    if(!result.second)
+                        result.first->second += effectValue;
+
+                } else if(effectType == CharacterBoardEffectType::STATUS_UP) {
+                    queryStatusUpdate->bind(1, effectId);
+                    queryStatusUpdate->bind(2, characterId);
+                    if(!queryStatusUpdate->step())
+                        throw std::logic_error("no such character board status update effect: " + std::to_string(effectId));
+
+                    auto statusUpType = static_cast<CharacterBoardStatusUpType>(queryStatusUpdate->columnInt(0));
+                    queryStatusUpdate->reset();
+
+                    bonuses.apply(statusUpType, effectValue);
+
+                } else {
+                    throw std::runtime_error("unsupported character board panel effect type: " + std::to_string(static_cast<int32_t>(effectType)));
+                }
+            }
+
+            queryPanelEffects->reset();
+        }
+
+        queryBoards->reset();
+
+        for(const auto &abilityAndLevel : abilityLevels) {
+            /*
+             * Clamp each ability to its maximum level.
+             */
+            queryAbilityMaxLevel->bind(1, characterId);
+            queryAbilityMaxLevel->bind(2, abilityAndLevel.first);
+            if(!queryAbilityMaxLevel->step())
+                throw std::runtime_error("unable to determine the max level of the character board ability " + std::to_string(abilityAndLevel.first));
+
+            auto maxLevel = queryAbilityMaxLevel->columnInt(0);
+            queryAbilityMaxLevel->reset();
+
+            auto level = std::min<int32_t>(abilityAndLevel.second, maxLevel);
+
+            /*
+             * And store the calculated level.
+             */
+
+            insertCharacterBoardAbilityLevel->bind(1, m_userId);
+            insertCharacterBoardAbilityLevel->bind(2, characterId);
+            insertCharacterBoardAbilityLevel->bind(3, abilityAndLevel.first);
+            insertCharacterBoardAbilityLevel->bind(4, level);
+            insertCharacterBoardAbilityLevel->exec();
+            insertCharacterBoardAbilityLevel->reset();
+        }
+
+        /*
+         * Store the aggregated status update.
+         */
+        insertCharacterBoardStatusUpdates->bind(1, m_userId);
+        insertCharacterBoardStatusUpdates->bind(2, characterId);
+        insertCharacterBoardStatusUpdates->bind(3, static_cast<int32_t>(StatusCalculationType::ADD));
+        insertCharacterBoardStatusUpdates->bind(4, bonuses.hp);
+        insertCharacterBoardStatusUpdates->bind(5, bonuses.attack);
+        insertCharacterBoardStatusUpdates->bind(6, bonuses.vitality);
+        insertCharacterBoardStatusUpdates->bind(7, bonuses.agility);
+        insertCharacterBoardStatusUpdates->bind(8, bonuses.criticalRatio);
+        insertCharacterBoardStatusUpdates->bind(9, bonuses.criticalAttack);
+        insertCharacterBoardStatusUpdates->exec();
+        insertCharacterBoardStatusUpdates->reset();
+    }
+}
+
+void UserContext::takePossession(int32_t possessionType, int32_t possessionId, int32_t count) {
+
+    switch(static_cast<PossessionType>(possessionType)) {
+        case PossessionType::CONSUMABLE_ITEM:
+            consumeConsumableItem(possessionId, count);
+            break;
+
+        case PossessionType::MATERIAL:
+            consumeMaterial(possessionId, count);
+            break;
+
+        default:
+            throw std::runtime_error("takePossession: unsupported possession type " + std::to_string(possessionType));
+    }
+
+
 }
