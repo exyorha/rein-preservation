@@ -7,6 +7,7 @@
 
 #include <service/DeckService.pb.h>
 #include <service/QuestService.pb.h>
+#include <service/CageOrnamentService.pb.h>
 
 #include <string>
 
@@ -1597,8 +1598,6 @@ void UserContext::startMainQuest(
 
     leavePortalCage();
 
-    auto route = getMainQuestRouteId(questId);
-
     /*
      * TODO: we currently select the first scene in a quest, and this is probably incorrect
      */
@@ -1611,7 +1610,14 @@ void UserContext::startMainQuest(
     /*
      * TODO: questFlowType (0 - no active, 1 probably main, replay - ??)
      */
-    QuestFlowType questFlowType = QuestFlowType::MAIN_FLOW;
+    QuestFlowType questFlowType = QuestFlowType::UNKNOWN;
+
+    if(isMainFlow) {
+        questFlowType = QuestFlowType::MAIN_FLOW;
+    } else if(isReplayFlow) {
+        questFlowType = QuestFlowType::REPLAY_FLOW;
+    }
+
     setMainQuestFlowStatus(questFlowType);
 
     setMainQuestProgressStatus(firstScene, firstScene, questFlowType);
@@ -1619,6 +1625,8 @@ void UserContext::startMainQuest(
     commonStartQuest(questId, isBattleOnly);
 
     if(isMainFlow) {
+
+        auto route = getMainQuestRouteId(questId);
 
         auto updateMainFlow = db().prepare(R"SQL(
             INSERT INTO i_user_main_quest_main_flow_status (
@@ -1653,7 +1661,7 @@ void UserContext::startMainQuest(
             INSERT INTO i_user_main_quest_replay_flow_status (
                 user_id,
                 current_quest_scene_id,
-                head_quest_scene_id
+                current_head_quest_scene_id
             ) VALUES (
                 ?,
                 ?,
@@ -1661,7 +1669,7 @@ void UserContext::startMainQuest(
             )
             ON CONFLICT DO UPDATE SET
                 current_quest_scene_id = excluded.current_quest_scene_id,
-                head_quest_scene_id = excluded.head_quest_scene_id
+                current_head_quest_scene_id = excluded.current_head_quest_scene_id
         )SQL");
 
         updateReplayFlow->bind(1, m_userId);
@@ -1735,7 +1743,8 @@ void UserContext::finishQuest(
     int32_t questId,
     int32_t userDeckNumber,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
-    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards) {
+    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards,
+    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayFlowFirstClearReward) {
 
     auto getQuestRewardInfo = db().prepare(R"SQL(
         SELECT
@@ -1745,7 +1754,8 @@ void UserContext::finishQuest(
             user_exp,
             character_exp,
             costume_exp,
-            quest_deck_restriction_group_id
+            quest_deck_restriction_group_id,
+            quest_replay_flow_reward_group_id
         FROM
             m_quest
         WHERE quest_id = ?
@@ -1762,6 +1772,7 @@ void UserContext::finishQuest(
     auto characterExperience = getQuestRewardInfo->columnInt(4);
     auto costumeExperience = getQuestRewardInfo->columnInt(5);
     auto restrictionGroup = getQuestRewardInfo->columnInt(6);
+    auto questReplayFlowRewardGroupId = getQuestRewardInfo->columnInt(7);
 
     int32_t deckType;
     if(restrictionGroup == 0)
@@ -1782,11 +1793,62 @@ void UserContext::finishQuest(
     updateQuest->bind(2, m_userId);
     updateQuest->bind(3, questId);
     updateQuest->bind(4, static_cast<int32_t>(QuestStateType::InProgress));
+    int32_t clearCount = 0;
     while(updateQuest->step()) {
-        auto clearCount = updateQuest->columnInt(0);
-        if(clearCount == 1 && questFirstClearRewardGroupId != 0) {
-            issueFirstClearRewardGroup(questFirstClearRewardGroupId, firstClearRewards, dropRewards);
+        clearCount = updateQuest->columnInt(0);
+    }
+
+    updateQuest->reset();
+
+    if(replayFlowFirstClearReward) {
+        /*
+         * In the replay flow, we issue the replay flow rewards on the each
+         * clear of *this specific replay flow quest*, that is, this one
+         * quest_id.
+         *
+         * TODO: it's possible that the response reward list needs to be
+         * different.
+         */
+
+        if(questReplayFlowRewardGroupId != 0) {
+            issueReplayFlowRewardGroup(questReplayFlowRewardGroupId, replayFlowFirstClearReward);
         }
+
+        /*
+         * Now, for the purposes of determining whether the first clear
+         * rewards should be given, the normal difficulty replay flow quest
+         * is considered to be the 'same' as the main flow quest, even though
+         * the quest ID is going to be different.
+         *
+         * So we need to add the clear count of the corresponding main flow
+         * quest, if the quest we're completing now has normal difficulty.
+         */
+
+        auto getMainFlowClears = db().prepare(R"SQL(
+            SELECT COALESCE(SUM(clear_count), 0)
+            FROM
+                m_quest_relation_main_flow,
+                i_user_quest ON i_user_quest.quest_id = m_quest_relation_main_flow.main_flow_quest_id
+            WHERE
+                user_id = ? AND
+                replay_flow_quest_id = ? AND
+                difficulty_type = ?
+        )SQL");
+        getMainFlowClears->bind(1, m_userId);
+        getMainFlowClears->bind(2, questId);
+        getMainFlowClears->bind(3, static_cast<int32_t>(DifficultyType::NORMAL));
+        if(getMainFlowClears->step()) {
+            clearCount += getMainFlowClears->columnInt(0);
+        }
+    }
+
+
+    if(clearCount == 1 && questFirstClearRewardGroupId != 0) {
+        /*
+         * TODO: it's possible that *for the replay flow* the response reward
+         * list needs to be different.
+         */
+        issueFirstClearRewardGroup(questFirstClearRewardGroupId, firstClearRewards, dropRewards);
     }
 
 
@@ -1836,6 +1898,7 @@ void UserContext::finishQuest(
 
 
 void UserContext::updateMainQuestProgress() {
+
     /*
      * Get the selected route, if any.
      *
@@ -2032,6 +2095,30 @@ void UserContext::issueFirstClearRewardGroup(int64_t firstClearGroupId,
     }
 }
 
+void UserContext::issueReplayFlowRewardGroup(int64_t replayFlowGroupId,
+                                              google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards) {
+
+    m_log.debug("issuing replay flow reward group %ld", replayFlowGroupId);
+
+    auto getRewardGroup = db().prepare(R"SQL(
+        SELECT
+            possession_type,
+            possession_id,
+            count
+        FROM m_quest_replay_flow_reward_group
+        WHERE quest_replay_flow_reward_group_id = ?
+        ORDER BY sort_order
+    )SQL");
+    getRewardGroup->bind(1, replayFlowGroupId);
+
+    while(getRewardGroup->step()) {
+        auto possessionType = getRewardGroup->columnInt(0);
+        auto possessionId = getRewardGroup->columnInt(1);
+        auto count = getRewardGroup->columnInt(2);
+
+        givePossession(possessionType, possessionId, count, addToQuestRewards);
+    }
+}
 
 void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
     auto getUserWeaponStory = db().prepare("SELECT released_max_story_index FROM i_user_weapon_story WHERE user_id = ? AND weapon_id = ?");
@@ -2728,16 +2815,8 @@ void UserContext::leavePortalCage() {
     query->exec();
 }
 
-void UserContext::recordCageOrnamentAccess(int32_t cageOrnamentId) {
-    /*
-     * TODO: It's currently unclear what's the difference between 'record access' and
-     * 'receive reward' for the cage ornaments. So we currently set acquisition_datetime
-     * to zero for RecordAccess calls so they can be located and fixed up later, if necessary.
-     *
-     * But it's definite that a i_user_cage_ornament_reward record *must* be
-     * made for a RecordAccess call, though.
-     */
-
+void UserContext::activateCageOrnament(int32_t cageOrnamentId,
+                                       google::protobuf::RepeatedPtrField<apb::api::cageornament::CageOrnamentReward> *rewards) {
     auto query = db().prepare(R"SQL(
         INSERT INTO i_user_cage_ornament_reward (
             user_id,
@@ -2746,12 +2825,49 @@ void UserContext::recordCageOrnamentAccess(int32_t cageOrnamentId) {
         ) VALUES (
             ?,
             ?,
-            0
-        )
+            current_net_timestamp()
+        ) ON CONFLICT (user_id, cage_ornament_id) DO NOTHING
+        RETURNING 1
     )SQL");
     query->bind(1, m_userId);
     query->bind(2, cageOrnamentId);
-    query->exec();
+
+    if(query->step()) {
+        /*
+         * This is the first time this ornament was activated.
+         * Query the rewards.
+         */
+
+        auto getRewards = db().prepare(R"SQL(
+            SELECT
+                possession_type,
+                possession_id,
+                count
+            FROM
+                m_cage_ornament,
+                m_cage_ornament_reward USING (cage_ornament_reward_id)
+            WHERE cage_ornament_reward_id = ?
+        )SQL");
+        getRewards->bind(1, cageOrnamentId);
+        while(getRewards->step()) {
+            auto possessionType = getRewards->columnInt(0);
+            auto possessionId = getRewards->columnInt(1);
+            auto count = getRewards->columnInt(2);
+
+            givePossession(possessionType, possessionId, count);
+
+            if(rewards) {
+                auto reward = rewards->Add();
+                reward->set_possession_type(possessionType);
+                reward->set_possession_id(possessionId);
+                reward->set_count(count);
+            }
+        }
+
+        getRewards->reset();
+    }
+
+    query->reset();
 }
 
 void UserContext::costumeLimitBreak(const std::string &costumeUUID,

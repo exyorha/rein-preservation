@@ -24,6 +24,10 @@ namespace apb::api::quest {
     class QuestReward;
 }
 
+namespace apb::api::cageornament {
+    class CageOrnamentReward;
+}
+
 namespace google::protobuf {
     template <typename Element>
     class RepeatedPtrField;
@@ -109,7 +113,8 @@ public:
         int32_t questId,
         int32_t userDeckNumber,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
-        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards);
+        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards,
+        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayFlowFirstClearReward = nullptr);
 
     void setMainQuestProgressStatus(int32_t currentQuestSceneId, int32_t headQuestSceneId, QuestFlowType currentQuestFlowType);
 
@@ -148,7 +153,8 @@ public:
 
     void setMainQuestRoute(int32_t routeId);
 
-    void recordCageOrnamentAccess(int32_t cageOrnamentId);
+    void activateCageOrnament(int32_t cageOrnamentId,
+                              google::protobuf::RepeatedPtrField<apb::api::cageornament::CageOrnamentReward> *rewards = nullptr);
 
     void costumeLimitBreak(const std::string &costumeUUID,
                            const google::protobuf::Map<int32_t, int32_t> &materialsToUse);
@@ -224,6 +230,9 @@ private:
     void issueFirstClearRewardGroup(int64_t firstClearGroupId,
                                     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr,
                                     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestDropRewards = nullptr);
+
+    void issueReplayFlowRewardGroup(int64_t replayFlowGroupId,
+                                    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr);
 
     bool isWeaponStoryReleaseConditionSatisfied(
         int32_t weaponId,

@@ -1,8 +1,10 @@
 #include "QuestService.h"
 #include "DataModel/DatabaseEnums.h"
 #include "DataModel/Sqlite/Transaction.h"
+#include "service/QuestService.pb.h"
 
 #include <DataModel/Sqlite/Statement.h>
+#include <google/protobuf/repeated_ptr_field.h>
 #include <stdexcept>
 
 QuestService::QuestService(Database &db) : CommonService(db) {
@@ -163,30 +165,39 @@ void QuestService::FinishMainQuestImpl(UserContext &user, const ::apb::api::ques
 
     } else {
 
-
-        if(!request->is_main_flow())
-            throw std::runtime_error("only main flow is supported right now");
-
         if(request->is_annihilated())
             throw std::runtime_error("annihilation flag is not implemented");
 
         if(request->is_auto_orbit())
             throw std::runtime_error("auto orbit flag is not implemented");
 
+        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayRewards = nullptr;
+
+        if(request->is_replay_flow()) {
+            replayRewards =  response->mutable_replay_flow_first_clear_reward();
+        }
+
         user.finishQuest(request->quest_id(),
                          userDeckNumber,
                          response->mutable_first_clear_reward(),
-                         response->mutable_drop_reward());
+                         response->mutable_drop_reward(),
+                         replayRewards);
 
-        user.setMainQuestFlowStatus(QuestFlowType::MAIN_FLOW);
+        if(request->is_main_flow())
+            user.setMainQuestFlowStatus(QuestFlowType::MAIN_FLOW);
+        else if(request->is_replay_flow())
+            user.setMainQuestFlowStatus(QuestFlowType::REPLAY_FLOW);
+
         user.updateUserUnlocks();
     }
 
     user.setMainQuestProgressStatus(0, 0, QuestFlowType::UNKNOWN);
 
-    // TODO: IUserMainQuestMainFlowStatus should be set to the 'next scene', possibly in the next quest
-
-    user.updateMainQuestProgress();
+    /*
+     * TODO: we possibly also need to do this for replay flow?
+     */
+    if(request->is_main_flow())
+        user.updateMainQuestProgress();
 }
 
 
@@ -324,6 +335,21 @@ void QuestService::FinishEventQuestImpl(UserContext &user, const ::apb::api::que
     }
 
     user.setEventQuestProgressStatus(0, 0, 0, 0);
+}
+
+void QuestService::FinishAutoOrbit(::google::protobuf::RpcController* controller,
+                                   const ::google::protobuf::Empty* request,
+                                   ::apb::api::quest::FinishAutoOrbitResponse* response,
+                                   ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("QuestService::FinishAutoOrbit", controller, request, response, done, &QuestService::FinishAutoOrbitImpl);
+}
+
+void QuestService::FinishAutoOrbitImpl(UserContext &user,
+                                       const ::google::protobuf::Empty* request,
+                                       ::apb::api::quest::FinishAutoOrbitResponse* response) {
+
+    // TODO
 }
 
 void QuestService::SetRoute(::google::protobuf::RpcController* controller,

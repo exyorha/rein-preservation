@@ -83,6 +83,11 @@ public:
                         ::apb::api::quest::FinishEventQuestResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void FinishAutoOrbit(::google::protobuf::RpcController* controller,
+                        const ::google::protobuf::Empty* request,
+                        ::apb::api::quest::FinishAutoOrbitResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void SetRoute(::google::protobuf::RpcController* controller,
                         const ::apb::api::quest::SetRouteRequest* request,
                         ::apb::api::quest::SetRouteResponse* response,
@@ -155,6 +160,10 @@ private:
     void SetQuestSceneChoiceImpl(UserContext &user,
                         const ::apb::api::quest::SetQuestSceneChoiceRequest* request,
                         ::apb::api::quest::SetQuestSceneChoiceResponse* response);
+
+    void FinishAutoOrbitImpl(UserContext &user,
+                             const ::google::protobuf::Empty* request,
+                             ::apb::api::quest::FinishAutoOrbitResponse* response);
 
     void recordQuestStartAttributes(int32_t questId, int32_t userDeckNumber);
 };
