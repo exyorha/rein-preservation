@@ -35,22 +35,15 @@
         <div class="page-header">
             <div class="title">
 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="-257 -419 514 691" class="logo">
-                    <!-- offset: X -1913 Y -1259 -->
-
-                    <!-- saved 'dot' path: M 1890 1236 H 1936 V 1283 H 1890 Z -->
-                    <!-- saved 'arm' path: M 1656 1327 H 1690 V 1433 H 1806 V 1531 H 1771 V 1468 H 1658 Z -->
-
-                    <!-- center 'dot' -->
-                    <path d="M -23 -23 H 23 V 23 H -23 Z" fill="white" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="-257 -169 514 441" class="logo">
                     <!-- left 'arm' -->
                     <path d="M -257 68 H -223 V 174 H -107 V 272 H -142 V 209 H -257 Z" fill="white" id="leftarm" />
                     <!-- right 'arm' -->
                     <use href="#leftarm" transform="scale(-1,1)" />
 
                     <!-- 'stack' -->
-                    <path d="M -81 -250 H 81 V -215 H -81 Z" id="stackbottom" fill="white" /><!-- bottommost -->
-                    <path d="M -55 -335 H 55 V -300 H -55 Z" fill="white" /><!-- middle -->
+                    <path d="M -81 0 H 81 V 35 H -81 Z" id="stackbottom" fill="white" /><!-- bottommost -->
+                    <path d="M -55 -85 H 55 V -50 H -55 Z" fill="white" /><!-- middle -->
                     <use href="#stackbottom" transform="translate(0,-169)" /><!-- topmost -->
                 </svg>
                 [re]serve
