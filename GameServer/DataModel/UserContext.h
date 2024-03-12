@@ -28,6 +28,10 @@ namespace apb::api::cageornament {
     class CageOrnamentReward;
 }
 
+namespace apb::api::gimmick {
+    class GimmickReward;
+}
+
 namespace google::protobuf {
     template <typename Element>
     class RepeatedPtrField;
@@ -185,7 +189,21 @@ public:
     void releaseCharacterBoardPanel(int32_t panelId, CharacterBoardDeferredUpdate &update);
     void finalizeCharacterBoardUpdate(const CharacterBoardDeferredUpdate &update);
 
+    void initGimmickSequenceSchedule();
+    void updateGimmickSequence(int32_t gimmickSequenceScheduleId, int32_t gimmickSequenceId);
+    void unlockGimmick(int32_t gimmickSequenceScheduleId, int32_t gimmickSequenceId, int32_t gimmickId);
+
+    void updateGimmickProgress(int32_t gimmickSequenceScheduleId, int32_t gimmickSequenceId, int32_t gimmickId, int32_t gimmickOrnamentIndex,
+                               int32_t progressValueBit,
+                               google::protobuf::RepeatedPtrField<apb::api::gimmick::GimmickReward> *gimmickOrnamentReward,
+                               bool &sequenceCleared,
+                               google::protobuf::RepeatedPtrField<apb::api::gimmick::GimmickReward> *gimmickSequenceClearReward);
+
 private:
+
+    struct CollectedConditionRequirements {
+        std::unordered_set<int32_t> missions;
+    };
 
     struct DeckInDatabaseRepresentation {
         std::array<std::string, 3> characterUUIDs;
@@ -268,6 +286,21 @@ private:
     static void setCharacterBoardPanelReleased(CharacterBoardReleaseStatus &status, int32_t sortOrder, bool released);
 
     static std::string makeFacilityString(int64_t userId);
+
+    bool evaluateCondition(int32_t evaluateConditionId, CollectedConditionRequirements *requirements = nullptr);
+
+    bool evaluateCondition(
+        EvaluateConditionFunctionType functionType,
+        EvaluateConditionEvaluateType evaluateType,
+        const std::vector<int32_t> &functionInputValues,
+        CollectedConditionRequirements *requirements = nullptr);
+
+    void clearGimmick(
+        int32_t gimmickSequenceScheduleId,
+        int32_t gimmickSequenceId,
+        int32_t gimmickId);
+
+    bool isMissionClear(int32_t missionId);
 
     int64_t m_userId;
     LLServices::LogFacility m_log;

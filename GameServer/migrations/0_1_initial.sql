@@ -5173,8 +5173,8 @@ CREATE TABLE i_user_gimmick (
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
   gimmick_id integer NOT NULL,
-  is_gimmick_cleared boolean,
-  start_datetime timestamp,
+  is_gimmick_cleared boolean NOT NULL DEFAULT 0,
+  start_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, gimmick_sequence_schedule_id, gimmick_sequence_id, gimmick_id)
 );
@@ -5194,8 +5194,8 @@ CREATE TABLE i_user_gimmick_ornament_progress (
   gimmick_sequence_id integer NOT NULL,
   gimmick_id integer NOT NULL,
   gimmick_ornament_index integer NOT NULL,
-  progress_value_bit integer,
-  base_datetime timestamp,
+  progress_value_bit integer NOT NULL DEFAULT 0,
+  base_datetime timestamp NOT NULL,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, gimmick_sequence_schedule_id, gimmick_sequence_id, gimmick_id, gimmick_ornament_index)
 );
@@ -5213,8 +5213,8 @@ CREATE TABLE i_user_gimmick_sequence (
   user_id INTEGER NOT NULL,
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
-  is_gimmick_sequence_cleared boolean,
-  clear_datetime timestamp,
+  is_gimmick_sequence_cleared boolean NOT NULL DEFAULT 0,
+  clear_datetime timestamp NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, gimmick_sequence_schedule_id, gimmick_sequence_id)
 );
@@ -5233,7 +5233,7 @@ CREATE TABLE i_user_gimmick_unlock (
   gimmick_sequence_schedule_id integer NOT NULL,
   gimmick_sequence_id integer NOT NULL,
   gimmick_id integer NOT NULL,
-  is_unlocked boolean,
+  is_unlocked boolean NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, gimmick_sequence_schedule_id, gimmick_sequence_id, gimmick_id)
 );
@@ -5414,10 +5414,10 @@ END;
 CREATE TABLE i_user_mission (
   user_id INTEGER NOT NULL,
   mission_id integer NOT NULL,
-  start_datetime timestamp,
-  progress_value integer,
-  mission_progress_status_type integer,
-  clear_datetime timestamp,
+  start_datetime timestamp NOT NULL,
+  progress_value integer NOT NULL DEFAULT 0,
+  mission_progress_status_type integer NOT NULL DEFAULT 1, -- 'IN_PROGRESS'
+  clear_datetime timestamp NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
   PRIMARY KEY(user_id, mission_id)
 );
