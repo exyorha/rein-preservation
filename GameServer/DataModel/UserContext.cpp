@@ -3853,6 +3853,13 @@ void UserContext::initGimmickSequenceSchedule() {
             ? BETWEEN start_datetime AND end_datetime
     )SQL");
 
+    auto checkScheduleActivity = db().prepare(R"SQL(
+        SELECT 1 FROM i_user_gimmick_sequence
+        WHERE
+            user_id = ? AND
+            gimmick_sequence_schedule_id = ?
+    )SQL");
+
     getSchedules->bind(1, evaluationTime);
     while(getSchedules->step()) {
         auto sequenceScheduleId = getSchedules->columnInt(0);
@@ -3867,50 +3874,49 @@ void UserContext::initGimmickSequenceSchedule() {
             continue;
         }
 
-        updateGimmickSequence(sequenceScheduleId, firstGimmickSequenceId);
+        checkScheduleActivity->bind(1, m_userId);
+        checkScheduleActivity->bind(2, sequenceScheduleId);
+        bool active = checkScheduleActivity->step();
+        checkScheduleActivity->reset();
+
+        if(!active) {
+            updateGimmickSequence(sequenceScheduleId, firstGimmickSequenceId);
+        }
     }
 }
 
-
-void UserContext::updateGimmickSequence(int32_t sequenceScheduleId, int32_t firstGimmickSequenceId) {
-        /*
-     * Technically we're supposed to go through the m_gimmick_sequence_group
-     * table for this, but it only contains rows with (group_index = 1, gimmick_sequence_id = gimmick_sequence_group_id),
-     * making itself irrelevant.
-     */
-    auto getGimmickSequence = db().prepare(
-        "SELECT next_gimmick_sequence_group_id, gimmick_group_id FROM m_gimmick_sequence WHERE gimmick_sequence_id = ?");
-
-
-    auto getSequenceStatus = db().prepare(R"SQL(
-        SELECT is_gimmick_sequence_cleared
-        FROM i_user_gimmick_sequence
-        WHERE
-            user_id = ? AND
-            gimmick_sequence_schedule_id = ? AND
-            gimmick_sequence_id = ?
-    )SQL");
-
-    auto insertSequence = db().prepare(R"SQL(
+void UserContext::updateGimmickSequence(int32_t sequenceScheduleId, int32_t gimmickSequenceId) {
+    auto insert = db().prepare(R"SQL(
         INSERT INTO i_user_gimmick_sequence (
             user_id,
             gimmick_sequence_schedule_id,
-            gimmick_sequence_id
+            gimmick_sequence_id,
+            is_gimmick_sequence_cleared,
+            clear_datetime
         ) VALUES (
-            ?, ?, ?
-        )
+            ?, ?, ?, 0, 0
+        ) ON CONFLICT (user_id, gimmick_sequence_schedule_id) DO UPDATE SET
+            gimmick_sequence_id = excluded.gimmick_sequence_id,
+            is_gimmick_sequence_cleared = excluded.is_gimmick_sequence_cleared,
+            clear_datetime = excluded.clear_datetime
     )SQL");
+    insert->bind(1, m_userId);
+    insert->bind(2, sequenceScheduleId);
+    insert->bind(3, gimmickSequenceId);
+    insert->exec();
+    insert->reset();
 
-    auto getGimmicksOfGroup = db().prepare(R"SQL(
+    auto getGimmicksOfSequence = db().prepare(R"SQL(
         SELECT
             m_gimmick_group.gimmick_id,
             release_evaluate_condition_id,
             gimmick_ornament_group_id
         FROM
-            m_gimmick_group,
+            m_gimmick_sequence,
+            m_gimmick_group USING (gimmick_group_id),
             m_gimmick USING (gimmick_id)
         WHERE
-            gimmick_group_id = ?
+            gimmick_sequence_id = ?
         ORDER BY group_index
     )SQL");
 
@@ -3948,81 +3954,46 @@ void UserContext::updateGimmickSequence(int32_t sequenceScheduleId, int32_t firs
         ) ON CONFLICT DO NOTHING
     )SQL");
 
-    auto gimmickSequenceId = firstGimmickSequenceId;
-    while(gimmickSequenceId != 0) {
-        getGimmickSequence->bind(1, gimmickSequenceId);
-        if(!getGimmickSequence->step())
-            throw std::logic_error("inconsistent gimmick sequence linkage");
+    getGimmicksOfSequence->bind(1, gimmickSequenceId);
+    while(getGimmicksOfSequence->step()) {
+        auto gimmickId = getGimmicksOfSequence->columnInt(0);
+        auto gimmickReleaseConditionId = getGimmicksOfSequence->columnInt(1);
+        auto ornamentGroupId = getGimmicksOfSequence->columnInt(2);
 
-        auto nextGimmickSequenceId = getGimmickSequence->columnInt(0);
-        auto gimmickGroupId = getGimmickSequence->columnInt(1);
-        getGimmickSequence->reset();
+        /* TODO: is this check needed? */
+#if 0
+        if(!evaluateCondition(gimmickReleaseConditionId))
+            continue;
+#endif
 
-        std::optional<bool> sequenceClear;
-        getSequenceStatus->bind(1, m_userId);
-        getSequenceStatus->bind(2, sequenceScheduleId);
-        getSequenceStatus->bind(3, gimmickSequenceId);
-        if(getSequenceStatus->step())
-            sequenceClear.emplace(getSequenceStatus->columnInt(0) != 0);
+        /*
+            * This gimmick is released. Make sure that it's in the user table.
+            */
+        insertGimmick->bind(1, m_userId);
+        insertGimmick->bind(2, sequenceScheduleId);
+        insertGimmick->bind(3, gimmickSequenceId);
+        insertGimmick->bind(4, gimmickId);
+        insertGimmick->exec();
+        insertGimmick->reset();
 
-        getSequenceStatus->reset();
-
-        if(!sequenceClear.has_value()) {
-            /*
-                * This sequence needs to be inserted.
-                */
-            insertSequence->bind(1, m_userId);
-            insertSequence->bind(2, sequenceScheduleId);
-            insertSequence->bind(3, gimmickSequenceId);
-            insertSequence->exec();
-            insertSequence->reset();
-
-            sequenceClear.emplace(false);
-        }
-
-        getGimmicksOfGroup->bind(1, gimmickGroupId);
-        while(getGimmicksOfGroup->step()) {
-            auto gimmickId = getGimmicksOfGroup->columnInt(0);
-            auto gimmickReleaseConditionId = getGimmicksOfGroup->columnInt(1);
-            auto ornamentGroupId = getGimmicksOfGroup->columnInt(2);
-
-            if(!evaluateCondition(gimmickReleaseConditionId))
-                continue;
+        getOrnaments->bind(1, ornamentGroupId);
+        while(getOrnaments->step()) {
+            auto ornamentIndex = getOrnaments->columnInt(0);
 
             /*
-                * This gimmick is released. Make sure that it's in the user table.
+                * Make sure that the ornament is in the user table.
                 */
-            insertGimmick->bind(1, m_userId);
-            insertGimmick->bind(2, sequenceScheduleId);
-            insertGimmick->bind(3, gimmickSequenceId);
-            insertGimmick->bind(4, gimmickId);
-            insertGimmick->exec();
-            insertGimmick->reset();
-
-            getOrnaments->bind(1, ornamentGroupId);
-            while(getOrnaments->step()) {
-                auto ornamentIndex = getOrnaments->columnInt(0);
-
-                /*
-                    * Make sure that the ornament is in the user table.
-                    */
-                insertOrnament->bind(1, m_userId);
-                insertOrnament->bind(2, sequenceScheduleId);
-                insertOrnament->bind(3, gimmickSequenceId);
-                insertOrnament->bind(4, gimmickId);
-                insertOrnament->bind(5, ornamentIndex);
-                insertOrnament->exec();
-                insertOrnament->reset();
-
-            }
-            getOrnaments->reset();
+            insertOrnament->bind(1, m_userId);
+            insertOrnament->bind(2, sequenceScheduleId);
+            insertOrnament->bind(3, gimmickSequenceId);
+            insertOrnament->bind(4, gimmickId);
+            insertOrnament->bind(5, ornamentIndex);
+            insertOrnament->exec();
+            insertOrnament->reset();
 
         }
-        getGimmicksOfGroup->reset();
+        getOrnaments->reset();
 
-        if(!*sequenceClear)
-            break;
-        gimmickSequenceId = nextGimmickSequenceId;
     }
 }
 
@@ -4228,92 +4199,6 @@ void UserContext::unlockGimmick(int32_t gimmickSequenceScheduleId, int32_t gimmi
     unlock->bind(4, gimmickId);
     unlock->bind(5, static_cast<int32_t>(cleared));
     unlock->exec();
-
-    // clearGimmick likely should *not* be here.
-}
-
-void UserContext::clearGimmick(
-    int32_t gimmickSequenceScheduleId,
-    int32_t gimmickSequenceId,
-    int32_t gimmickId) {
-
-    m_log.debug("clearing a gimmick: schedule %d, sequence %d, gimmick %d", gimmickSequenceScheduleId, gimmickSequenceId, gimmickId);
-
-    auto setGimmickCleared = db().prepare(R"SQL(
-        UPDATE i_user_gimmick SET is_gimmick_cleared = 1
-        WHERE
-            user_id = ? AND
-            gimmick_sequence_schedule_id = ? AND
-            gimmick_sequence_id = ? AND
-            gimmick_id = ?
-        RETURNING 1
-    )SQL");
-
-    setGimmickCleared->bind(1, m_userId);
-    setGimmickCleared->bind(2, gimmickSequenceScheduleId);
-    setGimmickCleared->bind(3, gimmickSequenceId);
-    setGimmickCleared->bind(4, gimmickId);
-    if(!setGimmickCleared->step())
-        throw std::logic_error("the gimmick is not active");
-
-    setGimmickCleared->reset();
-
-    /*
-     * There's a 'gimmick_sequence_clear_condition_type', but it's always 1,
-     * and there doesn't seem to be an enum for it. For now, we're assuming
-     * that the gimmick sequence is clear once all gimmicks in it are clear.
-     */
-
-    auto getGimmickGroupGimmickClearStatus = db().prepare(R"SQL(
-        SELECT
-            COALESCE(MIN(COALESCE(is_gimmick_cleared, 0)), 1)
-        FROM
-            m_gimmick_sequence,
-            m_gimmick_group USING (gimmick_group_id) LEFT JOIN
-            i_user_gimmick ON
-                user_id = ? AND
-                gimmick_sequence_schedule_id = ? AND
-                i_user_gimmick.gimmick_sequence_id = m_gimmick_sequence.gimmick_sequence_id AND
-                i_user_gimmick.gimmick_id = m_gimmick_group.gimmick_id
-        WHERE
-            m_gimmick_sequence.gimmick_sequence_id = ?
-    )SQL");
-    getGimmickGroupGimmickClearStatus->bind(1, m_userId);
-    getGimmickGroupGimmickClearStatus->bind(2, gimmickSequenceScheduleId);
-    getGimmickGroupGimmickClearStatus->bind(3, gimmickSequenceId);
-    if(!getGimmickGroupGimmickClearStatus->step())
-        throw std::logic_error("unexpected absence of rows");
-
-    auto allGimmicksCleared = getGimmickGroupGimmickClearStatus->columnInt(0);
-    getGimmickGroupGimmickClearStatus->reset();
-
-    if(allGimmicksCleared) {
-        m_log.debug("all gimmicks in schedule %d, sequence %d are now cleared", gimmickSequenceScheduleId, gimmickSequenceId);
-
-        auto setSequenceCleared = db().prepare(R"SQL(
-            UPDATE
-                i_user_gimmick_sequence
-            SET
-                is_gimmick_sequence_cleared = 1,
-                clear_datetime = CASE clear_datetime WHEN 0 THEN current_net_timestamp() ELSE clear_datetime END
-            WHERE
-                user_id = ? AND
-                gimmick_sequence_schedule_id = ? AND
-                gimmick_sequence_id = ?
-            RETURNING 1
-        )SQL");
-
-        setSequenceCleared->bind(1, m_userId);
-        setSequenceCleared->bind(2, gimmickSequenceScheduleId);
-        setSequenceCleared->bind(3, gimmickSequenceId);
-
-        if(!setSequenceCleared->step())
-            throw std::logic_error("the sequence was not found");
-
-        setSequenceCleared->reset();
-
-        updateGimmickSequence(gimmickSequenceScheduleId, gimmickSequenceId);
-    }
 }
 
 void UserContext::updateGimmickProgress(int32_t gimmickSequenceScheduleId, int32_t gimmickSequenceId, int32_t gimmickId, int32_t gimmickOrnamentIndex,
@@ -4526,6 +4411,4 @@ void UserContext::updateGimmickProgress(int32_t gimmickSequenceScheduleId, int32
         reward->set_possession_id(possessionId);
         reward->set_count(count);
     }
-
-    updateGimmickSequence(gimmickSequenceScheduleId, gimmickSequenceId);
 }

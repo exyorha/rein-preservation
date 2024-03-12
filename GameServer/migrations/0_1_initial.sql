@@ -5216,7 +5216,7 @@ CREATE TABLE i_user_gimmick_sequence (
   is_gimmick_sequence_cleared boolean NOT NULL DEFAULT 0,
   clear_datetime timestamp NOT NULL DEFAULT 0,
   latest_version bigint NOT NULL DEFAULT 1,
-  PRIMARY KEY(user_id, gimmick_sequence_schedule_id, gimmick_sequence_id)
+  PRIMARY KEY(user_id, gimmick_sequence_schedule_id)
 );
 
 CREATE INDEX i_user_gimmick_sequence_user_id ON i_user_gimmick_sequence(user_id);

@@ -5,6 +5,9 @@
 
 #include <ServiceImplementations/CommonService.h>
 
+/*
+ * This service is complete.
+ */
 class GimmickService final : public apb::api::gimmick::GimmickService, public CommonService {
 public:
     explicit GimmickService(Database &db);

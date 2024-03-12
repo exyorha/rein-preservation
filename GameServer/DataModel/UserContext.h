@@ -295,11 +295,6 @@ private:
         const std::vector<int32_t> &functionInputValues,
         CollectedConditionRequirements *requirements = nullptr);
 
-    void clearGimmick(
-        int32_t gimmickSequenceScheduleId,
-        int32_t gimmickSequenceId,
-        int32_t gimmickId);
-
     bool isMissionClear(int32_t missionId);
 
     int64_t m_userId;
