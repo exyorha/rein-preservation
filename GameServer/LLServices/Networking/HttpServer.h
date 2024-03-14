@@ -18,6 +18,7 @@ namespace LLServices {
         HttpServer &operator =(const HttpServer &other) = delete;
 
         void listen(const char *address, unsigned int port);
+        void acceptConnections(evutil_socket_t fd);
 
     private:
         static void requestCallback(struct evhttp_request *request, void *context) noexcept;

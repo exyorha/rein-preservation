@@ -48,6 +48,12 @@ static Il2CppString *Octo_Util_FileUtil_GetAndroidOctoRoot(Il2CppString *(*origi
     return stringFromUtf8(dataPath);
 }
 
+std::filesystem::path getGamePersistentDataPath() {
+    auto dataPath = stringToUtf8(getPersistentDataPath());
+
+    return std::u8string_view(reinterpret_cast<const char8_t *>(dataPath.data()), dataPath.size());
+}
+
 static Il2CppArray *Octo_Loader_OctoAPI_DecryptAES(Il2CppObject *this_, Il2CppArray *input, void *original) {
     (void)this_;
 

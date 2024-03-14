@@ -1,5 +1,6 @@
 #include <GLES/ANGLE/ANGLELibrary.h>
 #include <filesystem>
+#include "CommonUtilities.h"
 
 ANGLELibrary::ANGLELibrary() :
 #ifdef _WIN32
@@ -65,6 +66,6 @@ ANGLELibrary::~ANGLELibrary() = default;
  * Loading by absolute path under Linux fixes running under RenderDoc.
  */
 std::filesystem::path ANGLELibrary::getANGLEPath() {
-    return std::filesystem::read_symlink("/proc/self/exe").parent_path() / "ANGLE_libGLESv2.so";
+    return executableDirectory() / "ANGLE_libGLESv2.so";
 }
 #endif

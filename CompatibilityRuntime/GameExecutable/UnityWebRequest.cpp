@@ -6,8 +6,7 @@
 
 #include "Octo.h"
 #include "Il2CppUtilities.h"
-
-std::string ReplacementGameServer = "http://127.0.0.1:8087";
+#include "GameServerInterface.h"
 
 static std::string redirectURL(const std::string &input) {
     std::string output(input);
@@ -38,6 +37,8 @@ static std::string redirectURL(const std::string &input) {
          *  http(s)://<host>/<path> -> http://gameserver/<original host>/<original path>
          */
 
+        const auto &gameServer = getGameServerEndpoint();
+
         auto endOfScheme = output.find("://");
         if(endOfScheme == std::string::npos)
             throw std::runtime_error("cannot find end of the scheme in the URL");
@@ -45,13 +46,13 @@ static std::string redirectURL(const std::string &input) {
         output.replace(
             0,
             endOfScheme + 2, // make sure to keep one extra slash to delimit the server base URI and the host
-            ReplacementGameServer);
+            gameServer);
 
         /*
          * Remote the port.
          */
-        auto endOfAuthority = output.find('/', ReplacementGameServer.size() + 1);
-        auto portDelimiter = output.find(':', ReplacementGameServer.size() + 1);
+        auto endOfAuthority = output.find('/', gameServer.size() + 1);
+        auto portDelimiter = output.find(':', gameServer.size() + 1);
         if(portDelimiter != std::string::npos && endOfAuthority != std::string::npos && portDelimiter < endOfAuthority) {
             output.erase(portDelimiter, endOfAuthority - portDelimiter);
         }

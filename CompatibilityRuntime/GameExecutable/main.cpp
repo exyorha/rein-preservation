@@ -13,6 +13,7 @@
 #include "Octo.h"
 #include "FastAES.h"
 #include "GameEntryPoint.h"
+#include "GameServerInterface.h"
 
 #ifdef BUILDING_WITH_MPV
 #include <VideoPlayer/AVProVideoNativeBypass.h>
@@ -389,6 +390,12 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
             GLESContextShim::NeverRecompressASTC = true;
         } else if(strcmp(argv[index], "-disable-touch-emulation") == 0) {
             EmulateTouchInput = false;
+        } else if(strcmp(argv[index], "-gameserver") == 0) {
+            ++index;
+            if(index == argc)
+                break;
+
+            setGameServerEndpoint(argv[index]);
         }
 
 #ifdef _WIN32

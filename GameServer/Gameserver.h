@@ -55,6 +55,14 @@ public:
         return m_http.listen(address, port);
     }
 
+    inline void acceptConnections(evutil_socket_t fd) {
+        return m_http.acceptConnections(fd);
+    }
+
+    inline LLServices::EventLoop &eventLoop() {
+        return m_eventLoop;
+    }
+
     void wait();
 
     static std::filesystem::path defaultWebRootPath();

@@ -185,6 +185,9 @@ add_executable(GameServer
     DataModel/ZlibStream.cpp
     DataModel/ZlibStream.h
 
+    ExitOnEof.cpp
+    ExitOnEof.h
+
     Gameserver.cpp
     Gameserver.h
 
@@ -227,6 +230,12 @@ add_executable(GameServer
     LLServices/Networking/EventLoop.cpp
     LLServices/Networking/EventLoop.h
     LLServices/Networking/EventTypes.h
+    LLServices/Networking/FileDescriptor.cpp
+    LLServices/Networking/FileDescriptor.h
+    LLServices/Networking/FileDescriptorListener.cpp
+    LLServices/Networking/FileDescriptorListener.h
+    LLServices/Networking/FileDescriptorWatcher.cpp
+    LLServices/Networking/FileDescriptorWatcher.h
     LLServices/Networking/HttpRequest.cpp
     LLServices/Networking/HttpRequest.h
     LLServices/Networking/HttpRequestHandler.cpp

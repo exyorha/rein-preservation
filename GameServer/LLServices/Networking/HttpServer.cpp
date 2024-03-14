@@ -28,6 +28,13 @@ namespace LLServices {
             throw std::runtime_error("evhttp_bind_socket has failed");
     }
 
+    void HttpServer::acceptConnections(evutil_socket_t fd) {
+        auto result = evhttp_accept_socket(m_http.get(), fd);
+
+        if(result < 0)
+            throw std::runtime_error("evhttp_accept_socket has failed");
+    }
+
     void HttpServer::requestCallback(struct evhttp_request *request, void *context) noexcept {
         auto this_ = static_cast<HttpServer *>(context);
 

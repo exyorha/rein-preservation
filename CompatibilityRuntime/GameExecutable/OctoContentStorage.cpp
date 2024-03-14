@@ -30,6 +30,8 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
         throw std::runtime_error("a suitable content list was not found in the content directory");
     }
 
+    m_octoListFile = std::move(fileOfLatestVersion);
+
     std::optional<int64_t> latestMasterDatabaseVersion;
     std::filesystem::path latestMasterDatabaseFile;
 
@@ -62,7 +64,7 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
     {
         std::ifstream stream;
         stream.exceptions(std::ios::failbit | std::ios::eofbit | std::ios::badbit);
-        stream.open(fileOfLatestVersion, std::ios::in | std::ios::binary);
+        stream.open(m_octoListFile, std::ios::in | std::ios::binary);
         stream.exceptions(std::ios::badbit);
         if(!m_database.ParseFromIstream(&stream))
             throw std::runtime_error("failed to parse the content list");
@@ -152,7 +154,7 @@ std::optional<std::filesystem::path> OctoContentStorage::locateFile(
 
         path.append(".unity3d");
 
-        return m_root / "assetbundle" / path;
+        return m_root / "assetbundle" / std::u8string_view(reinterpret_cast<const char8_t *>(path.data()), path.size());
     }
 }
 

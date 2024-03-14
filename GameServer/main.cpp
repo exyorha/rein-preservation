@@ -1,13 +1,57 @@
 #include <cstdio>
 #include <exception>
+#include <charconv>
 
 #include "Gameserver.h"
+#include "ExitOnEof.h"
 
 #include <getopt.h>
+#include <stdexcept>
 
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
+
+template<typename T>
+static T parseInteger(const std::string_view &string) {
+    T value;
+
+    auto result = std::from_chars(string.data(), string.data() + string.size(), value);
+    if(result.ec != std::errc() || result.ptr != string.data() + string.size() || string.empty())
+        throw std::runtime_error("bad number");
+
+    return value;
+}
+
+static void setupListener(Gameserver &server, const std::string_view &address) {
+    auto delim = address.rfind(':');
+
+    std::string_view addressSection;
+    std::string_view portSection;
+
+    if(delim == std::string::npos) {
+        addressSection = "0.0.0.0";
+        portSection = address;
+    } else {
+        addressSection = address.substr(0, delim);
+        portSection = address.substr(delim + 1);
+    }
+
+    auto portNumber = parseInteger<uint16_t>(portSection);
+
+    printf("listening on %.*s port %u\n", static_cast<int>(addressSection.size()), addressSection.data(), portNumber);
+
+    server.listen(std::string(addressSection).c_str(), portNumber);
+}
+
+static void setupListener(Gameserver &server, evutil_socket_t socket) {
+    printf("listening on fd: %d\n", socket);
+
+    evutil_make_socket_nonblocking(socket);
+    evutil_make_socket_closeonexec(socket);
+
+    server.acceptConnections(socket);
+}
 
 int main(int argc, char **argv) {
 
@@ -16,11 +60,17 @@ int main(int argc, char **argv) {
       WSAStartup(MAKEWORD(2, 2), &wsa_data);
 #endif
 
+    std::vector<std::variant<std::string, evutil_socket_t>> configuredListeners;
+    std::optional<evutil_socket_t> exitOnEofFd;
+
     static const struct option options[]{
         { .name = "master-database",     .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "individual-database", .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "octo-list",           .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "web-root",            .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "listen",              .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "accept-on-fd",        .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "exit-on-eof",         .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -55,6 +105,18 @@ int main(int argc, char **argv) {
             case 3:
                 webroot = optarg;
                 break;
+
+            case 4:
+                configuredListeners.emplace_back(optarg);
+                break;
+
+            case 5:
+                configuredListeners.emplace_back(parseInteger<evutil_socket_t>(optarg));
+                break;
+
+            case 6:
+                exitOnEofFd.emplace(parseInteger<evutil_socket_t>(optarg));
+                break;
         }
     }
 
@@ -82,7 +144,20 @@ int main(int argc, char **argv) {
 
     Gameserver server(individualDatabasePath, masterDatabasePath, octoListPath, webRootPath);
 
-    server.listen("0.0.0.0", 8087);
+    for(const auto &listener: configuredListeners) {
+        std::visit([&server](const auto &value) {
+            setupListener(server, value);
+        }, listener);
+    }
+
+    std::optional<ExitOnEof> exitOnEof;
+
+    if(exitOnEofFd.has_value()) {
+        evutil_make_socket_nonblocking(*exitOnEofFd);
+        evutil_make_socket_closeonexec(*exitOnEofFd);
+
+        exitOnEof.emplace(&server.eventLoop(), *exitOnEofFd);
+    }
 
     server.wait();
 

@@ -34,8 +34,8 @@
             var fullText = this._log.innerText
             fullText += text;
 
-            if(fullText.length > 512 * 1024) {
-                fullText = fullText.substr(fullText.length - 512 * 1024, 512 * 1024);
+            if(fullText.length > 128 * 1024) {
+                fullText = fullText.substr(fullText.length - 128 * 1024, 128 * 1024);
             }
 
             this._log.innerText = fullText;

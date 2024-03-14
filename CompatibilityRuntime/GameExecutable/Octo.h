@@ -3,9 +3,13 @@
 
 #include <il2cpp-api.h>
 
+#include <filesystem>
+
 class OctoContentStorage;
 
 void InitializeOcto();
+
+std::filesystem::path getGamePersistentDataPath();
 
 extern OctoContentStorage *contentStorageInstance;
 

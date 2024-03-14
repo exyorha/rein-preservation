@@ -26,6 +26,10 @@ public:
         return m_masterDatabase;
     }
 
+    inline const std::filesystem::path &octoListFile() const {
+        return m_octoListFile;
+    }
+
 private:
     struct RegisteredFile {
         const Octo::Proto::Data *entry;
@@ -34,6 +38,7 @@ private:
 
     std::filesystem::path m_root;
     std::filesystem::path m_masterDatabase;
+    std::filesystem::path m_octoListFile;
     Octo::Proto::Database m_database;
     std::unordered_map<std::string, RegisteredFile> m_files;
 };

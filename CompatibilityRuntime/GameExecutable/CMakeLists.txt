@@ -8,6 +8,9 @@ add_executable(GameExecutable
 
     GameEntryPoint.h
 
+    GameServerInterface.cpp
+    GameServerInterface.h
+
     GLES/BaseGLESContext.cpp
     GLES/BaseGLESContext.h
     GLES/GLESImplementationType.h
@@ -89,6 +92,8 @@ add_executable(GameExecutable
 
     Octo/Proto/Database.proto
 
+    ProcessCommandLine.h
+
     WebView/WebViewImplementation.cpp
     WebView/WebViewImplementation.h
     WebView/WebViewImplementationFactory.cpp
@@ -122,6 +127,9 @@ if(NOT WIN32)
 
         GLES/ANGLE/LinuxDynamicLibrary.cpp
         GLES/ANGLE/LinuxDynamicLibrary.h
+
+        ProcessCommandLineLinux.cpp
+        ProcessCommandLineLinux.h
     )
 
 endif()
@@ -131,6 +139,10 @@ if(WIN32)
         EntryPointWindows.cpp
 
         FastAESWindows.cpp
+
+        ProcessCommandLineWindows.cpp
+        ProcessCommandLineWindows.h
+
         WindowsHelpers.cpp
         WindowsHelpers.h
 
@@ -153,7 +165,7 @@ if(WIN32)
         GLES/WGL/WindowsImportRedirection.h
     )
     target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
-    target_link_libraries(GameExecutable PRIVATE bcrypt opengl32)
+    target_link_libraries(GameExecutable PRIVATE bcrypt opengl32 ws2_32)
 else()
     target_sources(GameExecutable PRIVATE
         FastAESOpenSSL.cpp
