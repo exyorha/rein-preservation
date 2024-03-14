@@ -389,6 +389,7 @@ add_executable(GameServer
 target_include_directories(GameServer PRIVATE ${CMAKE_CURRENT_BINARY_DIR} .)
 if(WIN32)
     target_compile_definitions(GameServer PRIVATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -DUNICODE -D_UNICODE)
+    target_link_options(GameServer PRIVATE -municode)
 endif()
 
 protobuf_generate(TARGET GameServer)

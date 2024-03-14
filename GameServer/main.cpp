@@ -91,7 +91,16 @@ static void exitWithProcessThread(HANDLE handle) {
 
 #endif
 
-int main(int argc, char **argv) {
+static std::filesystem::path pathFromArgument(const char *arg) {
+#ifdef _WIN32
+    std::string_view argStr(arg);
+    return std::u8string_view(reinterpret_cast<const char8_t *>(argStr.data()), argStr.size());
+#else
+    return arg;
+#endif
+}
+
+static int gameserver_main(int argc, char **argv) {
 
 #ifdef _WIN32
       WSADATA wsa_data;
@@ -197,12 +206,16 @@ int main(int argc, char **argv) {
 
     std::filesystem::path webRootPath;
     if(webroot) {
-        webRootPath = webroot;
+        webRootPath = pathFromArgument(webroot);
     } else {
         webRootPath = Gameserver::defaultWebRootPath();
     }
 
-    Gameserver server(individualDatabasePath, masterDatabasePath, octoListPath, webRootPath);
+    Gameserver server(
+        pathFromArgument(individualDatabasePath),
+        pathFromArgument(masterDatabasePath),
+        pathFromArgument(octoListPath),
+        webRootPath);
 
     for(const auto &listener: configuredListeners) {
         std::visit([&server](const auto &value) {
@@ -229,3 +242,49 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+#ifdef _WIN32
+
+int wmain(int argc, wchar_t **argv) {
+    std::vector<std::string> utf8Strings;
+    utf8Strings.reserve(argc);
+
+    for(int argno = 0; argno < argc; argno++) {
+        std::wstring_view string(argv[argno]);
+        std::string output;
+
+        if(!string.empty()) {
+
+            output.resize(string.size() * 4); // Worst case: every UTF-16 wchar_t generates 4 UTF-8 bytes (ignoring invalid 5, 6 byte UTF-8 sequences)
+
+            int characters = WideCharToMultiByte(CP_UTF8, 0, reinterpret_cast<const wchar_t *>(string.data()),
+                                                (int)string.size(), &output[0], (int)output.size(), nullptr, nullptr);
+            if (characters == 0)
+                throw std::runtime_error("WideCharToMultiByte has failed");
+
+            output.resize(characters);
+        }
+
+        utf8Strings.emplace_back(std::move(output));
+    }
+
+    std::vector<char *> utf8StringPointers;
+    utf8StringPointers.reserve(utf8Strings.size());
+
+    for(auto &string: utf8Strings) {
+        utf8StringPointers.push_back(string.data());
+    }
+
+    utf8StringPointers.push_back(nullptr);
+
+    return gameserver_main(argc, utf8StringPointers.data());
+}
+
+#else
+
+int main(int argc, char **argv) {
+    return gameserver_main(argc, argv);
+}
+
+#endif
+
