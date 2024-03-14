@@ -28,7 +28,7 @@
 #include <GLES/SDL/SDLWrapper.h>
 #endif
 
-
+bool OpenGLsRGBIsFunctional = false;
 OctoContentStorage *contentStorageInstance;
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
@@ -396,6 +396,8 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
                 break;
 
             setGameServerEndpoint(argv[index]);
+        } else if(strcmp(argv[index], "-srgb-is-not-broken") == 0) {
+            OpenGLsRGBIsFunctional = true;
         }
 
 #ifdef _WIN32
@@ -403,6 +405,14 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
             shouldHookWGL = false;
         }
 #endif
+    }
+
+    if(OpenGLsRGBIsFunctional) {
+        fprintf(stderr, "WARNING: using sRGB backbuffer. This is known to be problematic on some platforms. Consider removing '-srgb-is-not-broken' option in case of visual issues\n");
+    }
+
+    if(gles == GLESImplementationType::Native) {
+        fprintf(stderr, "WARNING: using native OpenGL ES implementation. This is known to be problematic on some platforms. Consider removing '-native-gles' option in case of visual issues or crashes\n");
     }
 
 #ifdef _WIN32
@@ -433,3 +443,23 @@ bool gameEarlyInit() {
 
     return true;
 }
+
+#if 0
+static bool UnityEngine_Display_RequiresBlitToBackbufferImpl(intptr_t displayInstance, bool (*original)(intptr_t displayInstance)) {
+    printf("!!!!! RequiresBlitToBackbufferImpl: called\n");
+
+    if(OpenGLsRGBIsFunctional)
+        return original(displayInstance);
+
+    return true;
+}
+INTERPOSE_ICALL("UnityEngine.Display::RequiresBlitToBackbufferImpl", UnityEngine_Display_RequiresBlitToBackbufferImpl);
+#endif
+
+static bool UnityEngine_Display_RequiresSrgbBlitToBackbufferImpl(intptr_t displayInstance, bool (*original)(intptr_t displayInstance)) {
+    if(OpenGLsRGBIsFunctional)
+        return original(displayInstance);
+
+    return true;
+}
+INTERPOSE_ICALL("UnityEngine.Display::RequiresSrgbBlitToBackbufferImpl", UnityEngine_Display_RequiresSrgbBlitToBackbufferImpl);

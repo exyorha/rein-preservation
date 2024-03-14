@@ -89,7 +89,7 @@ Il2CppArray *FastAES_NativeDecrypt(Il2CppObject *decryptor,
     if(!NT_SUCCESS(result))
         throw std::runtime_error("BCryptGenerateSymmetricKey has failed");
 
-    std::vector<unsigned char> runningIV(keyArray.data(), keyArray.data() + keyArray.size());
+    std::vector<unsigned char> runningIV(ivArray.data(), ivArray.data() + ivArray.size());
 
     ULONG outputLength, unusedFinalOutputLength;
     result = BCryptDecrypt(
@@ -103,10 +103,9 @@ Il2CppArray *FastAES_NativeDecrypt(Il2CppObject *decryptor,
     if(!NT_SUCCESS(result))
         throw std::runtime_error("BCryptDecrypt has failed");
 
-    ArrayWrapper<unsigned char> outputArray(il2cpp_array_new(il2cpp_class_get_element_class(il2cpp_object_get_class(inputData.object())),
-                                                                       outputLength));
+    ArrayWrapper<unsigned char> outputArray(il2cpp_array_new_specific(il2cpp_object_get_class(inputData.object()), outputLength));
 
-    runningIV.assign(keyArray.data(), keyArray.data() + keyArray.size());
+    runningIV.assign(ivArray.data(), ivArray.data() + ivArray.size());
 
     result = BCryptDecrypt(
         key.handle,

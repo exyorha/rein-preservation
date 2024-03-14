@@ -25,8 +25,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
         auto context = getJITContextOfCurrentThread();
 
         if(context) {
-            context->threadStateTeardown();
-
             setJITContextOfCurrentThread(nullptr);
         }
     }

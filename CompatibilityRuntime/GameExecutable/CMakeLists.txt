@@ -13,6 +13,7 @@ add_executable(GameExecutable
 
     GLES/BaseGLESContext.cpp
     GLES/BaseGLESContext.h
+    GLES/GLESGlobalSwitches.h
     GLES/GLESImplementationType.h
 
     GLES/ANGLE/ANGLELibrary.cpp

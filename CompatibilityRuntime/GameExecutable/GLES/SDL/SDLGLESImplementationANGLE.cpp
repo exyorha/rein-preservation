@@ -4,6 +4,8 @@
 
 #include <GLES/SDL/RealSDLSymbols.h>
 
+#include <GLES/GLESGlobalSwitches.h>
+
 #include <stdexcept>
 #include <vector>
 
@@ -69,9 +71,14 @@ std::unique_ptr<BaseGLESContext> SDLGLESImplementationANGLE::CreateContextImpl(S
 
     auto surface = getSurfaceOfWindow(window);
     if(!surface) {
-        std::vector<EGLint> surfaceAttributes{
-            EGL_GL_COLORSPACE_KHR, EGL_GL_COLORSPACE_SRGB_KHR
-        };
+        std::vector<EGLint> surfaceAttributes;
+
+        surfaceAttributes.emplace_back(EGL_GL_COLORSPACE_KHR);
+        if(OpenGLsRGBIsFunctional) {
+            surfaceAttributes.emplace_back(EGL_GL_COLORSPACE_SRGB_KHR);
+        } else {
+            surfaceAttributes.emplace_back(EGL_GL_COLORSPACE_LINEAR_KHR);
+        }
 
         if(m_currentAttributes.attributes[SDL_GL_DOUBLEBUFFER]) {
             surfaceAttributes.emplace_back(EGL_RENDER_BUFFER);
