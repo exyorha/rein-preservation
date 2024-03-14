@@ -115,7 +115,7 @@ static std::string spawnGameServer() {
     using namespace std::string_view_literals;
 
     ProcessCommandLine cmdline(executableDirectory() / gameServerName);
-    cmdline.addArgument("-master-data"sv);
+    cmdline.addArgument("-master-database"sv);
     cmdline.addArgument(contentStorageInstance->masterDatabase());
     cmdline.addArgument("-octo-list"sv);
     cmdline.addArgument(contentStorageInstance->octoListFile());

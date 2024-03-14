@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <exception>
 #include <charconv>
+#include <thread>
 
 #include "Gameserver.h"
 #include "ExitOnEof.h"
@@ -53,6 +54,43 @@ static void setupListener(Gameserver &server, evutil_socket_t socket) {
     server.acceptConnections(socket);
 }
 
+#ifdef _WIN32
+static evutil_socket_t receiveWindowsSocket(HANDLE transferPipe) {
+
+    WSAPROTOCOL_INFOW transferData;
+    {
+        struct PipeOwner {
+            HANDLE pipe;
+
+            explicit PipeOwner(HANDLE pipe) : pipe(pipe) {
+
+            }
+
+            ~PipeOwner() {
+                if(pipe) {
+                    CloseHandle(pipe);
+                }
+            }
+        } owner(transferPipe);
+        DWORD bytesRead;
+        if(!ReadFile(owner.pipe, &transferData, sizeof(transferData), &bytesRead, nullptr) || bytesRead != sizeof(transferData))
+            throw std::runtime_error("ReadFile has failed");
+    }
+
+    auto socket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &transferData, 0, 0);
+    if(socket == INVALID_SOCKET)
+        throw std::runtime_error("WSASocket has failed");
+
+    return socket;
+};
+
+static void exitWithProcessThread(HANDLE handle) {
+    WaitForSingleObject(handle, INFINITE);
+    ExitProcess(0);
+}
+
+#endif
+
 int main(int argc, char **argv) {
 
 #ifdef _WIN32
@@ -62,6 +100,9 @@ int main(int argc, char **argv) {
 
     std::vector<std::variant<std::string, evutil_socket_t>> configuredListeners;
     std::optional<evutil_socket_t> exitOnEofFd;
+#ifdef _WIN32
+    std::optional<HANDLE> exitWithProcessHandle;
+#endif
 
     static const struct option options[]{
         { .name = "master-database",     .has_arg = required_argument, .flag = nullptr, .val = 0 },
@@ -71,6 +112,8 @@ int main(int argc, char **argv) {
         { .name = "listen",              .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "accept-on-fd",        .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "exit-on-eof",         .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "accept-on-socket",    .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "exit-with-process",   .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -117,6 +160,23 @@ int main(int argc, char **argv) {
             case 6:
                 exitOnEofFd.emplace(parseInteger<evutil_socket_t>(optarg));
                 break;
+
+            case 7:
+#ifdef _WIN32
+                configuredListeners.emplace_back(receiveWindowsSocket(reinterpret_cast<HANDLE>(parseInteger<uintptr_t>(optarg))));
+#else
+                throw std::runtime_error("-accept-on-socket is a Windows-only option, use -accept-on-fd on Linux");
+#endif
+                break;
+
+            case 8:
+#ifdef _WIN32
+                exitWithProcessHandle.emplace(reinterpret_cast<HANDLE>(parseInteger<uintptr_t>(optarg)));
+#else
+                throw std::runtime_error("-exit-with-process is a Windows-only option");
+#endif
+                break;
+
         }
     }
 
@@ -158,6 +218,12 @@ int main(int argc, char **argv) {
 
         exitOnEof.emplace(&server.eventLoop(), *exitOnEofFd);
     }
+
+#ifdef _WIN32
+    if(exitWithProcessHandle.has_value()) {
+        std::thread(exitWithProcessThread, *exitWithProcessHandle).detach();
+    }
+#endif
 
     server.wait();
 
