@@ -13,18 +13,6 @@ add_executable(GameExecutable
 
     GLES/BaseGLESContext.cpp
     GLES/BaseGLESContext.h
-    GLES/GLESGlobalSwitches.h
-    GLES/GLESImplementationType.h
-
-    GLES/ANGLE/ANGLELibrary.cpp
-    GLES/ANGLE/ANGLELibrary.h
-    GLES/ANGLE/EGLWindowSurface.cpp
-    GLES/ANGLE/EGLWindowSurface.h
-    GLES/ANGLE/InitializedEGLContext.cpp
-    GLES/ANGLE/InitializedEGLContext.h
-    GLES/ANGLE/InitializedEGLDisplay.cpp
-    GLES/ANGLE/InitializedEGLDisplay.h
-    GLES/ANGLE/PlatformDynamicLibrary.h
 
     GLES/Shim/GLESContextShim.cpp
     GLES/Shim/GLESContextShim.h
@@ -117,17 +105,10 @@ if(NOT WIN32)
         GLES/SDL/RealSDLSymbols.h
         GLES/SDL/SDLGLESImplementation.cpp
         GLES/SDL/SDLGLESImplementation.h
-        GLES/SDL/SDLGLESImplementationANGLE.cpp
-        GLES/SDL/SDLGLESImplementationANGLE.h
         GLES/SDL/SDLGLESImplementationNative.cpp
         GLES/SDL/SDLGLESImplementationNative.h
         GLES/SDL/SDLWrapper.cpp
         GLES/SDL/SDLWrapper.h
-        GLES/SDL/SDLWrapperAttributeSet.cpp
-        GLES/SDL/SDLWrapperAttributeSet.h
-
-        GLES/ANGLE/LinuxDynamicLibrary.cpp
-        GLES/ANGLE/LinuxDynamicLibrary.h
 
         ProcessCommandLineLinux.cpp
         ProcessCommandLineLinux.h
@@ -147,19 +128,10 @@ if(WIN32)
         WindowsHelpers.cpp
         WindowsHelpers.h
 
-        GLES/ANGLE/WindowsDynamicLibrary.cpp
-        GLES/ANGLE/WindowsDynamicLibrary.h
-
-        GLES/WGL/ContextAndSurfacePair.cpp
-        GLES/WGL/ContextAndSurfacePair.h
-        GLES/WGL/DCAssociatedWindowSurface.cpp
-        GLES/WGL/DCAssociatedWindowSurface.h
         GLES/WGL/WGLHooking.cpp
         GLES/WGL/WGLHooking.h
         GLES/WGL/WGLImplementation.cpp
         GLES/WGL/WGLImplementation.h
-        GLES/WGL/WGLImplementationANGLE.cpp
-        GLES/WGL/WGLImplementationANGLE.h
         GLES/WGL/WGLImplementationNative.cpp
         GLES/WGL/WGLImplementationNative.h
         GLES/WGL/WindowsImportRedirection.cpp

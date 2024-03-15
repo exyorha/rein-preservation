@@ -1,6 +1,5 @@
 #include <GLES/SDL/SDLGLESImplementationNative.h>
 #include <GLES/SDL/RealSDLSymbols.h>
-#include <GLES/GLESGlobalSwitches.h>
 
 #include <SDL2/SDL_video.h>
 
@@ -17,11 +16,11 @@ void SDLGLESImplementationNative::DestroyWindowImpl(SDL_Window *window) noexcept
 }
 
 std::unique_ptr<BaseGLESContext> SDLGLESImplementationNative::CreateContextImpl(SDL_Window *window) {
-    if(OpenGLsRGBIsFunctional)
-        SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, SDL_TRUE);
-
+    SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, SDL_TRUE);
+#if 0
     SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+#endif
 
     auto context = RealSDLSymbols::getSingleton().realGL_CreateContext(window);
     if(!context)

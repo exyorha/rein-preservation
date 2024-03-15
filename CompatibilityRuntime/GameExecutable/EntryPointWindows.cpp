@@ -18,6 +18,7 @@ struct ArgumentsPackageWindows {
     int nCmdShow;
 };
 
+static std::wstring commandLineString;
 
 static int invokeUnityWindows(void *package) {
     auto args = static_cast<ArgumentsPackageWindows *>(package);
@@ -77,9 +78,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t *lpCom
         .nCmdShow = nShow
     };
 
-
     if(!gameEarlyInit())
         return 1;
+
+    commandLineString.assign(L"-force-glcore -force-gfx-without-build");
+    if(*lpCommandLine)
+        commandLineString.push_back(L' ');
+
+    commandLineString.append(lpCommandLine);
+
+    args.lpCommandLine = commandLineString.data();
 
     return translator_main(gameMainWindows, &args);
 }

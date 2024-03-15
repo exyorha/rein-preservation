@@ -1,6 +1,5 @@
 #include <GLES/WGL/WGLHooking.h>
 #include <GLES/WGL/WindowsImportRedirection.h>
-#include <GLES/WGL/WGLImplementationANGLE.h>
 #include <GLES/WGL/WGLImplementationNative.h>
 #include <GLES/Shim/GLESContextShim.h>
 
@@ -91,21 +90,8 @@ void *getExtensionWGLProc(const char *name) {
                                          extensionWGLFunctions, sizeof(extensionWGLFunctions) / sizeof(extensionWGLFunctions[0]));
 }
 
-void replaceUnityWGL(GLESImplementationType implementationType) {
-    printf("Initializing OpenGL ES.\n");
-
-    switch(implementationType) {
-        case GLESImplementationType::Native:
-            SelectedWGLImplementation = new WGLImplementationNative();
-            break;
-
-        case GLESImplementationType::ANGLE:
-            SelectedWGLImplementation = new WGLImplementationANGLE();
-            break;
-
-        default:
-            throw std::logic_error("replaceUnityWGL: unsupported implementation type");
-    }
+void replaceUnityWGL() {
+    SelectedWGLImplementation = new WGLImplementationNative();
 
     auto unityModule = GetModuleHandle(L"UnityPlayer.dll");
     if(!unityModule) {
@@ -118,8 +104,6 @@ void replaceUnityWGL(GLESImplementationType implementationType) {
         rebindModuleImport(unityModule, "gdi32.dll", replacementGDIFunctions,
                         sizeof(replacementGDIFunctions) / sizeof(replacementGDIFunctions[0]), true);
     }
-
-    printf("OpenGL ES initialization finished\n");
 }
 
 HDC WINAPI replacement_wglGetCurrentDC(void) {

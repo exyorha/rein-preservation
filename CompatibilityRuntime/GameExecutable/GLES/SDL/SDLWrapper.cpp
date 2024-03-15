@@ -1,6 +1,5 @@
 #include <GLES/SDL/SDLWrapper.h>
 #include <GLES/SDL/SDLGLESImplementationNative.h>
-#include <GLES/SDL/SDLGLESImplementationANGLE.h>
 #include <GLES/Shim/GLESContextShim.h>
 
 #include <SDL2/SDL_video.h>
@@ -29,19 +28,8 @@ SDL_Window *getSDLWindowForWebView() {
     return ExistingSDLWindows.front();
 }
 
-void initializeSDLGLES(GLESImplementationType type) {
-    switch(type) {
-        case GLESImplementationType::Native:
-            SelectedSDLGLESImplementation = new SDLGLESImplementationNative;
-            break;
-
-        case GLESImplementationType::ANGLE:
-            SelectedSDLGLESImplementation = new SDLGLESImplementationANGLE;
-            break;
-
-        default:
-            throw std::logic_error("initializeGLES: unsupported implementation type");
-    }
+void initializeSDLGLES() {
+    SelectedSDLGLESImplementation = new SDLGLESImplementationNative;
 }
 
 SDL_Window * SDLCALL SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags) {

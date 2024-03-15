@@ -28,7 +28,6 @@
 #include <GLES/SDL/SDLWrapper.h>
 #endif
 
-bool OpenGLsRGBIsFunctional = false;
 OctoContentStorage *contentStorageInstance;
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
@@ -367,24 +366,11 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
     OctoContentStorage storage(executableDirectory / "content");
     contentStorageInstance = &storage;
 
-    /*
-     * For uniformity and predictability, we use ANGLE by default.
-     */
-    GLESImplementationType gles = GLESImplementationType::ANGLE;
-
-#ifdef _WIN32
-    bool shouldHookWGL = true;
-#endif
-
     printf("argc: %d\n", argc);
 
     for(int index = 1; index < argc; index++) {
         printf("arg[%d] = '%s'\n", index, argv[index]);
-        if(strcmp(argv[index], "-angle") == 0) {
-            gles = GLESImplementationType::ANGLE;
-        } else if(strcmp(argv[index], "-native-gles") == 0) {
-            gles = GLESImplementationType::Native;
-        } else if(strcmp(argv[index], "-always-emulate-astc") == 0) {
+        if(strcmp(argv[index], "-always-emulate-astc") == 0) {
             GLESContextShim::AlwaysEmulateASTC = true;
         } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
             GLESContextShim::NeverRecompressASTC = true;
@@ -396,31 +382,14 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
                 break;
 
             setGameServerEndpoint(argv[index]);
-        } else if(strcmp(argv[index], "-srgb-is-not-broken") == 0) {
-            OpenGLsRGBIsFunctional = true;
         }
+    }
+
 
 #ifdef _WIN32
-        if(strcmp(argv[index], "-dont-hook-wgl") == 0) {
-            shouldHookWGL = false;
-        }
-#endif
-    }
-
-    if(OpenGLsRGBIsFunctional) {
-        fprintf(stderr, "WARNING: using sRGB backbuffer. This is known to be problematic on some platforms. Consider removing '-srgb-is-not-broken' option in case of visual issues\n");
-    }
-
-    if(gles == GLESImplementationType::Native) {
-        fprintf(stderr, "WARNING: using native OpenGL ES implementation. This is known to be problematic on some platforms. Consider removing '-native-gles' option in case of visual issues or crashes\n");
-    }
-
-#ifdef _WIN32
-    if(shouldHookWGL) {
-        replaceUnityWGL(gles);
-    }
+    replaceUnityWGL();
 #else
-    initializeSDLGLES(gles);
+    initializeSDLGLES();
 #endif
 
     int result = unityEntryPoint(unityInvocationPackage);
@@ -443,23 +412,3 @@ bool gameEarlyInit() {
 
     return true;
 }
-
-#if 0
-static bool UnityEngine_Display_RequiresBlitToBackbufferImpl(intptr_t displayInstance, bool (*original)(intptr_t displayInstance)) {
-    printf("!!!!! RequiresBlitToBackbufferImpl: called\n");
-
-    if(OpenGLsRGBIsFunctional)
-        return original(displayInstance);
-
-    return true;
-}
-INTERPOSE_ICALL("UnityEngine.Display::RequiresBlitToBackbufferImpl", UnityEngine_Display_RequiresBlitToBackbufferImpl);
-#endif
-
-static bool UnityEngine_Display_RequiresSrgbBlitToBackbufferImpl(intptr_t displayInstance, bool (*original)(intptr_t displayInstance)) {
-    if(OpenGLsRGBIsFunctional)
-        return original(displayInstance);
-
-    return true;
-}
-INTERPOSE_ICALL("UnityEngine.Display::RequiresSrgbBlitToBackbufferImpl", UnityEngine_Display_RequiresSrgbBlitToBackbufferImpl);
