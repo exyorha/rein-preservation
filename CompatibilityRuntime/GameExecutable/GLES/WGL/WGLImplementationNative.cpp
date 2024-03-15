@@ -13,6 +13,7 @@ WGLImplementationNative::~WGLImplementationNative() = default;
 std::unique_ptr<BaseGLESContext> WGLImplementationNative::CreateContextImpl(HDC hDC) {
 
     auto context = wglCreateContext(hDC);
+    printf("WGLImplementationNative::CreateContextImpl(%p) = %p\n", hDC, context);
     if(!context)
         return nullptr;
 
@@ -33,6 +34,12 @@ std::unique_ptr<BaseGLESContext> WGLImplementationNative::CreateContextImpl(HDC 
     if(hShareContext) {
         shareHandle = static_cast<NativeGLESContext *>(hShareContext)->context();
     }
+
+    printf("attributes: ");
+    for(const int *ptr = attribList; *ptr; ptr++) {
+        printf("0x%04X ", *ptr);
+    }
+    printf("\n");
 
     auto context = proc(hDC, shareHandle, attribList);
     if(!context)

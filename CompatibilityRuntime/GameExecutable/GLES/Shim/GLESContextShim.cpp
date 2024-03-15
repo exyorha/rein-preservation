@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstring>
+#include <charconv>
 
 #include <GLES/TextureEmulation/stb_dxt.h>
 
@@ -48,6 +49,9 @@ void *GLESContextShim::getProcAddress(const char *name) noexcept {
         } else if(strcmp(name, "glTexStorage3D") == 0) {
             return reinterpret_cast<void *>(shim_glTexStorage3D);
 
+        } else if(strcmp(name, "glShaderSource") == 0) {
+            return reinterpret_cast<void *>(shim_glShaderSource);
+
         } else {
 
             return m_nextContext->getProcAddress(name);
@@ -82,6 +86,47 @@ void GLESContextShim::lateInitialize() {
                 m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc_srgb");
         }
     }
+
+    if(!m_shaderVersion.has_value()) {
+        std::string_view version = reinterpret_cast<const char *>(m_nextSymbols->glGetString(GL_VERSION));
+        auto delim = version.find(' ');
+        if(delim != std::string_view::npos)
+            version = version.substr(0, delim);
+
+        delim = version.find('.');
+        if(delim == std::string::npos)
+            throw std::runtime_error("malformed opengl version");
+
+        auto delim2 = version.find('.', delim + 1);
+        if(delim2 != std::string::npos)
+            version = version.substr(0, delim2);
+
+        printf("GLESContextShim: OpenGL version: %.*s\n", static_cast<int>(version.size()), version.data());
+
+        auto iversion = convertInteger<unsigned int>(version.substr(0, delim)) * 100 + convertInteger<unsigned int>(version.substr(delim + 1)) * 10;
+
+        if(iversion >= 330) {
+            m_shaderVersion.emplace(iversion);
+        } else {
+            static struct GLSLVersionForGLVersion {
+                unsigned short gl;
+                unsigned short glsl;
+            } versions[]{
+                { 200, 110 }, { 210, 120 }, { 300, 130 }, { 310, 140 }, { 320, 150 }
+            };
+            for(const auto &version: versions) {
+                if(version.gl == iversion) {
+                    m_shaderVersion.emplace(version.glsl);
+                    break;
+                }
+            }
+        }
+
+        if(!m_shaderVersion.has_value())
+            throw std::runtime_error("GLESContextShim: unsupported OpenGL version");
+
+        printf("GLESContextShim: using GLSL version %u\n", *m_shaderVersion);
+    }
 }
 
 GLESContextShim *GLESContextShim::getAndInitializeShim() {
@@ -91,6 +136,18 @@ GLESContextShim *GLESContextShim::getAndInitializeShim() {
     }
 
     return shim;
+}
+
+
+template<typename T>
+T GLESContextShim::convertInteger(const std::string_view &string) {
+    T value;
+
+    auto result = std::from_chars(string.data(), string.data() + string.size(), value);
+    if(result.ec != std::errc() || result.ptr != string.data() + string.size() || string.empty())
+        throw std::logic_error("failed to convert a number");
+
+    return value;
 }
 
 const GLubyte *GL_APIENTRY GLESContextShim::shim_glGetString(GLenum name) {
@@ -373,4 +430,39 @@ bool GLESContextShim::acceptableImageDimensionsForCompression(unsigned int width
     return
         (width == 1 || width == 2 || (width & 3) == 0) &&
         (height == 1 || height == 2 || (height & 3) == 0);
+}
+
+void GLESContextShim::shim_glShaderSource(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length) {
+    auto shim = getAndInitializeShim();
+
+    std::string composedSource;
+    for(GLsizei index = 0; index < count; index++) {
+        GLint stringLength = -1;
+        if(length) {
+            stringLength = length[stringLength];
+        }
+
+        if(stringLength < 0) {
+            composedSource.append(reinterpret_cast<const char *>(string[index]));
+        } else {
+            composedSource.append(reinterpret_cast<const char *>(string[index]), stringLength);
+        }
+    }
+
+    static constexpr std::string_view versionDirective = "#version ";
+
+    auto versionLocation = composedSource.find(versionDirective);
+    if(versionLocation != std::string::npos) {
+        versionLocation += versionDirective.size();
+
+        size_t versionEnd = versionLocation;
+        while(versionEnd < composedSource.size() && composedSource[versionEnd] != '/' && composedSource[versionEnd] != '\n')
+            versionEnd++;
+
+        composedSource.replace(versionLocation, versionEnd - versionLocation, std::to_string(*shim->m_shaderVersion));
+    }
+
+    const GLchar *source = reinterpret_cast<const GLchar *>(composedSource.data());
+    GLint sourceLength = composedSource.size();
+    return shim->m_nextSymbols->glShaderSource(shader, 1, &source, &sourceLength);
 }

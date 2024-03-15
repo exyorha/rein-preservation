@@ -52,6 +52,8 @@ private:
     static void GL_APIENTRY shim_glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
     static void GL_APIENTRY shim_glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 
+    static void GL_APIENTRY shim_glShaderSource(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
+
     GLenum subsituteStorageInternalFormat(GLenum internalformat, bool canCompress) const;
     static bool acceptableImageDimensionsForCompression(unsigned int width, unsigned int height);
 
@@ -60,9 +62,13 @@ private:
 
     static GLESContextShim *getAndInitializeShim();
 
+    template<typename T>
+    static T convertInteger(const std::string_view &string);
+
     std::unique_ptr<BaseGLESContext> m_nextContext;
     std::optional<ShimNextContextSymbols> m_nextSymbols;
     std::optional<ShimExtensionString> m_extensionString;
+    std::optional<unsigned int> m_shaderVersion;
     bool m_emulatedASTC;
     bool m_recompressASTC;
     bool m_warnedAboutEmulatingTextures;

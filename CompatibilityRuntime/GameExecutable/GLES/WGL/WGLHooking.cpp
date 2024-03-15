@@ -46,7 +46,7 @@ static const ReplacementExport extensionWGLFunctions[]{
     /*
      * WGL_ARB_extensions_string
      */
-    { "wglGetExtensionsStringEXT", reinterpret_cast<void *>(replacement_wglGetExtensionsStringARB) },
+    { "wglGetExtensionsStringARB", reinterpret_cast<void *>(replacement_wglGetExtensionsStringARB) },
 
     /*
      * WGL_ARB_create_context
