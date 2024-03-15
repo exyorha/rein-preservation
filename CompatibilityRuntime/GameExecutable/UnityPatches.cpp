@@ -84,98 +84,44 @@ static const PatchSite UnityPlayerPatchSites[] = {
 #define EXPECTED_UNITY_VERSION "2019.4.29f1 'linux64_withgfx_development_il2cpp' variant"
 #define EXPECTED_UNITY_CRC32 UINT32_C(0xecae9fda)
 
-#ifndef USE_GLES
-// CreateGLESGfxDevice patch: use desktop GL level even when GLES renderer is requested
-static const unsigned char patch_984739[] = {  0xeb };
-
-// GfxDeviceGLES::Init patch: claim that we're the GLES 3.0 renderer even when we're actually using desktop GL
-static const unsigned char patch_9852ba[] = { 11 };
-#endif
-
 #if 1
 
 // CheckGpuProgramUsable: type 4 (GLES 3.x) is usable, nothing else is
 // need to return 0 if usable, 1 is not usable, 2 if needs recompiling
 unsigned char patch_1358830[] = {
-#if 1
     0x83, 0xff, 0x04, // cmp edi, 4
     0x0f, 0x95, 0xc0,       // setnz al
     0x48, 0x0f, 0xb6, 0xc0, // movzx rax, al
     0xc3                    // ret
-#else
-    0xff, 0x25, 0x00, 0x00, 0x00, 0x00
-#endif
 };
 #endif
 
-// SerializedFile::ReadMetadata<false>: allow all platforms
-static const unsigned char patch_13e3a0b[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
-// IsRendererSupported: allow all renderers
-static const unsigned char patch_1408950[] = { 0xb8, 0x01, 0x00, 0x00, 0x00, 0xc3 };
-
-#ifdef USE_GLES
-// SetRequestedGLLevel patches
-static const unsigned char patch_14132f8[] = { 0x20 };
-static const unsigned char patch_1413305[] = { 0x04 };
-static const unsigned char patch_1413310[] = { 0xbe, 0x03, 0x00, 0x00, 0x00, 0x90, 0x90 };
-static const unsigned char patch_1413323[] = { 0xbe, 0x02, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90 };
-// GetActualGLLevevl patches
-static const unsigned char patch_1413347[] = { 0x03 };
-static const unsigned char patch_141334b[] = { 0xb8, 0x03, 0x00, 0x00, 0x00, 0xbe, 0x02, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90, 0xba, 0x01, 0x00, 0x00,
-    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
-#endif
-
-// GetShaderCompilerPlatformForGfxDevice: everything uses shader platform 9, since that's what we have
-//static const unsigned char patch_1a56730[] = { 0xb8, 0x09, 0x00, 0x00, 0x00, 0xc3 };
-
-/*
- * Patches a check in ScreenManagerLinux::HandleResolutionChange to make it use the 'downscaled FBO' code path with the GLES renderer (two sites)
- */
-static const unsigned char patch_1a857a3[] = { 11 };
-static const unsigned char patch_1a857ca[] = { 11 };
-/*
- * Similar check in ScreenManagerLinux::SetResolutionImmediate.
- */
-static const unsigned char patch_1a85b39[] = { 11 };
-static const unsigned char patch_1a85d01[] = { 11 };
-
-/*
- * modify kRendererToCompilerPlatform to make the desktop GL also use GLES platform
- */
-static const unsigned char patch_257f484[]{
-    9, 0, 0, 0
-};
 
 // CreateGpuProgram: skip type checking, create GLES program from anything
 static const unsigned char patch_135891a[]{
     0xE9, 0x15, 0x01, 0x00, 0x00
 };
 
+// SerializedFile::ReadMetadata<false>: allow all platforms
+static const unsigned char patch_13e3a0b[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+
+// IsRendererSupported: allow all renderers
+static const unsigned char patch_1408950[] = { 0xb8, 0x01, 0x00, 0x00, 0x00, 0xc3 };
+
+/*
+ * modify kRendererToCompilerPlatform to make the desktop GL also use GLES shader platform
+ */
+static const unsigned char patch_257f484[]{
+    9, 0, 0, 0
+};
+
 static const PatchSite UnityPlayerPatchSites[] = {
-    #ifndef USE_GLES
-    //{ 0x0984739, patch_984739, sizeof(patch_984739) },
-    //{ 0x09852ba, patch_9852ba, sizeof(patch_9852ba) },
-#endif
     { 0x1358830, patch_1358830, sizeof(patch_1358830) },
     { 0x135891a, patch_135891a, sizeof(patch_135891a) },
-    { 0x257f484, patch_257f484, sizeof(patch_257f484) },
     { 0x13e3a0b, patch_13e3a0b, sizeof(patch_13e3a0b) },
     { 0x1408950, patch_1408950, sizeof(patch_1408950) },
-#ifdef USE_GLES
-    { 0x14132f8, patch_14132f8, sizeof(patch_14132f8) },
-    { 0x1413305, patch_1413305, sizeof(patch_1413305) },
-    { 0x1413310, patch_1413310, sizeof(patch_1413310) },
-    { 0x1413323, patch_1413323, sizeof(patch_1413323) },
-    { 0x1413347, patch_1413347, sizeof(patch_1413347) },
-    { 0x141334b, patch_141334b, sizeof(patch_141334b) },
-#endif
-    //{ 0x1a56730, patch_1a56730, sizeof(patch_1a56730) },
-#ifdef USE_GLES // resolution patches
-    { 0x1a857a3, patch_1a857a3, sizeof(patch_1a857a3) },
-    { 0x1a857ca, patch_1a857ca, sizeof(patch_1a857ca) },
-    { 0x1a85b39, patch_1a85b39, sizeof(patch_1a85b39) },
-    { 0x1a85d01, patch_1a85d01, sizeof(patch_1a85d01) },
-#endif
+    { 0x257f484, patch_257f484, sizeof(patch_257f484) },
+
 };
 #endif
 
