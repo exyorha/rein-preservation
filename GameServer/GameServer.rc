@@ -1,0 +1,4 @@
+#include <windows.h>
+
+1 ICON "GameServer.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "GameServer.manifest"
