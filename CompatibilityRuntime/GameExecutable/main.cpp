@@ -29,6 +29,7 @@
 #endif
 
 OctoContentStorage *contentStorageInstance;
+static bool DownscalingDisabled = false;
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
     printf("com.adjust.sdk.Adjust::start\n");
@@ -228,6 +229,21 @@ static void UniWebViewInterface_CheckPlatform(void *original) {
     (void)original;
 }
 
+static void UnityEngine_Screen_SetResolution(int32_t a, int32_t b, int32_t fullScreenMode, int32_t c,
+                                            void (*original)(int32_t a, int32_t b, int32_t fullScreenMode, int32_t c)) {
+
+    if(DownscalingDisabled) {
+        printf("UnityEngine.Screen::SetResolution: suppressing resize to %dx%d, full screen mode %d, parameter 4: %d\n",
+               a, b, fullScreenMode, c);
+
+    } else {
+
+        original(a, b, fullScreenMode, c);
+    }
+}
+
+INTERPOSE_ICALL("UnityEngine.Screen::SetResolution", UnityEngine_Screen_SetResolution);
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -382,6 +398,8 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
                 break;
 
             setGameServerEndpoint(argv[index]);
+        } else if(strcmp(argv[index], "-disable-downscale") == 0) {
+            DownscalingDisabled = true;
         }
     }
 
@@ -412,3 +430,4 @@ bool gameEarlyInit() {
 
     return true;
 }
+
