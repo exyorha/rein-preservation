@@ -136,6 +136,8 @@ if(WIN32)
         GLES/WGL/WGLImplementationNative.h
         GLES/WGL/WindowsImportRedirection.cpp
         GLES/WGL/WindowsImportRedirection.h
+
+        GameExecutable.rc
     )
     target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
     target_link_libraries(GameExecutable PRIVATE bcrypt opengl32 ws2_32)
