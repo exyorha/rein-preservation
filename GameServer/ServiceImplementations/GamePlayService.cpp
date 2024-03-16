@@ -33,15 +33,6 @@ void GamePlayService::CheckBeforeGamePlayImpl(UserContext &user,
     user.buildDefaultDeckIfNoneExists();
 
     /*
-     * The live server does that for new characters and it's necessary for the mom menu tutorial.
-     */
-    for(int32_t defaultWeapon: { 100001, 100011, 100021 }) {
-        if(!user.hasWeaponWithId(defaultWeapon)) {
-            user.givePossession(static_cast<int32_t>(PossessionType::WEAPON), defaultWeapon, 1);
-        }
-    }
-
-    /*
      * This is needed for the companion tutorial to not get wedged.
      */
 

@@ -615,6 +615,7 @@ void UserContext::giveUserCostume(
             current_net_timestamp(),
             ?
         )
+        ON CONFLICT (user_id, costume_id) DO NOTHING
         RETURNING user_costume_uuid
     )SQL");
 
@@ -626,9 +627,16 @@ void UserContext::giveUserCostume(
     query->bind(6, awakenCount);
 
     std::string costumeUUID;
-    while(query->step()) {
-        costumeUUID = query->columnText(0);
+    if(!query->step()) {
+        m_log.error("giveUserCostume: user already has the costume %d, this costume probably should go to the overflow when that's implemented",
+                    costumeId);
+
+        return;
     }
+
+    costumeUUID = query->columnText(0);
+
+    query->reset();
 
     auto activeSkill = db().prepare(R"SQL(
         INSERT INTO i_user_costume_active_skill (
@@ -1480,6 +1488,14 @@ void UserContext::updateMainFlowSceneProgress(int32_t currentSceneId, int32_t he
 
     leavePortalCage();
 
+    auto getCurrent = db().prepare("SELECT current_quest_scene_id FROM i_user_main_quest_main_flow_status WHERE user_id = ?");
+    getCurrent->bind(1, m_userId);
+    if(!getCurrent->step())
+        throw std::runtime_error("no i_user_main_quest_main_flow_status record");
+
+    auto currentlySetScene = getCurrent->columnInt(0);
+    getCurrent->reset();
+
     auto updateMainFlow = db().prepare(R"SQL(
         UPDATE i_user_main_quest_main_flow_status SET
             current_quest_scene_id = ?,
@@ -1493,6 +1509,25 @@ void UserContext::updateMainFlowSceneProgress(int32_t currentSceneId, int32_t he
     updateMainFlow->exec();
 
     setMainQuestFlowStatus(QuestFlowType::MAIN_FLOW);
+
+    if(currentlySetScene == 0) {
+
+
+        /*
+        * is_gift, is_debug aren't used.
+        */
+        auto getPossessions = db().prepare(
+            "SELECT possession_type, possession_id, count FROM m_user_quest_scene_grant_possession WHERE quest_scene_id = ?"
+        );
+        getPossessions->bind(1, currentSceneId);
+        while(getPossessions->step()) {
+            auto type = getPossessions->columnInt(0);
+            auto id = getPossessions->columnInt(1);
+            auto count = getPossessions->columnInt(2);
+
+            givePossession(type, id, count);
+        }
+    }
 }
 
 void UserContext::updateReplayFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId) {
