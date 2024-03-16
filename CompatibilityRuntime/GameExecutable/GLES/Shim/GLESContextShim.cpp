@@ -82,8 +82,7 @@ void GLESContextShim::lateInitialize() {
 
         if(m_emulatedASTC) {
             m_recompressASTC = !NeverRecompressASTC &&
-                (m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc") || m_extensionString->hasExtension("GL_ANGLE_texture_compression_dxt5")) &&
-                m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc_srgb");
+                m_extensionString->hasExtension("GL_EXT_texture_compression_s3tc") && m_extensionString->hasExtension("GL_EXT_texture_sRGB");
         }
     }
 
