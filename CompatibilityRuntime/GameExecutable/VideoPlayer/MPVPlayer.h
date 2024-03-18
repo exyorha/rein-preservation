@@ -30,10 +30,10 @@ public:
     }
 
     template<typename T>
-    void setProperty(const char *name, const T &value) {
+    void setProperty(const char *name, const T &value, bool optional = false) {
         typename MPVPropertyFormat<T>::mpvType storage = MPVPropertyFormat<T>::pack(value);
 
-        setPropertyp(name, MPVPropertyFormat<T>::format, &storage);
+        setPropertyp(name, MPVPropertyFormat<T>::format, &storage, optional);
     }
 
     template<typename... Args>
@@ -46,7 +46,7 @@ public:
     void commandv(const char **arguments);
 
     bool getPropertyp(const char *name, mpv_format format, void *data);
-    void setPropertyp(const char *name, mpv_format format, const void *data);
+    void setPropertyp(const char *name, mpv_format format, const void *data, bool optional);
 
     /*
      * In contrast to all the other methods, the following ones are called on the Unity

@@ -1,5 +1,5 @@
-#include "VideoPlayer/MPVBasePropertyObserver.h"
-#include <GLES2/gl2.h>
+#include <VideoPlayer/VideoRenderingOpenGLAPISet.h>
+
 #include <VideoPlayer/MPVPlayer.h>
 #include <VideoPlayer/MPVError.h>
 
@@ -8,7 +8,10 @@
 #include <vector>
 #include <cstring>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <GLES/WGL/WGLHooking.h>
+#include <GLES/WGL/WGLImplementation.h>
+#else
 #include <GLES/SDL/SDLWrapper.h>
 #include <GLES/SDL/SDLGLESImplementation.h>
 #include <GLES/SDL/RealSDLSymbols.h>
@@ -105,14 +108,14 @@ bool MPVPlayer::getPropertyp(const char *name, mpv_format format, void *data) {
     return true;
 }
 
-void MPVPlayer::setPropertyp(const char *name, mpv_format format, const void *data) {
+void MPVPlayer::setPropertyp(const char *name, mpv_format format, const void *data, bool optional) {
     printf("MPVPlayer: setting a property: '%s'\n", name);
 
     auto result = mpv_set_property(m_mpv.get(), name, format, const_cast<void *>(data));
 
     dispatchEvents();
 
-    if(result < 0)
+    if(result < 0 && !optional)
         throw MPVError(result);
 }
 
@@ -262,7 +265,18 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
     mpv_render_context_render(m_renderer, params.data());
 }
 
-#ifndef _WIN32
+#ifdef _WIN32
+
+void *MPVPlayer::mpvOpenGLGetProcAddress(void *ctx, const char *name) {
+    (void)ctx;
+
+    if(!SelectedWGLImplementation)
+        return nullptr;
+
+    return reinterpret_cast<void *>(SelectedWGLImplementation->GetProcAddress(name));
+}
+
+#else
 
 void *MPVPlayer::mpvOpenGLGetProcAddress(void *ctx, const char *name) {
     (void)ctx;

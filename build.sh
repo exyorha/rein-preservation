@@ -67,6 +67,17 @@ ln -sf ../GameServer-build/compile_commands.json GameServer
 cmake --build GameServer-build
 cmake --install GameServer-build --component GameServer
 
+(cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > graft/libmpv-lgpl-compliance.tgz
+
+if [ ! -f winmpv/windows-libmpv.tar ]; then
+    echo "winmpv/windows-libmpv.tar is not present. Please run ./build.sh in the winmpv directory."
+    exit 1
+fi
+
+if [ ! -f graft/libmpv-2.dll ]; then
+    tar -C graft --strip-components=1 -xf winmpv/windows-libmpv.tar bin/libmpv-2.dll
+fi
+
 mkdir -p windows-build-deps
 
 windows_boost_version=boost_1_84_0
@@ -86,6 +97,23 @@ mkdir -p windows-build-deps/libffi-build windows-build-deps/c-ares-build
 winprefix="$(realpath -- windows-build-root-path)"
 
 mkdir -p "$winprefix"
+
+if [ ! -f "${winprefix}/libmpv_installed" ]; then
+    tar -C "${winprefix}" -xf winmpv/windows-libmpv.tar include lib
+    sed "s!^prefix=.*\$!prefix=${winprefix}!;/\.private: /d" -i -- ${winprefix}/lib/pkgconfig/mpv.pc
+    touch "${winprefix}/libmpv_installed"
+fi
+
+if [ ! -e "${winprefix}/bin/x86_64-w64-mingw32-pkg-config" ]; then
+    cat > "${winprefix}/bin/x86_64-w64-mingw32-pkg-config" <<EOF
+#!/bin/sh
+
+export PKG_CONFIG_LIBDIR="${winprefix}/lib/pkgconfig"
+exec pkgconf "\$@"
+EOF
+
+    chmod +x "${winprefix}/bin/x86_64-w64-mingw32-pkg-config"
+fi
 
 if [ ! -f "${winprefix}/ffi_installed" ]; then
 
@@ -152,7 +180,8 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
     -DCMAKE_FIND_ROOT_PATH="$(realpath -- windows-build-root-path)" \
     -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
-    -G "Ninja"
+    -G "Ninja" \
+    -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config"
 
 cmake --build CompatibilityRuntime-mingw-build
 cmake --install CompatibilityRuntime-mingw-build --component GameAssembly

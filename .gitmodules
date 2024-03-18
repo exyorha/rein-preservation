@@ -19,3 +19,6 @@
 [submodule "GameServer/thirdparty/libevent"]
 	path = GameServer/thirdparty/libevent
 	url = https://github.com/libevent/libevent.git
+[submodule "winmpv"]
+	path = winmpv
+	url = https://github.com/exyorha/winmpv.git

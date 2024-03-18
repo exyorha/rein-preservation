@@ -1,7 +1,7 @@
 #ifndef VIDEO_PLAYER_VIDEO_RENDERING_OPENGL_API_SET_H
 #define VIDEO_PLAYER_VIDEO_RENDERING_OPENGL_API_SET_H
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl32.h>
 #include <GLES2/gl2ext.h>
 
 struct mpv_opengl_init_params;

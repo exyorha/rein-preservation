@@ -30,7 +30,7 @@ BOOL WINAPI replacement_wglChoosePixelFormatARB (HDC hdc, const int *piAttribILi
 
 WINBOOL WINAPI replacement_SwapBuffers(HDC hdc);
 
-static WGLImplementation *SelectedWGLImplementation;
+WGLImplementation *SelectedWGLImplementation;
 
 static const ReplacementExport replacementWGLFunctions[]{
     { "wglGetCurrentDC",      reinterpret_cast<void *>(replacement_wglGetCurrentDC) },

@@ -8,13 +8,15 @@ AVProVideoPlayer::AVProVideoPlayer(int32_t playerIndex) : JNIObject(parent("com/
 
     printf("AVProVideoPlayer: created %p\n", this);
 
-    m_mpv.setProperty("ytdl", false);
-    m_mpv.setProperty("load-osd-console", false);
+    m_mpv.setProperty("ytdl", false, true);
+    m_mpv.setProperty("load-osd-console", false, true);
     m_mpv.setProperty("input-builtin-bindings", false);
     m_mpv.setProperty("input-default-bindings", false);
-    m_mpv.setProperty("osc", false);
-    m_mpv.setProperty("osd-level", INT64_C(0));
+    m_mpv.setProperty("osc", false, true);
+    m_mpv.setProperty("osd-level", INT64_C(0), true);
+#ifndef _WIN32
     m_mpv.setProperty("hwdec", std::string("auto"));
+#endif
 }
 
 AVProVideoPlayer::~AVProVideoPlayer() {
@@ -166,12 +168,31 @@ void AVProVideoPlayer::Pause() {
 }
 
 bool AVProVideoPlayer::OpenVideoFromFile(const std::string &url, int64_t arg2, const std::shared_ptr<JNIObject> arg3, int32_t arg4) {
+    std::string adjustedPath(url);
+
+#if defined(_WIN32)
+    /*
+     * This path could be a result of incorrect resolution of a relative
+     * path. If it is, then it'll contain multiple drive specifications.
+     * Keep only the last one, and strip everything else.
+     *
+     * This also repairs the cases like '/C:/' that we produce in
+     * androidPathFromWindowsPath below.
+     */
+
+    auto colonIndex = adjustedPath.find_last_of(':');
+    if(colonIndex != std::string::npos && colonIndex != 0) {
+        adjustedPath.erase(0, colonIndex - 1);
+    }
+#endif
+
+
     printf("AVProVideoPlayer::OpenVideoFromFile(%s, %ld, %p, %d) stub!\n",
-           url.c_str(), arg2, arg3.get(), arg4);
+           adjustedPath.c_str(), arg2, arg3.get(), arg4);
 
     Pause();
 
-    m_pendingFileToPlay.emplace(url);
+    m_pendingFileToPlay.emplace(std::move(adjustedPath));
 
     return true;
 }

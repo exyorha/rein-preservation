@@ -38,12 +38,10 @@ target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 
 find_package(Protobuf CONFIG REQUIRED)
 
-if(NOT WIN32)
-    find_package(PkgConfig)
+find_package(PkgConfig)
 
-    if(PkgConfig_FOUND)
-        pkg_check_modules(MPV IMPORTED_TARGET mpv)
-    endif()
+if(PkgConfig_FOUND)
+    pkg_check_modules(MPV IMPORTED_TARGET mpv)
 endif()
 
 if(NOT TARGET PkgConfig::MPV)
