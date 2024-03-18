@@ -176,10 +176,14 @@ void DatabaseContext::queryWeaponEnhancementCost(int32_t weaponID, int32_t itemC
                                                  int32_t &weaponEnhancementCost) {
     auto query = db().prepare(R"SQL(
         SELECT
-            m_weapon_rarity.enhancement_cost_by_material_numerical_function_id
+            COALESCE(
+                m_weapon_specific_enhance.enhancement_cost_by_material_numerical_function_id,
+                m_weapon_rarity.enhancement_cost_by_material_numerical_function_id
+            )
         FROM
             m_weapon,
-            m_weapon_rarity ON m_weapon_rarity.rarity_type = m_weapon.rarity_type
+            m_weapon_rarity USING (rarity_type) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
         WHERE
             weapon_id = ?
     )SQL");

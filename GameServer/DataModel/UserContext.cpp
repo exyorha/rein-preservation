@@ -1182,10 +1182,16 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
 
     auto queryWeaponExperienceSetup = db().prepare(R"SQL(
         SELECT
-            required_exp_for_level_up_numerical_parameter_map_id,
-            max_level_numerical_function_id
-        FROM m_weapon
-        LEFT JOIN m_weapon_rarity ON m_weapon_rarity.rarity_type = m_weapon.rarity_type
+            COALESCE(
+                m_weapon_specific_enhance.required_exp_for_level_up_numerical_parameter_map_id,
+                m_weapon_rarity.required_exp_for_level_up_numerical_parameter_map_id),
+            COALESCE(
+                m_weapon_specific_enhance.max_level_numerical_function_id,
+                m_weapon_rarity.max_level_numerical_function_id)
+        FROM
+            m_weapon,
+            m_weapon_rarity USING(rarity_type) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
         WHERE
             weapon_id = ?
     )SQL");
@@ -2650,8 +2656,14 @@ void UserContext::enhanceWeaponSkill(const std::string_view &uuid, int32_t skill
     auto queryStats = db().prepare(R"SQL(
         SELECT
             i_user_weapon_skill.level AS skill_level,
-            max_skill_level_numerical_function_id,
-            skill_enhancement_cost_numerical_function_id,
+            COALESCE(
+                m_weapon_specific_enhance.max_skill_level_numerical_function_id,
+                m_weapon_rarity.max_skill_level_numerical_function_id
+            ),
+            COALESCE(
+                m_weapon_specific_enhance.skill_enhancement_cost_numerical_function_id,
+                m_weapon_rarity.skill_enhancement_cost_numerical_function_id
+            ),
             weapon_skill_enhancement_material_id,
             limit_break_count,
             slot_number
@@ -2660,7 +2672,8 @@ void UserContext::enhanceWeaponSkill(const std::string_view &uuid, int32_t skill
             m_weapon USING (weapon_id),
             m_weapon_rarity USING (rarity_type),
             m_weapon_skill_group USING (weapon_skill_group_id),
-            i_user_weapon_skill USING (user_id, user_weapon_uuid, slot_number)
+            i_user_weapon_skill USING (user_id, user_weapon_uuid, slot_number) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
         WHERE
             user_id = ? AND
             user_weapon_uuid = ? AND
@@ -2725,8 +2738,14 @@ void UserContext::enhanceWeaponAbility(const std::string_view &uuid, int32_t abi
     auto queryStats = db().prepare(R"SQL(
         SELECT
             i_user_weapon_ability.level AS ability_level,
-            max_ability_level_numerical_function_id,
-            ability_enhancement_cost_numerical_function_id,
+            COALESCE(
+                m_weapon_specific_enhance.max_ability_level_numerical_function_id,
+                m_weapon_rarity.max_ability_level_numerical_function_id
+            ),
+            COALESCE(
+                m_weapon_specific_enhance.ability_enhancement_cost_numerical_function_id,
+                m_weapon_rarity.ability_enhancement_cost_numerical_function_id
+            ),
             weapon_ability_enhancement_material_id,
             limit_break_count,
             slot_number
@@ -2735,7 +2754,8 @@ void UserContext::enhanceWeaponAbility(const std::string_view &uuid, int32_t abi
             m_weapon USING (weapon_id),
             m_weapon_rarity USING (rarity_type),
             m_weapon_ability_group USING (weapon_ability_group_id),
-            i_user_weapon_ability USING (user_id, user_weapon_uuid, slot_number)
+            i_user_weapon_ability USING (user_id, user_weapon_uuid, slot_number) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
         WHERE
             user_id = ? AND
             user_weapon_uuid = ? AND
@@ -2998,10 +3018,14 @@ void UserContext::weaponLimitBreak(const std::string &weaponUUID,
 
     auto getLimitBreakCostInformation = db().prepare(R"SQL(
         SELECT
-            limit_break_cost_by_material_numerical_function_id
+            COALESCE(
+                m_weapon_specific_enhance.limit_break_cost_by_material_numerical_function_id,
+                m_weapon_rarity.limit_break_cost_by_material_numerical_function_id
+            )
         FROM
             m_weapon,
-            m_weapon_rarity USING (rarity_type)
+            m_weapon_rarity USING (rarity_type) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
         WHERE
             weapon_id = ?
     )SQL");
