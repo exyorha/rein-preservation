@@ -939,6 +939,7 @@ enum class HelpType: int32_t {
   WEAPON_ALL_ORGANIZATION_TUTORIAL = 1080,
   COSTUME_LOTTERY_EFFECT_TUTORIAL = 1081,
   ANOTHER_ROUTE_TUTORIAL = 1082,
+  DELETE_COSTUME_FIO_TUTORIAL = 1083,
   REWARD_ROULETTE_TUTORIAL = 10001,
 };
 
@@ -1386,6 +1387,8 @@ enum class QuestDeckRestrictionType: int32_t {
   CHARACTER_ID = 1,
   COSTUME_ID = 2,
   PROPER_ATTRIBUTE_TYPE = 3,
+  FORBIDDEN_CHARACTER_ID_MULTI = 4,
+  FORBIDDEN_COSTUME_ID_MULTI = 5,
   FORBIDDEN = 99,
 };
 
@@ -1775,6 +1778,7 @@ enum class SpecialEndBattleActType: int32_t {
   ALIVE_AND_DISABLE_WEAPON = 1,
   BACK_HEAVY_AND_IMPULSE = 2,
   WITHOUT_DEATH_EFFECT = 3,
+  ALIVE_AND_DISABLE_WEAPON_IDLE = 4,
 };
 
 enum class StainedGlassCategoryType: int32_t {
@@ -1973,6 +1977,7 @@ enum class TutorialType: int32_t {
   MAIN_QUEST_3_3_TICKET_CONSUME = 1906,
   MAIN_QUEST_3_3_NOISE_WALL_CLEAR = 1907,
   ANOTHER_ROUTE = 2001,
+  DELETE_COSTUME_FIO = 2101,
 };
 
 enum class TutorialUnlockConditionType: int32_t {
