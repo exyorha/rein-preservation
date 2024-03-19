@@ -1843,10 +1843,11 @@ typedef struct Il2CppArraySize
     __attribute__((aligned(8))) void* vector[0];
 } Il2CppArraySize;
 
+#if 0
 static const size_t kIl2CppSizeOfArray = (offsetof(Il2CppArraySize, vector));
 static const size_t kIl2CppOffsetOfArrayBounds = (offsetof(Il2CppArray, bounds));
 static const size_t kIl2CppOffsetOfArrayLength = (offsetof(Il2CppArray, max_length));
-
+#endif
 
 
 typedef struct Il2CppString
@@ -2751,7 +2752,7 @@ typedef struct Il2CppThreadUnwindState
 } Il2CppThreadUnwindState;
        
 
-
+#if 0
 namespace il2cpp
 {
 namespace utils
@@ -2795,7 +2796,6 @@ namespace utils
     };
 }
 }
-       
 
 
 
@@ -4429,3 +4429,4 @@ inline intptr_t il2cpp_codegen_get_com_interface_for_object(Il2CppObject* object
 __attribute__ ((noreturn)) void il2cpp_codegen_raise_profile_exception(const RuntimeMethod* method);
 
 const char* il2cpp_codegen_get_field_data(RuntimeField* field);
+#endif

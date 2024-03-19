@@ -164,11 +164,12 @@ static void markOnARMSide(void *stackBottom, void *stackTop) {
 }
 
 void BoehmGCThreadVisitor::visit(void *stackBottom, void *stackTop, std::array<std::uint64_t, 31> &gprs) {
+    //printf("ARM thread: ARM stack %p-%p, gprs at %p\n", stackBottom, stackTop, gprs.data());
     markOnARMSide(stackBottom, stackTop);
 
     markOnARMSide(static_cast<void *>(gprs.data()), static_cast<void *>(gprs.data() + gprs.size()));
 
-    m_totalStackSize = reinterpret_cast<uintptr_t>(stackTop) - reinterpret_cast<uintptr_t>(stackBottom);
+    m_totalStackSize += reinterpret_cast<uintptr_t>(stackTop) - reinterpret_cast<uintptr_t>(stackBottom);
 }
 
 /*
@@ -178,11 +179,15 @@ void BoehmGCThreadVisitor::visit(void *stackBottom, void *stackTop, std::array<s
 static void GC_stop_world_diversion(const Diversion *diversion) {
     (void)diversion;
 
+    //printf("GC stop world\n");
+
     GlobalContext::get().jit().stopWorld(JITThreadContext::get());
 }
 
 static void GC_start_world_diversion(const Diversion *diversion) {
     (void)diversion;
+
+    //printf("GC start world\n");
 
     GlobalContext::get().jit().startWorld(JITThreadContext::get());
 }
@@ -214,6 +219,8 @@ void GC_push_many_regs(const word *regs, unsigned count) {
 static void GC_push_all_stacks_diversion(const Diversion *diversion) {
     (void)diversion;
 
+    //printf("GC push all stacks\n");
+
     BoehmGCThreadVisitor visitor;
 
     /*
@@ -240,13 +247,12 @@ static void GC_stop_init_diversion(const Diversion *diversion) {
 }
 
 void installGCHooks(const Image &il2cppImage) {
-    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25902a4), GC_stop_world_diversion, nullptr);
-    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x2590390), GC_start_world_diversion, nullptr);
-    arm_GC_push_all_stack = il2cppImage.displace<void (void *bottom, void *top)>(0x259509c);
-    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x2597b24), GC_push_all_stacks_diversion, nullptr);
-    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x2598574), GC_stop_init_diversion, nullptr);
+    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25aad50), GC_stop_world_diversion, nullptr);
+    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25aae3c), GC_start_world_diversion, nullptr);
+    arm_GC_push_all_stack = il2cppImage.displace<void (void *bottom, void *top)>(0x25afb48);
+    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25b25d0), GC_push_all_stacks_diversion, nullptr);
+    GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25b3020), GC_stop_init_diversion, nullptr);
 
-    totalStackSize = il2cppImage.displace<size_t>(0x7966aa0);
-
+    totalStackSize = il2cppImage.displace<size_t>(0x79b26e0);
 }
 

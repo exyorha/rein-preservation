@@ -5,6 +5,7 @@
 #include <translator_api.h>
 
 #include "Translator/DiversionManager.h"
+#include "Translator/JITThreadContext.h"
 #include "il2cpp-api-types.h"
 #include "support.h"
 #include <Translator/thunking.h>
@@ -100,9 +101,14 @@ void IL2CPP_EXPORT translator_divert_method(const char *methodName, Il2CppMethod
 
 
 /*
- * This is exactly what ARM code does.
+ * This is exactly what ARM code does, but avoids the overhead of an armcall
+ * on a very hot function.
  */
 void il2cpp_gc_wbarrier_set_field(Il2CppObject * obj, void **targetAddress, void *object) {
     (void)obj;
+
+    /*
+     * Make sure that this thread gets the JIT context.
+     */
     *targetAddress = object;
 }

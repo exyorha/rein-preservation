@@ -142,6 +142,9 @@ void convertELFToELFPE(const std::filesystem::path &inputFileName, const std::fi
             auto mainSectionStartVAddr = (phdr.p_vaddr + (ELFPETargetPageSize - 1)) & ~(ELFPETargetPageSize - 1);
             auto mainSectionStartOffset = (phdr.p_offset + (ELFPETargetPageSize - 1)) & ~(ELFPETargetPageSize - 1);
 
+            printf("Overlap section starts at: %p, main section starts at: %p, file data ends at: %p, memory data ends at: %p\n",
+                   overlapSectionStartVAddr, mainSectionStartVAddr, endOfSectionFileData, endOfSectionMemoryData);
+
             if(sectionHeaders.empty()) {
                 if(overlapSectionStartVAddr != 0) {
                     throw std::runtime_error("the first section doesn't start at the address 0");
@@ -204,7 +207,7 @@ void convertELFToELFPE(const std::filesystem::path &inputFileName, const std::fi
                         & ~(ELFPETargetPageSize - 1);
                 }
 
-                overlapSection.Misc.VirtualSize = overlapSectionStartVAddr - mainSectionStartVAddr;
+                overlapSection.Misc.VirtualSize = mainSectionStartVAddr - overlapSectionStartVAddr;
                 overlapSection.Characteristics = overlapSectionCharacteristics;
 
             }

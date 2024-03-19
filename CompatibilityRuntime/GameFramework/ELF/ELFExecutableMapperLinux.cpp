@@ -76,7 +76,8 @@ void ELFExecutableMapperLinux::mapImageSegments() {
         auto phdr = m_module->phent(entry);
 
         if(phdr.p_type == PT_LOAD) {
-            size_t mappedSize = 0;
+            uintptr_t endOfMappedFileContents = phdr.p_vaddr;
+            uintptr_t endOfZeroedFileContents = phdr.p_vaddr + phdr.p_memsz;
 
             int prot = PROT_NONE;
 
@@ -93,7 +94,7 @@ void ELFExecutableMapperLinux::mapImageSegments() {
                 if((phdr.p_offset & (GlobalContext::PageSize - 1)) != (phdr.p_vaddr & (GlobalContext::PageSize - 1)))
                     throw std::runtime_error("the program segment offset and the virtual address are not congruent modulo system page size");
 
-                mappedSize = (phdr.p_filesz + (GlobalContext::PageSize - 1)) & ~(GlobalContext::PageSize - 1);
+                endOfMappedFileContents = (phdr.p_vaddr + phdr.p_filesz + GlobalContext::PageSize - 1) & ~(GlobalContext::PageSize - 1);
 
                 auto misalign = phdr.p_vaddr & (GlobalContext::PageSize - 1);
 
@@ -101,7 +102,7 @@ void ELFExecutableMapperLinux::mapImageSegments() {
                 auto alignedOffset = phdr.p_offset & ~(GlobalContext::PageSize - 1);
 
                 auto result = mmap(
-                    displace(alignedVaddr), mappedSize,
+                    displace(alignedVaddr), endOfMappedFileContents - alignedVaddr,
                     prot,
                     MAP_PRIVATE | MAP_FIXED,
                     m_module->getFileDescriptor(),
@@ -110,11 +111,10 @@ void ELFExecutableMapperLinux::mapImageSegments() {
                     throw std::system_error(errno, std::generic_category());
             }
 
-            if(phdr.p_memsz > mappedSize) {
-                auto tailStart = (phdr.p_vaddr & ~(GlobalContext::PageSize - 1)) + mappedSize;
-                auto tailSize = (phdr.p_memsz - mappedSize + (GlobalContext::PageSize - 1)) & ~(GlobalContext::PageSize - 1);
+            if(endOfZeroedFileContents > endOfMappedFileContents) {
+                auto tailSize = (endOfZeroedFileContents - endOfMappedFileContents + (GlobalContext::PageSize - 1))  & ~(GlobalContext::PageSize - 1);
 
-                auto result = mprotect(displace(tailStart), tailSize, prot);
+                auto result = mprotect(displace(endOfMappedFileContents), tailSize, prot);
                 if(result < 0) {
                     throw std::system_error(errno, std::generic_category());
                 }
