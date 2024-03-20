@@ -1121,11 +1121,8 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
 
     updateExperience->step();
 
-    auto queryWeaponExperienceSetup = db().prepare(R"SQL(
+    auto queryWeaponMaxLevel = db().prepare(R"SQL(
         SELECT
-            COALESCE(
-                m_weapon_specific_enhance.required_exp_for_level_up_numerical_parameter_map_id,
-                m_weapon_rarity.required_exp_for_level_up_numerical_parameter_map_id),
             COALESCE(
                 m_weapon_specific_enhance.max_level_numerical_function_id,
                 m_weapon_rarity.max_level_numerical_function_id)
@@ -1136,13 +1133,35 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
         WHERE
             weapon_id = ?
     )SQL");
-    queryWeaponExperienceSetup->bind(1, weaponId);
-    if(!queryWeaponExperienceSetup->step())
+    queryWeaponMaxLevel->bind(1, weaponId);
+    if(!queryWeaponMaxLevel->step())
         throw std::runtime_error("the weapon setup was not found");
 
-    int32_t weaponExpLevelMap = queryWeaponExperienceSetup->columnInt(0);
-    int32_t maxLevelNumericalFunctionId = queryWeaponExperienceSetup->columnInt(1);
-    queryWeaponExperienceSetup->step();
+    int32_t maxLevelNumericalFunctionId = queryWeaponMaxLevel->columnInt(0);
+    queryWeaponMaxLevel->reset();
+
+    /*
+     * Evolved weapons use the level table of their base evolution, i.e., the original rarity.
+     */
+    auto baseWeaponId = getUnevolvedWeaponId(weaponId);
+    auto queryWeaponLevelTable = db().prepare(R"SQL(
+        SELECT
+            COALESCE(
+                m_weapon_specific_enhance.required_exp_for_level_up_numerical_parameter_map_id,
+                m_weapon_rarity.required_exp_for_level_up_numerical_parameter_map_id)
+        FROM
+            m_weapon,
+            m_weapon_rarity USING(rarity_type) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
+        WHERE
+            weapon_id = ?
+    )SQL");
+    queryWeaponLevelTable->bind(1, baseWeaponId);
+    if(!queryWeaponLevelTable->step())
+        throw std::runtime_error("the weapon setup was not found");
+
+    int32_t weaponExpLevelMap = queryWeaponLevelTable->columnInt(0);
+    queryWeaponLevelTable->reset();
 
     auto newLevel = evaluateNumericalParameterMap(weaponExpLevelMap, newExperience);
     if(newLevel.has_value()) {
