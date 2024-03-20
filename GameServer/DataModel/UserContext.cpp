@@ -301,22 +301,7 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
             if(query->step())
                 weaponUuid = query->columnText(0);
 
-            auto note = db().prepare(R"SQL(
-                INSERT INTO i_user_weapon_note (
-                    user_id,
-                    weapon_id,
-                    first_acquisition_datetime
-                ) VALUES (
-                    ?,
-                    ?,
-                    current_net_timestamp()
-                )
-                ON CONFLICT DO NOTHING
-            )SQL");
-
-            note->bind(1, m_userId);
-            note->bind(2, possessionId);
-            note->exec();
+            populateWeaponNote(weaponUuid);
 
             auto story = db().prepare(R"SQL(
                 INSERT INTO i_user_weapon_story (
@@ -333,48 +318,7 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
             story->bind(2, possessionId);
             story->exec();
 
-            auto skill = db().prepare(R"SQL(
-                INSERT INTO i_user_weapon_skill (
-                    user_id,
-                    user_weapon_uuid,
-                    slot_number
-                ) VALUES (
-                    ?,
-                    ?,
-                    ?
-                )
-            )SQL");
-
-            skill->bind(1, m_userId);
-            skill->bind(2, weaponUuid);
-
-            /*
-             * All weapons get two skill slots.
-             */
-            for(int slot: { 1, 2 }) {
-                skill->bind(3, slot);
-                skill->exec();
-                skill->reset();
-            }
-
-            /*
-             * Unevolved weapons only get one ability slot.
-             */
-            auto ability = db().prepare(R"SQL(
-                INSERT INTO i_user_weapon_ability (
-                    user_id,
-                    user_weapon_uuid,
-                    slot_number
-                ) VALUES (
-                    ?,
-                    ?,
-                    1
-                )
-            )SQL");
-
-            ability->bind(1, m_userId);
-            ability->bind(2, weaponUuid);
-            ability->exec();
+            populateWeaponSkillsAndAbilities(weaponUuid);
 
             updateWeaponUnlockedStory(possessionId);
         }
@@ -1153,9 +1097,6 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
         updateLevel->bind(2, m_userId);
         updateLevel->bind(3, characterId);
         updateLevel->exec();
-
-        // any level bonuses?
-
     }
 }
 
@@ -2164,6 +2105,10 @@ void UserContext::issueReplayFlowRewardGroup(int64_t replayFlowGroupId,
 }
 
 void UserContext::updateWeaponUnlockedStory(int32_t weaponId) {
+    weaponId = getUnevolvedWeaponId(weaponId);
+
+    m_log.debug("updating weapon story unlocks for %d\n", weaponId);
+
     auto getUserWeaponStory = db().prepare("SELECT released_max_story_index FROM i_user_weapon_story WHERE user_id = ? AND weapon_id = ?");
     getUserWeaponStory->bind(1, m_userId);
 
@@ -2358,11 +2303,29 @@ bool UserContext::isQuestCleared(int32_t questId) {
 }
 
 std::optional<int32_t> UserContext::getWeaponLevel(int32_t weaponId) {
-    auto query = db().prepare("SELECT MAX(level) FROM i_user_weapon WHERE user_id = ? AND weapon_id = ?");
+    auto query = db().prepare(R"SQL(
+        SELECT
+            COALESCE(first_evolution.weapon_id, i_user_weapon.weapon_id) AS aggregate_weapon_id,
+            MAX(level)
+        FROM
+            i_user_weapon LEFT JOIN
+            m_weapon_evolution_group ON
+                m_weapon_evolution_group.weapon_id = i_user_weapon.weapon_id
+            LEFT JOIN
+            m_weapon_evolution_group AS first_evolution ON
+                first_evolution.weapon_evolution_group_id = m_weapon_evolution_group.weapon_evolution_group_id AND
+                first_evolution.evolution_order = 1
+        WHERE user_id = ? AND aggregate_weapon_id = ?
+    )SQL");
     query->bind(1, m_userId);
     query->bind(2, weaponId);
-    if(query->step())
-        return query->columnInt(0);
+
+    while(query->step()) {
+        auto effectiveWeaponId = query->columnInt(0);
+        auto level = query->columnInt(1);
+
+        return level;
+    }
 
     return std::nullopt;
 }
@@ -2374,14 +2337,19 @@ bool UserContext::isWeaponStoryReleaseConditionSatisfied(
 ) {
     switch(type) {
         case WeaponStoryReleaseConditionType::ACQUISITION:
-            return hasWeaponWithId(weaponId);
+            return getWeaponLevel(weaponId).has_value();
 
         case WeaponStoryReleaseConditionType::REACH_SPECIFIED_LEVEL:
             return getWeaponLevel(weaponId).value_or(0) >= value;
 
-        // TODO: REACH_INITIAL_MAX_LEVEL
-        // TODO: REACH_ONCE_EVOLVED_MAX_LEVEL
-        // TODO: REACH_SPECIFIED_EVOLUTION_COUNT
+        case WeaponStoryReleaseConditionType::REACH_INITIAL_MAX_LEVEL:
+            return getWeaponLevel(weaponId).value_or(0) >= getWeaponMaxLevelForEvolutionOrder(weaponId, 1);
+
+        case WeaponStoryReleaseConditionType::REACH_ONCE_EVOLVED_MAX_LEVEL:
+            return getWeaponLevel(weaponId).value_or(0) >= getWeaponMaxLevelForEvolutionOrder(weaponId, 2);
+
+        case WeaponStoryReleaseConditionType::REACH_SPECIFIED_EVOLUTION_COUNT:
+            return getHighestEvolutionOrder(weaponId) >= value + 1;
 
         case WeaponStoryReleaseConditionType::QUEST_CLEAR:
             return isQuestCleared(value);
@@ -2389,11 +2357,32 @@ bool UserContext::isWeaponStoryReleaseConditionSatisfied(
         // MAIN_FLOW_SCENE_PROGRESS is problematic to implement, but appears unused anyway
 
         default:
-            m_log.error("isWeaponStoryReleaseConditionSatisfied: unsupported condition type %d", type);
+            m_log.error("isWeaponStoryReleaseConditionSatisfied: unsupported condition type %d, value %d", type, value);
             return false;
     }
 }
 
+int32_t UserContext::getHighestEvolutionOrder(int32_t weaponId) {
+    auto query = db().prepare(R"SQL(
+        SELECT
+            MAX(other_weapon_evolution_group.evolution_order)
+        FROM
+            m_weapon_evolution_group AS requested_weapon_evolution_group,
+            m_weapon_evolution_group AS other_weapon_evolution_group ON
+                other_weapon_evolution_group.weapon_evolution_group_id = requested_weapon_evolution_group.weapon_evolution_group_id,
+            i_user_weapon ON
+                user_id = ? AND
+                i_user_weapon.weapon_id = other_weapon_evolution_group.weapon_id
+        WHERE
+            requested_weapon_evolution_group.weapon_id = ?
+    )SQL");
+    query->bind(1, m_userId);
+    query->bind(2, weaponId);
+    if(query->step())
+        return query->columnInt(0);
+
+    return 1;
+}
 
 void UserContext::registerCostumeLevelBonusConfirmed(int32_t costumeId, int32_t newlyConfirmedLevel) {
     auto query = db().prepare(R"SQL(
@@ -4470,4 +4459,265 @@ void UserContext::updateGimmickProgress(int32_t gimmickSequenceScheduleId, int32
         reward->set_possession_id(possessionId);
         reward->set_count(count);
     }
+}
+
+void UserContext::weaponEvolve(const std::string &weaponUUID) {
+    auto getStatus = db().prepare(R"SQL(
+        SELECT
+            weapon_evolution_material_group_id,
+            weapon_evolution_grant_possession_group_id,
+            COALESCE(
+                m_weapon_specific_enhance.evolution_cost_numerical_function_id,
+                m_weapon_rarity.evolution_cost_numerical_function_id
+            ),
+            m_weapon_evolution_group.evolution_order,
+            next_evolution.weapon_id
+        FROM
+            i_user_weapon,
+            m_weapon USING (weapon_id),
+            m_weapon_evolution_group USING (weapon_id),
+            m_weapon_evolution_group AS next_evolution ON
+                next_evolution.weapon_evolution_group_id = m_weapon_evolution_group.weapon_evolution_group_id AND
+                next_evolution.evolution_order = m_weapon_evolution_group.evolution_order + 1,
+            m_weapon_rarity USING (rarity_type) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
+        WHERE
+            user_id = ? AND
+            user_weapon_uuid = ?
+    )SQL");
+    getStatus->bind(1, m_userId);
+    getStatus->bind(2, weaponUUID);
+    if(!getStatus->step())
+        throw std::logic_error("no such weapon, no evolution relation, or no next evolution");
+
+    auto weaponEvolutionMaterialGroupId = getStatus->columnInt(0);
+    auto weaponEvolutionGrantPossessionGroupId = getStatus->columnInt(1);
+    auto evolutionCostNumericalFunctionId = getStatus->columnInt(2);
+    auto currentEvolutionOrder = getStatus->columnInt(3);
+    auto nextWeaponId = getStatus->columnInt(4);
+
+    if(weaponEvolutionGrantPossessionGroupId != 0) {
+        /*
+         * The corresponding table seem to absent and all weapons have this
+         * value as zero in the database.
+         */
+        throw std::logic_error("unexpected non-zero weapon_evolution_grant_possession_group_id");
+    }
+
+    getStatus->reset();
+
+    size_t numberOfKindsOfMaterialsUsed = 0;
+
+    auto getMaterial = db().prepare(R"SQL(
+        SELECT material_id, count
+        FROM m_weapon_evolution_material_group
+        WHERE weapon_evolution_material_group_id = ?
+        ORDER BY sort_order
+    )SQL");
+    getMaterial->bind(1, weaponEvolutionMaterialGroupId);
+    while(getMaterial->step()) {
+        auto materialId = getMaterial->columnInt(0);
+        auto count = getMaterial->columnInt(1);
+
+        consumeMaterial(materialId, count);
+        numberOfKindsOfMaterialsUsed++;
+    }
+
+    auto cost = evaluateNumericalFunction(evolutionCostNumericalFunctionId, numberOfKindsOfMaterialsUsed);
+
+    m_log.debug("weaponEvolve(%s): current evolution order: %d, next evolution weapon ID: %d, cost: %d\n",
+                weaponUUID.c_str(), currentEvolutionOrder, nextWeaponId,
+                cost);
+
+    consumeConsumableItem(consumableItemIdForGold(), cost);
+
+    auto evolveWeapon = db().prepare("UPDATE i_user_weapon SET weapon_id = ? WHERE user_id = ? AND user_weapon_uuid = ?");
+    evolveWeapon->bind(1, nextWeaponId);
+    evolveWeapon->bind(2, m_userId);
+    evolveWeapon->bind(3, weaponUUID);
+    evolveWeapon->exec();
+
+    populateWeaponSkillsAndAbilities(weaponUUID);
+    populateWeaponNote(weaponUUID);
+
+    giveUserWeaponExperience(weaponUUID, 0, 0);
+    updateWeaponUnlockedStory(nextWeaponId);
+}
+
+void UserContext::populateWeaponSkillsAndAbilities(const std::string &weaponUUID) {
+
+    /*
+     * Get the currently defined skill and ability slots.
+     */
+    std::unordered_set<int32_t> existingSkillSlots, existingAbilitySlots;
+
+    auto getSkills = db().prepare("SELECT slot_number FROM i_user_weapon_skill WHERE user_id = ? AND user_weapon_uuid = ?");
+    getSkills->bind(1, m_userId);
+    getSkills->bind(2, weaponUUID);
+    while(getSkills->step()) {
+        existingSkillSlots.emplace(getSkills->columnInt(0));
+    }
+    getSkills->reset();
+
+    auto getAbilities = db().prepare("SELECT slot_number FROM i_user_weapon_ability WHERE user_id = ? AND user_weapon_uuid = ?");
+    getAbilities->bind(1, m_userId);
+    getAbilities->bind(2, weaponUUID);
+    while(getAbilities->step()) {
+        existingAbilitySlots.emplace(getAbilities->columnInt(0));
+    }
+    getAbilities->reset();
+
+    /*
+     * Get the skill and ability slots this weapon is supposed to have.
+     */
+    auto getDefinedSkills = db().prepare(R"SQL(
+        SELECT slot_number
+        FROM
+            i_user_weapon,
+            m_weapon USING (weapon_id),
+            m_weapon_skill_group USING (weapon_skill_group_id)
+        WHERE
+            user_id = ? AND
+            user_weapon_uuid = ?
+    )SQL");
+    getDefinedSkills->bind(1, m_userId);
+    getDefinedSkills->bind(2, weaponUUID);
+
+    auto createSkillSlot = db().prepare(R"SQL(
+        INSERT INTO i_user_weapon_skill (
+            user_id,
+            user_weapon_uuid,
+            slot_number
+        ) VALUES (
+            ?, ?, ?
+        )
+    )SQL");
+    createSkillSlot->bind(1, m_userId);
+    createSkillSlot->bind(2, weaponUUID);
+
+    auto deleteSkillSlot = db().prepare(R"SQL(
+        DELETE FROM i_user_weapon_skill WHERE
+            user_id = ? AND
+            user_weapon_uuid = ? AND
+            slot_number = ?
+    )SQL");
+    deleteSkillSlot->bind(1, m_userId);
+    deleteSkillSlot->bind(2, weaponUUID);
+
+    while(getDefinedSkills->step()) {
+        auto slotNumber = getDefinedSkills->columnInt(0);
+
+        if(existingSkillSlots.erase(slotNumber) == 0) {
+            /*
+             * We don't already have that skill slot, so create it.
+             */
+            createSkillSlot->bind(3, slotNumber);
+            createSkillSlot->exec();
+            createSkillSlot->reset();
+        }
+    }
+
+    getDefinedSkills->reset();
+
+    /*
+     * Any remaining skill slots were removed, and we need to delete them.
+     */
+    for(auto existing: existingSkillSlots) {
+        deleteSkillSlot->bind(3, existing);
+        deleteSkillSlot->exec();
+    }
+
+    /*
+     * Now, the same for abilities.
+     */
+    auto getDefinedAbilities = db().prepare(R"SQL(
+        SELECT slot_number
+        FROM
+            i_user_weapon,
+            m_weapon USING (weapon_id),
+            m_weapon_ability_group USING (weapon_ability_group_id)
+        WHERE
+            user_id = ? AND
+            user_weapon_uuid = ?
+    )SQL");
+    getDefinedAbilities->bind(1, m_userId);
+    getDefinedAbilities->bind(2, weaponUUID);
+
+    auto createAbilitySlot = db().prepare(R"SQL(
+        INSERT INTO i_user_weapon_ability (
+            user_id,
+            user_weapon_uuid,
+            slot_number
+        ) VALUES (
+            ?, ?, ?
+        )
+    )SQL");
+    createAbilitySlot->bind(1, m_userId);
+    createAbilitySlot->bind(2, weaponUUID);
+
+    auto deleteAbilitySlot = db().prepare(R"SQL(
+        DELETE FROM i_user_weapon_ability WHERE
+            user_id = ? AND
+            user_weapon_uuid = ? AND
+            slot_number = ?
+    )SQL");
+    deleteAbilitySlot->bind(1, m_userId);
+    deleteAbilitySlot->bind(2, weaponUUID);
+
+    while(getDefinedAbilities->step()) {
+        auto slotNumber = getDefinedAbilities->columnInt(0);
+
+        if(existingAbilitySlots.erase(slotNumber) == 0) {
+            /*
+             * We don't already have that ability slot, so create it.
+             */
+            createAbilitySlot->bind(3, slotNumber);
+            createAbilitySlot->exec();
+            createAbilitySlot->reset();
+        }
+    }
+
+    getDefinedAbilities->reset();
+
+    /*
+     * Any remaining ability slots were removed, and we need to delete them.
+     */
+    for(auto existing: existingAbilitySlots) {
+        deleteAbilitySlot->bind(3, existing);
+        deleteAbilitySlot->exec();
+    }
+}
+
+void UserContext::populateWeaponNote(const std::string &weaponUUID) {
+
+    auto getWeaponIDAndLevel = db().prepare("SELECT weapon_id, level FROM i_user_weapon WHERE user_id = ? AND user_weapon_uuid = ?");
+    getWeaponIDAndLevel->bind(1, m_userId);
+    getWeaponIDAndLevel->bind(2, weaponUUID);
+    if(!getWeaponIDAndLevel->step())
+        throw std::logic_error("no such weapon");
+
+    auto weaponID = getWeaponIDAndLevel->columnInt(0);
+    auto level = getWeaponIDAndLevel->columnInt(1);
+    getWeaponIDAndLevel->reset();
+
+    auto note = db().prepare(R"SQL(
+        INSERT INTO i_user_weapon_note (
+            user_id,
+            weapon_id,
+            max_level,
+            first_acquisition_datetime
+        ) VALUES (
+            ?,
+            ?,
+            ?,
+            current_net_timestamp()
+        )
+        ON CONFLICT (user_id, weapon_id) DO UPDATE SET
+            max_level = MAX(max_level, excluded.max_level)
+    )SQL");
+
+    note->bind(1, m_userId);
+    note->bind(2, weaponID);
+    note->bind(3, level);
+    note->exec();
 }

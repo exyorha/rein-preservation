@@ -87,7 +87,8 @@ public:
 
     void registerDokanConfirmed(int32_t dokanId);
 
-    bool hasWeaponWithId(int32_t weaponId);
+    [[deprecated("has uncertain semantics around evolution")]] bool hasWeaponWithId(int32_t weaponId);
+
     bool hasAnyCompanions();
 
     void registerNaviCutInPlayed(int32_t cutInId);
@@ -199,6 +200,8 @@ public:
                                bool &sequenceCleared,
                                google::protobuf::RepeatedPtrField<apb::api::gimmick::GimmickReward> *gimmickSequenceClearReward);
 
+    void weaponEvolve(const std::string &weaponUUID);
+
 private:
 
     struct CollectedConditionRequirements {
@@ -296,6 +299,11 @@ private:
         CollectedConditionRequirements *requirements = nullptr);
 
     bool isMissionClear(int32_t missionId);
+
+    void populateWeaponSkillsAndAbilities(const std::string &weaponUUID);
+    void populateWeaponNote(const std::string &weaponUUID);
+
+    int32_t getHighestEvolutionOrder(int32_t weaponId);
 
     int64_t m_userId;
     LLServices::LogFacility m_log;

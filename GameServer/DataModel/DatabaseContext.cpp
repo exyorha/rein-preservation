@@ -1,4 +1,3 @@
-#include "DataModel/DatabaseEnums.h"
 #include <DataModel/DatabaseContext.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
 #include <DataModel/Zlib.h>
@@ -11,6 +10,9 @@
 
 #include <LLServices/JSON/JSONWriter.h>
 #include <LLServices/JSON/StreamingJSONParser.h>
+#include <LLServices/Logging/LogFacility.h>
+
+LLServices::LogFacility LogDatabaseContext("DatabaseContext");
 
 DatabaseContext::DatabaseContext(Database &db) : m_db(db) {
 
@@ -170,6 +172,36 @@ void DatabaseContext::queryCostumeEnhancementCost(int32_t costumeID, int32_t ite
     query->reset();
 
     costumeEnhancementCost = evaluateNumericalFunction(costFunction, itemCount);
+}
+
+int32_t DatabaseContext::getWeaponIdForEvolutionOrder(int32_t weaponId, int32_t evolutionOrder) {
+    auto queryEvolutionRelation = db().prepare(R"SQL(
+        SELECT
+            first_evolution.weapon_id
+        FROM
+            m_weapon,
+            m_weapon_evolution_group USING (weapon_id),
+            m_weapon_evolution_group AS first_evolution ON
+                first_evolution.weapon_evolution_group_id = m_weapon_evolution_group.weapon_evolution_group_id AND
+                first_evolution.evolution_order = ?
+        WHERE m_weapon.weapon_id = ?
+    )SQL");
+    queryEvolutionRelation->bind(1, evolutionOrder);
+    queryEvolutionRelation->bind(2, weaponId);
+    if(queryEvolutionRelation->step()) {
+        auto resolvedWeaponId = queryEvolutionRelation->columnInt(0);
+        LogDatabaseContext.debug("getWeaponIdForEvolutionOrder(%d, %d): resolved as %d via the evolution relation",
+                    weaponId, evolutionOrder, resolvedWeaponId);
+
+        return resolvedWeaponId;
+    }
+
+    if(evolutionOrder != 1)
+        throw std::runtime_error("the weapon has no such evolution order");
+
+    LogDatabaseContext.debug("getUnevolvedWeaponId(%d): returning self as fallback", weaponId);
+
+    return weaponId;
 }
 
 void DatabaseContext::queryWeaponEnhancementCost(int32_t weaponID, int32_t itemCount,
@@ -395,4 +427,34 @@ void DatabaseContext::writeJSONBackup(const std::filesystem::path &output) {
     stream.open(output, std::ios::out | std::ios::trunc | std::ios::binary);
 
     stream.write(compressed.data(), compressed.size());
+}
+
+int32_t DatabaseContext::getWeaponMaxLevelForEvolutionOrder(int32_t weaponId, int32_t evolutionOrder) {
+    weaponId = getWeaponIdForEvolutionOrder(weaponId, evolutionOrder);
+
+    auto queryMaxLevelFunction = db().prepare(R"SQL(
+        SELECT
+            COALESCE(
+                m_weapon_specific_enhance.max_level_numerical_function_id,
+                m_weapon_rarity.max_level_numerical_function_id
+            )
+        FROM
+            m_weapon,
+            m_weapon_rarity USING (rarity_type) LEFT JOIN
+            m_weapon_specific_enhance USING (weapon_specific_enhance_id)
+        WHERE
+            weapon_id = ?
+    )SQL");
+    queryMaxLevelFunction->bind(1, weaponId);
+    if(!queryMaxLevelFunction->step())
+        throw std::runtime_error("the weapon was not found");
+
+    auto functionId = queryMaxLevelFunction->columnInt(0);
+    /*
+     * Assuming that 'initial max level' means 'after limit breaks'
+     */
+
+    int32_t limitBreaks = getIntConfig("WEAPON_LIMIT_BREAK_AVAILABLE_COUNT");
+
+    return evaluateNumericalFunction(functionId, limitBreaks);
 }

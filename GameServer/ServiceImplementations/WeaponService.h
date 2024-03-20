@@ -43,6 +43,11 @@ public:
                             ::apb::api::weapon::LimitBreakByMaterialResponse* response,
                             ::google::protobuf::Closure* done) override;
 
+    void Evolve(::google::protobuf::RpcController* controller,
+                        const ::apb::api::weapon::EvolveRequest* request,
+                        ::apb::api::weapon::EvolveResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
 private:
     void ProtectImpl(
         UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response);
@@ -62,6 +67,9 @@ private:
 
     void LimitBreakByMaterialImpl(
         UserContext &user, const ::apb::api::weapon::LimitBreakByMaterialRequest* request, ::apb::api::weapon::LimitBreakByMaterialResponse* response);
+
+    void EvolveImpl(
+        UserContext &user, const ::apb::api::weapon::EvolveRequest* request, ::apb::api::weapon::EvolveResponse* response);
 };
 
 #endif

@@ -12,6 +12,7 @@ class Database;
 
 namespace LLServices {
     class JSONWriter;
+    class LogFacility;
 }
 
 class DatabaseContext {
@@ -64,8 +65,18 @@ protected:
     int32_t getFirstQuestScene(int32_t questId);
     int32_t getMainQuestRouteId(int32_t questId);
 
+    inline int32_t getUnevolvedWeaponId(int32_t weaponId) {
+        return getWeaponIdForEvolutionOrder(weaponId, 1);
+    }
+
+    int32_t getWeaponIdForEvolutionOrder(int32_t weaponId, int32_t evolutionOrder);
+
+    int32_t getWeaponMaxLevelForEvolutionOrder(int32_t weaponId, int32_t evolutionOrder);
+
 private:
     Database &m_db;
 };
+
+extern LLServices::LogFacility LogDatabaseContext;
 
 #endif

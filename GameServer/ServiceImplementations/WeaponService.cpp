@@ -56,6 +56,15 @@ void WeaponService::LimitBreakByMaterial(::google::protobuf::RpcController* cont
                            done, &WeaponService::LimitBreakByMaterialImpl);
 }
 
+void WeaponService::Evolve(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::EvolveRequest* request,
+                            ::apb::api::weapon::EvolveResponse* response,
+                            ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("WeaponService::Evolve", controller, request, response,
+                           done, &WeaponService::EvolveImpl);
+}
+
 void WeaponService::ProtectImpl(UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) {
 
     for(const auto &uuid: request->user_weapon_uuid()) {
@@ -130,4 +139,11 @@ void WeaponService::LimitBreakByMaterialImpl(
     user.weaponLimitBreak(
         request->user_weapon_uuid(),
         request->materials());
+}
+
+
+void WeaponService::EvolveImpl(
+    UserContext &user, const ::apb::api::weapon::EvolveRequest* request, ::apb::api::weapon::EvolveResponse* response) {
+
+    user.weaponEvolve(request->user_weapon_uuid());
 }
