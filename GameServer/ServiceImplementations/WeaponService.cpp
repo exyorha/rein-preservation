@@ -65,6 +65,15 @@ void WeaponService::Evolve(::google::protobuf::RpcController* controller,
                            done, &WeaponService::EvolveImpl);
 }
 
+void WeaponService::Awaken(::google::protobuf::RpcController* controller,
+                            const ::apb::api::weapon::AwakenRequest* request,
+                            ::apb::api::weapon::AwakenResponse* response,
+                            ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("WeaponService::Awaken", controller, request, response,
+                           done, &WeaponService::AwakenImpl);
+}
+
 void WeaponService::ProtectImpl(UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response) {
 
     for(const auto &uuid: request->user_weapon_uuid()) {
@@ -146,4 +155,10 @@ void WeaponService::EvolveImpl(
     UserContext &user, const ::apb::api::weapon::EvolveRequest* request, ::apb::api::weapon::EvolveResponse* response) {
 
     user.weaponEvolve(request->user_weapon_uuid());
+}
+
+void WeaponService::AwakenImpl(
+    UserContext &user, const ::apb::api::weapon::AwakenRequest* request, ::apb::api::weapon::AwakenResponse* response) {
+
+    user.weaponAwaken(request->user_weapon_uuid());
 }

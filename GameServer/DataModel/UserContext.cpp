@@ -1169,6 +1169,21 @@ void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, in
          * TODO: awakenings need to be added here
          */
         auto maxLevel = evaluateNumericalFunction(maxLevelNumericalFunctionId, limitBreakCount);
+
+        auto checkIfAwakened = db().prepare("SELECT 1 FROM i_user_weapon_awaken WHERE user_id = ? AND user_weapon_uuid = ?");
+        checkIfAwakened->bind(1, m_userId);
+        checkIfAwakened->bind(2, userWeaponUuid);
+        if(checkIfAwakened->step()) {
+            auto getLevelBoost = db().prepare("SELECT level_limit_up FROM m_weapon_awaken WHERE weapon_id = ?");
+            getLevelBoost->bind(1, weaponId);
+            if(!getLevelBoost->step())
+                throw std::runtime_error("awakened weapon has no awakening setup");
+
+            maxLevel += getLevelBoost->columnInt(0);
+            getLevelBoost->reset();
+        }
+        checkIfAwakened->reset();
+
         newLevel = std::min(*newLevel, maxLevel);
     }
     if(newLevel.has_value() && *newLevel != currentLevel) {
@@ -4757,4 +4772,55 @@ void UserContext::registerContentsStoryPlayed(int32_t contentsStoryId) {
     query->bind(1, m_userId);
     query->bind(2, contentsStoryId);
     query->exec();
+}
+
+void UserContext::weaponAwaken(const std::string &weaponUUID) {
+    auto getWeaponId = db().prepare("SELECT weapon_id FROM i_user_weapon WHERE user_id = ? AND user_weapon_uuid = ?");
+    getWeaponId->bind(1, m_userId);
+    getWeaponId->bind(2, weaponUUID);
+    if(!getWeaponId->step())
+        throw std::runtime_error("no such weapon");
+
+    auto weaponId = getWeaponId->columnInt(0);
+    getWeaponId->reset();
+
+    auto getAwakenInfo = db().prepare(R"SQL(
+        SELECT weapon_awaken_material_group_id, consume_gold
+        FROM m_weapon_awaken
+        WHERE weapon_id = ?
+    )SQL");
+    getAwakenInfo->bind(1, weaponId);
+    if(!getAwakenInfo->step())
+        throw std::runtime_error("the weapon has no awakening setup");
+
+    auto materialGroupId = getAwakenInfo->columnInt(0);
+    auto consumeGold = getAwakenInfo->columnInt(1);
+    getAwakenInfo->reset();
+
+    consumeConsumableItem(consumableItemIdForGold(), consumeGold);
+
+    auto getMaterials = db().prepare(R"SQL(
+        SELECT material_id, count
+        FROM m_weapon_awaken_material_group
+        WHERE weapon_awaken_material_group_id = ?
+        ORDER BY sort_order
+    )SQL");
+    getMaterials->bind(1, materialGroupId);
+    while(getMaterials->step()) {
+        auto materialId = getMaterials->columnInt(0);
+        auto count = getMaterials->columnInt(1);
+
+        consumeMaterial(materialId, count);
+    }
+    getMaterials->reset();
+
+    auto recordAwakening = db().prepare("INSERT INTO i_user_weapon_awaken (user_id, user_weapon_uuid) VALUES (?, ?)");
+    recordAwakening->bind(1, m_userId);
+    recordAwakening->bind(2, weaponUUID);
+    recordAwakening->exec();
+
+    /*
+     * Reevaluate the level, since the awakening may increase the level limit.
+     */
+    giveUserWeaponExperience(weaponUUID, 0, 0);
 }

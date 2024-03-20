@@ -48,6 +48,10 @@ public:
                         ::apb::api::weapon::EvolveResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void Awaken(::google::protobuf::RpcController* controller,
+                        const ::apb::api::weapon::AwakenRequest* request,
+                        ::apb::api::weapon::AwakenResponse* response,
+                        ::google::protobuf::Closure* done) override;
 private:
     void ProtectImpl(
         UserContext &user, const ::apb::api::weapon::ProtectRequest* request, ::apb::api::weapon::ProtectResponse* response);
@@ -70,6 +74,9 @@ private:
 
     void EvolveImpl(
         UserContext &user, const ::apb::api::weapon::EvolveRequest* request, ::apb::api::weapon::EvolveResponse* response);
+
+    void AwakenImpl(
+        UserContext &user, const ::apb::api::weapon::AwakenRequest* request, ::apb::api::weapon::AwakenResponse* response);
 };
 
 #endif
