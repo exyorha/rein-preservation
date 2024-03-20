@@ -202,6 +202,8 @@ public:
 
     void weaponEvolve(const std::string &weaponUUID);
 
+    void registerContentsStoryPlayed(int32_t contentsStoryId);
+
 private:
 
     struct CollectedConditionRequirements {

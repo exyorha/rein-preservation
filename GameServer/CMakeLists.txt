@@ -289,6 +289,7 @@ add_executable(GameServer
     service/CharacterBoardService.proto
     service/CharacterService.proto
     service/CharacterViewerService.proto
+    service/ContentsStoryService.proto
     service/CompanionService.proto
     service/CostumeService.proto
     service/DataService.proto
@@ -334,6 +335,9 @@ add_executable(GameServer
 
     ServiceImplementations/CompanionService.cpp
     ServiceImplementations/CompanionService.h
+
+    ServiceImplementations/ContentsStoryService.cpp
+    ServiceImplementations/ContentsStoryService.cpp
 
     ServiceImplementations/CostumeService.cpp
     ServiceImplementations/CostumeService.h

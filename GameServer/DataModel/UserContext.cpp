@@ -4721,3 +4721,21 @@ void UserContext::populateWeaponNote(const std::string &weaponUUID) {
     note->bind(3, level);
     note->exec();
 }
+
+void UserContext::registerContentsStoryPlayed(int32_t contentsStoryId) {
+    auto query = db().prepare(R"SQL(
+        INSERT INTO i_user_contents_story (
+            user_id,
+            contents_story_id,
+            play_datetime
+        ) VALUES (
+            ?,
+            ?,
+            current_net_timestamp()
+        ) ON CONFLICT (user_id, contents_story_id) DO UPDATE SET
+            play_datetime = excluded.play_datetime
+    )SQL");
+    query->bind(1, m_userId);
+    query->bind(2, contentsStoryId);
+    query->exec();
+}

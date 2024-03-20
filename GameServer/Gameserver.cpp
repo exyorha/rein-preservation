@@ -43,7 +43,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_cageOrnamentService(m_db),
     m_companionService(m_db),
     m_characterService(m_db),
-    m_characterBoardService(m_db) {
+    m_characterBoardService(m_db),
+    m_contentsStoryService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -81,6 +82,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_companionService);
     m_gameAPI.registerService(&m_characterService);
     m_gameAPI.registerService(&m_characterBoardService);
+    m_gameAPI.registerService(&m_contentsStoryService);
 
 #if 0
     std::ifstream stream;
@@ -129,7 +131,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340741,1);
 
     //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320641,1);
-    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350711,1);
+    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),440161,1);
         //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME),35038,1);
         transaction.commit();
     }

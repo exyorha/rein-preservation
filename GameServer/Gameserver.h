@@ -37,6 +37,7 @@
 #include "ServiceImplementations/CompanionService.h"
 #include "ServiceImplementations/CharacterService.h"
 #include "ServiceImplementations/CharacterBoardService.h"
+#include "ServiceImplementations/ContentsStoryService.h"
 
 #include "DataModel/Database.h"
 
@@ -103,6 +104,7 @@ private:
     CompanionService m_companionService;
     CharacterService m_characterService;
     CharacterBoardService m_characterBoardService;
+    ContentsStoryService m_contentsStoryService;
 };
 
 #endif
