@@ -1,10 +1,16 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    curb (1.0.5)
+    json (2.7.1)
+    mini_portile2 (2.8.5)
     rack (3.0.9.1)
     rackup (2.1.0)
       rack (>= 3)
       webrick (~> 1.8)
+    sqlite3 (1.7.3)
+      mini_portile2 (~> 2.8.0)
+    sqlite3 (1.7.3-x86_64-linux)
     webrick (1.8.1)
 
 PLATFORMS
@@ -12,8 +18,11 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  curb
+  json
   rack
   rackup
+  sqlite3
 
 BUNDLED WITH
    2.5.4
