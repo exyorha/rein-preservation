@@ -1,6 +1,7 @@
 require 'bundler/setup'
 require 'sqlite3'
 require 'json'
+require 'fileutils'
 
 db = SQLite3::Database.new 'information.db'
 db.execute <<EOF
@@ -59,7 +60,13 @@ db.transaction do
             raise "inconsistent postscriptDatetime"
         end
 
-        statement.bind_param(1, list_item.fetch("informationId"))
+        body = content.fetch("body")
+
+        id =  list_item.fetch("informationId")
+
+        puts "processing: #{id}"
+
+        statement.bind_param(1, id)
         statement.bind_param(2, list_item.fetch("webviewMissionId"))
         statement.bind_param(3, information_type)
         statement.bind_param(4, title)
@@ -68,5 +75,20 @@ db.transaction do
         statement.bind_param(7, postscript_datetime)
         statement.execute!
         statement.reset!
+
+        body.scan /img src=\"([^\"]+)\"/ do
+            path = $1
+
+            local_path = "public#{path}"
+
+            unless File.exist? local_path
+                FileUtils.mkpath File.dirname(local_path)
+                unless system "wget", "-O", local_path, "https://web.app.nierreincarnation.com#{path}"
+                    raise "failed to download the thumbnail for #{id}"
+                end
+            end
+
+            p path
+        end
     end
 end

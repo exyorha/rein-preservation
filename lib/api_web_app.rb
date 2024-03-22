@@ -1,8 +1,22 @@
 require 'rack/request'
 require 'rack/response'
 require 'json'
+require 'sqlite3'
 
 class ApiWebApp
+    def initialize
+        @db = SQLite3::Database.new ':memory:'
+        init = File.read(File.expand_path("../../information.sql", __FILE__))
+        until init.empty?
+            statement = @db.prepare init
+            init = statement.remainder
+            init.strip!
+
+            statement.execute
+
+        end
+    end
+
     def call(env)
         request = Rack::Request.new env
 
@@ -19,7 +33,68 @@ class ApiWebApp
     private
 
     def information_list_get(request)
-        { "informationList" => [] }
+        typeList = request.fetch("informationTypeList")
+
+        query = @db.prepare <<EOF
+SELECT
+    informationId,
+    webViewMissionId,
+    informationType,
+    title,
+    publishStartDatetime,
+    postscriptDatetime
+FROM information
+WHERE informationType IN (#{typeList.map { "?" }.join(", ")})
+ORDER BY COALESCE(postscriptDatetime, publishStartDatetime) DESC
+LIMIT ? OFFSET ? - 1
+EOF
+        params = typeList.dup
+        params.push request.fetch("limit")
+        params.push request.fetch("offset")
+
+        query.bind_params params
+
+        informationList = []
+
+        query.execute! do |(information_id, web_view_mission_id, information_type, title, publish_start_datetime, postscript_datetime)|
+            item = {
+                "informationId" => information_id,
+                "webViewMissionId" => web_view_mission_id,
+                "informationType" => information_type,
+                "title" => title,
+                "publishStartDatetime" => publish_start_datetime
+            }
+
+            unless postscript_datetime.nil?
+                item["postscriptDatetime"] = postscript_datetime
+            end
+
+            informationList.push(item)
+        end
+
+        { "informationList" => informationList }
+    end
+
+    def information_detail_get(request)
+        query = @db.prepare "SELECT informationType, title, body, publishStartDatetime, postscriptDatetime FROM information WHERE informationId = ?"
+        query.bind_param 1, request.fetch("informationId")
+
+        query.execute! do |(information_type, title, body, publish_start_datetime, postscript_datetime)|
+            item = {
+                "informationType" => information_type,
+                "title" => title,
+                "body" => body,
+                "publishStartDatetime" => publish_start_datetime
+            }
+
+            unless postscript_datetime.nil?
+                item["postscriptDatetime"] = postscript_datetime
+            end
+
+            return item
+        end
+
+        raise "no such information item"
     end
 
     def information_banner_list_get(request)
@@ -38,7 +113,7 @@ class ApiWebApp
             return [ 404, {} ]
         end
 
-        response_object = send endpoint_handler, :request_body
+        response_object = send endpoint_handler, request_body
 
         add_common_response response_object
 
@@ -57,6 +132,8 @@ class ApiWebApp
 
     ENDPOINTS = {
         "/api/information/list/get" => :information_list_get,
+        "/api/information/detail/get" => :information_detail_get,
+
         "/api/information/banner/list/get" => :information_banner_list_get,
     }
 
