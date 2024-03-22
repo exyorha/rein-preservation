@@ -42,7 +42,8 @@ SELECT
     informationType,
     title,
     publishStartDatetime,
-    postscriptDatetime
+    postscriptDatetime,
+    thumbnailImagePath
 FROM information
 WHERE informationType IN (#{typeList.map { "?" }.join(", ")})
 ORDER BY COALESCE(postscriptDatetime, publishStartDatetime) DESC
@@ -56,7 +57,8 @@ EOF
 
         informationList = []
 
-        query.execute! do |(information_id, web_view_mission_id, information_type, title, publish_start_datetime, postscript_datetime)|
+        query.execute! do |(information_id, web_view_mission_id, information_type, title, publish_start_datetime, postscript_datetime,
+                            thumbnail_image_path)|
             item = {
                 "informationId" => information_id,
                 "webViewMissionId" => web_view_mission_id,
@@ -67,6 +69,10 @@ EOF
 
             unless postscript_datetime.nil?
                 item["postscriptDatetime"] = postscript_datetime
+            end
+
+            unless thumbnail_image_path.nil?
+                item["thumbnailImagePath"] = thumbnail_image_path
             end
 
             informationList.push(item)
@@ -98,7 +104,36 @@ EOF
     end
 
     def information_banner_list_get(request)
-        { "bannerList" => [] }
+        # It appears that the backend implementation of this service doesn't
+        # implement pagination, even though the client sends limit/offset
+
+        typeList = request.fetch("informationTypeList")
+        query = @db.prepare <<EOF
+SELECT
+    informationId,
+    bannerImagePath,
+    webViewMissionId,
+    informationType
+FROM information
+WHERE informationType IN (#{typeList.map { "?" }.join(", ")}) AND bannerImagePath IS NOT NULL
+ORDER BY COALESCE(postscriptDatetime, publishStartDatetime) DESC
+EOF
+        query.bind_params typeList
+
+        bannerList = []
+
+        query.execute! do |(information_id, banner_image_path, web_view_mission_id, information_type)|
+            item = {
+                "informationId" => information_id,
+                "bannerImagePath" => banner_image_path,
+                "webViewMissionId" => web_view_mission_id,
+                "informationType" => information_type
+            }
+
+            bannerList.push(item)
+        end
+
+        { "bannerList" => bannerList }
     end
 
     def process_request(request)

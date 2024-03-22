@@ -54,6 +54,7 @@ limit = 10
 
 FileUtils.mkpath 'information/list'
 FileUtils.mkpath 'information/detail'
+FileUtils.mkpath 'information/banner'
 
 while true
 
@@ -98,3 +99,36 @@ while true
 
     offset += items.size
 end
+
+offset = 1
+while true
+
+    response = call_api(auth, "https://api-web.app.nierreincarnation.com/api/information/banner/list/get", {
+        "informationTypeList" => [ 1,2,3,4,5,6,7,8,9,10,11,12 ],
+        "limit" => limit,
+        "offset" => offset
+    })
+
+    items = response.fetch "bannerList"
+
+    p [offset, limit, items.size]
+
+    items.each do |item|
+        id = item.fetch("informationId")
+
+        puts "Got information item #{id} banner entry"
+
+        File.write "information/banner/#{id}.json", JSON.generate(item)
+    end
+
+    if items.empty?
+        break
+    end
+
+    offset += items.size
+
+    # It appears that this service doesn't implement pagination.
+    break
+end
+
+

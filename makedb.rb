@@ -3,6 +3,19 @@ require 'sqlite3'
 require 'json'
 require 'fileutils'
 
+def ensure_download_asset(path)
+    puts "downloading asset: #{path}"
+
+    local_path = "public#{path}"
+
+    unless File.exist? local_path
+        FileUtils.mkpath File.dirname(local_path)
+        unless system "wget", "-O", local_path, "https://web.app.nierreincarnation.com#{path}"
+            raise "failed to download the thumbnail for #{id}"
+        end
+    end
+end
+
 db = SQLite3::Database.new 'information.db'
 db.execute <<EOF
 CREATE TABLE IF NOT EXISTS information (
@@ -12,7 +25,9 @@ CREATE TABLE IF NOT EXISTS information (
     title TEXT NOT NULL,
     publishStartDatetime INTEGER NOT NULL,
     body TEXT NOT NULL,
-    postscriptDatetime INTEGER
+    postscriptDatetime INTEGER,
+    bannerImagePath TEXT,
+    thumbnailImagePath TEXT
 )
 EOF
 
@@ -24,9 +39,11 @@ INSERT OR REPLACE INTO information (
     title,
     publishStartDatetime,
     body,
-    postscriptDatetime
+    postscriptDatetime,
+    bannerImagePath,
+    thumbnailImagePath
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 EOF
 )
@@ -66,6 +83,35 @@ db.transaction do
 
         puts "processing: #{id}"
 
+        banner_image_path = nil
+
+        begin
+            banner_data = JSON.parse File.binread(File.join("information/banner", basename))
+
+            if banner_data.fetch("informationId") != id
+                raise "inconsistent informationId in the banner entry"
+            end
+
+            if banner_data.fetch("webviewMissionId") != list_item.fetch("webviewMissionId")
+                raise "inconsistent webviewMissionId in the banner entry"
+            end
+
+            if banner_data.fetch("informationType") != information_type
+                raise "inconsistent informationType in the banner entry"
+            end
+
+            banner_image_path = banner_data.fetch("bannerImagePath")
+
+            ensure_download_asset banner_image_path
+        rescue => e
+            puts "failed to get the banner image for #{id}: #{e.inspect}"
+        end
+
+        thumbnail_image_path = list_item.fetch("thumbnailImagePath", nil)
+        unless thumbnail_image_path.nil?
+            ensure_download_asset thumbnail_image_path
+        end
+
         statement.bind_param(1, id)
         statement.bind_param(2, list_item.fetch("webviewMissionId"))
         statement.bind_param(3, information_type)
@@ -73,22 +119,13 @@ db.transaction do
         statement.bind_param(5, start_datetime)
         statement.bind_param(6, content.fetch("body"))
         statement.bind_param(7, postscript_datetime)
+        statement.bind_param(8, banner_image_path)
+        statement.bind_param(9, thumbnail_image_path)
         statement.execute!
         statement.reset!
 
         body.scan /img src=\"([^\"]+)\"/ do
-            path = $1
-
-            local_path = "public#{path}"
-
-            unless File.exist? local_path
-                FileUtils.mkpath File.dirname(local_path)
-                unless system "wget", "-O", local_path, "https://web.app.nierreincarnation.com#{path}"
-                    raise "failed to download the thumbnail for #{id}"
-                end
-            end
-
-            p path
+            ensure_download_asset $1
         end
     end
 end
