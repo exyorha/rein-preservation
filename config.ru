@@ -1,11 +1,7 @@
 require 'bundler/setup'
 require 'rack/static'
 
-class ApiWebApp
-    def call(env)
-        [404, {}, []]
-    end
-end
+require_relative 'lib/api_web_app'
 
 class WebFallbackServer < Rack::Files
     def call(env)
