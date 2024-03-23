@@ -279,6 +279,8 @@ void CEFWebViewImplementation::init(const std::string & arg1, int32_t arg2, int3
 }
 
 void CEFWebViewImplementation::load(const std::string & arg1, const std::string & arg2) {
+    printf("CEFWebViewImplementation::load: %s\n", arg2.c_str());
+
     webview::protocol::LoadRequest request;
     webview::protocol::VoidResponse response;
     WebViewProtocolController ctrl;
