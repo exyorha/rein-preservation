@@ -23,6 +23,11 @@ public:
                         ::apb::api::costume::LimitBreakResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void Awaken(::google::protobuf::RpcController* controller,
+                        const ::apb::api::costume::AwakenRequest* request,
+                        ::apb::api::costume::AwakenResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void EnhanceActiveSkill(::google::protobuf::RpcController* controller,
                         const ::apb::api::costume::EnhanceActiveSkillRequest* request,
                         ::apb::api::costume::EnhanceActiveSkillResponse* response,
@@ -44,6 +49,11 @@ private:
         UserContext &user,
         const ::apb::api::costume::LimitBreakRequest* request,
         ::apb::api::costume::LimitBreakResponse* response);
+
+    void AwakenImpl(
+        UserContext &user,
+        const ::apb::api::costume::AwakenRequest* request,
+        ::apb::api::costume::AwakenResponse* response);
 
     void EnhanceActiveSkillImpl(
         UserContext &user,

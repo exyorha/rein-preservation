@@ -23,6 +23,14 @@ void CostumeService::LimitBreak(::google::protobuf::RpcController* controller,
     return inChangesetCall("CostumeService::LimitBreak", controller, request, response, done, &CostumeService::LimitBreakImpl);
 }
 
+void CostumeService::Awaken(::google::protobuf::RpcController* controller,
+                        const ::apb::api::costume::AwakenRequest* request,
+                        ::apb::api::costume::AwakenResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("CostumeService::Awaken", controller, request, response, done, &CostumeService::AwakenImpl);
+}
+
 void CostumeService::EnhanceActiveSkill(::google::protobuf::RpcController* controller,
                         const ::apb::api::costume::EnhanceActiveSkillRequest* request,
                         ::apb::api::costume::EnhanceActiveSkillResponse* response,
@@ -76,6 +84,16 @@ void CostumeService::LimitBreakImpl(
     ::apb::api::costume::LimitBreakResponse* response) {
 
     user.costumeLimitBreak(
+        request->user_costume_uuid(),
+        request->materials());
+}
+
+void CostumeService::AwakenImpl(
+    UserContext &user,
+    const ::apb::api::costume::AwakenRequest* request,
+    ::apb::api::costume::AwakenResponse* response) {
+
+    user.costumeAwaken(
         request->user_costume_uuid(),
         request->materials());
 }

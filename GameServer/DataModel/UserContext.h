@@ -206,6 +206,9 @@ public:
 
     void registerContentsStoryPlayed(int32_t contentsStoryId);
 
+    void costumeAwaken(const std::string &costumeUUID,
+                           const google::protobuf::Map<int32_t, int32_t> &materialsToUse);
+
 private:
 
     struct CollectedConditionRequirements {

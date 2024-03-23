@@ -478,6 +478,32 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
         }
         break;
 
+
+        case PossessionType::THOUGHT:
+        {
+            if(count != 1)
+                throw std::runtime_error("Unexpected count value for THOUGHT");
+
+            auto query = db().prepare(R"SQL(
+                INSERT INTO i_user_thought (
+                    user_id,
+                    user_thought_uuid,
+                    thought_id,
+                    acquisition_datetime
+                ) VALUES (
+                    ?,
+                    hex(randomblob(16)),
+                    ?,
+                    current_net_timestamp()
+                )
+            )SQL");
+
+            query->bind(1, m_userId);
+            query->bind(2, possessionId);
+            query->exec();
+        }
+        break;
+
         default:
             throw std::runtime_error("unsupported possession type " + std::to_string(possessionType));
     }
@@ -4824,3 +4850,281 @@ void UserContext::weaponAwaken(const std::string &weaponUUID) {
      */
     giveUserWeaponExperience(weaponUUID, 0, 0);
 }
+
+
+void UserContext::costumeAwaken(const std::string &costumeUUID,
+                                    const google::protobuf::Map<int32_t, int32_t> &materialsToUse) {
+
+/*
+ * TODO: we probably could validate the material set, but it doesn't really matter.
+ */
+
+    auto getCostumeStatus = db().prepare(
+        "SELECT costume_id, awaken_count FROM i_user_costume WHERE user_id = ? AND user_costume_uuid = ?"
+    );
+    getCostumeStatus->bind(1, m_userId);
+    getCostumeStatus->bind(2, costumeUUID);
+    if(!getCostumeStatus->step())
+        throw std::runtime_error("no such costume");
+
+    auto costumeId = getCostumeStatus->columnInt(0);
+    auto currentAwakenCount = getCostumeStatus->columnInt(1);
+    getCostumeStatus->reset();
+
+    if(currentAwakenCount >= getIntConfig("COSTUME_AWAKEN_AVAILABLE_COUNT"))
+        throw std::runtime_error("already at the maximum count of awakenings");
+
+    auto awakeningStep = currentAwakenCount + 1;
+
+    auto getAwakenCostInformation = db().prepare(R"SQL(
+        SELECT
+            gold
+        FROM
+            m_costume_awaken,
+            m_costume_awaken_price_group using (costume_awaken_price_group_id)
+        WHERE costume_id = ? AND awaken_step_lower_limit <= ?
+        ORDER BY awaken_step_lower_limit DESC
+    )SQL");
+    getAwakenCostInformation->bind(1, costumeId);
+    getAwakenCostInformation->bind(2, awakeningStep);
+    if(!getAwakenCostInformation->step())
+        throw std::runtime_error("unable to retrieve the awakening cost information");
+
+    auto awakenCostGold = getAwakenCostInformation->columnInt(0);
+
+    int32_t materialCount = 0;
+
+    for(const auto &pair: materialsToUse) {
+        consumeMaterial(pair.first, pair.second);
+    }
+
+    consumeConsumableItem(consumableItemIdForGold(), awakenCostGold);
+
+    auto updateAwakenCount = db().prepare(R"SQL(
+        UPDATE i_user_costume SET
+            awaken_count = awaken_count + 1
+        WHERE
+            user_id = ? AND
+            user_costume_uuid = ?
+    )SQL");
+    updateAwakenCount->bind(1, m_userId);
+    updateAwakenCount->bind(2, costumeUUID);
+    updateAwakenCount->exec();
+
+    /*
+     * Get status effects that apply *up to the new level*, aggregate them, and store.
+     */
+    auto getStatusEffects = db().prepare(R"SQL(
+        SELECT
+            status_kind_type,
+            status_calculation_type,
+            effect_value
+        FROM
+            m_costume_awaken,
+            m_costume_awaken_effect_group USING (costume_awaken_effect_group_id),
+            m_costume_awaken_status_up_group ON m_costume_awaken_status_up_group.costume_awaken_status_up_group_id = m_costume_awaken_effect_group.costume_awaken_effect_id
+        WHERE
+            costume_id = ? AND
+            awaken_step <= ? AND
+            costume_awaken_effect_type = ?
+        ORDER BY sort_order
+    )SQL");
+    getStatusEffects->bind(1, costumeId);
+    getStatusEffects->bind(2, awakeningStep);
+    getStatusEffects->bind(3, static_cast<int32_t>(CostumeAwakenEffectType::STATUS_UP));
+
+    std::optional<AggregatedBonuses> additive, multiplicative;
+
+    while(getStatusEffects->step()) {
+        auto statusKindType = static_cast<StatusKindType>(getStatusEffects->columnInt(0));
+        auto statusCalculationType = static_cast<StatusCalculationType>(getStatusEffects->columnInt(1));
+        auto effectValue = getStatusEffects->columnInt(2);
+
+        if(statusCalculationType == StatusCalculationType::ADD) {
+            if(!additive.has_value())
+                additive.emplace();
+
+            switch(statusKindType) {
+                case StatusKindType::HP:
+                    additive->hp += effectValue;
+                    break;
+
+                case StatusKindType::ATTACK:
+                    additive->attack += effectValue;
+                    break;
+
+                case StatusKindType::VITALITY:
+                    additive->vitality += effectValue;
+                    break;
+
+                case StatusKindType::AGILITY:
+                    additive->agility += effectValue;
+                    break;
+
+                case StatusKindType::CRITICAL_RATIO:
+                    additive->criticalRatio += effectValue;
+                    break;
+
+                case StatusKindType::CRITICAL_ATTACK:
+                    additive->criticalAttack += effectValue;
+                    break;
+
+                default:
+                    throw std::runtime_error("unsupported StatusKindType");
+            }
+        } else if(statusCalculationType == StatusCalculationType::MULTIPLY) {
+            if(!multiplicative.has_value()) {
+                auto &def = multiplicative.emplace();
+#if 0
+                def.hp = 100;
+                def.attack = 100;
+                def.vitality = 100;
+                def.agility = 100;
+                def.criticalRatio = 100;
+                def.criticalAttack = 100;
+#endif
+            }
+
+            switch(statusKindType) {
+#if 0
+                case StatusKindType::HP:
+                    multiplicative->hp = multiplicative->hp * effectValue / 100;
+                    break;
+
+                case StatusKindType::ATTACK:
+                    multiplicative->attack = multiplicative->attack * effectValue / 100;
+                    break;
+
+                case StatusKindType::VITALITY:
+                    multiplicative->vitality = multiplicative->vitality * effectValue / 100;
+                    break;
+
+                case StatusKindType::AGILITY:
+                    multiplicative->agility = multiplicative->agility * effectValue / 100;
+                    break;
+
+                case StatusKindType::CRITICAL_RATIO:
+                    multiplicative->criticalRatio = multiplicative->criticalRatio * effectValue / 100;
+                    break;
+
+                case StatusKindType::CRITICAL_ATTACK:
+                    multiplicative->criticalAttack = multiplicative->criticalAttack * effectValue / 100;
+                    break;
+#endif
+
+                case StatusKindType::HP:
+                    multiplicative->hp += effectValue;
+                    break;
+
+                case StatusKindType::ATTACK:
+                    multiplicative->attack += effectValue;
+                    break;
+
+                case StatusKindType::VITALITY:
+                    multiplicative->vitality += effectValue;
+                    break;
+
+                case StatusKindType::AGILITY:
+                    multiplicative->agility += effectValue;
+                    break;
+
+                case StatusKindType::CRITICAL_RATIO:
+                    multiplicative->criticalRatio += effectValue;
+                    break;
+
+                case StatusKindType::CRITICAL_ATTACK:
+                    multiplicative->criticalAttack += effectValue;
+                    break;
+
+                default:
+                    throw std::runtime_error("unsupported StatusKindType");
+            }
+        } else {
+            throw std::runtime_error("unsupported StatusCalculationType");
+        }
+
+    }
+    getStatusEffects->reset();
+
+    auto storeStatusEffect = db().prepare(R"SQL(
+        INSERT INTO i_user_costume_awaken_status_up (
+            user_id,
+            user_costume_uuid,
+            status_calculation_type,
+            hp,
+            attack,
+            vitality,
+            agility,
+            critical_ratio,
+            critical_attack
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ) ON CONFLICT (user_id, user_costume_uuid, status_calculation_type) DO UPDATE SET
+            hp = excluded.hp,
+            attack = excluded.attack,
+            vitality = excluded.vitality,
+            agility = excluded.agility,
+            critical_ratio = excluded.critical_ratio,
+            critical_attack = excluded.critical_attack
+    )SQL");
+    storeStatusEffect->bind(1, m_userId);
+    storeStatusEffect->bind(2, costumeUUID);
+    if(additive.has_value()) {
+        storeStatusEffect->bind(3, static_cast<int32_t>(StatusCalculationType::ADD));
+        storeStatusEffect->bind(4, additive->hp);
+        storeStatusEffect->bind(5, additive->attack);
+        storeStatusEffect->bind(6, additive->vitality);
+        storeStatusEffect->bind(7, additive->agility);
+        storeStatusEffect->bind(8, additive->criticalRatio);
+        storeStatusEffect->bind(9, additive->criticalAttack);
+        storeStatusEffect->exec();
+        storeStatusEffect->reset();
+    }
+
+    if(multiplicative.has_value()) {
+        storeStatusEffect->bind(3, static_cast<int32_t>(StatusCalculationType::MULTIPLY));
+        storeStatusEffect->bind(4, multiplicative->hp);
+        storeStatusEffect->bind(5, multiplicative->attack);
+        storeStatusEffect->bind(6, multiplicative->vitality);
+        storeStatusEffect->bind(7, multiplicative->agility);
+        storeStatusEffect->bind(8, multiplicative->criticalRatio);
+        storeStatusEffect->bind(9, multiplicative->criticalAttack);
+        storeStatusEffect->exec();
+        storeStatusEffect->reset();
+    }
+
+    /*
+     * It's currently believed that the ability effects require no server-side processing.
+     */
+
+    /*
+     * Process the 'item acquire' effects *for the new level* only.
+     */
+    auto getItemEffects = db().prepare(R"SQL(
+        SELECT
+            possession_type,
+            possession_id,
+            count
+        FROM
+            m_costume_awaken,
+            m_costume_awaken_effect_group USING (costume_awaken_effect_group_id),
+            m_costume_awaken_item_acquire ON m_costume_awaken_item_acquire.costume_awaken_item_acquire_id = m_costume_awaken_effect_group.costume_awaken_effect_id
+        WHERE
+            costume_id = ? AND
+            awaken_step = ? AND
+            costume_awaken_effect_type = ?
+    )SQL");
+    getItemEffects->bind(1, costumeId);
+    getItemEffects->bind(2, awakeningStep);
+    getItemEffects->bind(3, static_cast<int32_t>(CostumeAwakenEffectType::ITEM_ACQUIRE));
+
+    while(getItemEffects->step()) {
+        auto possessionType = getItemEffects->columnInt(0);
+        auto possessionId = getItemEffects->columnInt(1);
+        auto count = getItemEffects->columnInt(2);
+
+        givePossession(possessionType, possessionId, count);
+    }
+    getItemEffects->reset();
+}
+
