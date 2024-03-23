@@ -52,10 +52,17 @@ CREATE VIRTUAL TABLE m_quest_first_clear_reward_switch USING masterdatabase (
 );
 
 CREATE TABLE i_user_deck_limit_content_deleted_character (
-  user_id bigint,
-  user_deck_number integer,
-  user_deck_character_number integer,
-  costume_id integer,
-  latest_version bigint
+  user_id bigint NOT NULL,
+  user_deck_number integer NOT NULL,
+  user_deck_character_number integer NOT NULL,
+  costume_id integer NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1
 );
+CREATE INDEX i_user_deck_limit_content_deleted_character_user_id ON i_user_deck_limit_content_deleted_character (user_id);
 
+CREATE TRIGGER i_user_deck_limit_content_deleted_character_update_version
+AFTER UPDATE ON i_user_deck_limit_content_deleted_character FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_deck_limit_content_deleted_character SET latest_version = OLD.latest_version + 1
+    WHERE i_user_deck_limit_content_deleted_character.rowid = NEW.rowid;
+END;
