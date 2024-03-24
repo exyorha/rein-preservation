@@ -32,6 +32,12 @@ class ApiWebApp
 
     private
 
+    def wm_panel_mission_pages(request)
+        web_view_mission_id = request.fetch("webviewMissionId")
+
+        JSON.parse(File.binread(File.expand_path("../panel_mission/#{web_view_mission_id}.json", "rb")))
+    end
+
     def information_list_get(request)
         typeList = request.fetch("informationTypeList")
 
@@ -170,6 +176,8 @@ EOF
         "/api/information/detail/get" => :information_detail_get,
 
         "/api/information/banner/list/get" => :information_banner_list_get,
+
+        "/api/wm/panel_mission/pages" => :wm_panel_mission_pages
     }
 
 end

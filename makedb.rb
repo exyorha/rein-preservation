@@ -2,6 +2,9 @@ require 'bundler/setup'
 require 'sqlite3'
 require 'json'
 require 'fileutils'
+require 'openssl'
+
+CARD_FULL = OpenSSL::Digest::SHA256.hexdigest("card_full.jpg")
 
 def ensure_download_asset(path)
     puts "downloading asset: #{path}"
@@ -127,5 +130,27 @@ db.transaction do
         body.scan /img src=\"([^\"]+)\"/ do
             ensure_download_asset $1
         end
+    end
+
+    Dir["panel_mission/*.json"].each do |mission_file|
+       mission = JSON.parse(File.read(mission_file)).fetch("data")
+
+       mission.fetch("pages").each do |page|
+            page.fetch("panels").each do |panel|
+                panel.fetch("reward").fetch("rewardImageFileName")
+            end
+
+            directory = "/images/en/operations/panel_mission/#{mission.fetch("webviewPanelMissionId")}/page#{page.fetch("pageNumber")}/card"
+
+            page.fetch("bgParts").each do |bgPart|
+                ensure_download_asset "#{directory}/#{bgPart.fetch("imagePath")}"
+            end
+
+            ensure_download_asset "#{directory}/#{CARD_FULL}"
+
+            unless system "jpegtran", "-outfile", "#{page.fetch("pageId")}.jpg", "-rotate", "90", "public#{directory}/#{CARD_FULL}"
+                raise "jpegtran has failed"
+            end
+       end
     end
 end
