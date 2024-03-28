@@ -54,7 +54,7 @@ FileUtils.mkpath 'information/detail'
 FileUtils.mkpath 'information/banner'
 FileUtils.mkpath 'panel_mission'
 
-(1..9).each do |mission_id|
+(1..8).each do |mission_id|
     puts "retrieving panel mission #{mission_id}"
 
     result = call_api(auth, "https://api-web.app.nierreincarnation.com/api/wm/panel_mission/pages", {
@@ -63,8 +63,6 @@ FileUtils.mkpath 'panel_mission'
 
     File.write "panel_mission/#{mission_id}.json", JSON.generate(result)
 end
-
-exit 0
 
 offset = 1
 limit = 10
