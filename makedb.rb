@@ -77,7 +77,7 @@ db.transaction do
 
         postscript_datetime = list_item.fetch("postscriptDatetime", nil)
         if postscript_datetime != content.fetch("postscriptDatetime", nil)
-            raise "inconsistent postscriptDatetime"
+            raise "inconsistent postscriptDatetime for #{filename}"
         end
 
         body = content.fetch("body")
