@@ -191,14 +191,9 @@ static void UnityEngine_SendMouseEvent_DoSendMouseEvents(int32_t unknown, void (
         }
     }
 
-    printf("checking for tilde\n");
     if(icall_GetKeyDown(interned_tilde)) {
-        printf("pressed\n");
         icall_OpenURL(stringFromUtf8(getGameServerEndpoint()));
-    } else {
-        printf("not pressed\n");
     }
-
 }
 
 void InitializeInput(void) {
@@ -216,8 +211,6 @@ void InitializeInput(void) {
     icall_GetAxisRaw = reinterpret_cast<GetAxisRawPtr>(translator_resolve_native_icall("UnityEngine.Input::GetAxisRaw(System.String)"));
 
     icall_GetKeyDown = reinterpret_cast<GetKeyDownPtr>(translator_resolve_native_icall("UnityEngine.Input::GetKeyDownString"));
-
-    printf("icall_GetKeyDown is %p\n", icall_GetKeyDown);
 
     translator_divert_method("Assembly-CSharp.dll::Dark.Animation.ActorControllerWithGesturePan::Update",
                              Dark_Animation_ActorControllerWithGesturePan_Update);
