@@ -1,5 +1,8 @@
 #include "Input.h"
 #include "translator_api.h"
+#include "GameServerInterface.h"
+
+#include <Il2CppUtilities.h>
 
 #include <cstdio>
 #include <cmath>
@@ -61,14 +64,22 @@ struct Dark_Animation_ActorControllerWithGesturePan {
 static Il2CppString *interned_Horizontal; // negative: 'left'/'A', positive: 'right'/'D'
 static Il2CppString *interned_Vertical;   // negative: 'down'/'S', positive: 'up'/'W'
 
+static Il2CppString *interned_tilde;
+
 using GetAxisRawPtr = float (*)(Il2CppString *axisName);
 static GetAxisRawPtr icall_GetAxisRaw;
+
+using GetKeyDownPtr = bool (*)(Il2CppString *keyName);
+static GetKeyDownPtr icall_GetKeyDown;
 
 using GetMouseButtonPtr = bool (*)(int32_t index);
 static GetMouseButtonPtr icall_GetMouseButton;
 
 using get_mousePosition_InjectedPtr = void (*)(UnityEngine_Vector3 *position);
 static get_mousePosition_InjectedPtr icall_get_mousePosition_Injected;
+
+using OpenURLPtr = void (*)(Il2CppString *url);
+static OpenURLPtr icall_OpenURL;
 
 bool EmulateTouchInput = true;
 static std::optional<UnityEngine_Touch> CurrentTouch;
@@ -127,55 +138,67 @@ INTERPOSE_ICALL("UnityEngine.Input::GetTouch_Injected", UnityEngine_Input_GetTou
 static void UnityEngine_SendMouseEvent_DoSendMouseEvents(int32_t unknown, void (*original)(int32_t unknown)) {
     original(unknown);
 
-    if(icall_GetMouseButton(0)) {
-        UnityEngine_Vector3 pos;
-        icall_get_mousePosition_Injected(&pos);
+    if(EmulateTouchInput) {
 
-        if(!CurrentTouch.has_value() || CurrentTouch->m_Phase == UnityEngine_TouchPhase::Ended) {
-            auto &touch = CurrentTouch.emplace();
+        if(icall_GetMouseButton(0)) {
+            UnityEngine_Vector3 pos;
+            icall_get_mousePosition_Injected(&pos);
 
-            touch.m_FingerId = 0;
-            touch.m_Position.x = pos.x;
-            touch.m_Position.y = pos.y;
-            touch.m_RawPosition = touch.m_Position;
-            touch.m_PositionDelta.x = 0.0f;
-            touch.m_PositionDelta.y = 0.0f;
-            touch.m_TimeDelta = 0.0f;
-            touch.m_TapCount = 0;
-            touch.m_Phase = UnityEngine_TouchPhase::Began;
-            touch.m_Type = UnityEngine_TouchType::Direct;
-            touch.m_Pressure = 1.0f;
-            touch.m_maximumPossiblePressure = 1.0f;
-            touch.m_Radius = 1.0f;
-            touch.m_RadiusVariance = 0.0f;
-            touch.m_AltitudeAngle = static_cast<float>(M_PI / 2.0f);
-            touch.m_AzimuthAngle = 0.0f;
+            if(!CurrentTouch.has_value() || CurrentTouch->m_Phase == UnityEngine_TouchPhase::Ended) {
+                auto &touch = CurrentTouch.emplace();
 
-        } else {
-            auto &touch = *CurrentTouch;
+                touch.m_FingerId = 0;
+                touch.m_Position.x = pos.x;
+                touch.m_Position.y = pos.y;
+                touch.m_RawPosition = touch.m_Position;
+                touch.m_PositionDelta.x = 0.0f;
+                touch.m_PositionDelta.y = 0.0f;
+                touch.m_TimeDelta = 0.0f;
+                touch.m_TapCount = 0;
+                touch.m_Phase = UnityEngine_TouchPhase::Began;
+                touch.m_Type = UnityEngine_TouchType::Direct;
+                touch.m_Pressure = 1.0f;
+                touch.m_maximumPossiblePressure = 1.0f;
+                touch.m_Radius = 1.0f;
+                touch.m_RadiusVariance = 0.0f;
+                touch.m_AltitudeAngle = static_cast<float>(M_PI / 2.0f);
+                touch.m_AzimuthAngle = 0.0f;
 
-            touch.m_PositionDelta.x = pos.x - touch.m_Position.x;
-            touch.m_PositionDelta.y = pos.y - touch.m_Position.y;
-
-            if(hypotf(touch.m_PositionDelta.x, touch.m_PositionDelta.y) <= 3.0f) {
-                touch.m_Phase = UnityEngine_TouchPhase::Stationary;
             } else {
-                touch.m_Phase = UnityEngine_TouchPhase::Moved;
+                auto &touch = *CurrentTouch;
+
+                touch.m_PositionDelta.x = pos.x - touch.m_Position.x;
+                touch.m_PositionDelta.y = pos.y - touch.m_Position.y;
+
+                if(hypotf(touch.m_PositionDelta.x, touch.m_PositionDelta.y) <= 3.0f) {
+                    touch.m_Phase = UnityEngine_TouchPhase::Stationary;
+                } else {
+                    touch.m_Phase = UnityEngine_TouchPhase::Moved;
+                }
+
+                touch.m_Position.x = pos.x;
+                touch.m_Position.y = pos.y;
             }
 
-            touch.m_Position.x = pos.x;
-            touch.m_Position.y = pos.y;
-        }
-
-    } else {
-        if(CurrentTouch.has_value()) {
-            if(CurrentTouch->m_Phase == UnityEngine_TouchPhase::Ended)
-                CurrentTouch.reset();
-            else {
-                CurrentTouch->m_Phase = UnityEngine_TouchPhase::Ended;
+        } else {
+            if(CurrentTouch.has_value()) {
+                if(CurrentTouch->m_Phase == UnityEngine_TouchPhase::Ended)
+                    CurrentTouch.reset();
+                else {
+                    CurrentTouch->m_Phase = UnityEngine_TouchPhase::Ended;
+                }
             }
         }
     }
+
+    printf("checking for tilde\n");
+    if(icall_GetKeyDown(interned_tilde)) {
+        printf("pressed\n");
+        icall_OpenURL(stringFromUtf8(getGameServerEndpoint()));
+    } else {
+        printf("not pressed\n");
+    }
+
 }
 
 void InitializeInput(void) {
@@ -185,10 +208,16 @@ void InitializeInput(void) {
     interned_Vertical = il2cpp_string_intern(il2cpp_string_new("Vertical"));
         // TODO: for the joystick, also consume '4th axis' with the same sense
 
+    interned_tilde = il2cpp_string_intern(il2cpp_string_new("`"));
+
     /*
      * The game does its own filtering, so using GetAxis just makes the movement sluggish.
      */
     icall_GetAxisRaw = reinterpret_cast<GetAxisRawPtr>(translator_resolve_native_icall("UnityEngine.Input::GetAxisRaw(System.String)"));
+
+    icall_GetKeyDown = reinterpret_cast<GetKeyDownPtr>(translator_resolve_native_icall("UnityEngine.Input::GetKeyDownString"));
+
+    printf("icall_GetKeyDown is %p\n", icall_GetKeyDown);
 
     translator_divert_method("Assembly-CSharp.dll::Dark.Animation.ActorControllerWithGesturePan::Update",
                              Dark_Animation_ActorControllerWithGesturePan_Update);
@@ -197,8 +226,10 @@ void InitializeInput(void) {
         icall_GetMouseButton = reinterpret_cast<GetMouseButtonPtr>(translator_resolve_native_icall("UnityEngine.Input::GetMouseButton(System.Int32)"));
         icall_get_mousePosition_Injected = reinterpret_cast<get_mousePosition_InjectedPtr>(
             translator_resolve_native_icall("UnityEngine.Input::get_mousePosition_Injected(UnityEngine.Vector3&)"));
-
-        translator_divert_method("UnityEngine.InputLegacyModule.dll::UnityEngine.SendMouseEvents::DoSendMouseEvents",
-                                 UnityEngine_SendMouseEvent_DoSendMouseEvents);
     }
+
+    icall_OpenURL = reinterpret_cast<OpenURLPtr>(translator_resolve_native_icall("UnityEngine.Application::OpenURL(System.String)"));
+
+    translator_divert_method("UnityEngine.InputLegacyModule.dll::UnityEngine.SendMouseEvents::DoSendMouseEvents",
+                                UnityEngine_SendMouseEvent_DoSendMouseEvents);
 }
