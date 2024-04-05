@@ -253,6 +253,6 @@ void installGCHooks(const Image &il2cppImage) {
     GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25b25d0), GC_push_all_stacks_diversion, nullptr);
     GlobalContext::get().diversionManager().divert(il2cppImage.displace(0x25b3020), GC_stop_init_diversion, nullptr);
 
-    totalStackSize = il2cppImage.displace<size_t>(0x79b26e0);
+    totalStackSize = il2cppImage.displace<size_t>(0x79a6720);
 }
 
