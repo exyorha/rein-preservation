@@ -55,7 +55,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
 
     std::string path("/web.app.nierreincarnation.com/assets/release/");
     path.append(m_db.masterDatabaseVersion());
-    path.append("/database.bin.e");
+    path.append("/database.bin");
 
     m_webServer.overridePath(std::move(path), std::filesystem::path(masterDatabasePath));
 

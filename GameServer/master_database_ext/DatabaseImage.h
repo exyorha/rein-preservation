@@ -24,9 +24,6 @@ namespace MasterDatabase {
 
     private:
         std::vector<char> m_data;
-
-        static const unsigned char m_key[16];
-        static const unsigned char m_iv[16];
     };
 
 }

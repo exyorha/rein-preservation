@@ -17,6 +17,7 @@ const WebContentServer::MimeType WebContentServer::m_mimeTypes[]{
     { ".html", "text/html; charset=utf-8" },
     { "",      "text/html; charset=utf-8" },
     { ".e",    "application/octet-stream" },
+    { ".bin",  "application/octet-stream" },
     { ".xml",  "text/xml" },
     { ".xsl",  "text/xsl" },
     { ".css",  "text/css" },

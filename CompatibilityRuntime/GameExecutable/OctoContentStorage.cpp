@@ -40,7 +40,7 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
             continue;
 
         const auto &path = listEntry.path();
-        if(path.filename() != "database.bin.e")
+        if(path.filename() != "database.bin")
             continue;
 
         auto version = path.parent_path().filename().string();

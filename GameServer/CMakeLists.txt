@@ -7,10 +7,6 @@ find_package(Protobuf CONFIG REQUIRED)
 
 find_package(ZLIB REQUIRED)
 
-if(NOT WIN32)
-    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
-endif()
-
 if(WIN32 AND NOT TARGET protobuf::protoc)
     message(STATUS "Trying to find the host 'protoc'")
 

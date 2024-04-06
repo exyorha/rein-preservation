@@ -4,8 +4,6 @@ add_executable(GameExecutable
     CommonUtilities.cpp
     CommonUtilities.h
 
-    FastAES.h
-
     GameEntryPoint.h
 
     GameServerInterface.cpp
@@ -120,8 +118,6 @@ if(WIN32)
     target_sources(GameExecutable PRIVATE
         EntryPointWindows.cpp
 
-        FastAESWindows.cpp
-
         ProcessCommandLineWindows.cpp
         ProcessCommandLineWindows.h
 
@@ -140,13 +136,7 @@ if(WIN32)
         GameExecutable.rc
     )
     target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
-    target_link_libraries(GameExecutable PRIVATE bcrypt opengl32 ws2_32)
-else()
-    target_sources(GameExecutable PRIVATE
-        FastAESOpenSSL.cpp
-    )
-
-    target_link_libraries(GameExecutable PRIVATE OpenSSL::Crypto)
+    target_link_libraries(GameExecutable PRIVATE opengl32 ws2_32)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)

@@ -58,8 +58,6 @@ endif()
 
 if(NOT WIN32)
     find_package(Iconv REQUIRED)
-    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
-
 endif()
 
 add_subdirectory(makeelfpe)

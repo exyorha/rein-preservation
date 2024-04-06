@@ -11,7 +11,6 @@
 #include "Input.h"
 #include "OctoContentStorage.h"
 #include "Octo.h"
-#include "FastAES.h"
 #include "GameEntryPoint.h"
 #include "GameServerInterface.h"
 
@@ -244,6 +243,21 @@ static void UnityEngine_Screen_SetResolution(int32_t a, int32_t b, int32_t fullS
 
 INTERPOSE_ICALL("UnityEngine.Screen::SetResolution", UnityEngine_Screen_SetResolution);
 
+static Il2CppString *Dark_Entrypoint_Config_Api_MakeMasterDataUrl(Il2CppString *version,
+                                                                  Il2CppString *(*original)(Il2CppString *version)) {
+
+    auto url = stringToUtf8(original(version));
+    if(url.ends_with(".e")) {
+        url.erase(url.size() - 2);
+    }
+
+    return stringFromUtf8(url);
+}
+
+static Il2CppArray *Dark_StateMachine_HandleNet_DecryptMasterData(Il2CppObject *this_, Il2CppArray *in, void *original) {
+    return in;
+}
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -282,6 +296,12 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::Decrypt",
                              Dark_StateMachine_HandleNet_Decrypt);
 
+    translator_divert_method("Assembly-CSharp.dll::Dark.StateMachine.HandleNet::DecryptMasterData",
+                             Dark_StateMachine_HandleNet_DecryptMasterData);
+
+    translator_divert_method("Assembly-CSharp.dll::Dark.Entrypoint.Config/Api::MakeMasterDataUrl",
+                             Dark_Entrypoint_Config_Api_MakeMasterDataUrl);
+
     translator_divert_method("Assembly-CSharp.dll::SafetyNet.SafetyNet::Attest",
                              SafetyNet_SafetyNet_Attest);
 
@@ -299,12 +319,6 @@ static void postInitialize() {
 
     translator_divert_method("Assembly-CSharp.dll::DeviceUtil.DeviceUtil::GetIda",
                              DeviceUtil_DeviceUtil_GetIda);
-
-    /*
-     * We divert this method to avoid the dependency on the libFastAES.so
-     * native library, it's the only method needed from it.
-     */
-    translator_divert_method("FastAES.dll::FastAES::NativeDecrypt", FastAES_NativeDecrypt);
 
     translator_divert_method("Assembly-CSharp.dll::Framework.Network.Download.AssetDownloader::IsStorageEnough",
                             Framework_Network_Download_AssetDownloader_IsStorageEnough);
@@ -344,12 +358,6 @@ static void postInitialize() {
  */
     translator_divert_method("Assembly-CSharp-firstpass.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor",
                              Grpc_Core_Internal_GrpcThreadPool_ctor);
-#if 0
-    auto getEnabledInternal = reinterpret_cast<bool (*)(void)>(translator_resolve_native_icall("UnityEngine.Analytics.Analytics::get_enabledInternal"));
-    printf("getEnabledInternal: %p\n", getEnabledInternal);
-
-    printf("Analytics enabled: %d\n", getEnabledInternal());
-#endif
 
 #ifdef BUILDING_WITH_MPV
 
@@ -363,7 +371,6 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
                             RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
 #endif
-
 }
 
 static std::filesystem::path getExecutablePath() {

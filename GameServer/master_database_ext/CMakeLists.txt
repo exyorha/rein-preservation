@@ -26,8 +26,6 @@ function(master_database_ext_create_target target type)
         MasterDatabaseCursor.cpp
         MasterDatabaseCursor.h
 
-        MasterDatabaseDecryption.h
-
         MasterDatabaseTable.cpp
         MasterDatabaseTable.h
 
@@ -66,16 +64,6 @@ function(master_database_ext_create_target target type)
         BASE_NAME master_database_ext
         EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/${target}_include/master_database_ext_export.h
     )
-
-    if(WIN32)
-
-        target_sources(${target} PRIVATE MasterDatabaseDecryptionWindows.cpp)
-        target_link_libraries(${target} PRIVATE bcrypt)
-    else()
-        target_sources(${target} PRIVATE MasterDatabaseDecryptionLinux.cpp)
-        target_link_libraries(${target} PRIVATE OpenSSL::Crypto)
-    endif()
-
 endfunction()
 
 include(GenerateExportHeader)
