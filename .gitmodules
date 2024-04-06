@@ -22,3 +22,6 @@
 [submodule "winmpv"]
 	path = winmpv
 	url = https://github.com/exyorha/winmpv.git
+[submodule "asset-processing/unityasset"]
+	path = asset-processing/unityasset
+	url = https://github.com/exyorha/unityasset.git

@@ -45,6 +45,13 @@ prepend_include() {
 
 mkdir -p dl
 
+cmake -S asset-processing -B asset-processing-build -G "Kate - Ninja" \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+ln -sf ../asset-processing-build/compile_commands.json asset-processing/compile_commands.json
+cmake --build asset-processing-build
+
 cmake \
     -S CompatibilityRuntime \
     -B CompatibilityRuntime-build -G "Kate - Ninja" \
