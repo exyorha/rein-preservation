@@ -45,10 +45,6 @@ ShimNextContextSymbols::ShimNextContextSymbols(BaseGLESContext &context) {
     if(!glTexStorage3D)
         throw std::runtime_error("failed to bind glTexStorage3D");
 
-    glShaderSource = reinterpret_cast<PFNGLSHADERSOURCEPROC>(context.getProcAddress("glShaderSource"));
-    if(!glShaderSource)
-        throw std::runtime_error("failed to bind glTexStorage3D");
-
 }
 
 ShimNextContextSymbols::~ShimNextContextSymbols() = default;
