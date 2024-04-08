@@ -34,10 +34,11 @@ void ConversionContext::finalize() {
     UnityAsset::writeFile(m_targetDirectory / "NieR_Data" / "data.unity3d", serialized);
 }
 
-void ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) {
+bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) {
+    bool modifiedAnything = false;
 
     for(auto &entry: bundle.entries) {
-        if(entry.filename().ends_with(".resource")) {
+        if(entry.filename().ends_with(".resource") || entry.filename().ends_with(".resS")) {
             /*
              * Not an asset file.
              */
@@ -77,18 +78,29 @@ void ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
 
         if(assetModified) {
             printf("asset '%s' was modified, repacking the asset file\n", entry.filename().c_str());
+#if 0
+            {
+                std::ofstream output;
+                output.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+                output.open("original/" + entry.filename(), std::ios::out | std::ios::trunc | std::ios::binary);
+                output.write(reinterpret_cast<const char *>(entry.data().data()), entry.data().length());
+            }
 
+#endif
             UnityAsset::Stream serializedAsset;
             asset.serialize(serializedAsset);
-
             entry.replace(std::move(serializedAsset));
-
+#if 0
             std::ofstream output;
             output.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
             output.open("modified/" + entry.filename(), std::ios::out | std::ios::trunc | std::ios::binary);
             output.write(reinterpret_cast<const char *>(entry.data().data()), entry.data().length());
+#endif
+            modifiedAnything = true;
         }
     }
+
+    return modifiedAnything;
 }
 
 void ConversionContext::processAPK(const std::filesystem::path &filename, ZPOS64_T offset, ZPOS64_T length) {

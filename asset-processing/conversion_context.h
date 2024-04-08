@@ -22,11 +22,11 @@ public:
 
     void finalize();
 
+    static bool processAssetBundle(UnityAsset::AssetBundleFile &bundle);
+
 private:
     void unpackCurrentFile(UnzipHandle &apk, const std::filesystem::path &destination);
     void readCurrentFileIntoStream(UnzipHandle &apk, UnityAsset::Stream &stream);
-
-    void processAssetBundle(UnityAsset::AssetBundleFile &bundle);
 
     std::filesystem::path m_targetDirectory;
     std::optional<UnityAsset::AssetBundleFile> m_assetDataFile;
