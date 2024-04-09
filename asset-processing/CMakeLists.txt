@@ -8,6 +8,16 @@ pkg_check_modules(LZ4 REQUIRED IMPORTED_TARGET liblz4)
 add_subdirectory(unityasset)
 
 add_executable(process_assets
+    astc_dec/astc_decomp.cpp
+    astc_dec/astc_decomp.h
+
+    etc2_transcoder.cpp
+    etc2_transcoder.h
+
+    rgbcx.cpp
+    rgbcx.h
+    rgbcx_table4.h
+
     asset_reprocessing.cpp
     asset_reprocessing.h
     conversion_context.cpp

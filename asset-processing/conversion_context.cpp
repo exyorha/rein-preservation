@@ -53,27 +53,15 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
 
         for(auto &object: asset.m_Objects) {
             const auto &type = asset.m_Types.at(object.typeIndex);
-            if(type.classID == 48 /* Shader */) {
-                if(type.m_ScriptID.has_value() || type.m_ScriptTypeIndex >= 0)
-                    throw std::logic_error("unexpected script data in a shader");
 
-                auto reprocessed = AssetReprocessing::reprocessShader(object.objectData);
+            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData);
 
-                if(reprocessed.has_value()) {
-                    object.objectData = std::move(*reprocessed);
-                    assetModified = true;
-                }
 
-            } else if(type.classID == 27 /* Texture */ || type.classID == 28 /* Texture2D */ ||
-                      type.classID == 117 /* Texture3D */ || type.classID == 187 /* Texture2DArray */ ||
-                      type.classID == 188 /* CubemapArray */) {
-
-                if(type.m_ScriptID.has_value() || type.m_ScriptTypeIndex >= 0)
-                    throw std::logic_error("unexpected script data in a texture");
-
-                printf("texture found, class ID: %u, length: %zu bytes\n",
-                       type.classID, object.objectData.length());
+            if(reprocessed.has_value()) {
+                object.objectData = std::move(*reprocessed);
+                assetModified = true;
             }
+
         }
 
         if(assetModified) {

@@ -5,6 +5,7 @@
 #include <UnityAsset/FileContainer/AssetBundle/AssetBundleFile.h>
 
 #include "conversion_context.h"
+#include "rgbcx.h"
 
 static int usage(void) {
     fputs(
@@ -16,6 +17,8 @@ static int usage(void) {
 }
 
 int main(int argc, char **argv) {
+    rgbcx::init();
+
     if(argc < 2)
         return usage();
 
