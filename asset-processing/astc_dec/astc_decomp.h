@@ -36,6 +36,8 @@ namespace astc
 // which will lead to different outputs. So be sure to set it correctly (ideally it should match whatever the encoder did).
 bool decompress(uint8_t* pDst, const uint8_t* data, bool isSRGB, int blockWidth, int blockHeight);
 
+bool decompressFloat(float *pDst, const uint8_t *data, int blockWidth, int blockHeight, bool isLDR);
+
 } // astc
 } // basisu
 

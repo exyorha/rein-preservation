@@ -14,6 +14,9 @@ add_executable(process_assets
     etc2_transcoder.cpp
     etc2_transcoder.h
 
+    HalfFloat.cpp
+    HalfFloat.h
+
     rgbcx.cpp
     rgbcx.h
     rgbcx_table4.h

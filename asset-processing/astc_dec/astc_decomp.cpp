@@ -35,6 +35,7 @@
 #include "astc_decomp.h"
 #include <assert.h>
 #include <algorithm>
+#include <stdexcept>
 
 #define DE_LENGTH_OF_ARRAY(x) (sizeof(x)/sizeof(x[0]))
 #define DE_UNREF(x) (void)x
@@ -52,6 +53,72 @@ typedef uint64_t deUint64;
 
 namespace basisu
 {
+	typedef uint16_t deFloat16;
+
+	using InternalError = std::runtime_error;
+
+	static float deFloat16To32 (deFloat16 val16)
+	{
+		deUint32 sign;
+		deUint32 expotent;
+		deUint32 mantissa;
+		union
+		{
+			float		f;
+			deUint32	u;
+		} x;
+
+		x.u			= 0u;
+
+		sign		= ((deUint32)val16 >> 15u) & 0x00000001u;
+		expotent	= ((deUint32)val16 >> 10u) & 0x0000001fu;
+		mantissa	= (deUint32)val16 & 0x000003ffu;
+
+		if (expotent == 0u)
+		{
+			if (mantissa == 0u)
+			{
+				/* +/- 0 */
+				x.u = sign << 31u;
+				return x.f;
+			}
+			else
+			{
+				/* Denormalized, normalize it. */
+
+				while (!(mantissa & 0x00000400u))
+				{
+					mantissa <<= 1u;
+					expotent -=  1u;
+				}
+
+				expotent += 1u;
+				mantissa &= ~0x00000400u;
+			}
+		}
+		else if (expotent == 31u)
+		{
+			if (mantissa == 0u)
+			{
+				/* +/- InF */
+				x.u = (sign << 31u) | 0x7f800000u;
+				return x.f;
+			}
+			else
+			{
+				/* +/- NaN */
+				x.u = (sign << 31u) | 0x7f800000u | (mantissa << 13u);
+				return x.f;
+			}
+		}
+
+		expotent = expotent + (127u - 15u);
+		mantissa = mantissa << 13u;
+
+		x.u = (sign << 31u) | (expotent << 23u) | mantissa;
+		return x.f;
+	}
+
 	static bool inBounds(int v, int l, int h)
 	{
 		return (v >= l) && (v < h);
@@ -251,10 +318,10 @@ inline deInt32 signExtend (deInt32 src, int numSrcBits)
 	return src | (negative ? ~((1 << numSrcBits) - 1) : 0);
 }
 
-//inline bool isFloat16InfOrNan (deFloat16 v)
-//{
-//	return getBits(v, 10, 14) == 31;
-//}
+inline bool isFloat16InfOrNan (deFloat16 v)
+{
+	return getBits(v, 10, 14) == 31;
+}
 
 enum ISEMode
 {
@@ -614,7 +681,7 @@ DecompressResult decodeVoidExtentBlock (void* dst, const Block128& blockData, in
 		if (isHDRBlock)
 		{
 			// rg - REMOVING HDR SUPPORT FOR NOW
-#if 0
+#if 1
 			for (int c = 0; c < 4; c++)
 			{
 				if (isFloat16InfOrNan((deFloat16)rgba[c]))
@@ -1380,10 +1447,11 @@ DecompressResult setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, T
 	for (int i = 0; i < numPartitions; i++)
 	{
 		isHDREndpoint[i] = isColorEndpointModeHDR(colorEndpointModes[i]);
-		
+#if 0
 		// rg - REMOVING HDR SUPPORT FOR NOW
 		if (isHDREndpoint[i])
 			return DECOMPRESS_RESULT_ERROR;
+#endif
 	}
 
 	for (int texelY = 0; texelY < blockHeight; texelY++)
@@ -1432,7 +1500,7 @@ DecompressResult setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, T
 				{
 					//DE_STATIC_ASSERT((basisu::meta::TypesSame<deFloat16, deUint16>::Value));
 					// rg - REMOVING HDR SUPPORT FOR NOW
-#if 0
+#if 1
 					const deUint32		c0	= e0[channelNdx] << 4;
 					const deUint32		c1	= e1[channelNdx] << 4;
 					const deUint32		w	= weight.w[ccs == channelNdx ? 1 : 0];
@@ -1514,6 +1582,16 @@ DecompressResult decompressBlock (void* dst, const Block128& blockData, int bloc
 }
 
 } // anonymous
+
+bool decompressFloat(float *pDst, const uint8_t *data, int blockWidth, int blockHeight, bool isLDR) {
+	const Block128 blockData(data);
+	if (decompressBlock(pDst,
+		blockData, blockWidth, blockHeight, false, isLDR) != DECOMPRESS_RESULT_VALID_BLOCK) {
+		return false;
+	} else {
+		return true;
+	}
+}
 
 bool decompress(uint8_t *pDst, const uint8_t * data, bool isSRGB, int blockWidth, int blockHeight)
 {

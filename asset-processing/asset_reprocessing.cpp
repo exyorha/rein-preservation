@@ -5,6 +5,7 @@
 #include <UnityAsset/UnityTextureTypes.h>
 
 #include <UnityAsset/SerializedAsset/SerializedType.h>
+#include <UnityAsset/FileContainer/AssetBundle/AssetBundleEntry.h>
 
 #include <UnityAsset/Streams/InMemoryStreamBackingBuffer.h>
 
@@ -18,6 +19,7 @@
 #include "astc_dec/astc_decomp.h"
 #include "rgbcx.h"
 #include "etc2_transcoder.h"
+#include "HalfFloat.h"
 
 void AssetReprocessing::checkNoScriptData(const UnityAsset::SerializedType &type) {
 
@@ -27,7 +29,38 @@ void AssetReprocessing::checkNoScriptData(const UnityAsset::SerializedType &type
 
 }
 
-std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original) {
+static const unsigned char *getImageData(size_t expectedImageSize, const std::vector<unsigned char> &embeddedData,
+                                         UnityAsset::AssetBundleEntry *streamedResourcesEntry,
+                                         const UnityAsset::UnityTypes::StreamingInfo &streaming,
+                                         bool &streamed) {
+    if(embeddedData.size() == expectedImageSize) {
+        streamed = false;
+        return embeddedData.data();
+    } else if(embeddedData.empty() && streaming.offset == 0 && streaming.size == expectedImageSize && streamedResourcesEntry &&
+        streamedResourcesEntry->data().length() == expectedImageSize) {
+
+        streamed = true;
+
+        return streamedResourcesEntry->data().data();
+    } else {
+        std::stringstream stream;
+        stream << "Unsupported texture streaming configuration. Expected image size: " <<expectedImageSize << ", size of inline data: " << embeddedData.size()
+            << ", streamed resource file: ";
+
+        if(streamedResourcesEntry) {
+            stream << " present, " << streamedResourcesEntry->filename() << ", of length " <<streamedResourcesEntry->data().length();
+        } else {
+            stream << " not present";
+        }
+
+        stream << ", file name in the streaming info: " << streaming.path << ", offset: " << streaming.offset << ", length: " << streaming.size;
+
+        throw std::runtime_error(stream.str());
+    }
+}
+
+std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
+                                                                    UnityAsset::AssetBundleEntry *streamedResourcesEntry) {
     if(type.classID == UnityAsset::UnityTypes::ShaderClassID) {
 
         checkNoScriptData(type);
@@ -48,11 +81,22 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
-        auto result = reprocessTextureImages(layout, textureAsset.image_data, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+        bool streamed;
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+
+        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+
         if(result.has_value()) {
-            textureAsset.image_data = std::move(result->newData);
             textureAsset.m_TextureFormat = result->newFormat;
             textureAsset.m_CompleteImageSize = textureAsset.image_data.size();
+
+            if(streamed) {
+                textureAsset.m_StreamData.size = result->newData.size();
+                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+            } else {
+
+                textureAsset.image_data = std::move(result->newData);
+            }
 
             return UnityAsset::UnityTypes::serializeTexture2D(textureAsset);
         } else {
@@ -67,11 +111,21 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
-        auto result = reprocessTextureImages(layout, textureAsset.image_data, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+        bool streamed;
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+
+        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
         if(result.has_value()) {
-            textureAsset.image_data = std::move(result->newData);
             textureAsset.m_Format = result->newFormat;
             textureAsset.m_DataSize = result->newData.size();
+
+            if(streamed) {
+                textureAsset.m_StreamData.size = result->newData.size();
+                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+            } else {
+
+                textureAsset.image_data = std::move(result->newData);
+            }
 
             return UnityAsset::UnityTypes::serializeTexture3D(textureAsset);
         } else {
@@ -86,11 +140,21 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
-        auto result = reprocessTextureImages(layout, textureAsset.image_data, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+        bool streamed;
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+
+        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
         if(result.has_value()) {
-            textureAsset.image_data = std::move(result->newData);
             textureAsset.m_Format = result->newFormat;
             textureAsset.m_DataSize = result->newData.size();
+
+            if(streamed) {
+                textureAsset.m_StreamData.size = result->newData.size();
+                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+            } else {
+
+                textureAsset.image_data = std::move(result->newData);
+            }
 
             return UnityAsset::UnityTypes::serializeTexture2DArray(textureAsset);
         } else {
@@ -105,11 +169,21 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
-        auto result = reprocessTextureImages(layout, textureAsset.image_data, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+        bool streamed;
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+
+        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
         if(result.has_value()) {
-            textureAsset.image_data = std::move(result->newData);
             textureAsset.m_TextureFormat = result->newFormat;
             textureAsset.m_CompleteImageSize = result->newData.size();
+
+            if(streamed) {
+                textureAsset.m_StreamData.size = result->newData.size();
+                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+            } else {
+
+                textureAsset.image_data = std::move(result->newData);
+            }
 
             return UnityAsset::UnityTypes::serializeCubemap(textureAsset);
         } else {
@@ -124,11 +198,21 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
-        auto result = reprocessTextureImages(layout, textureAsset.image_data, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+        bool streamed;
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+
+        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
         if(result.has_value()) {
-            textureAsset.image_data = std::move(result->newData);
             textureAsset.m_Format = result->newFormat;
             textureAsset.m_DataSize = result->newData.size();
+
+            if(streamed) {
+                textureAsset.m_StreamData.size = result->newData.size();
+                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+            } else {
+
+                textureAsset.image_data = std::move(result->newData);
+            }
 
             return UnityAsset::UnityTypes::serializeCubemapArray(textureAsset);
         } else {
@@ -278,10 +362,25 @@ bool AssetReprocessing::rgbaImageHasTransparentPixels(const unsigned char *data,
     return false;
 }
 
+bool AssetReprocessing::rgbaImageHasTransparentPixels(const float *data, const UnityAsset::TextureSubImage &image) {
 
+    auto rowStart = reinterpret_cast<const float *>(reinterpret_cast<const unsigned char *>(data) + image.offset());
+
+    for(unsigned int row = 0; row < image.storageInfo().activeHeight(); row++) {
+        for(unsigned int pixel = 0; pixel < image.storageInfo().activeWidth(); pixel++) {
+            if(rowStart[pixel * 4 + 3] < 1.0f) {
+                return true;
+            }
+        }
+
+        rowStart += image.storageInfo().storedWidth() * 4;
+    }
+
+    return false;
+}
 
 std::optional<AssetReprocessing::RebuiltUnityTextureData>
-    AssetReprocessing::transcodeETC(const UnityAsset::TextureImageLayout &layout, const std::vector<unsigned char> &textureImageData,
+    AssetReprocessing::transcodeETC(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData,
             UnityAsset::ColorSpace colorSpace, ETCTranscoder transcoder, const UnityAsset::TextureFormatClassification &outputFormat) {
 
     auto recompressed = layout.reformat(outputFormat);
@@ -294,7 +393,7 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
         const auto &destinationImage = recompressed.images()[imageIndex];
 
         transcoder(sourceImage.storageInfo().activeWidth(), sourceImage.storageInfo().activeHeight(), 1,
-                   textureImageData.data() + sourceImage.offset(),
+                   textureImageData + sourceImage.offset(),
                    sourceImage.storageInfo().storedWidth() / layout.format().blockWidth() * layout.format().blockSizeBytes(),
                    sourceImage.storageInfo().dataLength(),
                    storage.data() + destinationImage.offset(),
@@ -308,8 +407,9 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
     };
 
 }
+
 std::optional<AssetReprocessing::RebuiltUnityTextureData>
-    AssetReprocessing::transcodeASTC(const UnityAsset::TextureImageLayout &layout, const std::vector<unsigned char> &textureImageData,
+    AssetReprocessing::transcodeASTC_LDR(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData,
                                    UnityAsset::ColorSpace colorSpace) {
 
 
@@ -330,7 +430,6 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
 
     std::vector<unsigned char> storage(uncompressed.totalDataSize());
 
-
     std::vector<unsigned char> singleblock(4 * inputBlockWidth * inputBlockHeight);
 
     for(size_t imageIndex = 0, imageCount = layout.images().size(); imageIndex < imageCount; imageIndex++) {
@@ -340,7 +439,7 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
         unsigned int blocksX = sourceImage.storageInfo().storedWidth() / inputBlockWidth;
         unsigned int blocksY = sourceImage.storageInfo().storedHeight() / inputBlockHeight;
 
-        const unsigned char *sourceData = textureImageData.data() + sourceImage.offset();
+        const unsigned char *sourceData = textureImageData + sourceImage.offset();
         unsigned char *destinationData = storage.data() + destinationImage.offset();
 
         for(unsigned int blockY = 0; blockY < blocksY; blockY++) {
@@ -464,7 +563,123 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
 }
 
 std::optional<AssetReprocessing::RebuiltUnityTextureData>
-    AssetReprocessing::reprocessTextureImages(const UnityAsset::TextureImageLayout &layout, const std::vector<unsigned char> &textureImageData,
+    AssetReprocessing::transcodeASTC_HDR(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData) {
+
+
+    auto inputBlockWidth = layout.format().blockWidth();
+    auto inputBlockHeight = layout.format().blockHeight();
+    auto inputBlockSizeBytes = layout.format().blockSizeBytes();
+
+    auto uncompressed = layout.reformat(UnityAsset::TextureFormatClassification::RGBA32F, true);
+
+    printf("uncompressed image layout, total %zu bytes:\n", uncompressed.totalDataSize());
+
+    for(const auto &image: uncompressed.images()) {
+        printf("  - active size: %ux%u, storage size: %ux%u, data length: %u, offset: %u\n",
+               image.storageInfo().activeWidth(), image.storageInfo().activeHeight(),
+               image.storageInfo().storedWidth(), image.storageInfo().storedHeight(),
+               image.storageInfo().dataLength(), image.offset());
+    }
+
+    std::vector<unsigned char> storage(uncompressed.totalDataSize());
+
+    std::vector<float> singleblock(4 * inputBlockWidth * inputBlockHeight);
+
+    for(size_t imageIndex = 0, imageCount = layout.images().size(); imageIndex < imageCount; imageIndex++) {
+        const auto &sourceImage = layout.images()[imageIndex];
+        const auto &destinationImage = uncompressed.images()[imageIndex];
+
+        unsigned int blocksX = sourceImage.storageInfo().storedWidth() / inputBlockWidth;
+        unsigned int blocksY = sourceImage.storageInfo().storedHeight() / inputBlockHeight;
+
+        const unsigned char *sourceData = textureImageData + sourceImage.offset();
+        unsigned char *destinationData = storage.data() + destinationImage.offset();
+
+        for(unsigned int blockY = 0; blockY < blocksY; blockY++) {
+            for(unsigned int blockX = 0; blockX < blocksX; blockX++) {
+                auto blockSourceData = sourceData + blockY * blocksX * inputBlockSizeBytes + blockX * inputBlockSizeBytes;
+
+                auto blockDestinationData = destinationData + sizeof(uint32_t) * (
+                    blockY * inputBlockHeight * blocksX * inputBlockWidth +
+                    blockX * inputBlockWidth
+                );
+
+                auto singleBlock = singleblock.data();
+
+                basisu::astc::decompressFloat(singleBlock, blockSourceData,
+                                         inputBlockWidth,
+                                         inputBlockHeight, false);
+
+                for(unsigned int blockLine = 0; blockLine < inputBlockHeight; blockLine++) {
+                    memcpy(blockDestinationData, singleBlock, 16 * inputBlockWidth);
+                    singleBlock += 16 * inputBlockWidth;
+                    blockDestinationData += 16 * blocksX * inputBlockWidth;
+                }
+            }
+        }
+    }
+
+
+    bool hasTransparentPixels = false;
+    for(const auto &image: uncompressed.images()) {
+        if(rgbaImageHasTransparentPixels(storage.data(), image)) {
+            hasTransparentPixels = true;
+            break;
+        }
+    }
+
+    if(hasTransparentPixels) {
+        /*
+         * We can't encode an ASTC HDR image that uses alpha into anything but
+         * R16G16B16A16_SFLOAT, there is just no format for it on the desktop.
+         */
+        printf("HDR ASTC image using the alpha channel, encoding into R16G16B16A16_SFLOAT\n");
+
+        const auto &outputFormat = UnityAsset::TextureFormatClassification::RGBA16F;
+        auto encodedLayout = layout.reformat(outputFormat);
+
+        std::vector<unsigned char> encodedStorage(encodedLayout.totalDataSize());
+
+        for(size_t imageIndex = 0, imageCount = encodedLayout.images().size(); imageIndex < imageCount; imageIndex++) {
+            const auto &inputImage = uncompressed.images()[imageIndex];
+            const auto &outputImage = encodedLayout.images()[imageIndex];
+
+            auto inputData = reinterpret_cast<const float *>(storage.data() + inputImage.offset());
+            auto outputData = reinterpret_cast<uint16_t *>(encodedStorage.data() + outputImage.offset());
+
+            unsigned int rows = inputImage.storageInfo().activeHeight();
+            unsigned int columns = inputImage.storageInfo().activeWidth();
+
+            for(unsigned int y = 0; y < rows; y++) {
+                for(unsigned int x = 0; x < columns; x++) {
+                    auto floatData = inputData + 4 * (y * inputImage.storageInfo().storedWidth() + x);
+                    auto halfData  = outputData + 4 * (y * outputImage.storageInfo().storedWidth() + x);
+
+                    halfData[0] = floatToHalfFloat(floatData[0]);
+                    halfData[1] = floatToHalfFloat(floatData[1]);
+                    halfData[2] = floatToHalfFloat(floatData[2]);
+                    halfData[3] = floatToHalfFloat(floatData[3]);
+                }
+            }
+        }
+
+
+        return AssetReprocessing::RebuiltUnityTextureData{
+            .newFormat = outputFormat.unityFormat(),
+            .newData = std::move(encodedStorage)
+        };
+
+    } else {
+        /*
+         * This can be encoded into BC6H.
+         */
+        throw std::runtime_error("fully opaque ASTC HDR image\n");
+    }
+}
+
+
+std::optional<AssetReprocessing::RebuiltUnityTextureData>
+    AssetReprocessing::reprocessTextureImages(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData,
                                    UnityAsset::ColorSpace colorSpace) {
 
     auto inputBlockWidth = layout.format().blockWidth();
@@ -496,7 +711,11 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
          */
         return std::nullopt;
     } else if(encoding == UnityAsset::TextureEncodingClass::ASTC_LDR) {
-        return transcodeASTC(layout, textureImageData, colorSpace);
+        return transcodeASTC_LDR(layout, textureImageData, colorSpace);
+
+    } else if(encoding == UnityAsset::TextureEncodingClass::ASTC_HDR) {
+        return transcodeASTC_HDR(layout, textureImageData);
+
 
     } else if(encoding == UnityAsset::TextureEncodingClass::ETC1) {
         if(colorSpace == UnityAsset::ColorSpace::Gamma) {

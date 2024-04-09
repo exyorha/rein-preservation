@@ -45,6 +45,16 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
             continue;
         }
 
+        std::string streamedName = entry.filename() + ".resS";
+        UnityAsset::AssetBundleEntry *streamedResources = nullptr;
+
+        for(auto &otherEntry: bundle.entries) {
+            if(otherEntry.filename() == streamedName) {
+                streamedResources = &otherEntry;
+                break;
+            }
+        }
+
         printf("Asset bundle: processing: %s\n", entry.filename().c_str());
 
         UnityAsset::SerializedAssetFile asset(entry.data().createView());
@@ -54,8 +64,7 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
         for(auto &object: asset.m_Objects) {
             const auto &type = asset.m_Types.at(object.typeIndex);
 
-            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData);
-
+            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedResources);
 
             if(reprocessed.has_value()) {
                 object.objectData = std::move(*reprocessed);

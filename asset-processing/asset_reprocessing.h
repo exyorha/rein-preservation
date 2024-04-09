@@ -2,6 +2,7 @@
 #define ASSET_REPROCESSING_H
 
 #include <optional>
+
 #include <UnityAsset/Streams/Stream.h>
 #include <UnityAsset/UnityTextureTypes.h>
 
@@ -11,11 +12,13 @@ namespace UnityAsset::UnityTypes {
 
 namespace UnityAsset {
     class SerializedType;
+    class AssetBundleEntry;
 }
 
 class AssetReprocessing {
 public:
-    static std::optional<UnityAsset::Stream> reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original);
+    static std::optional<UnityAsset::Stream> reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
+                                                            UnityAsset::AssetBundleEntry *streamedResourcesEntr);
 
 private:
     using ETCTranscoder = void (*)(size_t width,
@@ -35,21 +38,26 @@ private:
 
     static bool rgbaImageHasTransparentPixels(const unsigned char *data, const UnityAsset::TextureSubImage &image);
 
+    static bool rgbaImageHasTransparentPixels(const float *data, const UnityAsset::TextureSubImage &image);
+
     struct RebuiltUnityTextureData {
         int32_t newFormat;
         std::vector<unsigned char> newData;
     };
 
     static std::optional<RebuiltUnityTextureData> reprocessTextureImages(
-        const UnityAsset::TextureImageLayout &layout, const std::vector<unsigned char> &textureImageData,
+        const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData,
         UnityAsset::ColorSpace colorSpace);
 
     static std::optional<AssetReprocessing::RebuiltUnityTextureData>
-        transcodeASTC(const UnityAsset::TextureImageLayout &layout, const std::vector<unsigned char> &textureImageData,
+        transcodeASTC_LDR(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData,
                                    UnityAsset::ColorSpace colorSpace);
 
     static std::optional<AssetReprocessing::RebuiltUnityTextureData>
-        transcodeETC(const UnityAsset::TextureImageLayout &layout, const std::vector<unsigned char> &textureImageData,
+        transcodeASTC_HDR(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData);
+
+    static std::optional<AssetReprocessing::RebuiltUnityTextureData>
+        transcodeETC(const UnityAsset::TextureImageLayout &layout, const unsigned char *textureImageData,
                      UnityAsset::ColorSpace colorSpace, ETCTranscoder transcoder,
                      const UnityAsset::TextureFormatClassification &outputFormat);
 
