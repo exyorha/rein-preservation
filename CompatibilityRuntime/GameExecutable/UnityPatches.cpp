@@ -231,19 +231,6 @@ static bool applyPatches(const PatchSite *patches, size_t patchCount, intptr_t d
     return protectionManager.restorePermissions();
 }
 
-static int64_t hackCompat(int32_t type) {
-    //printf("querying for type %d\n", type);
-
-    return 0;
-
-    if(type == 4 || type == 3)
-        return 0;
-    else {
-        fprintf(stderr, "rejecting a shader with GpuProgramType %d\n", type);
-        return 1;
-    }
-}
-
 bool applyUnityPatches() {
 
 
@@ -262,8 +249,6 @@ bool applyUnityPatches() {
     auto unityPath = getPathToModule(unityModule);
 
 #else
-    //*reinterpret_cast<uintptr_t *>(&patch_1358830[6]) = reinterpret_cast<uintptr_t>(hackCompat);
-
     const char *unityName = "UnityPlayer.so";
 
     Dl_info info;

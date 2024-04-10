@@ -36,6 +36,10 @@ int main(int argc, char **argv) {
         context.finalize();
     } else if(strcmp(command, "bundles") == 0) {
 
+        if(argc != 4) {
+            return usage();
+        }
+
         auto srcdir = argv[2];
         auto destdir = argv[3];
 

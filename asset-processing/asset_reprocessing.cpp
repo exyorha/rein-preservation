@@ -382,6 +382,40 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         return UnityAsset::UnityTypes::serializeMesh(meshAsset);
 
+    } else if(type.classID == UnityAsset::UnityTypes::UnityConnectSettingsClassID) {
+        checkNoScriptData(type);
+
+        auto settings = UnityAsset::UnityTypes::deserializeUnityConnectSettings(original);
+        settings.m_Enabled = false;
+        settings.m_EventOldUrl.clear();
+        settings.m_EventUrl.clear();
+        settings.m_ConfigUrl.clear();
+        settings.vCrashReportingSettings.m_Enabled = false;
+        settings.vCrashReportingSettings.m_EventUrl.clear();
+        settings.vUnityPurchasingSettings.m_Enabled = false;
+        settings.vUnityAnalyticsSettings.m_Enabled = false;
+        settings.vUnityAdsSettings.m_Enabled = false;
+        settings.vUnityAdsSettings.m_GameId.clear();
+        settings.vPerformanceReportingSettings.m_Enabled = false;
+
+        return UnityAsset::UnityTypes::serializeUnityConnectSettings(settings);
+
+    } else if(type.classID == UnityAsset::UnityTypes::BuildSettingsClassID) {
+        checkNoScriptData(type);
+
+        auto settings = UnityAsset::UnityTypes::deserializeBuildSettings(original);
+
+        /*
+         * Add the desktop OpenGL as supported, and set it as preferred by
+         * listing it first. Keep the original GLES API too, because we
+         * are perfectly able to run on GLES too, as long as it's a desktop
+         * or Tegra.
+         */
+        // GraphicsDeviceType::OpenGLCore
+        settings.m_GraphicsAPIs.emplace(settings.m_GraphicsAPIs.begin(), 17);
+
+        return UnityAsset::UnityTypes::serializeBuildSettings(settings);
+
     } else {
         return std::nullopt;
     }

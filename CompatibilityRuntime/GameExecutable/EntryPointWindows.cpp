@@ -81,13 +81,5 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t *lpCom
     if(!gameEarlyInit())
         return 1;
 
-    commandLineString.assign(L"-force-glcore -force-gfx-without-build");
-    if(*lpCommandLine)
-        commandLineString.push_back(L' ');
-
-    commandLineString.append(lpCommandLine);
-
-    args.lpCommandLine = commandLineString.data();
-
     return translator_main(gameMainWindows, &args);
 }
