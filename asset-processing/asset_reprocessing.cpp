@@ -11,10 +11,9 @@
 
 #include <regex>
 #include <cstring>
-#include <fstream>
 #include <algorithm>
 #include <execution>
-#include <ranges>
+#include <unordered_set>
 
 #include "UnityAsset/StreamedResourceManipulator.h"
 #include "astc_dec/astc_decomp.h"
@@ -86,6 +85,14 @@ static void storeStreamedImageData(UnityAsset::UnityTypes::StreamingInfo &stream
                                    const UnityAsset::Stream &data) {
 
     return storeStreamedImageData(streaming, streamedManipulator, data.data(), data.length());
+}
+
+static void pruneMethodList(std::vector<int32_t> &indices, const std::unordered_set<int32_t> &methodsToBeDisabled) {
+    auto end = std::remove_if(indices.begin(), indices.end(), [&methodsToBeDisabled](int32_t index) {
+        return methodsToBeDisabled.contains(index);
+    });
+
+    indices.erase(end, indices.end());
 }
 
 std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
@@ -415,6 +422,53 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         settings.m_GraphicsAPIs.emplace(settings.m_GraphicsAPIs.begin(), 17);
 
         return UnityAsset::UnityTypes::serializeBuildSettings(settings);
+
+    } else if(type.classID == UnityAsset::UnityTypes::RuntimeInitializeOnLoadManagerClassID) {
+        checkNoScriptData(type);
+
+        auto settings = UnityAsset::UnityTypes::deserializeRuntimeInitializeOnLoadManager(original);
+
+        std::unordered_set<int32_t> methodsToBeDisabled;
+
+        /*
+         * If desired, the debugger could be disabled with:
+         * Assembly-CSharp namespace SRDebugger class AutoInitialize method OnLoad
+         */
+
+        for(size_t index = 0, count = settings.m_ClassMethodInfos.size(); index < count; index++) {
+            const auto &method = settings.m_ClassMethodInfos[index];
+
+            const auto &classDef = settings.m_ClassInfos.at(method.m_ClassIndex);
+            const auto &assemblyName = settings.m_AssemblyNames.at(classDef.m_AssemblyNameIndex);
+            const auto &namespaceName = settings.m_NamespaceNames.at(classDef.m_NamespaceIndex);
+
+            if(classDef.m_ClassName == "IronSourceInitilizer" /* sic */ ||
+                assemblyName.starts_with("UnityEngine.Purchasing") ||
+                assemblyName.starts_with("Unity.Services")
+            ) {
+                printf("disabling the initialization call to assembly %s namespace %s class %s method %s\n",
+                    assemblyName.c_str(),
+                    namespaceName.c_str(),
+                    classDef.m_ClassName.c_str(),
+                    method.m_MethodName.c_str());
+
+
+                methodsToBeDisabled.emplace(index);
+            }
+        }
+
+        pruneMethodList(settings.m_BeforeUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_AfterUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_BeforeMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_AfterMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_AfterAssembliesLoadedUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_AfterAssembliesLoadedMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_BeforeSplashScreenUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_BeforeSplashScreenMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_SubsystemRegistrationUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings.m_SubsystemRegistrationMethodExecutionOrders, methodsToBeDisabled);
+
+        return UnityAsset::UnityTypes::serializeRuntimeInitializeOnLoadManager(settings);
 
     } else {
         return std::nullopt;
