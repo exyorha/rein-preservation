@@ -8,6 +8,7 @@
 #include <UnityAsset/SerializedAsset/SerializedAssetFile.h>
 
 #include <fstream>
+#include <unordered_set>
 
 ConversionContext::ConversionContext(std::filesystem::path &&targetDirectory) : m_targetDirectory(std::move(targetDirectory)), m_assetDataFile(std::in_place) {
     m_assetDataFile->blockSize = 128 * 1024;
@@ -48,9 +49,11 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
         std::string streamedName = entry.filename() + ".resS";
         UnityAsset::AssetBundleEntry *streamedResources = nullptr;
 
+        std::optional<UnityAsset::StreamedResourceManipulator> streamedManipulator;
+
         for(auto &otherEntry: bundle.entries) {
             if(otherEntry.filename() == streamedName) {
-                streamedResources = &otherEntry;
+                streamedManipulator.emplace(otherEntry);
                 break;
             }
         }
@@ -61,16 +64,42 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
 
         bool assetModified = false;
 
+        std::unordered_set<UnityAsset::SerializedObject *> modifiedObjects;
+
         for(auto &object: asset.m_Objects) {
             const auto &type = asset.m_Types.at(object.typeIndex);
 
-            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedResources);
+            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedManipulator, false);
 
             if(reprocessed.has_value()) {
                 object.objectData = std::move(*reprocessed);
                 assetModified = true;
+
+                modifiedObjects.emplace(&object);
             }
 
+        }
+
+        if(streamedManipulator.has_value() && streamedManipulator->isModified()) {
+
+            for(auto &object: asset.m_Objects) {
+                if(modifiedObjects.contains(&object)) {
+                    continue;
+                }
+
+                const auto &type = asset.m_Types.at(object.typeIndex);
+
+                auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedManipulator, true);
+
+                if(reprocessed.has_value()) {
+                    object.objectData = std::move(*reprocessed);
+                    assetModified = true;
+                }
+            }
+        }
+
+        if(streamedManipulator.has_value() && streamedManipulator->finalize()) {
+            assetModified = true;
         }
 
         if(assetModified) {

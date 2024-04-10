@@ -11,6 +11,10 @@ add_executable(process_assets
     astc_dec/astc_decomp.cpp
     astc_dec/astc_decomp.h
 
+    crunch/crn_decomp.h
+    crunch/crn_defs.h
+    crunch/crnlib.h
+
     etc2_transcoder.cpp
     etc2_transcoder.h
 

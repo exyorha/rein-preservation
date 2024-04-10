@@ -16,10 +16,13 @@
 #include <execution>
 #include <ranges>
 
+#include "UnityAsset/StreamedResourceManipulator.h"
 #include "astc_dec/astc_decomp.h"
+#include "crunch/crn_defs.h"
 #include "rgbcx.h"
 #include "etc2_transcoder.h"
 #include "HalfFloat.h"
+#include "crunch/crn_decomp.h"
 
 void AssetReprocessing::checkNoScriptData(const UnityAsset::SerializedType &type) {
 
@@ -30,25 +33,26 @@ void AssetReprocessing::checkNoScriptData(const UnityAsset::SerializedType &type
 }
 
 static const unsigned char *getImageData(size_t expectedImageSize, const std::vector<unsigned char> &embeddedData,
-                                         UnityAsset::AssetBundleEntry *streamedResourcesEntry,
+                                         std::optional<UnityAsset::StreamedResourceManipulator> &streamedManipulator,
                                          const UnityAsset::UnityTypes::StreamingInfo &streaming,
                                          bool &streamed) {
     if(embeddedData.size() == expectedImageSize) {
         streamed = false;
         return embeddedData.data();
-    } else if(embeddedData.empty() && streaming.offset == 0 && streaming.size == expectedImageSize && streamedResourcesEntry &&
-        streamedResourcesEntry->data().length() == expectedImageSize) {
+    } else if(embeddedData.empty() && streaming.size == expectedImageSize && streamedManipulator.has_value()) {
+
+        printf("Streaming access: offset %u, length %u\n", streaming.offset, streaming.size);
 
         streamed = true;
 
-        return streamedResourcesEntry->data().data();
+        return streamedManipulator->getViewOfOriginalData(streaming.offset, streaming.size).data();
     } else {
         std::stringstream stream;
         stream << "Unsupported texture streaming configuration. Expected image size: " <<expectedImageSize << ", size of inline data: " << embeddedData.size()
             << ", streamed resource file: ";
 
-        if(streamedResourcesEntry) {
-            stream << " present, " << streamedResourcesEntry->filename() << ", of length " <<streamedResourcesEntry->data().length();
+        if(streamedManipulator.has_value()) {
+            stream << " present";
         } else {
             stream << " not present";
         }
@@ -59,9 +63,38 @@ static const unsigned char *getImageData(size_t expectedImageSize, const std::ve
     }
 }
 
+static void storeStreamedImageData(UnityAsset::UnityTypes::StreamingInfo &streaming,
+                                   UnityAsset::StreamedResourceManipulator &streamedManipulator,
+                                   std::vector<unsigned char> &&data) {
+
+    streamedManipulator.consumeRangeOfOriginalData(streaming.offset, streaming.size);
+
+    streaming.size = data.size();
+    streaming.offset = streamedManipulator.addNewData(std::move(data));
+}
+
+
+static void storeStreamedImageData(UnityAsset::UnityTypes::StreamingInfo &streaming,
+                                   UnityAsset::StreamedResourceManipulator &streamedManipulator,
+                                   const unsigned char *data, size_t dataSize) {
+
+    return storeStreamedImageData(streaming, streamedManipulator, std::vector<unsigned char>(data, data + dataSize));
+}
+
+static void storeStreamedImageData(UnityAsset::UnityTypes::StreamingInfo &streaming,
+                                   UnityAsset::StreamedResourceManipulator &streamedManipulator,
+                                   const UnityAsset::Stream &data) {
+
+    return storeStreamedImageData(streaming, streamedManipulator, data.data(), data.length());
+}
+
 std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
-                                                                    UnityAsset::AssetBundleEntry *streamedResourcesEntry) {
+                                                                    std::optional<UnityAsset::StreamedResourceManipulator> &streamedManipulator,
+                                                                    bool repackingStreamingData) {
     if(type.classID == UnityAsset::UnityTypes::ShaderClassID) {
+
+        if(repackingStreamingData)
+            return std::nullopt;
 
         checkNoScriptData(type);
 
@@ -79,29 +112,111 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         auto textureAsset = UnityAsset::UnityTypes::deserializeTexture2D(original);
 
+        bool streamed;
+        std::optional<std::vector<unsigned char>> uncrunchedData;
+
+        if(textureAsset.m_TextureFormat == UnityAsset::TextureFormat::ETC2_RGBA8Crunched) {
+            if(repackingStreamingData)
+                throw std::logic_error("should never get the second chance call for the crunched data");
+
+            struct CrunchUnpackContentDeleter {
+                inline void operator()(crnd::crnd_unpack_context context) {
+                    crnd::crnd_free(context);
+                }
+            };
+
+            auto crunchedData = getImageData(textureAsset.m_CompleteImageSize, textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData,
+                                             streamed);
+
+            crnd::crn_file_info fileInfo;
+            memset(&fileInfo, 0, sizeof(fileInfo));
+            fileInfo.m_struct_size = sizeof(fileInfo);
+
+            if(!crnd::crnd_validate_file(crunchedData, textureAsset.m_CompleteImageSize, &fileInfo))
+                throw std::runtime_error("the crunched data has failed to validate");
+
+            crnd::crn_texture_info textureInfo;
+            memset(&textureInfo, 0, sizeof(textureInfo));
+            textureInfo.m_struct_size = sizeof(textureInfo);
+
+            if(!crnd::crnd_get_texture_info(crunchedData, textureAsset.m_CompleteImageSize, &textureInfo)) {
+                throw std::runtime_error("failed to get the texture info from the crunched data");
+            }
+
+            if(textureInfo.m_width != textureAsset.m_Width || textureInfo.m_height != textureAsset.m_Height ||
+                textureInfo.m_levels != textureAsset.m_MipCount || textureInfo.m_faces != 1) {
+
+                throw std::runtime_error("the data in the crunch header is inconsistent with the data in the asset");
+            }
+
+            std::unique_ptr<std::remove_pointer<crnd::crnd_unpack_context>::type, CrunchUnpackContentDeleter> context(
+                crnd::crnd_unpack_begin(crunchedData, textureAsset.m_CompleteImageSize)
+            );
+
+            if(!context) {
+                throw std::runtime_error("failed to initialize the Crunch unpacker");
+            }
+
+            crnd::crn_level_info levelInfo;
+            memset(&levelInfo, 0, sizeof(levelInfo));
+            levelInfo.m_struct_size = sizeof(levelInfo);
+
+            auto &output = uncrunchedData.emplace();
+            for(uint32_t level = 0; level < textureInfo.m_levels; level++) {
+                if(!crnd::crnd_get_level_info(crunchedData, textureAsset.m_CompleteImageSize, level, &levelInfo))
+                    throw std::runtime_error("failed to get the crunched mipmap level info");
+
+                auto levelPitch = levelInfo.m_blocks_x * levelInfo.m_bytes_per_block;
+                auto levelSize = levelInfo.m_blocks_y * levelPitch;
+
+                auto offset = output.size();
+                output.resize(offset + levelSize);
+
+                void *dest = output.data() + offset;
+
+                if(!crnd::crnd_unpack_level(context.get(), &dest, levelSize, levelPitch, level))
+                    throw std::runtime_error("failed to unpack a crunched mip level");
+            }
+
+            textureAsset.m_CompleteImageSize = output.size();
+            textureAsset.m_TextureFormat = UnityAsset::TextureFormat::ETC2_RGBA8;
+        }
+
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
-        bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+        const unsigned char *sourceData;
 
-        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+        if(uncrunchedData.has_value()) {
+            sourceData = uncrunchedData->data();
+        } else {
+            sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
+        }
 
-        if(result.has_value()) {
+        if(repackingStreamingData) {
+            if(streamed) {
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+            } else {
+                return std::nullopt;
+            }
+        } else {
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+
+            if(!result.has_value())
+                return std::nullopt;
+
             textureAsset.m_TextureFormat = result->newFormat;
-            textureAsset.m_CompleteImageSize = textureAsset.image_data.size();
+            textureAsset.m_CompleteImageSize = result->newData.size();
 
             if(streamed) {
-                textureAsset.m_StreamData.size = result->newData.size();
-                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
+
             } else {
 
                 textureAsset.image_data = std::move(result->newData);
             }
-
-            return UnityAsset::UnityTypes::serializeTexture2D(textureAsset);
-        } else {
-            return std::nullopt;
         }
+
+        return UnityAsset::UnityTypes::serializeTexture2D(textureAsset);
 
     } else if(type.classID == UnityAsset::UnityTypes::Texture3DClassID) {
 
@@ -112,25 +227,32 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
 
-        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
-        if(result.has_value()) {
+        if(repackingStreamingData) {
+            if(streamed) {
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+            } else {
+                return std::nullopt;
+            }
+        } else {
+
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            if(!result.has_value())
+                return std::nullopt;
+
             textureAsset.m_Format = result->newFormat;
             textureAsset.m_DataSize = result->newData.size();
 
             if(streamed) {
-                textureAsset.m_StreamData.size = result->newData.size();
-                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
                 textureAsset.image_data = std::move(result->newData);
             }
-
-            return UnityAsset::UnityTypes::serializeTexture3D(textureAsset);
-        } else {
-            return std::nullopt;
         }
+
+        return UnityAsset::UnityTypes::serializeTexture3D(textureAsset);
 
     } else if(type.classID == UnityAsset::UnityTypes::Texture2DArrayClassID) {
 
@@ -141,25 +263,34 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
 
-        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
-        if(result.has_value()) {
+        if(repackingStreamingData) {
+            if(streamed) {
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+            } else {
+                return std::nullopt;
+            }
+        } else {
+
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            if(!result.has_value())
+                return std::nullopt;
+
+
             textureAsset.m_Format = result->newFormat;
             textureAsset.m_DataSize = result->newData.size();
 
             if(streamed) {
-                textureAsset.m_StreamData.size = result->newData.size();
-                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
                 textureAsset.image_data = std::move(result->newData);
             }
 
-            return UnityAsset::UnityTypes::serializeTexture2DArray(textureAsset);
-        } else {
-            return std::nullopt;
         }
+
+        return UnityAsset::UnityTypes::serializeTexture2DArray(textureAsset);
 
     } else if(type.classID == UnityAsset::UnityTypes::CubemapClassID) {
 
@@ -170,25 +301,32 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
 
-        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
-        if(result.has_value()) {
+        if(repackingStreamingData) {
+            if(streamed) {
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+            } else {
+                return std::nullopt;
+            }
+        } else {
+
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            if(!result.has_value())
+                return std::nullopt;
+
             textureAsset.m_TextureFormat = result->newFormat;
-            textureAsset.m_CompleteImageSize = result->newData.size();
+            textureAsset.m_CompleteImageSize = result->newData.size() / textureAsset.m_ImageCount;
 
             if(streamed) {
-                textureAsset.m_StreamData.size = result->newData.size();
-                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
                 textureAsset.image_data = std::move(result->newData);
             }
-
-            return UnityAsset::UnityTypes::serializeCubemap(textureAsset);
-        } else {
-            return std::nullopt;
         }
+
+        return UnityAsset::UnityTypes::serializeCubemap(textureAsset);
 
     } else if(type.classID == UnityAsset::UnityTypes::CubemapArrayClassID) {
 
@@ -199,25 +337,51 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         auto layout = UnityAsset::TextureImageLayout(textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedResourcesEntry, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
 
-        auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
-        if(result.has_value()) {
+        if(repackingStreamingData) {
+            if(streamed) {
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+            } else {
+                return std::nullopt;
+            }
+        } else {
+
+
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            if(!result.has_value())
+                return std::nullopt;
+
             textureAsset.m_Format = result->newFormat;
             textureAsset.m_DataSize = result->newData.size();
 
             if(streamed) {
-                textureAsset.m_StreamData.size = result->newData.size();
-                streamedResourcesEntry->replace(UnityAsset::Stream(std::make_shared<UnityAsset::InMemoryStreamBackingBuffer>(std::move(result->newData))));
+                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
                 textureAsset.image_data = std::move(result->newData);
             }
+        }
 
-            return UnityAsset::UnityTypes::serializeCubemapArray(textureAsset);
-        } else {
+        return UnityAsset::UnityTypes::serializeCubemapArray(textureAsset);
+
+    } else if(type.classID == UnityAsset::UnityTypes::MeshClassID && repackingStreamingData) {
+        checkNoScriptData(type);
+
+        auto meshAsset = UnityAsset::UnityTypes::deserializeMesh(original);
+
+        if(meshAsset.m_StreamData.size == 0 || !streamedManipulator.has_value()) {
             return std::nullopt;
         }
+
+        printf("Rewriting the streamed data of the mesh asset '%s' \n", meshAsset.m_Name.c_str());
+
+        auto originalData = streamedManipulator->getViewOfOriginalData(meshAsset.m_StreamData.offset, meshAsset.m_StreamData.size);
+
+        storeStreamedImageData(meshAsset.m_StreamData, *streamedManipulator, originalData);
+
+        return UnityAsset::UnityTypes::serializeMesh(meshAsset);
+
     } else {
         return std::nullopt;
     }
@@ -702,10 +866,12 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
     auto encoding = layout.format().encodingClass();
 
     if(encoding == UnityAsset::TextureEncodingClass::A8 ||
+        encoding == UnityAsset::TextureEncodingClass::R8 ||
         encoding == UnityAsset::TextureEncodingClass::RGBA8 ||
         encoding == UnityAsset::TextureEncodingClass::ARGB8 ||
         encoding == UnityAsset::TextureEncodingClass::RGB8 ||
-        encoding == UnityAsset::TextureEncodingClass::RGBA4444) {
+        encoding == UnityAsset::TextureEncodingClass::RGBA4444 ||
+        layout.images().empty()) {
         /*
          * Good for desktop.
          */

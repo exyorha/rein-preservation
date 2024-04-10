@@ -5,6 +5,7 @@
 
 #include <UnityAsset/Streams/Stream.h>
 #include <UnityAsset/UnityTextureTypes.h>
+#include <UnityAsset/StreamedResourceManipulator.h>
 
 namespace UnityAsset::UnityTypes {
     struct SerializedProgram;
@@ -12,13 +13,13 @@ namespace UnityAsset::UnityTypes {
 
 namespace UnityAsset {
     class SerializedType;
-    class AssetBundleEntry;
 }
 
 class AssetReprocessing {
 public:
     static std::optional<UnityAsset::Stream> reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
-                                                            UnityAsset::AssetBundleEntry *streamedResourcesEntr);
+                                                            std::optional<UnityAsset::StreamedResourceManipulator> &streamedManipulator,
+                                                            bool repackingStreamingData);
 
 private:
     using ETCTranscoder = void (*)(size_t width,
