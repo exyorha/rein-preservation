@@ -5,7 +5,8 @@
 #include <UnityAsset/FileContainer/AssetBundle/AssetBundleFile.h>
 
 #include "conversion_context.h"
-#include "rgbcx.h"
+#include "bc7enc_rdo/rgbcx.h"
+#include "bc7e_ispc.h"
 
 static int usage(void) {
     fputs(
@@ -18,6 +19,8 @@ static int usage(void) {
 
 int main(int argc, char **argv) {
     rgbcx::init();
+
+    ispc::bc7e_compress_block_init();
 
     if(argc < 2)
         return usage();

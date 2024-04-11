@@ -22,3 +22,6 @@
 [submodule "asset-processing/unityasset"]
 	path = asset-processing/unityasset
 	url = https://github.com/exyorha/unityasset.git
+[submodule "asset-processing/bc7enc_rdo"]
+	path = asset-processing/bc7enc_rdo
+	url = https://github.com/richgel999/bc7enc_rdo.git
