@@ -785,8 +785,11 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
 
         if(outputFormat == &UnityAsset::TextureFormatClassification::BC7) {
             ispc::bc7e_compress_block_params params;
-            ispc::bc7e_compress_block_params_init_slow(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
-
+            if(layout.format().blockWidth() <= 6 || layout.format().blockHeight() <= 6) {
+                ispc::bc7e_compress_block_params_init_veryslow(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
+            } else {
+                ispc::bc7e_compress_block_params_init_basic(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
+            }
             static const unsigned int BC7Batch = 64;
 
             std::vector<unsigned int> scanRange;
