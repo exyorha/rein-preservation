@@ -23,11 +23,6 @@ add_executable(process_assets
     HalfFloat.cpp
     HalfFloat.h
 
-    bc7enc_rdo/rgbcx.cpp
-    bc7enc_rdo/rgbcx.h
-    bc7enc_rdo/rgbcx_table4.h
-    bc7enc_rdo/rgbcx_table4_small.h
-
     bc7enc_rdo/bc7e.ispc
 
     asset_reprocessing.cpp
@@ -37,7 +32,7 @@ add_executable(process_assets
     process_assets.cpp
     unzip_handle.cpp
     unzip_handle.h
-    )
+)
 target_link_libraries(process_assets PRIVATE PkgConfig::MINIZIP UnityAsset PkgConfig::LZ4)
 
 set_target_properties(process_assets PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED TRUE)

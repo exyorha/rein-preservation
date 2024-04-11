@@ -14,12 +14,10 @@
 #include <algorithm>
 #include <execution>
 #include <unordered_set>
-#include <fstream>
 
 #include "UnityAsset/StreamedResourceManipulator.h"
 #include "astc_dec/astc_decomp.h"
 #include "crunch/crn_defs.h"
-#include "bc7enc_rdo/rgbcx.h"
 #include "etc2_transcoder.h"
 #include "HalfFloat.h"
 #include "crunch/crn_decomp.h"
@@ -721,35 +719,7 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
         }
     }
 
-
-    auto outputFormat = &UnityAsset::TextureFormatClassification::DXT1;
-
-    if((layout.format().blockWidth() == 4 || layout.format().blockHeight() == 4) ||
-      (layout.format().blockWidth() == 6 || layout.format().blockHeight() == 6) || true /* force BC7 for everything to see what that will look like */) {
-        printf("Encoding ASTC %ux%u into BC7\n", layout.format().blockWidth(), layout.format().blockWidth());
-
-        outputFormat = &UnityAsset::TextureFormatClassification::BC7;
-
-    } else {
-
-        bool hasTransparentPixels = false;
-        for(const auto &image: uncompressed.images()) {
-            if(rgbaImageHasTransparentPixels(storage.data(), image)) {
-                hasTransparentPixels = true;
-                break;
-            }
-        }
-
-        if(hasTransparentPixels) {
-            printf("At least one image has transparent pixels, will encode into DXT5\n");
-
-            outputFormat = &UnityAsset::TextureFormatClassification::DXT5;
-        } else {
-            printf("No images have transparent pixels, will encode into DXT1\n");
-        }
-    }
-
-    auto compressedLayout = layout.reformat(*outputFormat);
+    auto compressedLayout = layout.reformat(UnityAsset::TextureFormatClassification::BC7);
 
     auto outputBlockWidth = compressedLayout.format().blockWidth();
     auto outputBlockHeight = compressedLayout.format().blockHeight();
@@ -783,94 +753,55 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
 
         printf("  %u X blocks, %u Y blocks, %u blocks total\n", outputBlocksX, outputBlocksY, totalOutputBlocks);
 
-        if(outputFormat == &UnityAsset::TextureFormatClassification::BC7) {
-            ispc::bc7e_compress_block_params params;
-            if(layout.format().blockWidth() <= 6 || layout.format().blockHeight() <= 6) {
-                ispc::bc7e_compress_block_params_init_veryslow(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
-            } else {
-                ispc::bc7e_compress_block_params_init_basic(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
-            }
-            static const unsigned int BC7Batch = 64;
-
-            std::vector<unsigned int> scanRange;
-            for(unsigned int blockIndex = 0; blockIndex < totalOutputBlocks; blockIndex += BC7Batch) {
-                scanRange.push_back(blockIndex);
-            }
-
-            unsigned int sourcePitchBytes = sizeof(uint32_t) * inputImage.storageInfo().storedWidth();
-
-            std::for_each(std::execution::par_unseq, scanRange.begin(), scanRange.end(), [totalOutputBlocks, outputData,
-                          &params, outputBlocksX, inputData, sourcePitchBytes](unsigned int firstBlockNumber) {
-
-                unsigned int blocksInBatch = std::min<unsigned int>(totalOutputBlocks - firstBlockNumber, BC7Batch);
-
-                std::vector<uint32_t> batchPixels(blocksInBatch * 4 * 4);
-
-                for(unsigned int blockIndex = 0; blockIndex < blocksInBatch; blockIndex++) {
-                    auto blockNumber = firstBlockNumber + blockIndex;
-
-                    uint32_t *blockPixels = batchPixels.data() + 16 * blockIndex;
-
-                    auto blockX = blockNumber % outputBlocksX;
-                    auto blockY = blockNumber / outputBlocksX;
-
-                    const uint8_t *pixel = inputData + sourcePitchBytes * (blockY * 4) + sizeof(uint32_t) * blockX * 4;
-
-                    for(unsigned int scanline = 0; scanline < 4; scanline++) {
-                        memcpy(blockPixels, pixel, 4 * sizeof(uint32_t));
-                        blockPixels += 4;
-                        pixel += sourcePitchBytes;
-                    }
-                }
-
-                ispc::bc7e_compress_blocks(
-                    blocksInBatch,
-                    reinterpret_cast<uint64_t *>(outputData + 16 * firstBlockNumber),
-                    batchPixels.data(),
-                    &params);
-            });
+        ispc::bc7e_compress_block_params params;
+        if(layout.format().blockWidth() <= 6 || layout.format().blockHeight() <= 6) {
+            ispc::bc7e_compress_block_params_init_veryslow(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
         } else {
+            ispc::bc7e_compress_block_params_init_basic(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
+        }
+        static const unsigned int BC7Batch = 64;
 
-            std::vector<unsigned int> scanRange;
-            scanRange.reserve(totalOutputBlocks);
-            for(unsigned int blockIndex = 0; blockIndex <totalOutputBlocks; blockIndex++) {
-                scanRange.push_back(blockIndex);
-            }
+        std::vector<unsigned int> scanRange;
+        for(unsigned int blockIndex = 0; blockIndex < totalOutputBlocks; blockIndex += BC7Batch) {
+            scanRange.push_back(blockIndex);
+        }
 
-            std::for_each(std::execution::par_unseq, scanRange.begin(), scanRange.end(), [outputBlocksX, inputData, &inputImage, &storage, &outputImage,
-                outputFormat, outputData](unsigned int blockNumber) {
+        unsigned int sourcePitchBytes = sizeof(uint32_t) * inputImage.storageInfo().storedWidth();
+
+        std::for_each(std::execution::par_unseq, scanRange.begin(), scanRange.end(), [totalOutputBlocks, outputData,
+                        &params, outputBlocksX, inputData, sourcePitchBytes](unsigned int firstBlockNumber) {
+
+            unsigned int blocksInBatch = std::min<unsigned int>(totalOutputBlocks - firstBlockNumber, BC7Batch);
+
+            std::vector<uint32_t> batchPixels(blocksInBatch * 4 * 4);
+
+            for(unsigned int blockIndex = 0; blockIndex < blocksInBatch; blockIndex++) {
+                auto blockNumber = firstBlockNumber + blockIndex;
+
+                uint32_t *blockPixels = batchPixels.data() + 16 * blockIndex;
+
                 auto blockX = blockNumber % outputBlocksX;
                 auto blockY = blockNumber / outputBlocksX;
 
-                std::array<uint8_t, 4 * 4 * 4> rgba;
+                const uint8_t *pixel = inputData + sourcePitchBytes * (blockY * 4) + sizeof(uint32_t) * blockX * 4;
 
-                unsigned int pixelX = blockX * 4;
-                unsigned int pixelY = blockY * 4;
-
-                for(unsigned int bpY = 0; bpY < 4; bpY++) {
-                    for(unsigned int bpX = 0; bpX < 4; bpX++) {
-                        auto fullX = pixelX + bpX;
-                        auto fullY = pixelY + bpY;
-
-                        auto pixel = inputData + 4 * (inputImage.storageInfo().storedWidth() * fullY + fullX);
-
-                        rgba[bpY * 16 + bpX * 4 + 0] = pixel[0];
-                        rgba[bpY * 16 + bpX * 4 + 1] = pixel[1];
-                        rgba[bpY * 16 + bpX * 4 + 2] = pixel[2];
-                        rgba[bpY * 16 + bpX * 4 + 3] = pixel[3];
-                    }
+                for(unsigned int scanline = 0; scanline < 4; scanline++) {
+                    memcpy(blockPixels, pixel, 4 * sizeof(uint32_t));
+                    blockPixels += 4;
+                    pixel += sourcePitchBytes;
                 }
-                if(outputFormat == &UnityAsset::TextureFormatClassification::DXT1) {
-                    rgbcx::encode_bc1(18, outputData + 8 * blockNumber, rgba.data(), true, false);
-                } else {
-                    rgbcx::encode_bc3(18, outputData + 16 * blockNumber, rgba.data());
-                }
-            });
-        }
+            }
+
+            ispc::bc7e_compress_blocks(
+                blocksInBatch,
+                reinterpret_cast<uint64_t *>(outputData + 16 * firstBlockNumber),
+                batchPixels.data(),
+                &params);
+        });
     }
 
     return RebuiltUnityTextureData{
-        .newFormat = static_cast<int32_t>(outputFormat->unityFormat()),
+        .newFormat = static_cast<int32_t>(compressedLayout.format().unityFormat()),
         .newData = std::move(compressedStorage)
     };
 }
