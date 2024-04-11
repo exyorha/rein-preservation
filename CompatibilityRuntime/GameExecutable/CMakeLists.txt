@@ -12,20 +12,6 @@ add_executable(GameExecutable
     GLES/BaseGLESContext.cpp
     GLES/BaseGLESContext.h
 
-    GLES/Shim/GLESContextShim.cpp
-    GLES/Shim/GLESContextShim.h
-    GLES/Shim/ShimExtensionString.cpp
-    GLES/Shim/ShimExtensionString.h
-    GLES/Shim/ShimNextContextSymbols.cpp
-    GLES/Shim/ShimNextContextSymbols.h
-
-    GLES/TextureEmulation/EmulatedTextureFormat.cpp
-    GLES/TextureEmulation/EmulatedTextureFormat.h
-    GLES/TextureEmulation/astc_dec/astc_decomp.cpp
-    GLES/TextureEmulation/astc_dec/astc_decomp.h
-    GLES/TextureEmulation/stb_dxt.cpp
-    GLES/TextureEmulation/stb_dxt.h
-
     main.cpp
 
     Input.cpp
@@ -101,10 +87,6 @@ if(NOT WIN32)
 
         GLES/SDL/RealSDLSymbols.cpp
         GLES/SDL/RealSDLSymbols.h
-        GLES/SDL/SDLGLESImplementation.cpp
-        GLES/SDL/SDLGLESImplementation.h
-        GLES/SDL/SDLGLESImplementationNative.cpp
-        GLES/SDL/SDLGLESImplementationNative.h
         GLES/SDL/SDLWrapper.cpp
         GLES/SDL/SDLWrapper.h
 
@@ -123,15 +105,6 @@ if(WIN32)
 
         WindowsHelpers.cpp
         WindowsHelpers.h
-
-        GLES/WGL/WGLHooking.cpp
-        GLES/WGL/WGLHooking.h
-        GLES/WGL/WGLImplementation.cpp
-        GLES/WGL/WGLImplementation.h
-        GLES/WGL/WGLImplementationNative.cpp
-        GLES/WGL/WGLImplementationNative.h
-        GLES/WGL/WindowsImportRedirection.cpp
-        GLES/WGL/WindowsImportRedirection.h
 
         GameExecutable.rc
     )

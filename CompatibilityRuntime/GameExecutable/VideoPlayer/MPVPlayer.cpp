@@ -9,13 +9,12 @@
 #include <cstring>
 
 #ifdef _WIN32
-#include <GLES/WGL/WGLHooking.h>
-#include <GLES/WGL/WGLImplementation.h>
+#include <windows.h>
 #else
 #include <GLES/SDL/SDLWrapper.h>
-#include <GLES/SDL/SDLGLESImplementation.h>
 #include <GLES/SDL/RealSDLSymbols.h>
 #endif
+
 
 std::optional<VideoRenderingOpenGLAPISet> MPVPlayer::m_openglAPI;
 
@@ -265,27 +264,22 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
     mpv_render_context_render(m_renderer, params.data());
 }
 
+
+void *MPVPlayer::mpvOpenGLGetProcAddress(void *ctx, const char *name) {
+    (void)ctx;
+
 #ifdef _WIN32
 
-void *MPVPlayer::mpvOpenGLGetProcAddress(void *ctx, const char *name) {
-    (void)ctx;
+    static HMODULE opengl32Module = GetModuleHandle(L"opengl32.dll");
 
-    if(!SelectedWGLImplementation)
-        return nullptr;
+    auto proc = wglGetProcAddress(name);
+    if(proc) {
+        return reinterpret_cast<void *>(proc);
+    }
 
-    return reinterpret_cast<void *>(SelectedWGLImplementation->GetProcAddress(name));
-}
-
+    return reinterpret_cast<void *>(GetProcAddress(opengl32Module, name));
 #else
-
-void *MPVPlayer::mpvOpenGLGetProcAddress(void *ctx, const char *name) {
-    (void)ctx;
-
-    if(!SelectedSDLGLESImplementation)
-        return nullptr;
-
-    return SelectedSDLGLESImplementation->GetProcAddress(name);
-}
-
+    return RealSDLSymbols::getSingleton().realGL_GetProcAddress(name);
 #endif
+}
 

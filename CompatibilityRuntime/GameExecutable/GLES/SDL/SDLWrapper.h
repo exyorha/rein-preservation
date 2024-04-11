@@ -3,13 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-class SDLGLESImplementation;
-
-void initializeSDLGLES();
-
 SDL_Window *getSDLWindowForWebView();
-
-extern SDLGLESImplementation *SelectedSDLGLESImplementation;;
 
 #endif
 

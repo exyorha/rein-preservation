@@ -20,21 +20,7 @@ RealSDLSymbols::RealSDLSymbols() {
     BIND_SYMBOL(GetWindowWMInfo)
     BIND_SYMBOL(GetWindowSize)
 
-    BIND_SYMBOL(GL_CreateContext)
-    BIND_SYMBOL(GL_DeleteContext)
-    BIND_SYMBOL(GL_ExtensionSupported)
-    BIND_SYMBOL(GL_GetAttribute)
-    //BIND_SYMBOL(GL_GetCurrentContext)
-    //BIND_SYMBOL(GL_GetCurrentWindow)
     BIND_SYMBOL(GL_GetProcAddress)
-    BIND_SYMBOL(GL_GetSwapInterval)
-    BIND_SYMBOL(GL_LoadLibrary)
-    BIND_SYMBOL(GL_MakeCurrent)
-    BIND_SYMBOL(GL_ResetAttributes)
-    BIND_SYMBOL(GL_SetAttribute)
-    BIND_SYMBOL(GL_SetSwapInterval)
-    BIND_SYMBOL(GL_SwapWindow)
-    BIND_SYMBOL(GL_UnloadLibrary)
 
 
 #undef BIND_SYMBOL

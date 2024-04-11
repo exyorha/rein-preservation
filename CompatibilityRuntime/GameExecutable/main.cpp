@@ -18,11 +18,8 @@
 #include <VideoPlayer/AVProVideoNativeBypass.h>
 #endif
 
-#include <GLES/Shim/GLESContextShim.h>
-
 #ifdef _WIN32
 #include "WindowsHelpers.h"
-#include <GLES/WGL/WGLHooking.h>
 #else
 #include <GLES/SDL/SDLWrapper.h>
 #endif
@@ -393,11 +390,7 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
 
     for(int index = 1; index < argc; index++) {
         printf("arg[%d] = '%s'\n", index, argv[index]);
-        if(strcmp(argv[index], "-always-emulate-astc") == 0) {
-            GLESContextShim::AlwaysEmulateASTC = true;
-        } else if(strcmp(argv[index], "-never-recompress-astc") == 0) {
-            GLESContextShim::NeverRecompressASTC = true;
-        } else if(strcmp(argv[index], "-disable-touch-emulation") == 0) {
+        if(strcmp(argv[index], "-disable-touch-emulation") == 0) {
             EmulateTouchInput = false;
         } else if(strcmp(argv[index], "-gameserver") == 0) {
             ++index;
@@ -409,13 +402,6 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
             DownscalingDisabled = true;
         }
     }
-
-
-#ifdef _WIN32
-    replaceUnityWGL();
-#else
-    initializeSDLGLES();
-#endif
 
     int result = unityEntryPoint(unityInvocationPackage);
 
