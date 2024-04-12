@@ -209,6 +209,10 @@ public:
     void costumeAwaken(const std::string &costumeUUID,
                            const google::protobuf::Map<int32_t, int32_t> &materialsToUse);
 
+    void moveSideStoryQuest(int32_t sideStoryQuestId);
+
+    void updateSideStoryQuestSceneProgress(int32_t sideStoryQuestId, int32_t sideStoryQuestSceneId);
+
 private:
 
     struct CollectedConditionRequirements {
@@ -278,7 +282,7 @@ private:
         int32_t awakenCount = 0);
     void giveUserCostumeEnhanced(int32_t costumeEnhancedId);
 
-    void leavePortalCage();
+    void leaveSpecialStates();
 
     void commonStartQuest(int32_t questId, const std::optional<bool> &isBattleOnly = std::nullopt);
 
@@ -311,6 +315,8 @@ private:
     void populateWeaponNote(const std::string &weaponUUID);
 
     int32_t getHighestEvolutionOrder(int32_t weaponId);
+
+    void updateSideStoryQuestSceneProgressStatus(int32_t sideStoryQuestId, int32_t questSceneId);
 
     int64_t m_userId;
     LLServices::LogFacility m_log;

@@ -48,6 +48,21 @@ void DeckService::RefreshDeckPower(::google::protobuf::RpcController* controller
     return inChangesetCall("DeckService::RefreshDeckPower", controller, request, response, done, &DeckService::RefreshDeckPowerImpl);
 }
 
+void DeckService::ReplaceMultiDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::ReplaceMultiDeckRequest* request,
+                        ::apb::api::deck::ReplaceMultiDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::ReplaceMultiDeck", controller, request, response, done, &DeckService::ReplaceMultiDeckImpl);
+}
+
+void DeckService::RefreshMultiDeckPower(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::RefreshMultiDeckPowerRequest* request,
+                        ::apb::api::deck::RefreshMultiDeckPowerResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::RefreshMultiDeckPower", controller, request, response, done, &DeckService::RefreshMultiDeckPowerImpl);
+}
 
 void DeckService::UpdateNameImpl(UserContext &user,
                                  const ::apb::api::deck::UpdateNameRequest* request,
@@ -88,3 +103,31 @@ void DeckService::RefreshDeckPowerImpl(UserContext &user,
 
     user.refreshDeckPower(request->deck_type(), request->user_deck_number(), request->deck_power());
 }
+
+void DeckService::ReplaceMultiDeckImpl(UserContext &user,
+                                       const ::apb::api::deck::ReplaceMultiDeckRequest* request,
+                                       ::apb::api::deck::ReplaceMultiDeckResponse* response) {
+
+    for(const auto &deck: request->deck_detail()) {
+        user.replaceDeck(
+            deck.deck_type(),
+            deck.user_deck_number(),
+            deck.has_deck() ? &deck.deck() : nullptr
+        );
+    }
+}
+
+void DeckService::RefreshMultiDeckPowerImpl(UserContext &user,
+                                       const ::apb::api::deck::RefreshMultiDeckPowerRequest* request,
+                                       ::apb::api::deck::RefreshMultiDeckPowerResponse* response) {
+
+    for(const auto &powerInfo: request->deck_power_info()) {
+        user.refreshDeckPower(
+            powerInfo.deck_type(),
+            powerInfo.user_deck_number(),
+            powerInfo.deck_power()
+        );
+    }
+}
+
+

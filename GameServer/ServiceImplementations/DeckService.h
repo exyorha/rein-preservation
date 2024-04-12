@@ -38,6 +38,15 @@ public:
                         ::apb::api::deck::RefreshDeckPowerResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void ReplaceMultiDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::ReplaceMultiDeckRequest* request,
+                        ::apb::api::deck::ReplaceMultiDeckResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
+    void RefreshMultiDeckPower(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::RefreshMultiDeckPowerRequest* request,
+                        ::apb::api::deck::RefreshMultiDeckPowerResponse* response,
+                        ::google::protobuf::Closure* done) override;
 
 private:
     void UpdateNameImpl(UserContext &user,
@@ -59,6 +68,14 @@ private:
     void RefreshDeckPowerImpl(UserContext &user,
                               const ::apb::api::deck::RefreshDeckPowerRequest* request,
                               ::apb::api::deck::RefreshDeckPowerResponse* response);
+
+    void ReplaceMultiDeckImpl(UserContext &user,
+                              const ::apb::api::deck::ReplaceMultiDeckRequest* request,
+                        ::apb::api::deck::ReplaceMultiDeckResponse* response);
+
+    void RefreshMultiDeckPowerImpl(UserContext &user,
+                        const ::apb::api::deck::RefreshMultiDeckPowerRequest* request,
+                        ::apb::api::deck::RefreshMultiDeckPowerResponse* response);
 };
 
 #endif

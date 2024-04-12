@@ -1493,7 +1493,7 @@ void UserContext::setUserTutorialProgress(int32_t tutorialType, int32_t progress
 
 void UserContext::updateMainFlowSceneProgress(int32_t currentSceneId, int32_t headSceneId) {
 
-    leavePortalCage();
+    leaveSpecialStates();
 
     auto getCurrent = db().prepare("SELECT current_quest_scene_id FROM i_user_main_quest_main_flow_status WHERE user_id = ?");
     getCurrent->bind(1, m_userId);
@@ -1542,7 +1542,7 @@ void UserContext::updateReplayFlowSceneProgress(int32_t currentSceneId, int32_t 
      * TODO: does this need anything special for the 'B side' of sun/moon?
      */
 
-    leavePortalCage();
+    leaveSpecialStates();
 
     auto updateReplayFlow = db().prepare(R"SQL(
         INSERT INTO i_user_main_quest_replay_flow_status (
@@ -1640,7 +1640,7 @@ void UserContext::commonStartQuest(int32_t questId, const std::optional<bool> &i
 void UserContext::startMainQuest(
     int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly) {
 
-    leavePortalCage();
+    leaveSpecialStates();
 
     /*
      * TODO: we currently select the first scene in a quest, and this is probably incorrect
@@ -2866,6 +2866,8 @@ void UserContext::enhanceWeaponAbility(const std::string_view &uuid, int32_t abi
 }
 
 void UserContext::updatePortalCageSceneProgress(int32_t sceneId) {
+    leaveSpecialStates();
+
     auto updatePortalCage = db().prepare(R"SQL(
         INSERT INTO i_user_portal_cage_status (
             user_id,
@@ -2909,16 +2911,16 @@ void UserContext::setMainQuestRoute(int32_t routeId) {
     // TODO: do we need to update 'i_user_main_quest_main_flow_status' here?
 }
 
-void UserContext::leavePortalCage() {
-    auto query = db().prepare(R"SQL(
-        UPDATE i_user_portal_cage_status SET
-            is_current_progress = 0
-        WHERE
-            user_id = ? AND
-            is_current_progress = 1
-    )SQL");
-    query->bind(1, m_userId);
-    query->exec();
+void UserContext::leaveSpecialStates() {
+    for(const char *text : {
+        "UPDATE i_user_portal_cage_status SET is_current_progress = 0 WHERE user_id = ? AND is_current_progress = 1",
+        "DELETE FROM i_user_side_story_quest_scene_progress_status WHERE user_id = ?",
+    }) {
+
+        auto query = db().prepare(text);
+        query->bind(1, m_userId);
+        query->exec();
+    }
 }
 
 void UserContext::activateCageOrnament(int32_t cageOrnamentId,
@@ -5126,5 +5128,164 @@ void UserContext::costumeAwaken(const std::string &costumeUUID,
         givePossession(possessionType, possessionId, count);
     }
     getItemEffects->reset();
+}
+
+
+void UserContext::moveSideStoryQuest(int32_t sideStoryQuestId) {
+    leaveSpecialStates();
+
+    /*
+     * Check if we have a record for this side story quest.
+     */
+
+    auto querySideStory = db().prepare(R"SQL(
+        SELECT
+            head_side_story_quest_scene_id,
+            side_story_quest_state_type
+        FROM i_user_side_story_quest
+        WHERE
+            user_id = ? AND
+            side_story_quest_id = ?
+    )SQL");
+    querySideStory->bind(1, m_userId);
+    querySideStory->bind(2, sideStoryQuestId);
+
+    int32_t currentQuestSceneId;
+
+    if(querySideStory->step()) {
+        currentQuestSceneId = querySideStory->columnInt(0);
+    } else {
+
+        /*
+         * We don't have a record, so we need to initialize.
+         */
+
+        auto getFirstScene = db().prepare(R"SQL(
+            SELECT
+                side_story_quest_scene_id
+            FROM
+                m_side_story_quest_scene
+            WHERE
+                side_story_quest_id = ?
+            ORDER BY sort_order
+            LIMIT 1
+        )SQL");
+        getFirstScene->bind(1, sideStoryQuestId);
+        if(!getFirstScene->step()) {
+            throw std::runtime_error("no such side story quest, or no scenes");
+        }
+
+        currentQuestSceneId = getFirstScene->columnInt(0);
+
+        auto insertQuest = db().prepare(R"SQL(
+            INSERT INTO i_user_side_story_quest (
+                user_id,
+                side_story_quest_id,
+                head_side_story_quest_scene_id,
+                side_story_quest_state_type
+            ) VALUES (
+                ?, ?, ?, ?
+            )
+        )SQL");
+        insertQuest->bind(1, m_userId);
+        insertQuest->bind(2, sideStoryQuestId);
+        insertQuest->bind(3, currentQuestSceneId);
+        insertQuest->bind(4, static_cast<int32_t>(QuestStateType::InProgress));
+        insertQuest->exec();
+    }
+    querySideStory->reset();
+
+    updateSideStoryQuestSceneProgressStatus(sideStoryQuestId, currentQuestSceneId);
+}
+
+void UserContext::updateSideStoryQuestSceneProgressStatus(int32_t sideStoryQuestId, int32_t questSceneId) {
+    /*
+     * Update the progress status.
+     */
+    auto statusUpdate = db().prepare(R"SQL(
+        INSERT INTO i_user_side_story_quest_scene_progress_status (
+            user_id,
+            current_side_story_quest_id,
+            current_side_story_quest_scene_id
+        ) VALUES (
+            ?,
+            ?,
+            ?
+        ) ON CONFLICT (user_id) DO UPDATE SET
+            current_side_story_quest_id = excluded.current_side_story_quest_id,
+            current_side_story_quest_scene_id = excluded.current_side_story_quest_scene_id
+    )SQL");
+    statusUpdate->bind(1, m_userId);
+    statusUpdate->bind(2, sideStoryQuestId);
+    statusUpdate->bind(3, questSceneId);
+    statusUpdate->exec();
+}
+
+void UserContext::updateSideStoryQuestSceneProgress(int32_t sideStoryQuestId, int32_t sideStoryQuestSceneId) {
+    auto getOrderInfo = db().prepare(R"SQL(
+        SELECT
+            sort_order
+        FROM
+            m_side_story_quest_scene
+        WHERE
+            side_story_quest_id = ? AND
+            side_story_quest_scene_id = ?
+    )SQL");
+    getOrderInfo->bind(1, sideStoryQuestId);
+    getOrderInfo->bind(2, sideStoryQuestSceneId);
+    if(!getOrderInfo->step()) {
+        throw std::runtime_error("no such side story quest, or the requested scene doesn't belong to that quest");
+    }
+
+    auto sortOrderOfTheRequestedScene = getOrderInfo->columnInt(0);
+    getOrderInfo->reset();
+
+    auto getOverallStatus = db().prepare(
+        "SELECT 1 FROM i_user_side_story_quest_scene_progress_status WHERE user_id = ? AND current_side_story_quest_id = ?"
+    );
+    getOverallStatus->bind(1, m_userId);
+    getOverallStatus->bind(2, sideStoryQuestId);
+    if(!getOverallStatus->step()) {
+        throw std::runtime_error("not currently on this side story quest");
+    }
+    getOverallStatus->reset();
+
+    auto getSideStoryQuestStatus = db().prepare(R"SQL(
+        SELECT
+            m_side_story_quest_scene.sort_order
+        FROM
+            i_user_side_story_quest,
+            m_side_story_quest_scene ON
+                m_side_story_quest_scene.side_story_quest_id = i_user_side_story_quest.side_story_quest_id AND
+                m_side_story_quest_scene.side_story_quest_scene_id = i_user_side_story_quest.head_side_story_quest_scene_id
+        WHERE
+            user_id = ? AND
+            i_user_side_story_quest.side_story_quest_id = ?
+    )SQL");
+    getSideStoryQuestStatus->bind(1, m_userId);
+    getSideStoryQuestStatus->bind(2, sideStoryQuestId);
+
+    if(!getSideStoryQuestStatus->step()) {
+        throw std::runtime_error("no record of this side story quest");
+    }
+
+    auto currentSortOrder = getSideStoryQuestStatus->columnInt(0);
+    getSideStoryQuestStatus->reset();
+
+    m_log.debug("updateSideStoryQuestSceneProgress(quest %d, scene %d): the sort order of the new scene is %d, the current sort order is %d",
+                sideStoryQuestId, sideStoryQuestSceneId, sortOrderOfTheRequestedScene, currentSortOrder);
+
+    if(sortOrderOfTheRequestedScene >currentSortOrder) {
+        auto updateSideStoryQuestStatus = db().prepare(R"SQL(
+            UPDATE i_user_side_story_quest SET head_side_story_quest_scene_id = ?
+            WHERE user_id = ? AND side_story_quest_id = ?
+        )SQL");
+        updateSideStoryQuestStatus->bind(1, sideStoryQuestSceneId);
+        updateSideStoryQuestStatus->bind(2, m_userId);
+        updateSideStoryQuestStatus->bind(3, sideStoryQuestId);
+        updateSideStoryQuestStatus->exec();
+    }
+
+    updateSideStoryQuestSceneProgressStatus(sideStoryQuestId, sideStoryQuestSceneId);
 }
 
