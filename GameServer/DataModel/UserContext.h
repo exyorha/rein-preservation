@@ -213,6 +213,10 @@ public:
 
     void updateSideStoryQuestSceneProgress(int32_t sideStoryQuestId, int32_t sideStoryQuestSceneId);
 
+    void startExplore(int32_t exploreId, int32_t useConsumableItemId);
+    void finishExplore(int32_t exploreId, int32_t score, int32_t &assetGradeIconId);
+    void retireExplore(int32_t exploreId);
+
 private:
 
     struct CollectedConditionRequirements {

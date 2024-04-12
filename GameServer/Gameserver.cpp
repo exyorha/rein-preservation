@@ -45,7 +45,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_characterService(m_db),
     m_characterBoardService(m_db),
     m_contentsStoryService(m_db),
-    m_sideStoryQuestService(m_db) {
+    m_sideStoryQuestService(m_db),
+    m_exploreService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -85,36 +86,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_characterBoardService);
     m_gameAPI.registerService(&m_contentsStoryService);
     m_gameAPI.registerService(&m_sideStoryQuestService);
+    m_gameAPI.registerService(&m_exploreService);
 
-#if 0
-    std::ifstream stream;
-    stream.open("after_first_season.sql", std::ios::in | std::ios::binary);
-    stream.seekg(0, std::ios::end);
-    std::vector<char> data(stream.tellg());
-    stream.seekg(0);
-    stream.read(data.data(), data.size());
-    {
-
-        sqlite::Transaction transaction(&m_db.db());
-        const char * ptr = data.data();
-        while(*ptr) {
-            auto statement = m_db.db().prepare(ptr, 0, &ptr);
-            if(!statement)
-                break;
-
-            statement->exec();
-        }
-        transaction.commit();
-    }
-#endif
-#if 0
-    {
-        sqlite::Transaction transaction(&m_db.db());
-
-        m_db.db().prepare("UPDATE i_user_main_quest_main_flow_status SET current_quest_scene_id = 43")->exec();
-        transaction.commit();
-    }
-#endif
 #if 0
     {
         sqlite::Transaction transaction(&m_db.db());

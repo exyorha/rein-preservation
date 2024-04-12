@@ -291,6 +291,7 @@ add_executable(GameServer
     service/DataService.proto
     service/DeckService.proto
     service/DokanService.proto
+    service/ExploreService.proto
     service/GachaService.proto
     service/GamePlayService.proto
     service/GiftService.proto
@@ -347,6 +348,9 @@ add_executable(GameServer
 
     ServiceImplementations/DokanService.cpp
     ServiceImplementations/DokanService.h
+
+    ServiceImplementations/ExploreService.cpp
+    ServiceImplementations/ExploreService.h
 
     ServiceImplementations/GachaService.cpp
     ServiceImplementations/GachaService.h

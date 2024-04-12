@@ -39,6 +39,7 @@
 #include "ServiceImplementations/CharacterBoardService.h"
 #include "ServiceImplementations/ContentsStoryService.h"
 #include "ServiceImplementations/SideStoryQuestService.h"
+#include "ServiceImplementations/ExploreService.h"
 
 #include "DataModel/Database.h"
 
@@ -107,6 +108,7 @@ private:
     CharacterBoardService m_characterBoardService;
     ContentsStoryService m_contentsStoryService;
     SideStoryQuestService m_sideStoryQuestService;
+    ExploreService m_exploreService;
 };
 
 #endif

@@ -5289,3 +5289,109 @@ void UserContext::updateSideStoryQuestSceneProgress(int32_t sideStoryQuestId, in
     updateSideStoryQuestSceneProgressStatus(sideStoryQuestId, sideStoryQuestSceneId);
 }
 
+void UserContext::startExplore(int32_t exploreId, int32_t useConsumableItemId) {
+    auto checkNoOngoingExplore = db().prepare("SELECT 1 FROM i_user_explore WHERE user_id = ? AND playing_explore_id != 0");
+    checkNoOngoingExplore->bind(1, m_userId);
+    if(checkNoOngoingExplore->step()) {
+        throw std::runtime_error("an exploration is already ongoing");
+    }
+
+    checkNoOngoingExplore->reset();
+
+    auto getItemCount = db().prepare("SELECT consume_item_count FROM m_explore WHERE explore_id = ?");
+    getItemCount->bind(1, exploreId);
+    if(!getItemCount->step()) {
+        throw std::runtime_error("no such exploration");
+    }
+
+    auto itemCount = getItemCount->columnInt(0);
+    getItemCount->reset();
+
+    if(useConsumableItemId != 0) {
+        consumeConsumableItem(useConsumableItemId, itemCount);
+    }
+
+    auto recordExplore = db().prepare(R"SQL(
+        INSERT INTO i_user_explore (
+            user_id,
+            is_use_explore_ticket,
+            playing_explore_id,
+            latest_play_datetime
+        ) VALUES (
+            ?,
+            ?,
+            ?,
+            current_net_timestamp()
+        ) ON CONFLICT (user_id) DO UPDATE SET
+            is_use_explore_ticket = excluded.is_use_explore_ticket,
+            playing_explore_id = excluded.playing_explore_id,
+            latest_play_datetime = excluded.latest_play_datetime
+    )SQL");
+    recordExplore->bind(1, m_userId);
+    recordExplore->bind(2, useConsumableItemId != 0);
+    recordExplore->bind(3, exploreId);
+    recordExplore->exec();
+}
+
+void UserContext::finishExplore(int32_t exploreId, int32_t score, int32_t &assetGradeIconId) {
+    retireExplore(exploreId);
+
+    auto getGradeAsset = db().prepare(R"SQL(
+        SELECT asset_grade_icon_id
+        FROM
+            m_explore_grade_score,
+            m_explore_grade_asset USING (explore_grade_id)
+        WHERE explore_id = ? AND necessary_score <= ?
+        ORDER BY necessary_score DESC
+        LIMIT 1
+    )SQL");
+    getGradeAsset->bind(1, exploreId);
+    getGradeAsset->bind(2, score);
+    if(getGradeAsset->step()) {
+        assetGradeIconId = getGradeAsset->columnInt(0);
+    } else {
+        assetGradeIconId = 0;
+    }
+    getGradeAsset->reset();
+
+    int32_t currentHighScore = 0;
+    auto getHighScore = db().prepare("SELECT max_score FROM i_user_explore_score WHERE user_id = ? AND explore_id = ?");
+    getHighScore->bind(1, m_userId);
+    getHighScore->bind(2, exploreId);
+    if(getHighScore->step()) {
+        currentHighScore = getHighScore->columnInt(0);
+    }
+    getHighScore->reset();
+
+
+    if(score > currentHighScore) {
+        auto storeHighScore = db().prepare(R"SQL(
+            INSERT INTO i_user_explore_score (
+                user_id,
+                explore_id,
+                max_score,
+                max_score_update_datetime
+            ) VALUES (
+                ?,
+                ?,
+                ?,
+                current_net_timestamp()
+            ) ON CONFLICT (user_id, explore_id) DO UPDATE SET
+                max_score = excluded.max_score,
+                max_score_update_datetime = excluded.max_score_update_datetime
+        )SQL");
+        storeHighScore->bind(1, m_userId);
+        storeHighScore->bind(2, exploreId);
+        storeHighScore->bind(3, score);
+        storeHighScore->exec();
+    }
+}
+
+void UserContext::retireExplore(int32_t exploreId) {
+    auto retire = db().prepare("UPDATE i_user_explore SET playing_explore_id = 0 WHERE user_id = ? AND playing_explore_id = ? RETURNING 1");
+    retire->bind(1, m_userId);
+    retire->bind(2, exploreId);
+    if(!retire->step()) {
+        throw std::runtime_error("the exploration is not currently ongoing");
+    }
+}
