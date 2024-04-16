@@ -21,6 +21,10 @@ Il2CppString *stringFromUtf8(const std::string_view &conv) {
     return il2cpp_string_new_len(conv.data(), conv.size());
 }
 
+Il2CppString *stringFromUtf16(const std::u16string_view &conv) {
+    return il2cpp_string_new_utf16(reinterpret_cast<const Il2CppChar*>(conv.data()), conv.size());
+}
+
 void Il2CppVMCharacteristics::initialize() {
     objectHeaderSize = il2cpp_object_header_size();
     arrayObjectHeaderSize = il2cpp_array_object_header_size();

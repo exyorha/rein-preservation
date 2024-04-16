@@ -20,4 +20,5 @@ void NotificationService::GetHeaderNotificationImpl(UserContext &user,
                                                     const ::google::protobuf::Empty* request,
                                                     ::apb::api::notification::GetHeaderNotificationResponse* response) {
 
+    response->set_gift_not_receive_count(user.getNumberOfUnreceivedGifts());
 }

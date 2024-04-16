@@ -36,6 +36,7 @@ private:
     void commandRestore(WordListParser &parser);
     void commandTimeTravel(WordListParser &parser);
     void commandPresent(WordListParser &parser);
+    void commandGift(WordListParser &parser);
 
     std::filesystem::path backupLocation() const;
 

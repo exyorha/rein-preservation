@@ -40,6 +40,7 @@
 #include "ServiceImplementations/ContentsStoryService.h"
 #include "ServiceImplementations/SideStoryQuestService.h"
 #include "ServiceImplementations/ExploreService.h"
+#include "ServiceImplementations/GiftService.h"
 
 #include "DataModel/Database.h"
 
@@ -109,6 +110,7 @@ private:
     ContentsStoryService m_contentsStoryService;
     SideStoryQuestService m_sideStoryQuestService;
     ExploreService m_exploreService;
+    GiftService m_giftService;
 };
 
 #endif

@@ -96,3 +96,16 @@ BEGIN
   UPDATE i_user_explore_score SET latest_version = OLD.latest_version + 1
     WHERE i_user_explore_score.rowid = NEW.rowid;
 END;
+
+-- Add the tables for the gift system
+CREATE TABLE internal_user_gift (
+  gift_id INTEGER PRIMARY KEY NOT NULL, -- serves as 'user_gift_uuid', but is easier to work with
+  user_id INTEGER NOT NULL,
+  grant_datetime INTEGER NOT NULL,
+  expires_datetime INTEGER NOT NULL,
+  received_datetime INTEGER NOT NULL DEFAULT 0, -- 0 means 'not yet received'
+  gift_data BLOB NOT NULL, -- this is serialized apb.api.gift.GiftCommon
+  reward_kind_type INTEGER NOT NULL
+);
+
+CREATE INDEX internal_user_gift_user_id ON internal_user_gift (user_id);

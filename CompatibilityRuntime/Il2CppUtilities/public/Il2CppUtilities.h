@@ -9,6 +9,7 @@ std::string stringToUtf8(Il2CppString *url);
 Il2CppString *stringFromUtf8(const std::string_view &conv);
 
 std::u16string_view stringToUtf16(Il2CppString *url);
+Il2CppString *stringFromUtf16(const std::u16string_view &conv);
 
 std::string utf16ToUtf8(const std::u16string_view &utf16);
 std::u16string utf8ToUtf16(const std::string_view &utf8);

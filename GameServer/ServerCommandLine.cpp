@@ -25,6 +25,7 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
     { .cmd = "timetravel", .help = "adjusts the server time to be different from the real-world time",
         .handler = &ServerCommandLine::commandTimeTravel },
     { .cmd = "present", .help = "adjusts the server time back to the real-world time", .handler = &ServerCommandLine::commandPresent },
+    { .cmd = "gift", .help = "sends a gift (execute just 'gift' for the syntax details)", .handler = &ServerCommandLine::commandGift },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -214,6 +215,64 @@ void ServerCommandLine::commandTimeTravel(WordListParser &parser) {
 
 void ServerCommandLine::commandPresent(WordListParser &parser) {
     m_db.setTimeOffset(std::nullopt);
+}
+
+void ServerCommandLine::commandGift(WordListParser &parser) {
+    if(parser.isAtEnd()) {
+        LogCLI.info(
+            "The gift command add items to the user's gift box, and can be used to easily add items to the game's inventory.\n"
+            "\n"
+            "Usage: gift <ITEM TYPE> <ITEM ID WITHIN THE TYPE> [EXTRA PARAMETER=EXTRA PARAMETER VALUE]...\n"
+            "\n"
+            "Example: gift costume 21000\n"
+            "Example: gift gold count=10000\n"
+            "\n"
+            "Item types:\n"
+            " - 'costume'\n"
+#if 0
+            "    Accepts parameter 'level' specifying the level of the costume (default: 1)\n"
+            "    Accepts parameter 'exp' specifying the experience of the costume (default: determined based on the level)\n"
+            "    Accepts parameter 'limit_break_count' specifying the number of ascensions performed on the costume (default: 0)\n"
+            "    Accepts parameter 'active_skill_level' specifying the level of the skill of the costume (default: 1)\n"
+#endif
+            " - 'weapon'\n"
+#if 0
+            "   Accepts parameter 'level' specifying the level of the weapon (default: 1)\n"
+            "   Accepts parameter 'exp' specifying the experience of the weapon (default: determined based on the level)\n"
+            "   Accepts parameter 'limit_break_count' specifying the number of ascensions performed on the weapon (default: 0)\n"
+            "   Accepts parameters 'skill<SKILL ID>' specifying the level of the corresponding skill (default: not set)\n"
+#endif
+            " - 'companion'\n"
+#if 0
+            "   Accepts parameter 'level' specifying the level of the companion (default: 1)\n"
+#endif
+            " - 'parts' (memoirs)\n"
+            " - 'material'\n"
+            " - 'consumable_item'\n"
+            " - 'gold': shorthand for 'consumable_item %d'; the item ID doesn't need to be specified\n"
+            " - 'paid_gem': no item ID should be specified\n"
+            " - 'free_gem': no item ID should be specified\n"
+            " - 'important_item'\n"
+            " - 'thought' (debris)\n"
+            " - 'mission_pass_point'\n"
+            " - 'premium_item'\n"
+            "\n"
+#if 0
+            "WARNING: Setting the leveling parameters on items to the values outside of the normal bounds may cause game client errors.\n"
+            "         Create a backup if you're not sure about the parameters you're setting.\n"
+            "         Not setting any leveling parameters is always safe.\n"
+#endif
+            "The following parameters apply to all item types:\n"
+            "  'count': the number of items to be gifted, default: 1\n"
+            "  'gift_text': the ID of the gift message text to be used, default: '13' for 'sent by administration'\n"
+            "  'expires': the amount of time in which the gift will expire unless claimed, such as 'expires=\"7 days\"'; default: no expiration\n"
+            , DatabaseContext(m_db).consumableItemIdForGold()
+        );
+
+        return;
+    }
+
+
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {

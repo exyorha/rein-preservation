@@ -5395,3 +5395,111 @@ void UserContext::retireExplore(int32_t exploreId) {
         throw std::runtime_error("the exploration is not currently ongoing");
     }
 }
+
+void UserContext::purgeStaleGifts() {
+    auto query = db().prepare(R"SQL(
+        DELETE FROM internal_user_gift WHERE user_id = ? AND
+            (received_datetime > 0 AND received_datetime + 7 * 24 * 3600 * 1000 < current_net_timestamp()) OR
+            (received_datetime = 0 AND expires_datetime != 0 AND expires_datetime < current_net_timestamp())
+    )SQL");
+    query->bind(1, m_userId);
+    query->exec();
+}
+
+int32_t UserContext::getNumberOfUnreceivedGifts() {
+    auto query = db().prepare(R"SQL(
+        SELECT COUNT(*)
+        FROM internal_user_gift
+        WHERE user_id = ? AND received_datetime = 0 AND expires_datetime = 0 OR expires_datetime > current_net_timestamp()
+    )SQL");
+
+    if(query->step()) {
+        return query->columnInt(0);
+    }
+
+    return 0;
+}
+
+int64_t UserContext::gift(
+    const apb::api::gift::GiftCommon &gift,
+    int64_t expiresAt) {
+
+    GiftRewardKindFilterType rewardKindType;
+
+    switch(static_cast<PossessionType>(gift.possession_type())) {
+        case PossessionType::UNKNOWN:
+            rewardKindType = GiftRewardKindFilterType::UNKNOWN;
+            break;
+
+        case PossessionType::COSTUME:
+        case PossessionType::COSTUME_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::COSTUME;
+            break;
+
+        case PossessionType::WEAPON:
+        case PossessionType::WEAPON_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::WEAPON;
+            break;
+
+        case PossessionType::COMPANION:
+        case PossessionType::COMPANION_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::COMPANION;
+            break;
+
+        case PossessionType::PARTS:
+        case PossessionType::PARTS_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::PARTS;
+            break;
+
+        case PossessionType::MATERIAL:
+            rewardKindType = GiftRewardKindFilterType::MATERIAL;
+            break;
+
+        case PossessionType::CONSUMABLE_ITEM:
+            if(gift.possession_id() == consumableItemIdForGold()) {
+                rewardKindType = GiftRewardKindFilterType::GOLD;
+            } else {
+                rewardKindType = GiftRewardKindFilterType::OTHER;
+            }
+            break;
+
+        case PossessionType::PAID_GEM:
+        case PossessionType::FREE_GEM:
+            rewardKindType = GiftRewardKindFilterType::GEM;
+            break;
+
+        default:
+            rewardKindType = GiftRewardKindFilterType::GOLD;
+            break;
+    }
+
+    auto query = db().prepare(R"SQL(
+        INSERT INTO internal_user_gift (
+            user_id,
+            grant_datetime,
+            expires_datetime,
+            gift_data,
+            reward_kind_type
+        ) VALUES (
+            ?,
+            current_net_timestamp(),
+            ?,
+            ?
+        )
+        RETURNING gift_id
+    )SQL");
+
+    auto giftDataBlob = gift.SerializeAsString();
+
+    query->bind(1, m_userId);
+    query->bind(2, expiresAt);
+    query->bind(3, reinterpret_cast<const unsigned char *>(giftDataBlob.data()), giftDataBlob.size());
+    query->bind(4, static_cast<int32_t>(rewardKindType));
+
+    if(query->step()) {
+        return query->columnInt64(0);
+    }
+
+    return 0;
+}
+

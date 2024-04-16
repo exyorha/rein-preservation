@@ -35,6 +35,7 @@ namespace sqlite {
 
         inline void clearBindings() { sqlite3_clear_bindings(m_handle); }
         void bind(int index, const std::vector<unsigned char> &data);
+        void bind(int index, const unsigned char *data, size_t dataSize);
         void bind(int index, double value);
         void bind(int index, int value);
         void bind(int index, int64_t value);

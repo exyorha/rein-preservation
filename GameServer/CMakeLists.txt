@@ -358,6 +358,9 @@ add_executable(GameServer
     ServiceImplementations/GamePlayService.cpp
     ServiceImplementations/GamePlayService.h
 
+    ServiceImplementations/GiftService.cpp
+    ServiceImplementations/GiftService.h
+
     ServiceImplementations/GimmickService.cpp
     ServiceImplementations/GimmickService.h
 

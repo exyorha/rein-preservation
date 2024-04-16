@@ -32,6 +32,10 @@ namespace apb::api::gimmick {
     class GimmickReward;
 }
 
+namespace apb::api::gift {
+    class GiftCommon;
+}
+
 namespace google::protobuf {
     template <typename Element>
     class RepeatedPtrField;
@@ -53,6 +57,10 @@ public:
     UserContext(Database &database, int64_t userId);
     UserContext(DatabaseContext &context, int64_t userId);
     ~UserContext() override;
+
+    inline int64_t userId() const {
+        return m_userId;
+    }
 
     void buildDefaultDeckIfNoneExists();
 
@@ -216,6 +224,13 @@ public:
     void startExplore(int32_t exploreId, int32_t useConsumableItemId);
     void finishExplore(int32_t exploreId, int32_t score, int32_t &assetGradeIconId);
     void retireExplore(int32_t exploreId);
+
+    void purgeStaleGifts();
+    int32_t getNumberOfUnreceivedGifts();
+
+    int64_t gift(
+        const apb::api::gift::GiftCommon &gift,
+        int64_t expiresAt = 0);
 
 private:
 

@@ -77,6 +77,9 @@ add_executable(GameExecutable
 
     UnityWebRequest.cpp
 
+    ZIPBasedStorage.cpp
+    ZIPBasedStorage.h
+
 )
 
 protobuf_generate(TARGET GameExecutable)

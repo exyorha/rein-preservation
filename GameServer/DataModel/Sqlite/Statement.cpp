@@ -41,6 +41,12 @@ namespace sqlite {
             Error::raiseError(status, m_owningContext);
     }
 
+    void Statement::bind(int index, const unsigned char *data, size_t dataSize) {
+        int status = sqlite3_bind_blob64(m_handle, index, data, dataSize, SQLITE_TRANSIENT);
+        if (status != SQLITE_OK)
+            Error::raiseError(status, m_owningContext);
+    }
+
     void Statement::bind(int index, double value) {
         int status = sqlite3_bind_double(m_handle, index, value);
         if (status != SQLITE_OK)

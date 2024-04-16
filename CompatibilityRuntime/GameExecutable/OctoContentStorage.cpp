@@ -94,6 +94,11 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
             throw std::runtime_error("duplicate resource with the object name " + resource.objectname());
 
     }
+
+    std::filesystem::path assetbundleZipPath(m_root / "assetbundle.zip");
+    if(std::filesystem::exists(assetbundleZipPath)) {
+        m_assetbundleZip.emplace(assetbundleZipPath);
+    }
 }
 
 OctoContentStorage::~OctoContentStorage() = default;
@@ -154,13 +159,18 @@ std::optional<std::filesystem::path> OctoContentStorage::locateFile(
 
         path.append(".unity3d");
 
-        auto pathRelativeToRoot = std::filesystem::path("assetbundle") / std::u8string_view(reinterpret_cast<const char8_t *>(path.data()), path.size());
-        auto adaptedVersion = m_root / ".." / "adapted_content" / pathRelativeToRoot;
+        if(m_assetbundleZip.has_value()) {
+            return m_assetbundleZip->lookup(path);
+        } else {
 
-        if(std::filesystem::exists(adaptedVersion))
-            return adaptedVersion;
+            auto pathRelativeToRoot = std::filesystem::path("assetbundle") / std::u8string_view(reinterpret_cast<const char8_t *>(path.data()), path.size());
+            auto adaptedVersion = m_root / ".." / "adapted_content" / pathRelativeToRoot;
 
-        return m_root / pathRelativeToRoot;
+            if(std::filesystem::exists(adaptedVersion))
+                return adaptedVersion;
+
+            return m_root / pathRelativeToRoot;
+        }
     }
 }
 

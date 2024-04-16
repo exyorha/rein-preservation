@@ -2,8 +2,11 @@
 #define OCTO_CONTENT_STORAGE_H
 
 #include <filesystem>
+#include <optional>
 
 #include <Octo/Proto/Database.pb.h>
+
+#include "ZIPBasedStorage.h"
 
 class OctoContentStorage {
 public:
@@ -41,6 +44,7 @@ private:
     std::filesystem::path m_octoListFile;
     Octo::Proto::Database m_database;
     std::unordered_map<std::string, RegisteredFile> m_files;
+    std::optional<ZIPBasedStorage> m_assetbundleZip;
 };
 
 #endif
