@@ -6,6 +6,7 @@ pkg_check_modules(MINIZIP REQUIRED IMPORTED_TARGET minizip)
 pkg_check_modules(LZ4 REQUIRED IMPORTED_TARGET liblz4)
 
 find_package(Protobuf CONFIG REQUIRED)
+find_package(LibLZMA REQUIRED)
 
 enable_language(ISPC)
 

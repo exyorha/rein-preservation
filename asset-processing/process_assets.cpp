@@ -9,6 +9,7 @@
 #include <Octo/Proto/Database.pb.h>
 
 #include "Octo/Proto/Database.pb.h"
+#include "UnityAsset/UnityCompression.h"
 #include "conversion_context.h"
 #include "bc7e_ispc.h"
 #include "multi_part_zip_writer.h"
@@ -128,7 +129,7 @@ int main(int argc, char **argv) {
             printf("Asset bundle: %s, modtime: %" PRIu64 ", Unity CRC: %u\n", name.c_str(), assetBundle.generation(), assetBundle.crc());
 
             auto stream = openSourceAssetBundle(contentPath, reprocessedPath, name);
-            UnityAsset::Stream copyStream(stream);
+            UnityAsset::Stream streamToBePacked(stream);
             UnityAsset::AssetBundleFile bundle(std::move(stream));
 
             if(bundle.assetBundleCRC.value_or(0) != assetBundle.crc()) {
@@ -136,7 +137,18 @@ int main(int argc, char **argv) {
                         name.c_str(), assetBundle.crc(), bundle.assetBundleCRC.value_or(0));
             }
 
-            writer.addFile(name, assetBundle.generation(), copyStream);
+            if(bundle.dataCompression != UnityAsset::UnityCompressionType::LZMA &&
+                /*
+                 * Audio is mostly incompressible ogg, so don't waste time LZMA'ng it.
+                 */
+               !name.starts_with("audio/") && !name.starts_with("voice/")) {
+                bundle.dataCompression = UnityAsset::UnityCompressionType::LZMA;
+
+                streamToBePacked = UnityAsset::Stream();
+                bundle.serialize(streamToBePacked);
+            }
+
+            writer.addFile(name, assetBundle.generation(), streamToBePacked);
         }
 
         writer.finalize();
