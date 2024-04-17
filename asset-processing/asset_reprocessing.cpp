@@ -470,6 +470,18 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         return UnityAsset::UnityTypes::serializeRuntimeInitializeOnLoadManager(settings);
 
+    } else if(type.classID == UnityAsset::UnityTypes::PlayerSettingsClassID) {
+
+        checkNoScriptData(type);
+
+        auto settings = UnityAsset::UnityTypes::deserializePlayerSettings(original);
+
+        settings.submitAnalytics = false;
+
+        settings.resolutionScalingMode = 0;
+
+        return UnityAsset::UnityTypes::serializePlayerSettings(settings);
+
     } else {
         return std::nullopt;
     }
