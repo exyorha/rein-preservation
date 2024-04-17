@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="1.0.0.0" name="CompatibilityRuntime.GameExecutable"/>
+  <assemblyIdentity version="1.0.0.0" name="CompatibilityRuntime.GameExecutable" processorArchitecture="*" type="win32"/>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
         <supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f0}"/>
@@ -11,10 +11,10 @@
     </application>
   </compatibility>
 
-  <asmv3:application xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
-    <asmv3:windowsSettings>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">permonitorv2,permonitor</dpiAwareness>
-    </asmv3:windowsSettings>
-  </asmv3:application>
+    </windowsSettings>
+  </application>
 </assembly>
