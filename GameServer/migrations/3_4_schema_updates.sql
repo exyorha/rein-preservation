@@ -136,3 +136,64 @@ BEGIN
   UPDATE i_user_premium_item SET latest_version = OLD.latest_version + 1
     WHERE i_user_premium_item.rowid = NEW.rowid;
 END;
+
+-- Update the constraints on i_user_parts_group_note
+CREATE TABLE new_i_user_parts_group_note (
+  user_id INTEGER NOT NULL,
+  parts_group_id integer NOT NULL,
+  first_acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, parts_group_id)
+);
+
+INSERT INTO new_i_user_parts_group_note
+  SELECT user_id, parts_group_id, first_acquisition_datetime, latest_version FROM i_user_parts_group_note;
+
+DROP INDEX i_user_parts_group_note_user_id;
+DROP TRIGGER i_user_parts_group_note_update_version;
+DROP TABLE i_user_parts_group_note;
+
+ALTER TABLE new_i_user_parts_group_note RENAME TO i_user_parts_group_note;
+
+CREATE INDEX i_user_parts_group_note_user_id ON i_user_parts_group_note(user_id);
+
+CREATE TRIGGER i_user_parts_group_note_update_version
+AFTER UPDATE ON i_user_parts_group_note FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_parts_group_note SET latest_version = OLD.latest_version + 1
+    WHERE i_user_parts_group_note.rowid = NEW.rowid;
+END;
+
+
+SELECT DISTINCT user_id, parts_group_id FROM i_user_parts, m_parts USING (parts_id);
+
+-- Initially populate i_user_parts_group_note, it used to be unpopulated
+INSERT INTO
+  i_user_parts_group_note
+  (user_id, parts_group_id, first_acquisition_datetime)
+  SELECT
+    user_id,
+    parts_group_id,
+    MIN(acquisition_datetime)
+  FROM
+    i_user_parts,
+    m_parts USING (parts_id)
+    LEFT JOIN i_user_parts_group_note USING (user_id, parts_group_id)
+  WHERE first_acquisition_datetime IS NULL
+  GROUP BY user_id, parts_group_id;
+
+-- Create a trigger for the ongoing maintenance of i_user_parts_group_note
+CREATE TRIGGER i_user_parts_add_group_note
+AFTER INSERT ON i_user_parts FOR EACH ROW
+BEGIN
+  INSERT INTO
+    i_user_parts_group_note
+    (user_id, parts_group_id, first_acquisition_datetime)
+    SELECT
+      NEW.user_id,
+      parts_group_id,
+      NEW.acquisition_datetime
+    FROM m_parts
+    WHERE m_parts.parts_id = NEW.parts_id
+  ON CONFLICT (user_id, parts_group_id) DO NOTHING;
+END;
