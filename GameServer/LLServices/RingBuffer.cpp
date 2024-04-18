@@ -25,8 +25,8 @@ namespace LLServices {
         }
     }
 
-    size_t RingBuffer::bytesAvailableForWrite() const {
-        Pointer bytesToWrite = m_readPointer - m_writePointer - 1;
+    size_t RingBuffer::bytesAvailableForWrite(Pointer readPointer) const {
+        Pointer bytesToWrite = readPointer - m_writePointer - 1;
 
         if (bytesToWrite < 0) {
             return m_size + bytesToWrite;
@@ -141,12 +141,12 @@ namespace LLServices {
         return getRangeForReadInternal(size, m_readPointer);
     }
 
-    void RingBuffer::getSegmentsForRead(std::array<ConstSegment, 2> &segments) {
+    void RingBuffer::getSegmentsForRead(std::array<ConstSegment, 2> &segments, Pointer readPointer) {
         size_t len;
-        auto ptr = getRangeForReadInternal(len, m_readPointer);
+        auto ptr = getRangeForReadInternal(len, readPointer);
         segments[0] = std::make_pair(ptr, len);
 
-        Pointer adjustedPointer = m_readPointer + len;
+        Pointer adjustedPointer = readPointer + len;
         if (adjustedPointer == size())
             adjustedPointer = 0;
 

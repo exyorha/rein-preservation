@@ -7,10 +7,11 @@
 
 #include <algorithm>
 
-ServerCLIService::ServerCLIService(LLServices::LogSink *nextLogSink) :
+ServerCLIService::ServerCLIService(LLServices::EventLoop *eventLoop, LLServices::LogSink *nextLogSink) :
     m_nextLogSink(nextLogSink),
     m_logBufferStorage(512 * 1024),
-    m_logBuffer(m_logBufferStorage.data(), m_logBufferStorage.size()) {
+    m_logBuffer(m_logBufferStorage.data(), m_logBufferStorage.size()),
+    m_logUpdateNotifier(eventLoop, this) {
 
 }
 
@@ -57,9 +58,10 @@ void ServerCLIService::emitMessage(const std::string_view &inputMessage) noexcep
     if(m_nextLogSink)
         m_nextLogSink->emitMessage(message);
 
-    for(auto connection: m_connections) {
-        connection->emitLogMessage(inputMessage);
+    if(!m_logBufferWritePointerAtStartOfLogUpdate.has_value()) {
+        m_logBufferWritePointerAtStartOfLogUpdate.emplace(m_logBuffer.writePointer());
     }
+
 
     auto maximumAvailableSize = m_logBuffer.size() - 1;
     if(message.size() > maximumAvailableSize)
@@ -68,6 +70,16 @@ void ServerCLIService::emitMessage(const std::string_view &inputMessage) noexcep
     auto available = m_logBuffer.bytesAvailableForWrite();
     if(available < inputMessage.size()) {
         m_logBuffer.readData(nullptr, inputMessage.size() - available, LLServices::RingBuffer::TransferType::Normal);
+    }
+
+    if(m_logBufferWritePointerAtStartOfLogUpdate.has_value()) {
+        auto available = m_logBuffer.bytesAvailableForWrite(*m_logBufferWritePointerAtStartOfLogUpdate);
+
+        if(available < inputMessage.size()) {
+            m_logBufferWritePointerAtStartOfLogUpdate.emplace(
+                (*m_logBufferWritePointerAtStartOfLogUpdate + inputMessage.size() - available) % m_logBuffer.size()
+            );
+        }
     }
 
     m_logBuffer.writeData(reinterpret_cast<const unsigned char *>(inputMessage.data()), inputMessage.size(),
@@ -85,4 +97,25 @@ void ServerCLIService::removeConnection(ServerCLIConnection *connection) {
 
 void ServerCLIService::initCLI(Database &db) {
     m_cli.emplace(db);
+}
+
+void ServerCLIService::beforeWait(LLServices::BeforeWaitNotifier *notifier) {
+    (void)notifier;
+
+    if(m_logBufferWritePointerAtStartOfLogUpdate.has_value()) {
+        auto startPointer = *m_logBufferWritePointerAtStartOfLogUpdate;
+        m_logBufferWritePointerAtStartOfLogUpdate.reset();
+
+        std::array<LLServices::RingBuffer::ConstSegment, 2> segments;
+        m_logBuffer.getSegmentsForRead(segments, startPointer);
+
+        for(const auto &connection :m_connections) {
+            for(const auto &segment: segments) {
+                if(segment.second != 0) {
+                    connection->emitLogMessage(std::string_view(reinterpret_cast<const char *>(segment.first), segment.second));
+                }
+            }
+        }
+    }
+
 }

@@ -9,6 +9,8 @@
 namespace LLServices {
     class RingBuffer {
     public:
+        using Pointer = intptr_t;
+
         enum class TransferType {
             Normal,
             Peek,
@@ -28,7 +30,12 @@ namespace LLServices {
         void reset();
 
         size_t bytesAvailableForRead() const;
-        size_t bytesAvailableForWrite() const;
+
+        inline size_t bytesAvailableForWrite() const {
+            return bytesAvailableForWrite(m_readPointer);
+        }
+
+        size_t bytesAvailableForWrite(Pointer readPointer) const;
 
         size_t writeData(const unsigned char *data, size_t dataSize, TransferType mode);
         size_t readData(unsigned char *data, size_t dataSize, TransferType mode);
@@ -39,12 +46,18 @@ namespace LLServices {
         using ConstSegment = std::pair<const unsigned char *, size_t>;
         using Segment = std::pair<unsigned char *, size_t>;
 
-        void getSegmentsForRead(std::array<ConstSegment, 2> &segments);
+        inline void getSegmentsForRead(std::array<ConstSegment, 2> &segments) {
+            getSegmentsForRead(segments, m_readPointer);
+        }
+
+        void getSegmentsForRead(std::array<ConstSegment, 2> &segments, Pointer readPointer);
         void getSegmentsForWrite(std::array<Segment, 2>& segments, size_t maxSize);
 
-    private:
-        using Pointer = intptr_t;
+        inline Pointer writePointer() const {
+            return m_writePointer;
+        }
 
+    private:
         const unsigned char *getRangeForReadInternal(size_t &size, Pointer readPointer) const;
         unsigned char* getRangeForWriteInternal(size_t& size, Pointer writePointer);
 

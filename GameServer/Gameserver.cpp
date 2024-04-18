@@ -12,7 +12,7 @@
 
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
                const std::filesystem::path &octoListPath, const std::filesystem::path &webRoot) :
-    m_cliService(&m_logSink),
+    m_cliService(&m_eventLoop, &m_logSink),
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
     m_webServer(webRoot),
     m_octoServices(octoListPath),

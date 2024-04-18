@@ -74,10 +74,10 @@ public:
     static std::filesystem::path defaultWebRootPath();
 
 private:
+    LLServices::EventLoop m_eventLoop;
     LLServices::ConsoleLogSink m_logSink;
     ServerCLIService m_cliService;
     LLServices::LogManagerScope m_logManagerScope;
-    LLServices::EventLoop m_eventLoop;
     GRPCLikeServer m_gameAPI;
     WebContentServer m_webServer;
     OctoWebServices m_octoServices;
