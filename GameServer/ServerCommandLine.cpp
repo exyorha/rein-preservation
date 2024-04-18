@@ -1,11 +1,14 @@
 #include "ServerCommandLine.h"
 #include "DataModel/DatabaseContext.h"
+#include "DataModel/DatabaseEnums.h"
 #include "DataModel/Sqlite/Transaction.h"
 #include "DataModel/Sqlite/Statement.h"
 
+#include "DataModel/UserContext.h"
 #include "WordListParser.h"
 
 #include "DataModel/Database.h"
+#include "service/GiftService.pb.h"
 
 #include <LLServices/Logging/LogFacility.h>
 
@@ -26,6 +29,7 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
         .handler = &ServerCommandLine::commandTimeTravel },
     { .cmd = "present", .help = "adjusts the server time back to the real-world time", .handler = &ServerCommandLine::commandPresent },
     { .cmd = "gift", .help = "sends a gift (execute just 'gift' for the syntax details)", .handler = &ServerCommandLine::commandGift },
+    { .cmd = "portalcage", .help = "moves the player to the Mama's Room", .handler = &ServerCommandLine::commandPortalCage },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -218,6 +222,10 @@ void ServerCommandLine::commandPresent(WordListParser &parser) {
 }
 
 void ServerCommandLine::commandGift(WordListParser &parser) {
+    runCommandInDatabaseContext(parser, &ServerCommandLine::commandGiftDatabase);
+}
+
+void ServerCommandLine::commandGiftDatabase(WordListParser &parser, DatabaseContext &db) {
     if(parser.isAtEnd()) {
         LogCLI.info(
             "The gift command add items to the user's gift box, and can be used to easily add items to the game's inventory.\n"
@@ -254,8 +262,9 @@ void ServerCommandLine::commandGift(WordListParser &parser) {
             " - 'free_gem': no item ID should be specified\n"
             " - 'important_item'\n"
             " - 'thought' (debris)\n"
-            " - 'mission_pass_point'\n"
-            " - 'premium_item'\n"
+            //" - 'mission_pass_point'\n"
+            // seems to not show up correctly
+            //" - 'premium_item'\n"
             "\n"
 #if 0
             "WARNING: Setting the leveling parameters on items to the values outside of the normal bounds may cause game client errors.\n"
@@ -266,13 +275,162 @@ void ServerCommandLine::commandGift(WordListParser &parser) {
             "  'count': the number of items to be gifted, default: 1\n"
             "  'gift_text': the ID of the gift message text to be used, default: '13' for 'sent by administration'\n"
             "  'expires': the amount of time in which the gift will expire unless claimed, such as 'expires=\"7 days\"'; default: no expiration\n"
-            , DatabaseContext(m_db).consumableItemIdForGold()
+            , db.consumableItemIdForGold()
         );
 
         return;
     }
 
+    PossessionType possessionType;
+    std::optional<int32_t> possessionId;
 
+    auto possessionTypeString = parser.getStringWord();
+
+    if(possessionTypeString == "costume") {
+        possessionType = PossessionType::COSTUME;
+
+    } else if(possessionTypeString == "weapon") {
+        possessionType = PossessionType::WEAPON;
+    } else if(possessionTypeString == "companion") {
+        possessionType = PossessionType::COMPANION;
+    } else if(possessionTypeString == "parts") {
+        possessionType = PossessionType::PARTS;
+    } else if(possessionTypeString == "material") {
+        possessionType = PossessionType::MATERIAL;
+    } else if(possessionTypeString == "consumable_item") {
+        possessionType = PossessionType::CONSUMABLE_ITEM;
+    } else if(possessionTypeString == "gold") {
+        possessionType = PossessionType::CONSUMABLE_ITEM;
+        possessionId.emplace(db.consumableItemIdForGold());
+    } else if(possessionTypeString == "paid_gem") {
+        possessionType = PossessionType::PAID_GEM;
+        possessionId.emplace(0);
+    } else if(possessionTypeString == "free_gem") {
+        possessionType = PossessionType::FREE_GEM;
+        possessionId.emplace(0);
+    } else if(possessionTypeString == "paid_gem") {
+        possessionType = PossessionType::PAID_GEM;
+        possessionId.emplace(0);
+    } else if(possessionTypeString == "important_item") {
+        possessionType = PossessionType::IMPORTANT_ITEM;
+    } else if(possessionTypeString == "thought") {
+        possessionType = PossessionType::THOUGHT;
+    // seems to not show up correctly
+    //} else if(possessionTypeString == "premium_item") {
+    //    possessionType = PossessionType::PREMIUM_ITEM;
+    } else {
+        LogCLI.error("incorrect possession type '%s'\n", possessionTypeString.c_str());
+        return;
+    }
+
+    if(!possessionId.has_value()) {
+        if(parser.isAtEnd()) {
+            LogCLI.error("this possession type requires an ID\n");
+            return;
+        }
+
+        parser.parse(possessionId.emplace());
+    }
+
+    if(!db.isValidPossession(possessionType, *possessionId)) {
+        LogCLI.error("no such possession exists\n");
+        return;
+    }
+
+    int64_t expiresAt = 0;
+
+    apb::api::gift::GiftCommon gift;
+    gift.set_possession_type(static_cast<int32_t>(possessionType));
+    gift.set_possession_id(*possessionId);
+    gift.set_count(1);
+    gift.set_description_gift_text_id(13);
+
+#if 0
+    if(possessionType == PossessionType::COSTUME) {
+        auto costume = gift.mutable_costume();
+        costume->set_level(1);
+        costume->set_active_skill_level(1);
+        costume->set_exp(0);
+        costume->set_limit_break_count(0);
+    }
+#endif
+
+    // TODO: is the extra data (costume data, etc) required?
+
+    while(!parser.isAtEnd()) {
+        auto pair = parser.getStringWord();
+
+        auto delim = pair.find_first_of('=');
+        if(delim == std::string_view::npos) {
+            LogCLI.error("no key-value delimiter '=' in parameter '%s'\n", pair.c_str());
+            return;
+        }
+
+        auto key = pair.substr(0, delim);
+        auto value = pair.substr(delim + 1);
+
+        if(key == "count") {
+            gift.set_count(WordListParser::parseInteger<int32_t>(value));
+        } else if(key == "gift_text") {
+            gift.set_description_gift_text_id(WordListParser::parseInteger<int32_t>(value));
+        } else if(key == "expires") {
+
+            auto query = db.db().prepare("SELECT ROUND(unixepoch(current_net_timestamp() / 1000.0, 'unixepoch', ?, 'subsec') * 1000)");
+            query->bind(1, value);
+            if(query->step()) {
+                expiresAt = query->columnInt64(0);
+            }
+        } else {
+            LogCLI.error("unknown parameter: '%.*s'\n", static_cast<int>(key.size()), key.data());
+            return;
+        }
+    }
+
+    if(gift.count() <= 0) {
+        LogCLI.error("the possession count cannot be zero or negative");
+        return;
+    }
+
+    db.gift(FixedUserID, gift, expiresAt);
+
+}
+
+void ServerCommandLine::runCommandInDatabaseContext(WordListParser &parser, void (ServerCommandLine::*command)(WordListParser &parser, DatabaseContext &db)) {
+    sqlite::Transaction transaction(&m_db.db());
+
+    DatabaseContext db(m_db);
+
+    (this->*command)(parser, db);
+
+    transaction.commit();
+
+}
+
+void ServerCommandLine::runCommandInUserContext(WordListParser &parser, void (ServerCommandLine::*command)(WordListParser &parser, UserContext &user)) {
+    sqlite::Transaction transaction(&m_db.db());
+
+    DatabaseContext db(m_db);
+    db.registerUser();
+
+    int64_t userId;
+    std::string outputSession;
+    time_t outputExpiration;
+    db.authenticate(userId, outputSession, outputExpiration);
+
+    UserContext user(db, userId);
+
+    (this->*command)(parser, user);
+
+    transaction.commit();
+}
+
+void ServerCommandLine::commandPortalCage(WordListParser &parser) {
+    runCommandInUserContext(parser, &ServerCommandLine::commandPortalCageUser);
+}
+
+
+void ServerCommandLine::commandPortalCageUser(WordListParser &parser, UserContext &user) {
+    user.updatePortalCageSceneProgress(user.getIntConfig("PORTAL_CAGE_SCENE_ID"));
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {

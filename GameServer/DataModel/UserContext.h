@@ -32,10 +32,6 @@ namespace apb::api::gimmick {
     class GimmickReward;
 }
 
-namespace apb::api::gift {
-    class GiftCommon;
-}
-
 namespace google::protobuf {
     template <typename Element>
     class RepeatedPtrField;
@@ -228,9 +224,14 @@ public:
     void purgeStaleGifts();
     int32_t getNumberOfUnreceivedGifts();
 
-    int64_t gift(
+    inline int64_t gift(
         const apb::api::gift::GiftCommon &gift,
-        int64_t expiresAt = 0);
+        int64_t expiresAt = 0) {
+
+        return DatabaseContext::gift(m_userId, gift, expiresAt);
+    }
+
+    bool receiveGift(const std::string_view &giftUUID);
 
 private:
 

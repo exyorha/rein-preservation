@@ -11,6 +11,8 @@ namespace LLServices {
 
 class WordListParser;
 class Database;
+class DatabaseContext;
+class UserContext;
 
 class ServerCommandLine {
 public:
@@ -37,8 +39,16 @@ private:
     void commandTimeTravel(WordListParser &parser);
     void commandPresent(WordListParser &parser);
     void commandGift(WordListParser &parser);
+    void commandGiftDatabase(WordListParser &parser, DatabaseContext &db);
+    void commandPortalCage(WordListParser &parser);
+    void commandPortalCageUser(WordListParser &parser, UserContext &user);
 
     std::filesystem::path backupLocation() const;
+
+    void runCommandInDatabaseContext(WordListParser &parser, void (ServerCommandLine::*)(WordListParser &parser, DatabaseContext &db));
+    void runCommandInUserContext(WordListParser &parser, void (ServerCommandLine::*)(WordListParser &parser, UserContext &user));
+
+    static constexpr int64_t FixedUserID = 1;
 
     Database &m_db;
     static const Command m_commands[];

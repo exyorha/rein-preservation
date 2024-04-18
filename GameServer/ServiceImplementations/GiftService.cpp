@@ -37,9 +37,13 @@ void GiftService::ReceiveGiftImpl(UserContext &user,
                         const ::apb::api::gift::ReceiveGiftRequest* request,
                     ::apb::api::gift::ReceiveGiftResponse* response) {
 
-    user.purgeStaleGifts();
-
-    throw std::runtime_error("not implemented");
+    for(const auto &gift: request->user_gift_uuid()) {
+        if(user.receiveGift(gift)) {
+            response->add_received_gift_uuid(gift);
+        } else {
+            response->add_expired_gift_uuid(gift);
+        }
+    }
 }
 
 std::unique_ptr<sqlite::Statement> GiftService::runGiftListQuery(UserContext &user, const ::apb::api::gift::GetGiftListRequest* request, bool isTotalCount) {
@@ -167,8 +171,9 @@ void GiftService::GetGiftListImpl(UserContext &user,
 
         gift->set_user_gift_uuid(std::to_string(id));
 
+        auto deadline = gift->mutable_expiration_datetime();
         if(expirationDatetime != 0) {
-            setTimestampFromNetTimestamp(gift->mutable_expiration_datetime(), expirationDatetime);
+            setTimestampFromNetTimestamp(deadline, expirationDatetime);
         }
 
         auto giftDataBytes = query->columnBlob(2);

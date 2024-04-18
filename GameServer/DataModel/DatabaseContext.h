@@ -10,6 +10,10 @@
 
 class Database;
 
+namespace apb::api::gift {
+    class GiftCommon;
+}
+
 namespace LLServices {
     class JSONWriter;
     class LogFacility;
@@ -60,6 +64,13 @@ public:
     void restoreJSONBackup(const std::filesystem::path &input);
 
     void serializeTable(const std::string_view &tableEntityName, LLServices::JSONWriter &writer, std::optional<int64_t> limitToUser);
+
+    bool isValidPossession(PossessionType type, int32_t possessionId);
+
+    int64_t gift(
+        int64_t userId,
+        const apb::api::gift::GiftCommon &gift,
+        int64_t expiresAt = 0);
 
 protected:
     int32_t getFirstQuestScene(int32_t questId);

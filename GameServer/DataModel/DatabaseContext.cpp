@@ -5,12 +5,13 @@
 #include <DataModel/Sqlite/Statement.h>
 
 #include <stdexcept>
-#include <cmath>
 #include <fstream>
 
 #include <LLServices/JSON/JSONWriter.h>
 #include <LLServices/JSON/StreamingJSONParser.h>
 #include <LLServices/Logging/LogFacility.h>
+
+#include <service/GiftService.pb.h>
 
 LLServices::LogFacility LogDatabaseContext("DatabaseContext");
 
@@ -458,3 +459,192 @@ int32_t DatabaseContext::getWeaponMaxLevelForEvolutionOrder(int32_t weaponId, in
 
     return evaluateNumericalFunction(functionId, limitBreaks);
 }
+
+bool DatabaseContext::isValidPossession(PossessionType type, int32_t possessionId) {
+    switch(type) {
+        case PossessionType::COSTUME:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_costume WHERE costume_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::WEAPON:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_weapon WHERE weapon_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::COMPANION:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_companion WHERE companion_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::PARTS:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_parts WHERE parts_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::MATERIAL:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_material WHERE material_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::CONSUMABLE_ITEM:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_consumable_item WHERE consumable_item_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::COSTUME_ENHANCED:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_costume_enhanced WHERE costume_enhanced_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::WEAPON_ENHANCED:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_weapon_enhanced WHERE weapon_enhanced_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::COMPANION_ENHANCED:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_companion_enhanced WHERE companion_enhanced_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::PARTS_ENHANCED:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_parts_enhanced WHERE parts_enhanced_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::PAID_GEM:
+        case PossessionType::FREE_GEM:
+        case PossessionType::MISSION_PASS_POINT:
+            return 1;
+
+        case PossessionType::IMPORTANT_ITEM:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_important_item WHERE important_item_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::THOUGHT:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_thought WHERE thought_item_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        case PossessionType::PREMIUM_ITEM:
+        {
+            auto query = m_db.db().prepare("SELECT 1 FROM m_premium_item WHERE premium_item_id = ?");
+            query->bind(1, possessionId);
+            return query->step();
+        }
+
+        default:
+            throw std::logic_error("unsupported possession type");
+    }
+}
+
+int64_t DatabaseContext::gift(
+    int64_t userId,
+    const apb::api::gift::GiftCommon &gift,
+    int64_t expiresAt) {
+
+    GiftRewardKindFilterType rewardKindType;
+
+    switch(static_cast<PossessionType>(gift.possession_type())) {
+        case PossessionType::UNKNOWN:
+            rewardKindType = GiftRewardKindFilterType::UNKNOWN;
+            break;
+
+        case PossessionType::COSTUME:
+        case PossessionType::COSTUME_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::COSTUME;
+            break;
+
+        case PossessionType::WEAPON:
+        case PossessionType::WEAPON_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::WEAPON;
+            break;
+
+        case PossessionType::COMPANION:
+        case PossessionType::COMPANION_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::COMPANION;
+            break;
+
+        case PossessionType::PARTS:
+        case PossessionType::PARTS_ENHANCED:
+            rewardKindType = GiftRewardKindFilterType::PARTS;
+            break;
+
+        case PossessionType::MATERIAL:
+            rewardKindType = GiftRewardKindFilterType::MATERIAL;
+            break;
+
+        case PossessionType::CONSUMABLE_ITEM:
+            if(gift.possession_id() == consumableItemIdForGold()) {
+                rewardKindType = GiftRewardKindFilterType::GOLD;
+            } else {
+                rewardKindType = GiftRewardKindFilterType::OTHER;
+            }
+            break;
+
+        case PossessionType::PAID_GEM:
+        case PossessionType::FREE_GEM:
+            rewardKindType = GiftRewardKindFilterType::GEM;
+            break;
+
+        default:
+            rewardKindType = GiftRewardKindFilterType::GOLD;
+            break;
+    }
+
+    auto query = db().prepare(R"SQL(
+        INSERT INTO internal_user_gift (
+            user_id,
+            grant_datetime,
+            expires_datetime,
+            gift_data,
+            reward_kind_type
+        ) VALUES (
+            ?,
+            current_net_timestamp(),
+            ?,
+            ?,
+            ?
+        )
+        RETURNING gift_id
+    )SQL");
+
+    auto giftDataBlob = gift.SerializeAsString();
+
+    query->bind(1, userId);
+    query->bind(2, expiresAt);
+    query->bind(3, reinterpret_cast<const unsigned char *>(giftDataBlob.data()), giftDataBlob.size());
+    query->bind(4, static_cast<int32_t>(rewardKindType));
+
+    if(query->step()) {
+        return query->columnInt64(0);
+    }
+
+    return 0;
+}
+

@@ -46,6 +46,23 @@ public:
         }
     }
 
+    template<typename T>
+    static void parseInteger(std::string_view word, T &value) {
+        int base;
+        getBase(word, base);
+
+        auto result = std::from_chars(word.data(), word.data() + word.size(), value, base);
+        checkConversion(word, result);
+    }
+
+    template<typename T>
+    static inline T parseInteger(const std::string_view &word) {
+        T value;
+        parseInteger(word, value);
+        return value;
+    }
+
+
     /*
      * Integral types.
      */
@@ -53,13 +70,7 @@ public:
     auto parse(T &value) ->
         typename std::enable_if<std::is_integral<T>::value>::type {
 
-        auto word = getWord();
-
-        int base;
-        getBase(word, base);
-
-        auto result = std::from_chars(word.data(), word.data() + word.size(), value, base);
-        checkConversion(word, result);
+        parseInteger(getWord(), value);
     }
 
     /*

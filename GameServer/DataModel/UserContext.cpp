@@ -1,3 +1,4 @@
+#include "service/GiftService.pb.h"
 #include <DataModel/UserContext.h>
 #include <DataModel/DatabaseEnums.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
@@ -5410,8 +5411,9 @@ int32_t UserContext::getNumberOfUnreceivedGifts() {
     auto query = db().prepare(R"SQL(
         SELECT COUNT(*)
         FROM internal_user_gift
-        WHERE user_id = ? AND received_datetime = 0 AND expires_datetime = 0 OR expires_datetime > current_net_timestamp()
+        WHERE user_id = ? AND received_datetime = 0 AND (expires_datetime = 0 OR expires_datetime > current_net_timestamp())
     )SQL");
+    query->bind(1, m_userId);
 
     if(query->step()) {
         return query->columnInt(0);
@@ -5420,86 +5422,37 @@ int32_t UserContext::getNumberOfUnreceivedGifts() {
     return 0;
 }
 
-int64_t UserContext::gift(
-    const apb::api::gift::GiftCommon &gift,
-    int64_t expiresAt) {
-
-    GiftRewardKindFilterType rewardKindType;
-
-    switch(static_cast<PossessionType>(gift.possession_type())) {
-        case PossessionType::UNKNOWN:
-            rewardKindType = GiftRewardKindFilterType::UNKNOWN;
-            break;
-
-        case PossessionType::COSTUME:
-        case PossessionType::COSTUME_ENHANCED:
-            rewardKindType = GiftRewardKindFilterType::COSTUME;
-            break;
-
-        case PossessionType::WEAPON:
-        case PossessionType::WEAPON_ENHANCED:
-            rewardKindType = GiftRewardKindFilterType::WEAPON;
-            break;
-
-        case PossessionType::COMPANION:
-        case PossessionType::COMPANION_ENHANCED:
-            rewardKindType = GiftRewardKindFilterType::COMPANION;
-            break;
-
-        case PossessionType::PARTS:
-        case PossessionType::PARTS_ENHANCED:
-            rewardKindType = GiftRewardKindFilterType::PARTS;
-            break;
-
-        case PossessionType::MATERIAL:
-            rewardKindType = GiftRewardKindFilterType::MATERIAL;
-            break;
-
-        case PossessionType::CONSUMABLE_ITEM:
-            if(gift.possession_id() == consumableItemIdForGold()) {
-                rewardKindType = GiftRewardKindFilterType::GOLD;
-            } else {
-                rewardKindType = GiftRewardKindFilterType::OTHER;
-            }
-            break;
-
-        case PossessionType::PAID_GEM:
-        case PossessionType::FREE_GEM:
-            rewardKindType = GiftRewardKindFilterType::GEM;
-            break;
-
-        default:
-            rewardKindType = GiftRewardKindFilterType::GOLD;
-            break;
-    }
-
-    auto query = db().prepare(R"SQL(
-        INSERT INTO internal_user_gift (
-            user_id,
-            grant_datetime,
-            expires_datetime,
-            gift_data,
-            reward_kind_type
-        ) VALUES (
-            ?,
-            current_net_timestamp(),
-            ?,
-            ?
-        )
-        RETURNING gift_id
+bool UserContext::receiveGift(const std::string_view &giftUUID) {
+    auto getGiftData = db().prepare(R"SQL(
+        UPDATE internal_user_gift
+        SET received_datetime = current_net_timestamp()
+        WHERE
+            user_id = ? AND
+            gift_id = ? AND
+            received_datetime = 0 AND
+            (expires_datetime = 0 OR expires_datetime > current_net_timestamp())
+        RETURNING gift_data
     )SQL");
+    getGiftData->bind(1, m_userId);
+    getGiftData->bind(2, giftUUID);
+    if(!getGiftData->step())
+        return false;
 
-    auto giftDataBlob = gift.SerializeAsString();
+    auto giftData = getGiftData->columnBlob(0);
+    auto giftBytes = getGiftData->columnBytes(0);
 
-    query->bind(1, m_userId);
-    query->bind(2, expiresAt);
-    query->bind(3, reinterpret_cast<const unsigned char *>(giftDataBlob.data()), giftDataBlob.size());
-    query->bind(4, static_cast<int32_t>(rewardKindType));
+    apb::api::gift::GiftCommon gift;
+    if(!gift.ParseFromArray(giftData, giftBytes))
+        throw std::runtime_error("failed to parse the gift data");
 
-    if(query->step()) {
-        return query->columnInt64(0);
-    }
+    getGiftData->reset();
 
-    return 0;
+    /*
+     * TODO: extension (leveling) data
+     */
+
+    givePossession(gift.possession_type(), gift.possession_id(), gift.count());
+
+    return true;
 }
 
