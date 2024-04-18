@@ -81,14 +81,7 @@ Database::Database(const std::filesystem::path &individualDatabasePath, const st
         }
     }
 
-    auto path = masterDatabasePath.parent_path();
-    auto version = path.filename().string();
-    path = path.parent_path();
-    auto type = path.filename().string();
-
-    std::stringstream fullVersion;
-    fullVersion << type << "/" << version;
-    m_masterDatabaseVersion = fullVersion.str();
+    m_masterDatabaseVersion = masterDatabasePath.stem().string();
 
     loadDynamicConfig();
 

@@ -1,7 +1,8 @@
-/content
 /CompatibilityRuntime-*build
 /GameServer-*build
 __pycache__
 /dl
 /windows-build-*
 /asset-processing-build
+/reincarnation
+

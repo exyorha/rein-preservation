@@ -57,7 +57,7 @@ cmake \
     -B CompatibilityRuntime-build -G "Kate - Ninja" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
     -DCEF_ROOT="$(realpath -- cef_binary_121.3.13+g5c4a81b+chromium-121.0.6167.184_linux64_minimal)" \
     -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529
 ln -sf ../CompatibilityRuntime-build/compile_commands.json CompatibilityRuntime
@@ -69,20 +69,20 @@ cmake \
     -B GameServer-build -G "Kate - Ninja" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)"
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)"
 ln -sf ../GameServer-build/compile_commands.json GameServer
 cmake --build GameServer-build
 cmake --install GameServer-build --component GameServer
 
-(cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > graft/libmpv-lgpl-compliance.tgz
+(cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > reincarnation/libmpv-lgpl-compliance.tgz
 
 if [ ! -f winmpv/windows-libmpv.tar ]; then
     echo "winmpv/windows-libmpv.tar is not present. Please run ./build.sh in the winmpv directory."
     exit 1
 fi
 
-if [ ! -f graft/libmpv-2.dll ]; then
-    tar -C graft --strip-components=1 -xf winmpv/windows-libmpv.tar bin/libmpv-2.dll
+if [ ! -f reincarnation/libmpv-2.dll ]; then
+    tar -C reincarnation --strip-components=1 -xf winmpv/windows-libmpv.tar bin/libmpv-2.dll
 fi
 
 mkdir -p windows-build-deps
@@ -183,7 +183,7 @@ fi
 cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
     -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
     -DCMAKE_FIND_ROOT_PATH="$(realpath -- windows-build-root-path)" \
     -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
@@ -191,14 +191,14 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config"
 
 cmake --build CompatibilityRuntime-mingw-build
-cmake --install CompatibilityRuntime-mingw-build --component GameAssembly
+cmake --install CompatibilityRuntime-mingw-build --component GameAssembly --strip
 
 cmake \
     -S GameServer \
     -B GameServer-mingw-build -G "Kate - Ninja" \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- graft)" \
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
     -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
     -DCMAKE_FIND_ROOT_PATH="$(realpath -- windows-build-root-path)"
 cmake --build GameServer-mingw-build

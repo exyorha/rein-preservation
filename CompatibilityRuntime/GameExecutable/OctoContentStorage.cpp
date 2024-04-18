@@ -6,10 +6,10 @@
 
 OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_root(root) {
 
-    std::optional<int> latestVersion;
+    std::optional<unsigned int> latestVersion;
     std::filesystem::path fileOfLatestVersion;
 
-    for(const auto &listEntry : std::filesystem::directory_iterator(root / "lists")) {
+    for(const auto &listEntry : std::filesystem::directory_iterator(root)) {
         if(!listEntry.is_regular_file())
             continue;
 
@@ -18,7 +18,17 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
         if(!path.has_extension() || path.extension() != ".pb" || !path.has_stem())
             continue;
 
-        int version = std::atoi(path.stem().string().c_str());
+        auto stemString = path.stem().string();
+        if(!stemString.starts_with("octo_"))
+            continue;
+
+        auto versionString = std::string_view(stemString).substr(5);
+
+        unsigned int version;
+
+        auto result = std::from_chars(versionString.data(), versionString.data() + versionString.size(), version);
+        if(result.ec != std::errc() || result.ptr != versionString.data() + versionString.size())
+            throw std::runtime_error("non-numeric master database version");
 
         if(!latestVersion.has_value() || *latestVersion < version) {
             latestVersion.emplace(version);
@@ -35,15 +45,20 @@ OctoContentStorage::OctoContentStorage(const std::filesystem::path &root) : m_ro
     std::optional<int64_t> latestMasterDatabaseVersion;
     std::filesystem::path latestMasterDatabaseFile;
 
-    for(const auto &listEntry : std::filesystem::recursive_directory_iterator(root / "database")) {
+    for(const auto &listEntry : std::filesystem::recursive_directory_iterator(root)) {
         if(!listEntry.is_regular_file())
             continue;
 
         const auto &path = listEntry.path();
-        if(path.filename() != "database.bin")
+        if(!path.has_extension() || path.extension() != ".bin")
             continue;
 
-        auto version = path.parent_path().filename().string();
+        auto stemString = path.stem().string();
+        if(!stemString.starts_with("database_"))
+            continue;
+
+        auto lastDelim = stemString.find_last_of('_');
+        auto version = std::string_view(stemString).substr(lastDelim + 1);
         int64_t versionNumber;
 
         auto result = std::from_chars(version.data(), version.data() + version.size(), versionNumber);
@@ -164,10 +179,6 @@ std::optional<std::filesystem::path> OctoContentStorage::locateFile(
         } else {
 
             auto pathRelativeToRoot = std::filesystem::path("assetbundle") / std::u8string_view(reinterpret_cast<const char8_t *>(path.data()), path.size());
-            auto adaptedVersion = m_root / ".." / "adapted_content" / pathRelativeToRoot;
-
-            if(std::filesystem::exists(adaptedVersion))
-                return adaptedVersion;
 
             return m_root / pathRelativeToRoot;
         }
