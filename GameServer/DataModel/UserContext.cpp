@@ -1284,6 +1284,53 @@ void UserContext::updateDeckName(int32_t deckType, int32_t userDeckNumber, const
     updateName->exec();
 }
 
+void UserContext::updateTripleDeckName(int32_t deckType, int32_t userDeckNumber, const std::string_view &deckName) {
+
+    auto updateName = db().prepare(R"SQL(
+        INSERT INTO i_user_triple_deck (
+            user_id,
+            deck_type,
+            user_deck_number,
+            name
+        ) VALUES (
+            ?, ?, ?, ?
+        )
+        ON CONFLICT (user_id, deck_type, user_deck_number) DO UPDATE SET
+            name = excluded.name
+    )SQL");
+    updateName->bind(1, m_userId);
+    updateName->bind(2, deckType);
+    updateName->bind(3, userDeckNumber);
+    updateName->bind(4, deckName);
+    updateName->exec();
+}
+
+void UserContext::updateTripleDeck(int32_t deckType, int32_t userDeckNumber, int32_t deckNumber1, int32_t deckNumber2, int32_t deckNumber3) {
+    auto updateDeck = db().prepare(R"SQL(
+        INSERT INTO i_user_triple_deck (
+            user_id,
+            deck_type,
+            user_deck_number,
+            deck_number01,
+            deck_number02,
+            deck_number03
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?
+        )
+        ON CONFLICT (user_id, deck_type, user_deck_number) DO UPDATE SET
+            deck_number01 = excluded.deck_number01,
+            deck_number02 = excluded.deck_number02,
+            deck_number03 = excluded.deck_number03
+    )SQL");
+    updateDeck->bind(1, m_userId);
+    updateDeck->bind(2, deckType);
+    updateDeck->bind(3, userDeckNumber);
+    updateDeck->bind(4, deckNumber1);
+    updateDeck->bind(5, deckNumber2);
+    updateDeck->bind(6, deckNumber3);
+    updateDeck->exec();
+}
+
 void UserContext::refreshDeckPower(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::DeckPower &deckPower) {
 
     auto updateDeck = db().prepare(R"SQL(
@@ -5479,3 +5526,12 @@ bool UserContext::receiveGift(const std::string_view &giftUUID) {
     return true;
 }
 
+void UserContext::setPvpDefenseDeck(int32_t deckNumber)  {
+    auto query = db().prepare(R"SQL(
+        INSERT INTO i_user_pvp_defense_deck (user_id, user_deck_number) VALUES (?, ?)
+        ON CONFLICT (user_id) DO UPDATE SET user_deck_number = excluded.user_deck_number
+    )SQL");
+    query->bind(1, m_userId);
+    query->bind(2, deckNumber);
+    query->exec();
+}

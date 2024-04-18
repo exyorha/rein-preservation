@@ -233,6 +233,11 @@ public:
 
     bool receiveGift(const std::string_view &giftUUID);
 
+    void updateTripleDeckName(int32_t deckType, int32_t userDeckNumber, const std::string_view &deckName);
+    void updateTripleDeck(int32_t deckType, int32_t userDeckNumber, int32_t deckNumber1, int32_t deckNumber2, int32_t deckNumber3);
+
+    void setPvpDefenseDeck(int32_t deckNumber);
+
 private:
 
     struct CollectedConditionRequirements {

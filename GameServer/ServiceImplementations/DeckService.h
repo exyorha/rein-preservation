@@ -5,6 +5,9 @@
 
 #include <ServiceImplementations/CommonService.h>
 
+/*
+ * This service is fully implemented.
+ */
 class DeckService final : public apb::api::deck::DeckService, public CommonService {
 public:
     explicit DeckService(Database &db);
@@ -23,6 +26,11 @@ public:
                         ::apb::api::deck::ReplaceDeckResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void SetPvpDefenseDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::SetPvpDefenseDeckRequest* request,
+                        ::apb::api::deck::SetPvpDefenseDeckResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
     void CopyDeck(::google::protobuf::RpcController* controller,
                   const ::apb::api::deck::CopyDeckRequest* request,
                   ::apb::api::deck::CopyDeckResponse* response,
@@ -36,6 +44,16 @@ public:
     void RefreshDeckPower(::google::protobuf::RpcController* controller,
                         const ::apb::api::deck::RefreshDeckPowerRequest* request,
                         ::apb::api::deck::RefreshDeckPowerResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
+    void UpdateTripleDeckName(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::UpdateTripleDeckNameRequest* request,
+                        ::apb::api::deck::UpdateTripleDeckNameResponse* response,
+                        ::google::protobuf::Closure* done) override;
+
+    void ReplaceTripleDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::ReplaceTripleDeckRequest* request,
+                        ::apb::api::deck::ReplaceTripleDeckResponse* response,
                         ::google::protobuf::Closure* done) override;
 
     void ReplaceMultiDeck(::google::protobuf::RpcController* controller,
@@ -57,6 +75,10 @@ private:
                          const ::apb::api::deck::ReplaceDeckRequest* request,
                          ::apb::api::deck::ReplaceDeckResponse* response);
 
+    void SetPvpDefenseDeckImpl(UserContext &user,
+                           const ::apb::api::deck::SetPvpDefenseDeckRequest* request,
+                        ::apb::api::deck::SetPvpDefenseDeckResponse* response);
+
     void CopyDeckImpl(UserContext &user,
                       const ::apb::api::deck::CopyDeckRequest* request,
                       ::apb::api::deck::CopyDeckResponse* response);
@@ -68,6 +90,14 @@ private:
     void RefreshDeckPowerImpl(UserContext &user,
                               const ::apb::api::deck::RefreshDeckPowerRequest* request,
                               ::apb::api::deck::RefreshDeckPowerResponse* response);
+
+    void UpdateTripleDeckNameImpl(UserContext &user,
+                              const ::apb::api::deck::UpdateTripleDeckNameRequest* request,
+                              ::apb::api::deck::UpdateTripleDeckNameResponse* response);
+
+    void ReplaceTripleDeckImpl(UserContext &user,
+                              const ::apb::api::deck::ReplaceTripleDeckRequest* request,
+                              ::apb::api::deck::ReplaceTripleDeckResponse* response);
 
     void ReplaceMultiDeckImpl(UserContext &user,
                               const ::apb::api::deck::ReplaceMultiDeckRequest* request,

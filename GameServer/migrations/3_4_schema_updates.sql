@@ -197,3 +197,56 @@ BEGIN
     WHERE m_parts.parts_id = NEW.parts_id
   ON CONFLICT (user_id, parts_group_id) DO NOTHING;
 END;
+
+-- Update the constraints on i_user_triple_deck
+CREATE TABLE new_i_user_triple_deck (
+  user_id INTEGER NOT NULL,
+  deck_type integer NOT NULL,
+  user_deck_number integer NOT NULL,
+  name text NOT NULL DEFAULT '',
+  deck_number01 integer NOT NULL DEFAULT 0,
+  deck_number02 integer NOT NULL DEFAULT 0,
+  deck_number03 integer NOT NULL DEFAULT 0,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, deck_type, user_deck_number)
+);
+
+INSERT INTO new_i_user_triple_deck
+  SELECT user_id, deck_type, user_deck_number, name, deck_number01, deck_number02, deck_number03, latest_version FROM i_user_triple_deck;
+
+DROP INDEX i_user_triple_deck_user_id;
+DROP TRIGGER i_user_triple_deck_update_version;
+DROP TABLE i_user_triple_deck;
+
+ALTER TABLE new_i_user_triple_deck RENAME TO i_user_triple_deck;
+
+CREATE INDEX i_user_triple_deck_user_id ON i_user_triple_deck(user_id);
+
+CREATE TRIGGER i_user_triple_deck_update_version
+AFTER UPDATE ON i_user_triple_deck FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_triple_deck SET latest_version = OLD.latest_version + 1
+    WHERE i_user_triple_deck.rowid = NEW.rowid;
+END;
+
+-- Update the constraints on i_user_pvp_defense_deck
+CREATE TABLE new_i_user_pvp_defense_deck (
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  user_deck_number integer NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1
+);
+
+INSERT INTO new_i_user_pvp_defense_deck
+  SELECT user_id, user_deck_number, latest_version FROM i_user_pvp_defense_deck;
+
+DROP TRIGGER i_user_pvp_defense_deck_update_version;
+DROP TABLE i_user_pvp_defense_deck;
+
+ALTER TABLE new_i_user_pvp_defense_deck RENAME TO i_user_pvp_defense_deck;
+
+CREATE TRIGGER i_user_pvp_defense_deck_update_version
+AFTER UPDATE ON i_user_pvp_defense_deck FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_pvp_defense_deck SET latest_version = OLD.latest_version + 1
+    WHERE i_user_pvp_defense_deck.rowid = NEW.rowid;
+END;

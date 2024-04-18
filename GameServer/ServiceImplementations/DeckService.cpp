@@ -24,6 +24,14 @@ void DeckService::ReplaceDeck(::google::protobuf::RpcController* controller,
     return inChangesetCall("DeckService::ReplaceDeck", controller, request, response, done, &DeckService::ReplaceDeckImpl);
 }
 
+void DeckService::SetPvpDefenseDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::SetPvpDefenseDeckRequest* request,
+                        ::apb::api::deck::SetPvpDefenseDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::SetPvpDefenseDeck", controller, request, response, done, &DeckService::SetPvpDefenseDeckImpl);
+}
+
 void DeckService::CopyDeck(::google::protobuf::RpcController* controller,
                         const ::apb::api::deck::CopyDeckRequest* request,
                         ::apb::api::deck::CopyDeckResponse* response,
@@ -46,6 +54,22 @@ void DeckService::RefreshDeckPower(::google::protobuf::RpcController* controller
                         ::google::protobuf::Closure* done) {
 
     return inChangesetCall("DeckService::RefreshDeckPower", controller, request, response, done, &DeckService::RefreshDeckPowerImpl);
+}
+
+void DeckService::UpdateTripleDeckName(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::UpdateTripleDeckNameRequest* request,
+                        ::apb::api::deck::UpdateTripleDeckNameResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::UpdateTripleDeckName", controller, request, response, done, &DeckService::UpdateTripleDeckNameImpl);
+}
+
+void DeckService::ReplaceTripleDeck(::google::protobuf::RpcController* controller,
+                        const ::apb::api::deck::ReplaceTripleDeckRequest* request,
+                        ::apb::api::deck::ReplaceTripleDeckResponse* response,
+                        ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("DeckService::ReplaceTripleDeck", controller, request, response, done, &DeckService::ReplaceTripleDeckImpl);
 }
 
 void DeckService::ReplaceMultiDeck(::google::protobuf::RpcController* controller,
@@ -78,6 +102,18 @@ void DeckService::ReplaceDeckImpl(UserContext &user,
     user.replaceDeck(request->deck_type(), request->user_deck_number(), request->has_deck() ? &request->deck() : nullptr);
 }
 
+
+void DeckService::SetPvpDefenseDeckImpl(UserContext &user,
+                        const ::apb::api::deck::SetPvpDefenseDeckRequest* request,
+                    ::apb::api::deck::SetPvpDefenseDeckResponse* response) {
+
+    user.setPvpDefenseDeck(request->user_deck_number());
+    /*
+     * TODO: deck power
+     */
+}
+
+
 void DeckService::CopyDeckImpl(UserContext &user,
                                const ::apb::api::deck::CopyDeckRequest* request,
                                ::apb::api::deck::CopyDeckResponse* response) {
@@ -102,6 +138,42 @@ void DeckService::RefreshDeckPowerImpl(UserContext &user,
         throw std::runtime_error("no deck power is specified in RefreshDeckPower");
 
     user.refreshDeckPower(request->deck_type(), request->user_deck_number(), request->deck_power());
+}
+
+void DeckService::UpdateTripleDeckNameImpl(UserContext &user,
+                                       const ::apb::api::deck::UpdateTripleDeckNameRequest* request,
+                                       ::apb::api::deck::UpdateTripleDeckNameResponse* response) {
+
+    user.updateTripleDeckName(request->deck_type(), request->user_deck_number(), request->name());
+}
+
+void DeckService::ReplaceTripleDeckImpl(UserContext &user,
+                                       const ::apb::api::deck::ReplaceTripleDeckRequest* request,
+                                       ::apb::api::deck::ReplaceTripleDeckResponse* response) {
+
+    int32_t deck1Number = 0;
+    int32_t deck2Number = 0;
+    int32_t deck3Number = 0;
+
+    if(request->has_deck_detail_01()) {
+        const auto &deck1 = request->deck_detail_01();
+        user.replaceDeck(deck1.deck_type(), deck1.user_deck_number(), deck1.has_deck() ? &deck1.deck() : nullptr);
+        deck1Number = deck1.user_deck_number();
+    }
+
+    if(request->has_deck_detail_02()) {
+        const auto &deck2 = request->deck_detail_02();
+        user.replaceDeck(deck2.deck_type(), deck2.user_deck_number(), deck2.has_deck() ? &deck2.deck() : nullptr);
+        deck2Number = deck2.user_deck_number();
+    }
+
+    if(request->has_deck_detail_03()) {
+        const auto &deck3 = request->deck_detail_03();
+        user.replaceDeck(deck3.deck_type(), deck3.user_deck_number(), deck3.has_deck() ? &deck3.deck() : nullptr);
+        deck3Number = deck3.user_deck_number();
+    }
+
+    user.updateTripleDeck(request->deck_type(), request->user_deck_number(), deck1Number, deck2Number, deck3Number);
 }
 
 void DeckService::ReplaceMultiDeckImpl(UserContext &user,
