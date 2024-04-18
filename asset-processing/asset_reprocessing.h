@@ -15,11 +15,16 @@ namespace UnityAsset {
     class SerializedType;
 }
 
+struct CollectedApplicationInformation {
+    std::optional<std::string> companyName;
+    std::optional<std::string> productName;
+};
+
 class AssetReprocessing {
 public:
     static std::optional<UnityAsset::Stream> reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
                                                             std::optional<UnityAsset::StreamedResourceManipulator> &streamedManipulator,
-                                                            bool repackingStreamingData);
+                                                            bool repackingStreamingData, CollectedApplicationInformation &info);
 
 private:
     using ETCTranscoder = void (*)(size_t width,

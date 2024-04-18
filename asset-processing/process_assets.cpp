@@ -8,11 +8,11 @@
 
 #include <Octo/Proto/Database.pb.h>
 
-#include "Octo/Proto/Database.pb.h"
 #include "UnityAsset/UnityCompression.h"
 #include "conversion_context.h"
 #include "bc7e_ispc.h"
 #include "multi_part_zip_writer.h"
+#include "asset_reprocessing.h"
 
 static int usage(void) {
     fputs(
@@ -64,6 +64,7 @@ int main(int argc, char **argv) {
 
         auto srcdir = argv[2];
         auto destdir = argv[3];
+        CollectedApplicationInformation info;
 
         for(const auto &entry : std::filesystem::recursive_directory_iterator(srcdir)) {
             if(!entry.is_regular_file())
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
 
             UnityAsset::AssetBundleFile file(UnityAsset::Stream(UnityAsset::readFile(path)));
 
-            if(ConversionContext::processAssetBundle(file)) {
+            if(ConversionContext::processAssetBundle(file, info)) {
                 auto out = destdir / path.lexically_relative(srcdir);
 
                 printf("Writing updated %s\n", out.c_str());

@@ -174,4 +174,3 @@ if(TARGET PkgConfig::MPV)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)
-install(FILES app.info DESTINATION $<TARGET_FILE_BASE_NAME:GameExecutable>_Data COMPONENT GameAssembly)

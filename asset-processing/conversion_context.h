@@ -8,6 +8,8 @@
 
 #include <UnityAsset/FileContainer/AssetBundle/AssetBundleFile.h>
 
+struct CollectedApplicationInformation;
+
 class UnzipHandle;
 
 class ConversionContext {
@@ -22,7 +24,7 @@ public:
 
     void finalize();
 
-    static bool processAssetBundle(UnityAsset::AssetBundleFile &bundle);
+    static bool processAssetBundle(UnityAsset::AssetBundleFile &bundle, CollectedApplicationInformation &info);
 
 private:
     void unpackCurrentFile(UnzipHandle &apk, const std::filesystem::path &destination);

@@ -24,7 +24,8 @@ void ConversionContext::finalize() {
 
     auto &bundle = m_assetDataFile.value();
 
-    processAssetBundle(bundle);
+    CollectedApplicationInformation info;
+    processAssetBundle(bundle, info);
 
     UnityAsset::Stream serialized;
     bundle.serialize(serialized);
@@ -32,10 +33,17 @@ void ConversionContext::finalize() {
 
     std::filesystem::create_directories(m_targetDirectory / "NieR_Data");
 
+    if(info.companyName.has_value() && info.productName.has_value()) {
+        std::ofstream stream;
+        stream.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+        stream.open(m_targetDirectory / "NieR_Data" / "app.info", std::ios::out | std::ios::trunc | std::ios::binary);
+        stream << *info.companyName << "\n" << *info.productName;
+    }
+
     UnityAsset::writeFile(m_targetDirectory / "NieR_Data" / "data.unity3d", serialized);
 }
 
-bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) {
+bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle, CollectedApplicationInformation &info) {
     bool modifiedAnything = false;
 
     for(auto &entry: bundle.entries) {
@@ -69,7 +77,7 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
         for(auto &object: asset.m_Objects) {
             const auto &type = asset.m_Types.at(object.typeIndex);
 
-            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedManipulator, false);
+            auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedManipulator, false, info);
 
             if(reprocessed.has_value()) {
                 object.objectData = std::move(*reprocessed);
@@ -89,7 +97,7 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
 
                 const auto &type = asset.m_Types.at(object.typeIndex);
 
-                auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedManipulator, true);
+                auto reprocessed = AssetReprocessing::reprocessAsset(type, object.objectData, streamedManipulator, true, info);
 
                 if(reprocessed.has_value()) {
                     object.objectData = std::move(*reprocessed);
@@ -104,24 +112,11 @@ bool ConversionContext::processAssetBundle(UnityAsset::AssetBundleFile &bundle) 
 
         if(assetModified) {
             printf("asset '%s' was modified, repacking the asset file\n", entry.filename().c_str());
-#if 0
-            {
-                std::ofstream output;
-                output.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-                output.open("original/" + entry.filename(), std::ios::out | std::ios::trunc | std::ios::binary);
-                output.write(reinterpret_cast<const char *>(entry.data().data()), entry.data().length());
-            }
 
-#endif
             UnityAsset::Stream serializedAsset;
             asset.serialize(serializedAsset);
             entry.replace(std::move(serializedAsset));
-#if 0
-            std::ofstream output;
-            output.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-            output.open("modified/" + entry.filename(), std::ios::out | std::ios::trunc | std::ios::binary);
-            output.write(reinterpret_cast<const char *>(entry.data().data()), entry.data().length());
-#endif
+
             modifiedAnything = true;
         }
     }

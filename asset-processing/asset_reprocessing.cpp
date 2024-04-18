@@ -97,7 +97,7 @@ static void pruneMethodList(std::vector<int32_t> &indices, const std::unordered_
 
 std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
                                                                     std::optional<UnityAsset::StreamedResourceManipulator> &streamedManipulator,
-                                                                    bool repackingStreamingData) {
+                                                                    bool repackingStreamingData, CollectedApplicationInformation &info) {
     if(type.classID == UnityAsset::UnityTypes::ShaderClassID) {
 
         if(repackingStreamingData)
@@ -479,6 +479,9 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         settings.submitAnalytics = false;
 
         settings.resolutionScalingMode = 0;
+
+        info.companyName.emplace(settings.companyName);
+        info.productName.emplace(settings.productName);
 
         return UnityAsset::UnityTypes::serializePlayerSettings(settings);
 
