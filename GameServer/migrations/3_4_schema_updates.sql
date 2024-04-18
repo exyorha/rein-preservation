@@ -109,3 +109,30 @@ CREATE TABLE internal_user_gift (
 );
 
 CREATE INDEX internal_user_gift_user_id ON internal_user_gift (user_id);
+
+-- Update the constraints on i_user_premium_item
+CREATE TABLE new_i_user_premium_item (
+  user_id INTEGER NOT NULL,
+  premium_item_id integer NOT NULL,
+  acquisition_datetime timestamp NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, premium_item_id)
+);
+
+INSERT INTO new_i_user_premium_item
+  SELECT user_id, premium_item_id, acquisition_datetime, latest_version FROM i_user_premium_item;
+
+DROP TRIGGER i_user_premium_item_update_version;
+DROP INDEX i_user_premium_item_user_id;
+DROP TABLE i_user_premium_item;
+
+ALTER TABLE new_i_user_premium_item RENAME TO i_user_premium_item;
+
+CREATE INDEX i_user_premium_item_user_id ON i_user_premium_item(user_id);
+
+CREATE TRIGGER i_user_premium_item_update_version
+AFTER UPDATE ON i_user_premium_item FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_premium_item SET latest_version = OLD.latest_version + 1
+    WHERE i_user_premium_item.rowid = NEW.rowid;
+END;

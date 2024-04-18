@@ -29,7 +29,8 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
         .handler = &ServerCommandLine::commandTimeTravel },
     { .cmd = "present", .help = "adjusts the server time back to the real-world time", .handler = &ServerCommandLine::commandPresent },
     { .cmd = "gift", .help = "sends a gift (execute just 'gift' for the syntax details)", .handler = &ServerCommandLine::commandGift },
-    { .cmd = "portalcage", .help = "moves the player to the Mama's Room", .handler = &ServerCommandLine::commandPortalCage },
+    { .cmd = "portalcage", .help = "moves the player to the Mama's Room (will log out)", .handler = &ServerCommandLine::commandPortalCage },
+    { .cmd = "addpremium", .help = "adds the premium item with the specified ID (will log out)", .handler = &ServerCommandLine::commandAddPremiumItem },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -431,6 +432,28 @@ void ServerCommandLine::commandPortalCage(WordListParser &parser) {
 
 void ServerCommandLine::commandPortalCageUser(WordListParser &parser, UserContext &user) {
     user.updatePortalCageSceneProgress(user.getIntConfig("PORTAL_CAGE_SCENE_ID"));
+}
+
+void ServerCommandLine::commandAddPremiumItem(WordListParser &parser) {
+    runCommandInUserContext(parser, &ServerCommandLine::commandAddPremiumItemUser);
+}
+
+
+void ServerCommandLine::commandAddPremiumItemUser(WordListParser &parser, UserContext &user) {
+    if(parser.isAtEnd()) {
+        LogCLI.error("item ID must be specified");
+        return;
+    }
+
+    int32_t itemID;
+    parser.parse(itemID);
+
+    if(!user.isValidPossession(PossessionType::PREMIUM_ITEM, itemID)) {
+        LogCLI.error("no premium item with such ID exists");
+        return;
+    }
+
+    user.givePossession(static_cast<int32_t>(PossessionType::PREMIUM_ITEM), itemID, 1);
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {

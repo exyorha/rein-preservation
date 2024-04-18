@@ -42,6 +42,8 @@ private:
     void commandGiftDatabase(WordListParser &parser, DatabaseContext &db);
     void commandPortalCage(WordListParser &parser);
     void commandPortalCageUser(WordListParser &parser, UserContext &user);
+    void commandAddPremiumItem(WordListParser &parser);
+    void commandAddPremiumItemUser(WordListParser &parser, UserContext &user);
 
     std::filesystem::path backupLocation() const;
 

@@ -505,6 +505,29 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
         }
         break;
 
+        case PossessionType::PREMIUM_ITEM:
+        {
+            if(count != 1)
+                throw std::runtime_error("Unexpected count value for PREMIUM_ITEM");
+
+            auto query = db().prepare(R"SQL(
+                INSERT INTO i_user_premium_item (
+                    user_id,
+                    premium_item_id,
+                    acquisition_datetime
+                ) VALUES (
+                    ?,
+                    ?,
+                    current_net_timestamp()
+                )
+            )SQL");
+
+            query->bind(1, m_userId);
+            query->bind(2, possessionId);
+            query->exec();
+            break;
+        }
+
         default:
             throw std::runtime_error("unsupported possession type " + std::to_string(possessionType));
     }
