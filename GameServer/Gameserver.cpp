@@ -48,7 +48,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_sideStoryQuestService(m_db),
     m_exploreService(m_db),
     m_giftService(m_db),
-    m_shopService(m_db) {
+    m_shopService(m_db),
+    m_labyrinthService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -91,6 +92,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_exploreService);
     m_gameAPI.registerService(&m_giftService);
     m_gameAPI.registerService(&m_shopService);
+    m_gameAPI.registerService(&m_labyrinthService);
 
 }
 

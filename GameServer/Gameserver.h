@@ -42,6 +42,7 @@
 #include "ServiceImplementations/ExploreService.h"
 #include "ServiceImplementations/GiftService.h"
 #include "ServiceImplementations/ShopService.h"
+#include "ServiceImplementations/LabyrinthService.h"
 
 #include "DataModel/Database.h"
 
@@ -113,6 +114,7 @@ private:
     ExploreService m_exploreService;
     GiftService m_giftService;
     ShopService m_shopService;
+    LabyrinthService m_labyrinthService;
 };
 
 #endif

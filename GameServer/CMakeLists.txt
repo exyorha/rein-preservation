@@ -296,6 +296,7 @@ add_executable(GameServer
     service/GamePlayService.proto
     service/GiftService.proto
     service/GimmickService.proto
+    service/LabyrinthService.proto
     service/LoginBonusService.proto
     service/MissionService.proto
     service/NaviCutInService.proto
@@ -364,6 +365,9 @@ add_executable(GameServer
 
     ServiceImplementations/GimmickService.cpp
     ServiceImplementations/GimmickService.h
+
+    ServiceImplementations/LabyrinthService.cpp
+    ServiceImplementations/LabyrinthService.h
 
     ServiceImplementations/LoginBonusService.cpp
     ServiceImplementations/LoginBonusService.h
