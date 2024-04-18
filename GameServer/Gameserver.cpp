@@ -47,7 +47,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_contentsStoryService(m_db),
     m_sideStoryQuestService(m_db),
     m_exploreService(m_db),
-    m_giftService(m_db) {
+    m_giftService(m_db),
+    m_shopService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -89,30 +90,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_sideStoryQuestService);
     m_gameAPI.registerService(&m_exploreService);
     m_gameAPI.registerService(&m_giftService);
+    m_gameAPI.registerService(&m_shopService);
 
-#if 0
-    {
-        sqlite::Transaction transaction(&m_db.db());
-
-        UserContext ctx(m_db, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34012, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON), 350641, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 32025, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320461, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME), 34043, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340761, 1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350011,1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),350531,1);
-
-    //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340851,1);
-    //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),340741,1);
-
-    //ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),320641,1);
-    ctx.givePossession(static_cast<int32_t>(PossessionType::WEAPON),440161,1);
-        //ctx.givePossession(static_cast<int32_t>(PossessionType::COSTUME),35038,1);
-        transaction.commit();
-    }
-#endif
 }
 
 Gameserver::~Gameserver() = default;

@@ -303,6 +303,7 @@ add_executable(GameServer
     service/OmikujiService.proto
     service/PortalCageService.proto
     service/QuestService.proto
+    service/ShopService.proto
     service/SideStoryQuestService.proto
     service/TutorialService.proto
     service/UserService.proto
@@ -381,6 +382,9 @@ add_executable(GameServer
 
     ServiceImplementations/QuestService.cpp
     ServiceImplementations/QuestService.h
+
+    ServiceImplementations/ShopService.cpp
+    ServiceImplementations/ShopService.h
 
     ServiceImplementations/SideStoryQuestService.cpp
     ServiceImplementations/SideStoryQuestService.h

@@ -41,6 +41,7 @@
 #include "ServiceImplementations/SideStoryQuestService.h"
 #include "ServiceImplementations/ExploreService.h"
 #include "ServiceImplementations/GiftService.h"
+#include "ServiceImplementations/ShopService.h"
 
 #include "DataModel/Database.h"
 
@@ -111,6 +112,7 @@ private:
     SideStoryQuestService m_sideStoryQuestService;
     ExploreService m_exploreService;
     GiftService m_giftService;
+    ShopService m_shopService;
 };
 
 #endif
