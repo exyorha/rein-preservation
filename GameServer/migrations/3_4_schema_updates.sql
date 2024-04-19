@@ -164,9 +164,6 @@ BEGIN
     WHERE i_user_parts_group_note.rowid = NEW.rowid;
 END;
 
-
-SELECT DISTINCT user_id, parts_group_id FROM i_user_parts, m_parts USING (parts_id);
-
 -- Initially populate i_user_parts_group_note, it used to be unpopulated
 INSERT INTO
   i_user_parts_group_note
@@ -249,4 +246,82 @@ AFTER UPDATE ON i_user_pvp_defense_deck FOR EACH ROW WHEN OLD.latest_version = N
 BEGIN
   UPDATE i_user_pvp_defense_deck SET latest_version = OLD.latest_version + 1
     WHERE i_user_pvp_defense_deck.rowid = NEW.rowid;
+END;
+
+-- Update the constraints on i_user_shop_item
+CREATE TABLE new_i_user_shop_item (
+  user_id INTEGER NOT NULL,
+  shop_item_id integer NOT NULL,
+  bought_count integer NOT NULL DEFAULT 0,
+  latest_bought_count_changed_datetime timestamp NOT NULL DEFAULT 0,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, shop_item_id)
+);
+
+INSERT INTO new_i_user_shop_item
+  SELECT user_id, shop_item_id, bought_count, latest_bought_count_changed_datetime, latest_version FROM i_user_shop_item;
+
+DROP TRIGGER i_user_shop_item_update_version;
+DROP INDEX i_user_shop_item_user_id;
+DROP TABLE i_user_shop_item;
+
+ALTER TABLE new_i_user_shop_item RENAME TO i_user_shop_item;
+
+CREATE INDEX i_user_shop_item_user_id ON i_user_shop_item(user_id);
+
+CREATE TRIGGER i_user_shop_item_update_version
+AFTER UPDATE ON i_user_shop_item FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_shop_item SET latest_version = OLD.latest_version + 1
+    WHERE i_user_shop_item.rowid = NEW.rowid;
+END;
+
+-- Update the constraints on i_user_shop_replaceable
+CREATE TABLE new_i_user_shop_replaceable (
+  user_id INTEGER NOT NULL PRIMARY KEY,
+  lineup_update_count integer NOT NULL DEFAULT 0,
+  latest_lineup_update_datetime timestamp NOT NULL DEFAULT 0,
+  latest_version bigint NOT NULL DEFAULT 1
+);
+
+INSERT INTO new_i_user_shop_replaceable
+  SELECT user_id, lineup_update_count, latest_lineup_update_datetime, latest_version FROM i_user_shop_replaceable;
+
+DROP TRIGGER i_user_shop_replaceable_update_version;
+DROP TABLE i_user_shop_replaceable;
+
+ALTER TABLE new_i_user_shop_replaceable RENAME TO i_user_shop_replaceable;
+
+CREATE TRIGGER i_user_shop_replaceable_update_version
+AFTER UPDATE ON i_user_shop_replaceable FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_shop_replaceable SET latest_version = OLD.latest_version + 1
+    WHERE i_user_shop_replaceable.rowid = NEW.rowid;
+END;
+
+-- Update the constraints on i_user_shop_replaceable_lineup
+CREATE TABLE new_i_user_shop_replaceable_lineup (
+  user_id INTEGER NOT NULL,
+  slot_number integer NOT NULL,
+  shop_item_id integer NOT NULL,
+  latest_version bigint NOT NULL DEFAULT 1,
+  PRIMARY KEY(user_id, slot_number)
+);
+
+INSERT INTO new_i_user_shop_replaceable_lineup
+  SELECT user_id, slot_number, shop_item_id, latest_version FROM i_user_shop_replaceable_lineup;
+
+DROP INDEX i_user_shop_replaceable_lineup_user_id;
+DROP TRIGGER i_user_shop_replaceable_lineup_update_version;
+DROP TABLE i_user_shop_replaceable_lineup;
+
+ALTER TABLE new_i_user_shop_replaceable_lineup RENAME TO i_user_shop_replaceable_lineup;
+
+CREATE INDEX i_user_shop_replaceable_lineup_user_id ON i_user_shop_replaceable_lineup(user_id);
+
+CREATE TRIGGER i_user_shop_replaceable_lineup_update_version
+AFTER UPDATE ON i_user_shop_replaceable_lineup FOR EACH ROW WHEN OLD.latest_version = NEW.latest_version
+BEGIN
+  UPDATE i_user_shop_replaceable_lineup SET latest_version = OLD.latest_version + 1
+    WHERE i_user_shop_replaceable_lineup.rowid = NEW.rowid;
 END;
