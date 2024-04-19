@@ -5,10 +5,10 @@ body {
 
 .page-header {
     background-color: #445;
-    color: white;
     display: flex;
     align-items: center;
     padding: 1em 0;
+    color: white;
 }
 
 .page-header .title {
@@ -16,6 +16,9 @@ body {
     font-size: 2.5em;
     position: relative;
     padding-left: 1.75em;
+    display: block;
+    text-decoration: none;
+    color: inherit;
 }
 
 .page-header .title .logo {
@@ -103,3 +106,24 @@ body {
 #server-cli.disconnected .overlay-message.disconnected-overlay-message {
     display: flex !important;
 }
+
+ul.entity-list {
+    background-color: #556;
+    margin: 0;
+    padding: 1em;
+    list-style-type: none;
+}
+
+ul.entity-list > li {
+    display: inline-block;
+    margin: 0 0.25em;
+}
+
+ul.entity-list a {
+    color: white;
+}
+
+.main-content {
+    padding: 0 1em;
+}
+

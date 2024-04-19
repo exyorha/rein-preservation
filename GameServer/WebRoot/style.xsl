@@ -33,7 +33,7 @@
         </xsl:if>
 
         <div class="page-header">
-            <div class="title">
+            <a href="/database" class="title">
 
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-257 -169 514 441" class="logo">
                     <!-- left 'arm' -->
@@ -47,7 +47,7 @@
                     <use href="#stackbottom" transform="translate(0,-169)" /><!-- topmost -->
                 </svg>
                 [re]serve
-            </div>
+            </a>
             <div class="versions">
                 Server software: <xsl:value-of select="@gitversion" /><br />
                 Master database: <xsl:value-of select="@master-db-version" /><br />
@@ -84,6 +84,51 @@
                 <span>Disconnected from the server. Please reload the page.</span>
             </div>
         </form>
+    </xsl:template>
+
+    <xsl:template match="entities">
+        <ul class="entity-list">
+            <xsl:for-each select="entity">
+                <li>
+                    <a>
+                        <xsl:attribute name="href">/database/<xsl:value-of select="@name" /></xsl:attribute>
+                        <xsl:value-of select="@name" />
+                    </a>
+                </li>
+            </xsl:for-each>
+        </ul>
+    </xsl:template>
+
+    <xsl:template match="entity-list">
+        <div class="main-content">
+            <h1>
+                <a>
+                    <xsl:attribute name="href">/database/<xsl:value-of select="@name" /></xsl:attribute>
+                    <xsl:value-of select="@name" />
+                </a>
+            </h1>
+
+            <table class="entity-table">
+                <thead>
+                    <tr>
+                        <xsl:for-each select="columns/column">
+                            <th><xsl:value-of select="@name" /></th>
+                        </xsl:for-each>
+                    </tr>
+                </thead>
+                <tbody>
+                    <xsl:for-each select="items/item">
+                        <tr>
+                            <xsl:for-each select="column">
+                                <td>
+                                    <xsl:apply-templates />
+                                </td>
+                            </xsl:for-each>
+                        </tr>
+                    </xsl:for-each>
+                </tbody>
+            </table>
+        </div>
     </xsl:template>
 
 </xsl:stylesheet>

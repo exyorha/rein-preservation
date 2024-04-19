@@ -3,13 +3,16 @@
 
 #include "WebServices/WebRoutable.h"
 
+#include "DatabaseViewer/DatabaseViewerSchema.h"
+#include "DatabaseViewer/DatabaseViewerSQL.h"
+
 #include <cstdint>
 
 class Database;
 
 class DatabaseViewerService final : public WebRoutable {
 public:
-    DatabaseViewerService(int32_t octoVersion, Database &db);
+    DatabaseViewerService(int32_t octoVersion, Database &db, const std::filesystem::path &dataPath);
     ~DatabaseViewerService();
 
     DatabaseViewerService(const DatabaseViewerService &other) = delete;
@@ -20,6 +23,8 @@ public:
 private:
     int32_t m_octoVersion;
     Database &m_db;
+    DatabaseViewerSchema m_schema;
+    DatabaseViewerSQL m_sql;
 };
 
 #endif

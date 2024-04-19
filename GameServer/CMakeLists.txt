@@ -100,10 +100,25 @@ execute_process(
 configure_file(gitversion.h.in ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h @ONLY)
 
 add_executable(GameServer
+    DatabaseViewer/DatabaseViewerEntity.cpp
+    DatabaseViewer/DatabaseViewerEntity.h
+    DatabaseViewer/DatabaseViewerEntitySet.cpp
+    DatabaseViewer/DatabaseViewerEntitySet.h
     DatabaseViewer/DatabaseViewerResponse.cpp
     DatabaseViewer/DatabaseViewerResponse.h
+    DatabaseViewer/DatabaseViewerSchema.cpp
+    DatabaseViewer/DatabaseViewerSchema.h
+    DatabaseViewer/DatabaseViewerSchemaParser.cpp
+    DatabaseViewer/DatabaseViewerSchemaParser.h
+    DatabaseViewer/DatabaseViewerService.h
     DatabaseViewer/DatabaseViewerService.cpp
     DatabaseViewer/DatabaseViewerService.h
+    DatabaseViewer/DatabaseViewerSQL.cpp
+    DatabaseViewer/DatabaseViewerSQL.h
+    DatabaseViewer/HierarchicalPathParser.cpp
+    DatabaseViewer/HierarchicalPathParser.h
+    DatabaseViewer/ReloadableResource.cpp
+    DatabaseViewer/ReloadableResource.h
     DatabaseViewer/UTF8Helpers.cpp
     DatabaseViewer/UTF8Helpers.h
     DatabaseViewer/XMLFile.cpp
@@ -441,6 +456,7 @@ add_custom_command(
     VERBATIM
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-install(TARGETS GameServer DESTINATION . COMPONENT GameServer)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/WebRoot DESTINATION . COMPONENT GameServer)
-
+install(TARGETS GameServer DESTINATION GameServer COMPONENT GameServer)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/WebRoot DESTINATION GameServer COMPONENT GameServer)
+install(FILES ${PROJECT_SOURCE_DIR}/dbview_schema.sql DESTINATION GameServer COMPONENT GameServer)
+install(FILES ${PROJECT_SOURCE_DIR}/dbview_schema.json DESTINATION GameServer COMPONENT GameServer)

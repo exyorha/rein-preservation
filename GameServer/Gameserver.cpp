@@ -17,7 +17,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_webServer(webRoot),
     m_octoServices(octoListPath),
     m_db(individualDatabasePath, masterDatabasePath),
-    m_dbViewer(m_octoServices.revision(), m_db),
+    m_dbViewer(m_octoServices.revision(), m_db, webRoot.parent_path()),
     m_router(&m_webServer),
     m_http(&m_eventLoop, &m_router),
 

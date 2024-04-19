@@ -1,15 +1,23 @@
 #include "DatabaseViewer/DatabaseViewerService.h"
 #include "DatabaseViewer/DatabaseViewerResponse.h"
+#include "DatabaseViewer/HierarchicalPathParser.h"
 
 #include "DataModel/Database.h"
+#include "DataModel/Sqlite/Statement.h"
 
-#include "LLServices/Networking/Buffer.h"
 #include "LLServices/Networking/HttpRequest.h"
-#include "LLServices/Networking/KeyValuePairs.h"
 
 #include <gitversion.h>
 
-DatabaseViewerService::DatabaseViewerService(int32_t octoVersion, Database &db) : m_octoVersion(octoVersion), m_db(db) {
+DatabaseViewerService::DatabaseViewerService(
+    int32_t octoVersion,
+    Database &db,
+    const std::filesystem::path &dataPath
+) :
+    m_octoVersion(octoVersion),
+    m_db(db),
+    m_schema(dataPath / "dbview_schema.json"),
+    m_sql(dataPath / "dbview_schema.sql", m_db) {
 
 }
 
@@ -22,10 +30,8 @@ void DatabaseViewerService::handle(const std::string_view &routedPath, LLService
         return;
     }
 
-    if(routedPath != "/") {
-        request.sendError(404, "Not Found");
-        return;
-    }
+    m_schema.reloadIfNeeded();
+    m_sql.reloadIfNeeded();
 
     DatabaseViewerResponse response(std::move(request));
 
@@ -35,6 +41,57 @@ void DatabaseViewerService::handle(const std::string_view &routedPath, LLService
 #if defined(SERVER_GITVERSION)
     response.root().attributes().emplace_back("gitversion", SERVER_GITVERSION);
 #endif
+
+    auto &entities = response.root().children().emplace_back("entities");
+    for(const auto &entity: m_schema.entities().entities()) {
+        auto &entityNode = entities.children().emplace_back("entity");
+        entityNode.attributes().emplace_back("name", entity.entityName());
+    }
+
+    HierarchicalPathParser pathParser(routedPath);
+    if(pathParser.atEnd()) {
+        /*
+         * Index page
+         */
+    } else {
+        auto entityName = pathParser.getElement();
+
+        auto entity = m_schema.entities().findEntityByName(entityName);
+        if(entity == nullptr) {
+            request.sendError(404, "Not Found");
+            return;
+        }
+
+        /*
+         * Entity table page
+         */
+
+        auto &entityList = response.root().children().emplace_back("entity-list");
+        entityList.attributes().emplace_back("name", entity->entityName());
+
+        auto &columns = entityList.children().emplace_back("columns");
+
+        auto getColumns = m_db.db().prepare("SELECT name FROM pragma_table_info(?)");
+        getColumns->bind(1, "dbview_" + entity->entityName());
+        while(getColumns->step()) {
+            auto &column = columns.children().emplace_back("column");
+            column.attributes().emplace_back("name", getColumns->columnText(0));
+        }
+        getColumns->reset();
+
+        auto &items = entityList.children().emplace_back("items");
+
+        auto getValues = m_db.db().prepare("SELECT * FROM dbview_" + entity->entityName());
+        while(getValues->step()) {
+            auto &item = items.children().emplace_back("item");
+
+            for(int colIndex = 0, colCount = getValues->dataCount(); colIndex < colCount; colIndex++) {
+                auto &column = item.children().emplace_back("column", getValues->columnText(colIndex));
+                column.attributes().emplace_back("name", getValues->columnName(colIndex));
+            }
+        }
+        getValues->reset();
+    }
 
     /*
      * Get the server time at the *end* of the response processing for better
