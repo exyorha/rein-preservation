@@ -2,7 +2,7 @@
 #include "ProcessCommandLine.h"
 #include "CommonUtilities.h"
 #include "Octo.h"
-#include "OctoContentStorage.h"
+#include <ClientDataAccess/OctoContentStorage.h>
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -116,7 +116,7 @@ static std::string spawnGameServer() {
 
     ProcessCommandLine cmdline(executableDirectory() / "GameServer" / gameServerName);
     cmdline.addArgument("-master-database"sv);
-    cmdline.addArgument(contentStorageInstance->masterDatabase());
+    cmdline.addArgument(ClientDataAccess::OctoContentStorage::findNewestDatabase(contentStorageInstance->octoListFile().parent_path()));
     cmdline.addArgument("-octo-list"sv);
     cmdline.addArgument(contentStorageInstance->octoListFile());
     cmdline.addArgument("-individual-database"sv);

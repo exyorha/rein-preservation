@@ -20,7 +20,7 @@
 	path = winmpv
 	url = https://github.com/exyorha/winmpv.git
 [submodule "asset-processing/unityasset"]
-	path = asset-processing/unityasset
+	path = common/unityasset
 	url = https://github.com/exyorha/unityasset.git
 [submodule "asset-processing/bc7enc_rdo"]
 	path = asset-processing/bc7enc_rdo

@@ -6,8 +6,6 @@ pkg_check_modules(MINIZIP REQUIRED IMPORTED_TARGET minizip)
 
 enable_language(ISPC)
 
-add_subdirectory(unityasset)
-
 add_executable(process_assets
     astc_dec/astc_decomp.cpp
     astc_dec/astc_decomp.h

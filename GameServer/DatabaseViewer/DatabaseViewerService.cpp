@@ -1,23 +1,32 @@
 #include "DatabaseViewer/DatabaseViewerService.h"
+#include "DataModel/Sqlite/Transaction.h"
 #include "DatabaseViewer/DatabaseViewerResponse.h"
 #include "DatabaseViewer/HierarchicalPathParser.h"
+#include "DatabaseViewer/DatabaseTextImporter.h"
 
 #include "DataModel/Database.h"
 #include "DataModel/Sqlite/Statement.h"
 
 #include "LLServices/Networking/HttpRequest.h"
+#include "LLServices/Logging/LogFacility.h"
+
 
 #include <gitversion.h>
 
+#include <ClientDataAccess/OctoContentStorage.h>
+
+LLServices::LogFacility LogDatabaseViewerService("DatabaseViewerService");
+
 DatabaseViewerService::DatabaseViewerService(
-    int32_t octoVersion,
+    const ClientDataAccess::OctoContentStorage &contentStorage,
     Database &db,
     const std::filesystem::path &dataPath
 ) :
-    m_octoVersion(octoVersion),
+    m_contentStorage(contentStorage),
     m_db(db),
     m_schema(dataPath / "dbview_schema.json"),
-    m_sql(dataPath / "dbview_schema.sql", m_db) {
+    m_sql(dataPath / "dbview_schema.sql", m_db),
+    m_textAssetsLoaded(false) {
 
 }
 
@@ -33,9 +42,30 @@ void DatabaseViewerService::handle(const std::string_view &routedPath, LLService
     m_schema.reloadIfNeeded();
     m_sql.reloadIfNeeded();
 
+    if(!m_textAssetsLoaded) {
+        LogDatabaseViewerService.info("Loading the text assets from the game data");
+
+        m_db.setQueryLoggingEnabled(false);
+
+        {
+            sqlite::Transaction transaction(&m_db.db());
+
+            DatabaseTextImporter importer(m_db.db());
+            importer.parseAllTextAssets(m_contentStorage);
+
+            transaction.commit();
+        }
+
+        m_db.setQueryLoggingEnabled(true);
+
+        LogDatabaseViewerService.info("Finished loading");
+
+        m_textAssetsLoaded = true;
+    }
+
     DatabaseViewerResponse response(std::move(request));
 
-    response.root().attributes().emplace_back("octo-version", std::to_string(m_octoVersion));
+    response.root().attributes().emplace_back("octo-version", std::to_string(m_contentStorage.database().revision()));
     response.root().attributes().emplace_back("master-db-version", m_db.masterDatabaseVersion());
 
 #if defined(SERVER_GITVERSION)
@@ -86,8 +116,12 @@ void DatabaseViewerService::handle(const std::string_view &routedPath, LLService
             auto &item = items.children().emplace_back("item");
 
             for(int colIndex = 0, colCount = getValues->dataCount(); colIndex < colCount; colIndex++) {
-                auto &column = item.children().emplace_back("column", getValues->columnText(colIndex));
+                auto &column = item.children().emplace_back("column");
                 column.attributes().emplace_back("name", getValues->columnName(colIndex));
+
+                auto content = getValues->columnText(colIndex);
+                if(content)
+                    column.setContent(content);
             }
         }
         getValues->reset();

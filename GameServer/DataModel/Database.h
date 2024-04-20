@@ -48,6 +48,14 @@ public:
 
     void restoreFromDB(Database &other);
 
+    inline bool isQueryLoggingEnabled() const {
+        return m_queryLoggingEnabled;
+    }
+
+    inline void setQueryLoggingEnabled(bool queryLoggingEnabled) {
+        m_queryLoggingEnabled = queryLoggingEnabled;
+    }
+
 private:
     sqlite::Database m_db;
 
@@ -80,6 +88,7 @@ private:
     std::string m_masterDatabaseVersion;
     std::optional<int64_t> m_timeOffset;
     std::filesystem::path m_masterDatabase;
+    bool m_queryLoggingEnabled;
 };
 
 extern LLServices::LogFacility LogDatabase;

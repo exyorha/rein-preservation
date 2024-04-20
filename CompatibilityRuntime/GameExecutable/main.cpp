@@ -9,7 +9,7 @@
 #include "UnityPatches.h"
 #include "Il2CppUtilities.h"
 #include "Input.h"
-#include "OctoContentStorage.h"
+#include <ClientDataAccess/OctoContentStorage.h>
 #include "Octo.h"
 #include "GameEntryPoint.h"
 #include "GameServerInterface.h"
@@ -24,7 +24,7 @@
 #include <GLES/SDL/SDLWrapper.h>
 #endif
 
-OctoContentStorage *contentStorageInstance;
+ClientDataAccess::OctoContentStorage *contentStorageInstance;
 static bool DownscalingDisabled = false;
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
@@ -383,7 +383,7 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
 
     auto executableDirectory = getExecutablePath().parent_path();
 
-    OctoContentStorage storage(executableDirectory / "content");
+    ClientDataAccess::OctoContentStorage storage(ClientDataAccess::OctoContentStorage::findNewestOctoList(executableDirectory / "content"));
     contentStorageInstance = &storage;
 
     printf("argc: %d\n", argc);

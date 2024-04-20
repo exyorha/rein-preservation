@@ -1,5 +1,7 @@
 #include "OctoWebServices.h"
 
+#include <ClientDataAccess/OctoContentStorage.h>
+
 #include "LLServices/Logging/LogFacility.h"
 
 #include "LLServices/Networking/Buffer.h"
@@ -9,20 +11,12 @@
 
 #include <regex>
 #include <charconv>
-#include <fstream>
 
 LLServices::LogFacility LogOctoWebServices("OctoWebServices");
 
-OctoWebServices::OctoWebServices(const std::filesystem::path &octoListPath) {
-    std::ifstream stream;
-    stream.exceptions(std::ios::failbit | std::ios::eofbit | std::ios::badbit);
-    stream.open(octoListPath, std::ios::in | std::ios::binary);
-    stream.exceptions(std::ios::badbit);
+OctoWebServices::OctoWebServices(const ClientDataAccess::OctoContentStorage &octoStorage) : m_storage(octoStorage) {
 
-    if(!m_db.ParseFromIstream(&stream))
-        throw std::runtime_error("failed to parse the provided Octo database");
-
-    LogOctoWebServices.info("Serving Octo API requests using the database with the revision %d", m_db.revision());
+    LogOctoWebServices.info("Serving Octo API requests using the database with the revision %d", m_storage.database().revision());
 }
 
 OctoWebServices::~OctoWebServices() = default;
@@ -85,15 +79,15 @@ LLServices::Buffer OctoWebServices::handleListRequest(unsigned int appId, unsign
     LLServices::Buffer buffer;
     PBOutputOverLLBuffer out(buffer.get());
 
-    if(currentListRevision == m_db.revision()) {
+    if(currentListRevision == m_storage.database().revision()) {
         Octo::Proto::Database upToDateResponse;
-        upToDateResponse.set_revision(m_db.revision());
-        upToDateResponse.set_urlformat(m_db.urlformat());
+        upToDateResponse.set_revision(m_storage.database().revision());
+        upToDateResponse.set_urlformat(m_storage.database().urlformat());
         if(!upToDateResponse.SerializeToZeroCopyStream(&out))
             throw std::runtime_error("Failed to serialize the Octo DB");
 
     } else {
-        if(!m_db.SerializeToZeroCopyStream(&out))
+        if(!m_storage.database().SerializeToZeroCopyStream(&out))
             throw std::runtime_error("Failed to serialize the Octo DB");
     }
 

@@ -51,12 +51,13 @@ body {
 #server-cli {
     display: flex;
     flex-direction: column;
-    position: fixed;
+    padding: 0.5em;
+    position: relative;
+    /*position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 0.5em;
-    height: 50%;
+    height: 50%;*/
 }
 
 #server-cli .log {

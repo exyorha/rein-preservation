@@ -1,4 +1,12 @@
 {
     "character": {},
-    "costume": {}
+    "costume": {},
+    "weapon": {},
+    "companion": {},
+    "parts": {},
+    "material": {},
+    "consumable_item": {},
+    "important_item": {},
+    "thought": {},
+    "premium_item": {}
 }

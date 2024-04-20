@@ -1,8 +1,9 @@
 #include "Octo.h"
-#include "OctoContentStorage.h"
 #include "Il2CppUtilities.h"
 #include "translator_api.h"
-#include "ZIPBasedStorage.h"
+
+#include <ClientDataAccess/OctoContentStorage.h>
+#include <ClientDataAccess/ZIPBasedStorage.h>
 
 #include <cstdio>
 #include <cinttypes>
@@ -84,7 +85,7 @@ static Il2CppObject *UnityEngine_AssetBundle_LoadFromFileAsync_Internal(Il2CppSt
     std::filesystem::path fsPath(u8Path.data(), u8Path.data() + u8Path.size());
 #endif
 
-    auto location = ZIPBasedStorage::unwrapZIPPath(std::move(fsPath));
+    auto location = ClientDataAccess::ZIPBasedStorage::unwrapZIPPath(std::move(fsPath));
     if(location.has_value()) {
 
         offset += location->fileOffset;

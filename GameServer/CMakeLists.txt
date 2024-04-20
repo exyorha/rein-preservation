@@ -90,6 +90,8 @@ execute_process(
 configure_file(gitversion.h.in ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h @ONLY)
 
 add_executable(GameServer
+    DatabaseViewer/DatabaseTextImporter.cpp
+    DatabaseViewer/DatabaseTextImporter.h
     DatabaseViewer/DatabaseViewerEntity.cpp
     DatabaseViewer/DatabaseViewerEntity.h
     DatabaseViewer/DatabaseViewerEntitySet.cpp
@@ -113,6 +115,7 @@ add_executable(GameServer
     DatabaseViewer/UTF8Helpers.h
     DatabaseViewer/XMLFile.cpp
     DatabaseViewer/XMLFile.h
+    DatabaseViewer/TextAssetParser.cpp
     DatabaseViewer/TextXMLWriter.cpp
     DatabaseViewer/TextXMLWriter.h
 
@@ -425,7 +428,7 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess)
+target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess UnityAsset)
 target_include_directories(GameServer PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/libevent/include
     ${PROJECT_BINARY_DIR}/thirdparty/libevent/include)
 

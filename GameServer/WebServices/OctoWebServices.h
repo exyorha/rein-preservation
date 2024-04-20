@@ -4,10 +4,11 @@
 #include "LLServices/Networking/HttpRequest.h"
 #include "WebServices/WebRoutable.h"
 
-#include "Octo/Proto/Database.pb.h"
-
 #include <regex>
-#include <filesystem>
+
+namespace ClientDataAccess {
+    class OctoContentStorage;
+}
 
 namespace LLServices {
     class LogFacility;
@@ -17,7 +18,7 @@ namespace LLServices {
 
 class OctoWebServices final : public WebRoutable {
 public:
-    explicit OctoWebServices(const std::filesystem::path &octoListPath);
+    explicit OctoWebServices(const ClientDataAccess::OctoContentStorage &octoStorage);
     ~OctoWebServices();
 
     OctoWebServices(const OctoWebServices &other) = delete;
@@ -25,17 +26,13 @@ public:
 
     void handle(const std::string_view &path, LLServices::HttpRequest &&request) override;
 
-    inline int32_t revision() const {
-        return m_db.revision();
-    }
-
 private:
     static unsigned int parseNumber(const std::sub_match<const char *> &match);
     static unsigned int parseNumber(const std::string_view &match);
 
     LLServices::Buffer handleListRequest(unsigned int appId, unsigned int version, unsigned int currentListRevision);
 
-    Octo::Proto::Database m_db;
+    const ClientDataAccess::OctoContentStorage &m_storage;
 };
 
 extern LLServices::LogFacility LogOctoWebServices;

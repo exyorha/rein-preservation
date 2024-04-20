@@ -1,5 +1,11 @@
 add_library(ClientDataAccess STATIC
     Octo/Proto/Database.proto
+
+    include/ClientDataAccess/OctoContentStorage.h
+    OctoContentStorage.cpp
+
+    include/ClientDataAccess/ZIPBasedStorage.h
+    ZIPBasedStorage.cpp
 )
 
 protobuf_generate(TARGET ClientDataAccess)
@@ -14,4 +20,4 @@ set_target_properties(ClientDataAccess PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
     POSITION_INDEPENDENT_CODE TRUE
 )
-target_include_directories(ClientDataAccess PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(ClientDataAccess PUBLIC ${CMAKE_CURRENT_BINARY_DIR} include)

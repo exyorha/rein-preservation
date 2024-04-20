@@ -48,10 +48,12 @@
 
 #include "DatabaseViewer/DatabaseViewerService.h"
 
+#include <ClientDataAccess/OctoContentStorage.h>
+
 struct Gameserver {
 public:
     Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               const std::filesystem::path &octoListPath, const std::filesystem::path &webRoot);
+               std::filesystem::path &&octoListPath, const std::filesystem::path &webRoot);
     ~Gameserver();
 
     Gameserver(const Gameserver &other) = delete;
@@ -78,6 +80,7 @@ private:
     LLServices::ConsoleLogSink m_logSink;
     ServerCLIService m_cliService;
     LLServices::LogManagerScope m_logManagerScope;
+    ClientDataAccess::OctoContentStorage m_contentStorage;
     GRPCLikeServer m_gameAPI;
     WebContentServer m_webServer;
     OctoWebServices m_octoServices;

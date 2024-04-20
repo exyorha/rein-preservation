@@ -15,3 +15,11 @@ CREATE TEMPORARY TABLE internal_sessions (
     user_id UNIQUE NOT NULL,
     expire_datetime BIGINT NOT NULL -- This is UNIX time, not .NET time: seconds, not microseconds
 );
+
+CREATE TEMPORARY TABLE database_viewer_text (
+    language TEXT NOT NULL,
+    message_key TEXT NOT NULL,
+    message TEXT NOT NULL,
+
+    PRIMARY KEY(language, message_key)
+);

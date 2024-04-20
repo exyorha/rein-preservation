@@ -11,13 +11,14 @@
 #endif
 
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               const std::filesystem::path &octoListPath, const std::filesystem::path &webRoot) :
+               std::filesystem::path &&octoListPath, const std::filesystem::path &webRoot) :
     m_cliService(&m_eventLoop, &m_logSink),
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
+    m_contentStorage(std::move(octoListPath)),
     m_webServer(webRoot),
-    m_octoServices(octoListPath),
+    m_octoServices(m_contentStorage),
     m_db(individualDatabasePath, masterDatabasePath),
-    m_dbViewer(m_octoServices.revision(), m_db, webRoot.parent_path()),
+    m_dbViewer(m_contentStorage, m_db, webRoot.parent_path()),
     m_router(&m_webServer),
     m_http(&m_eventLoop, &m_router),
 

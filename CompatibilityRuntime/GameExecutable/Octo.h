@@ -5,12 +5,14 @@
 
 #include <filesystem>
 
-class OctoContentStorage;
+namespace ClientDataAccess {
+    class OctoContentStorage;
+}
 
 void InitializeOcto();
 
 std::filesystem::path getGamePersistentDataPath();
 
-extern OctoContentStorage *contentStorageInstance;
+extern ClientDataAccess::OctoContentStorage *contentStorageInstance;
 
 #endif

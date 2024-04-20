@@ -24,7 +24,7 @@ const char* const Database::m_setupQueries[]{
 LLServices::LogFacility LogDatabase("Database");
 
 Database::Database(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
-    m_db(individualDatabasePath), m_masterDatabase(masterDatabasePath) {
+    m_db(individualDatabasePath), m_masterDatabase(masterDatabasePath), m_queryLoggingEnabled(true) {
 
     bool transient = individualDatabasePath.empty();
 
@@ -156,6 +156,9 @@ void Database::runMigrations(bool transient) {
 Database::~Database() = default;
 
 int Database::statementProfileCallback(unsigned int type, void *context, void *statementParam, void *sqlParam) {
+    if(!static_cast<Database *>(context)->m_queryLoggingEnabled)
+        return 0;
+
     if(type == SQLITE_TRACE_STMT) {
         auto statement = static_cast<sqlite3_stmt *>(statementParam);
         auto sql = static_cast<const char *>(sqlParam);

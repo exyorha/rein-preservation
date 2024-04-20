@@ -60,8 +60,6 @@ add_executable(GameExecutable
 
     Octo.cpp
     Octo.h
-    OctoContentStorage.cpp
-    OctoContentStorage.h
 
     ProcessCommandLine.h
 
@@ -74,9 +72,6 @@ add_executable(GameExecutable
     UnityPatches.h
 
     UnityWebRequest.cpp
-
-    ZIPBasedStorage.cpp
-    ZIPBasedStorage.h
 
 )
 

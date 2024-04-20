@@ -6,13 +6,19 @@
 #include "DatabaseViewer/DatabaseViewerSchema.h"
 #include "DatabaseViewer/DatabaseViewerSQL.h"
 
-#include <cstdint>
-
 class Database;
+
+namespace ClientDataAccess {
+    class OctoContentStorage;
+}
+
+namespace LLServices {
+    class LogFacility;
+}
 
 class DatabaseViewerService final : public WebRoutable {
 public:
-    DatabaseViewerService(int32_t octoVersion, Database &db, const std::filesystem::path &dataPath);
+    DatabaseViewerService(const ClientDataAccess::OctoContentStorage &contentStorage, Database &db, const std::filesystem::path &dataPath);
     ~DatabaseViewerService();
 
     DatabaseViewerService(const DatabaseViewerService &other) = delete;
@@ -21,10 +27,13 @@ public:
     void handle(const std::string_view &routedPath, LLServices::HttpRequest &&request) override;
 
 private:
-    int32_t m_octoVersion;
+    const ClientDataAccess::OctoContentStorage &m_contentStorage;
     Database &m_db;
     DatabaseViewerSchema m_schema;
     DatabaseViewerSQL m_sql;
+    bool m_textAssetsLoaded;
 };
+
+extern LLServices::LogFacility LogDatabaseViewerService;
 
 #endif
