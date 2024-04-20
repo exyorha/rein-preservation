@@ -238,6 +238,8 @@ public:
 
     void setPvpDefenseDeck(int32_t deckNumber);
 
+    void buyShopItem(int32_t shopId, int32_t shopItemId);
+
 private:
 
     struct CollectedConditionRequirements {
@@ -267,6 +269,9 @@ private:
 
         template<typename T>
         void apply(T bonusType, int32_t bonusValue);
+
+        template<typename T>
+        void applyKind(T bonusType, int32_t bonusValue);
     };
 
     using CharacterBoardReleaseStatus = std::array<uint32_t, 4>;
@@ -342,6 +347,8 @@ private:
     int32_t getHighestEvolutionOrder(int32_t weaponId);
 
     void updateSideStoryQuestSceneProgressStatus(int32_t sideStoryQuestId, int32_t questSceneId);
+
+    void consumeGem(int32_t count, bool paid);
 
     int64_t m_userId;
     LLServices::LogFacility m_log;

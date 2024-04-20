@@ -476,6 +476,30 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
             query->bind(2, possessionId);
             query->bind(3, count);
             query->exec();
+            query->reset();
+
+            /*
+             * If this is a stained glass item, it will affect character stats.
+             * Query the affected characters and reevaluate.
+             */
+
+            auto queryAffectedCharacters = db().prepare(R"SQL(
+                SELECT DISTINCT target_value
+                FROM
+                    m_important_item,
+                    m_stained_glass ON stained_glass_id = external_reference_id,
+                    m_stained_glass_status_up_target_group USING (stained_glass_status_up_target_group_id)
+                WHERE
+                    important_item_id = ? AND
+                    important_item_type = 5 AND -- no enum for this, but assuming that's 'stained glass'
+                    status_up_target_type = 1 -- CHARACTER
+            )SQL");
+            queryAffectedCharacters->bind(1, possessionId);
+            while(queryAffectedCharacters->step()) {
+                auto character = queryAffectedCharacters->columnInt(0);
+                reevaluateCharacterCostumeLevelBonuses(character);
+            }
+            queryAffectedCharacters->reset();
         }
         break;
 
@@ -3450,6 +3474,39 @@ void UserContext::AggregatedBonuses::apply(T bonusType, int32_t bonusValue) {
     }
 }
 
+template<typename T>
+void UserContext::AggregatedBonuses::applyKind(T bonusType, int32_t bonusValue) {
+
+    switch(bonusType) {
+    case T::AGILITY:
+        agility += bonusValue;
+        break;
+
+    case T::ATTACK:
+        attack += bonusValue;
+        break;
+
+    case T::CRITICAL_ATTACK:
+        criticalAttack += bonusValue;
+        break;
+
+    case T::CRITICAL_RATIO:
+        criticalRatio += bonusValue;
+        break;
+
+    case T::HP:
+        hp += bonusValue;
+        break;
+
+    case T::VITALITY:
+        vitality += bonusValue;
+        break;
+
+    default:
+        throw std::runtime_error("unsupported bonus type " + std::to_string(static_cast<int32_t>(bonusType)));
+    }
+}
+
 void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
     m_log.debug("reevaluating character %d costume level bonuses", character);
 
@@ -3483,6 +3540,42 @@ void UserContext::reevaluateCharacterCostumeLevelBonuses(int32_t character) {
 
         getBonuses->reset();
     }
+
+    /*
+     * Now, get any bonuses from stained glass.
+     */
+    auto queryStainedGlassBonuses = db().prepare(R"SQL(
+        SELECT
+            status_kind_type, status_calculation_type, effect_value
+        FROM
+            i_user_important_item,
+            m_important_item USING (important_item_id),
+            m_stained_glass ON stained_glass_id = external_reference_id,
+            m_stained_glass_status_up_target_group USING (stained_glass_status_up_target_group_id),
+            m_stained_glass_status_up_group USING (stained_glass_status_up_group_id)
+        WHERE
+            user_id = ? AND
+            count > 0 AND
+            important_item_type = 5 AND -- no enum, assuming 'stained glass'
+            status_up_target_type = 1 AND -- CHARACTER
+            target_value = ?
+    )SQL");
+    queryStainedGlassBonuses->bind(1, m_userId);
+    queryStainedGlassBonuses->bind(2, character);
+    while(queryStainedGlassBonuses->step()) {
+        auto statusType = static_cast<StatusKindType>(queryStainedGlassBonuses->columnInt(0));
+        auto statusCalculationType = static_cast<StatusCalculationType>(queryStainedGlassBonuses->columnInt(1));
+        auto effectValue = static_cast<int32_t>(queryStainedGlassBonuses->columnInt(2));
+
+        m_log.debug("including a stained glass bonus: status type %d, effect %d", static_cast<int32_t>(statusType), static_cast<int32_t>(effectValue));
+
+        if(statusCalculationType != StatusCalculationType::ADD) {
+            throw std::runtime_error("unsupported status caluclation type");
+        }
+
+        bonuses.applyKind(statusType, effectValue);
+    }
+    queryStainedGlassBonuses->reset();
 
     auto storeBonuses = db().prepare(R"SQL(
         INSERT INTO i_user_character_costume_level_bonus (
@@ -5535,3 +5628,123 @@ void UserContext::setPvpDefenseDeck(int32_t deckNumber)  {
     query->bind(2, deckNumber);
     query->exec();
 }
+
+void UserContext::consumeGem(int32_t count, bool paid) {
+    if(count < 0)
+        throw std::runtime_error("improper number of gems to withdraw");
+
+    if(count == 0)
+        return;
+
+    auto queryGem = db().prepare("SELECT paid_gem, free_gem FROM i_user_gem WHERE user_id = ?");
+    queryGem->bind(1, m_userId);
+    if(!queryGem->step())
+        throw std::runtime_error("no gem record for the user");
+
+    auto availableFree = queryGem->columnInt(0);
+    auto availablePaid = queryGem->columnInt(1);
+
+    if(!paid && availableFree >= count) {
+        auto withdraw = db().prepare("UPDATE i_user_gem SET free_gem = free_gem - ? WHERE user_id = ?");
+        withdraw->bind(1, count);
+        withdraw->bind(2, m_userId);
+        withdraw->exec();
+        return;
+    }
+
+    if(availablePaid >= count) {
+        auto withdraw = db().prepare("UPDATE i_user_gem SET paid_gem = paid_gem - ? WHERE user_id = ?");
+        withdraw->bind(1, count);
+        withdraw->bind(2, m_userId);
+        withdraw->exec();
+        return;
+    }
+
+    throw std::runtime_error("the user does not have enough gems");
+}
+
+void UserContext::buyShopItem(int32_t shopId, int32_t shopItemId) {
+    auto getInfo = db().prepare(R"SQL(
+        SELECT price_type, price_id, price FROM m_shop_item WHERE shop_item_id = ?
+    )SQL");
+    getInfo->bind(1, shopItemId);
+    if(!getInfo->step()) {
+        throw std::runtime_error("no such shop item");
+    }
+
+    auto priceType = static_cast<PriceType>(getInfo->columnInt(0));
+    auto priceId = getInfo->columnInt(1);
+    auto price = getInfo->columnInt(2);
+
+    if(priceType == PriceType::CONSUMABLE_ITEM) {
+        consumeConsumableItem(priceId, price);
+
+    } else if(priceType == PriceType::GEM || priceType == PriceType::PAID_GEM) {
+        consumeGem(price, priceType == PriceType::PAID_GEM);
+
+    } else if(priceType == PriceType::PLATFORM_PAYMENT) {
+
+        m_log.info("purchasing shop item %d from shop %d with a PLATFORM_PAYMENT price type; platform payment ID: %d",
+                   shopId, shopItemId, priceId);
+
+        /*
+         * Nothing to be done.
+         */
+    } else {
+        throw std::runtime_error("unsupported PriceType");
+    }
+
+    /*
+     * TODO: missions
+     * TODO: effects (how is that even handled?
+     */
+
+    /*
+     * NOTE: while m_shop_item_user_level_condition, m_shop_item_additional_content tables
+     * exist, they are empty, so we don't handle them.
+     */
+
+    auto queryPosessions = db().prepare(R"SQL(
+        SELECT
+            possession_type,
+            possession_id,
+            count
+        FROM m_shop_item_content_possession
+        WHERE shop_item_id = ?
+        ORDER BY sort_order
+    )SQL");
+
+    /*
+     * TODO: overflow.
+     */
+
+    queryPosessions->bind(1, shopItemId);
+    while(queryPosessions->step()) {
+        auto possessionType = queryPosessions->columnInt(0);
+        auto possessionId = queryPosessions->columnInt(1);
+        auto count = queryPosessions->columnInt(2);
+
+        givePossession(possessionType, possessionId, count);
+    }
+    queryPosessions->reset();
+
+    auto recordPurchase = db().prepare(R"SQL(
+        INSERT INTO i_user_shop_item (
+            user_id,
+            shop_item_id,
+            bought_count,
+            latest_bought_count_changed_datetime
+        ) VALUES (
+            ?, ?,
+            1,
+            current_net_timestamp()
+        )
+        ON CONFLICT (user_id, shop_item_id) DO UPDATE SET
+            bought_count = bought_count + excluded.bought_count,
+            latest_bought_count_changed_datetime = excluded.latest_bought_count_changed_datetime
+    )SQL");
+    recordPurchase->bind(1, m_userId);
+    recordPurchase->bind(2, shopItemId);
+    recordPurchase->exec();
+}
+
