@@ -8,7 +8,7 @@
 	path = CompatibilityRuntime/thirdparty/bdwgc
 	url = https://github.com/ivmai/bdwgc.git
 [submodule "GameServer/thirdparty/lz4"]
-	path = GameServer/thirdparty/lz4
+	path = third_party/lz4
 	url = https://github.com/lz4/lz4.git
 [submodule "GameServer/thirdparty/yajl"]
 	path = GameServer/thirdparty/yajl

@@ -63,8 +63,6 @@ add_executable(GameExecutable
     OctoContentStorage.cpp
     OctoContentStorage.h
 
-    Octo/Proto/Database.proto
-
     ProcessCommandLine.h
 
     WebView/WebViewImplementation.cpp
@@ -81,8 +79,6 @@ add_executable(GameExecutable
     ZIPBasedStorage.h
 
 )
-
-protobuf_generate(TARGET GameExecutable)
 
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
@@ -116,7 +112,7 @@ if(WIN32)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly protobuf::libprotobuf Il2CppUtilities)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Il2CppUtilities ClientDataAccess)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

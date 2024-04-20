@@ -36,8 +36,6 @@ add_library(ffi INTERFACE)
 target_link_libraries(ffi INTERFACE ${FFI_LIBRARY})
 target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 
-find_package(Protobuf CONFIG REQUIRED)
-
 find_package(PkgConfig)
 
 if(PkgConfig_FOUND)
@@ -46,14 +44,6 @@ endif()
 
 if(NOT TARGET PkgConfig::MPV)
     message(STATUS "mpv was not found, will build without video playback (cutscene) support")
-endif()
-
-if(WIN32 AND NOT TARGET protobuf::protoc)
-    message(STATUS "Trying to find the host 'protoc'")
-
-    find_program(HOST_PROTOC protoc REQUIRED)
-    add_executable(protobuf::protoc IMPORTED)
-    set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION "${HOST_PROTOC}")
 endif()
 
 if(NOT WIN32)

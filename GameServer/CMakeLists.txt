@@ -3,17 +3,7 @@ project(GameServer)
 
 include(GenerateExportHeader)
 
-find_package(Protobuf CONFIG REQUIRED)
-
 find_package(ZLIB REQUIRED)
-
-if(WIN32 AND NOT TARGET protobuf::protoc)
-    message(STATUS "Trying to find the host 'protoc'")
-
-    find_program(HOST_PROTOC protoc REQUIRED)
-    add_executable(protobuf::protoc IMPORTED)
-    set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION "${HOST_PROTOC}")
-endif()
 
 add_library(yajl STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/yajl_api_headers/yajl/yajl_common.h
@@ -325,8 +315,6 @@ add_executable(GameServer
     service/UserService.proto
     service/WeaponService.proto
 
-    Octo/Proto/Database.proto
-
     ServiceImplementations/BannerService.cpp
     ServiceImplementations/BannerService.h
 
@@ -437,7 +425,7 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB)
+target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess)
 target_include_directories(GameServer PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/libevent/include
     ${PROJECT_BINARY_DIR}/thirdparty/libevent/include)
 
