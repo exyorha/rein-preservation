@@ -1,8 +1,8 @@
-/CompatibilityRuntime-*build
-/GameServer-*build
+/.cache
+/build
+/compile_commands.json
 __pycache__
 /dl
 /windows-build-*
-/asset-processing-build
 /reincarnation
-
+/mingw-build

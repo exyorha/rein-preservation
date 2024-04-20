@@ -45,34 +45,18 @@ prepend_include() {
 
 mkdir -p dl
 
-cmake -S asset-processing -B asset-processing-build -G "Kate - Ninja" \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo
-
-ln -sf ../asset-processing-build/compile_commands.json asset-processing/compile_commands.json
-cmake --build asset-processing-build
-
 cmake \
-    -S CompatibilityRuntime \
-    -B CompatibilityRuntime-build -G "Kate - Ninja" \
+    -S . \
+    -B build -G "Kate - Ninja" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
     -DCEF_ROOT="$(realpath -- cef_binary_121.3.13+g5c4a81b+chromium-121.0.6167.184_linux64_minimal)" \
     -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529
-ln -sf ../CompatibilityRuntime-build/compile_commands.json CompatibilityRuntime
-cmake --build CompatibilityRuntime-build
-cmake --install CompatibilityRuntime-build --component GameAssembly
-
-cmake \
-    -S GameServer \
-    -B GameServer-build -G "Kate - Ninja" \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)"
-ln -sf ../GameServer-build/compile_commands.json GameServer
-cmake --build GameServer-build
-cmake --install GameServer-build --component GameServer
+ln -sf build/compile_commands.json compile_commands.json
+cmake --build build
+cmake --install build --component GameAssembly
+cmake --install build --component GameServer
 
 (cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > reincarnation/libmpv-lgpl-compliance.tgz
 
@@ -180,7 +164,7 @@ if [ ! -f "${winprefix}/protobuf_installed" ]; then
     touch "${winprefix}/protobuf_installed"
 fi
 
-cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
+cmake -S . -B mingw-build \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
@@ -188,18 +172,9 @@ cmake -S CompatibilityRuntime -B CompatibilityRuntime-mingw-build \
     -DCMAKE_FIND_ROOT_PATH="$(realpath -- windows-build-root-path)" \
     -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
     -G "Ninja" \
-    -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config"
+    -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config" \
+    -DBUILD_ASSET_PROCESSING=OFF
 
-cmake --build CompatibilityRuntime-mingw-build
-cmake --install CompatibilityRuntime-mingw-build --component GameAssembly --strip
-
-cmake \
-    -S GameServer \
-    -B GameServer-mingw-build -G "Kate - Ninja" \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
-    -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
-    -DCMAKE_FIND_ROOT_PATH="$(realpath -- windows-build-root-path)"
-cmake --build GameServer-mingw-build
-cmake --install GameServer-mingw-build --component GameServer --strip
+cmake --build mingw-build
+cmake --install mingw-build --component GameAssembly --strip
+cmake --install mingw-build --component GameServer --strip
