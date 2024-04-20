@@ -187,7 +187,7 @@ int Database::statementProfileCallback(unsigned int type, void *context, void *s
 }
 
 void Database::createDatabaseBackup() {
-    printf("Creating backup\n");
+    LogDatabase.debug("Creating backup\n");
     std::optional<sqlite::Database> backupDestinationDatabase;
     backupDestinationDatabase.emplace(backupDatabasePath());
     {
@@ -195,7 +195,7 @@ void Database::createDatabaseBackup() {
         backup.step();
     }
     backupDestinationDatabase.reset();
-    printf("Backup created\n");
+    LogDatabase.debug("Backup created\n");
 }
 
 bool Database::restoreDatabaseBackup() {
@@ -212,13 +212,13 @@ bool Database::restoreDatabaseBackup() {
         }
     }
 
-    printf("Restoring database from backup\n");
+    LogDatabase.debug("Restoring database from backup\n");
     {
         sqlite::Backup backup(m_db, "main", *backupSourceDatabase, "main");
         backup.step();
     }
     backupSourceDatabase.reset();
-    printf("Restored successfully\n");
+    LogDatabase.debug("Restored successfully\n");
     removeDatabase(backupDatabasePath());
 
     return true;

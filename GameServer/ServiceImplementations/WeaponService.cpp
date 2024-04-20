@@ -103,7 +103,7 @@ void WeaponService::EnhanceByMaterialImpl(
         user.queryWeaponEnhancementCost(request->user_weapon_uuid(), materialItemIdAndCount.second,
                                          costForThisMaterial);
 
-        effectValue = user.consumeEnhancementMaterialAndCalculateTotalEffectValue(
+        effectValue += user.consumeEnhancementMaterialAndCalculateTotalEffectValue(
             materialItemIdAndCount.first,
             materialItemIdAndCount.second,
             MaterialType::WEAPON_ENHANCEMENT);
@@ -111,7 +111,7 @@ void WeaponService::EnhanceByMaterialImpl(
         weaponTotalEnhancementCost += costForThisMaterial;
     }
 
-    printf("WeaponService::EnhanceByMaterialImpl: total enhancement value: %d, total enhancement cost: %d\n", effectValue, weaponTotalEnhancementCost);
+    LogRPC.debug("WeaponService::EnhanceByMaterialImpl: total enhancement value: %d, total enhancement cost: %d\n", effectValue, weaponTotalEnhancementCost);
 
     user.consumeConsumableItem(user.consumableItemIdForGold(), weaponTotalEnhancementCost);
 

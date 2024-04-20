@@ -63,7 +63,7 @@ void CostumeService::EnhanceImpl(
         user.queryCostumeEnhancementCost(request->user_costume_uuid(), materialItemIdAndCount.second,
                                          costForThisMaterial);
 
-        effectValue = user.consumeEnhancementMaterialAndCalculateTotalEffectValue(
+        effectValue += user.consumeEnhancementMaterialAndCalculateTotalEffectValue(
             materialItemIdAndCount.first,
             materialItemIdAndCount.second,
             MaterialType::COSTUME_ENHANCEMENT);
@@ -71,7 +71,7 @@ void CostumeService::EnhanceImpl(
         costumeTotalEnhancementCost += costForThisMaterial;
     }
 
-    printf("CostumeService::EnhanceImpl: total enhancement value: %d, total enhancement cost: %d\n", effectValue, costumeTotalEnhancementCost);
+    LogRPC.debug("CostumeService::EnhanceImpl: total enhancement value: %d, total enhancement cost: %d\n", effectValue, costumeTotalEnhancementCost);
 
     user.consumeConsumableItem(user.consumableItemIdForGold(), costumeTotalEnhancementCost);
 

@@ -11,6 +11,8 @@
 
 #include <cstdio>
 
+LLServices::LogFacility LogRPC("RPC");
+
 CommonService::CommonService(Database &db) : m_db(db) {
 
 }
@@ -26,12 +28,12 @@ void CommonService::guardedCall(const char *callName,
         body();
     } catch(const std::exception &e) {
 
-        fprintf(stderr, "An exception occurred while processing %s: %s\n", callName, e.what());
+        LogRPC.error("An exception occurred while processing %s: %s\n", callName, e.what());
 
         controller->SetFailed(e.what());
 
     } catch(...) {
-        fprintf(stderr, "An exception occurred while processing %s: unknown\n", callName);
+        LogRPC.error("An exception occurred while processing %s: unknown\n", callName);
 
         controller->SetFailed("no message available");
 

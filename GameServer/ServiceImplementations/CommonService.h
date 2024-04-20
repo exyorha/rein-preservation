@@ -11,6 +11,8 @@
 
 #include <DataModel/Sqlite/Transaction.h>
 
+#include <LLServices/Logging/LogFacility.h>
+
 #include <functional>
 
 class Database;
@@ -18,6 +20,8 @@ class Database;
 namespace sqlite {
     class Database;
 }
+
+extern LLServices::LogFacility LogRPC;
 
 class CommonService {
 protected:
@@ -55,8 +59,7 @@ protected:
 
             std::unique_lock<std::mutex> locker(m_db.dataModel().callMutex);
 
-            printf("Processing RPC call: %s\n", callName);
-            fputs(request->DebugString().c_str(), stdout);
+            LogRPC.debug("Processing RPC call: %s\n%s", callName, request->DebugString().c_str());
 
             {
                 sqlite::Transaction callTransaction(&m_db.db());
@@ -66,8 +69,7 @@ protected:
                 callTransaction.commit();
             }
 
-            fputs("Finished with RPC call:\n", stdout);
-            fputs(response->DebugString().c_str(), stdout);
+            LogRPC.debug("Finished with RPC call:\n%s", response->DebugString().c_str());
         });
     }
 
@@ -85,8 +87,7 @@ protected:
 
             std::unique_lock<std::mutex> locker(m_db.dataModel().callMutex);
 
-            printf("Processing RPC call: %s\n", callName);
-            fputs(request->DebugString().c_str(), stdout);
+            LogRPC.debug("Processing RPC call: %s\n%s", callName, request->DebugString().c_str());
 
             {
                 sqlite::Transaction callTransaction(&m_db.db());
@@ -102,8 +103,7 @@ protected:
                 callTransaction.commit();
             }
 
-            fputs("Finished with RPC call:\n", stdout);
-            fputs(response->DebugString().c_str(), stdout);
+            LogRPC.debug("Finished with RPC call:\n%s", response->DebugString().c_str());
         });
     }
 
@@ -121,8 +121,7 @@ protected:
 
             std::unique_lock<std::mutex> locker(m_db.dataModel().callMutex);
 
-            printf("Processing RPC call: %s\n", callName);
-            fputs(request->DebugString().c_str(), stdout);
+            LogRPC.debug("Processing RPC call: %s\n%s", callName, request->DebugString().c_str());
 
             ChangesetCapturingScope changesetScope(m_db.db());
 
@@ -142,8 +141,7 @@ protected:
 
             changesetScope.serialize(response->mutable_diff_user_data());
 
-            fputs("Finished with RPC call:\n", stdout);
-            fputs(response->DebugString().c_str(), stdout);
+            LogRPC.debug("Finished with RPC call:\n%s", response->DebugString().c_str());
         });
     }
 
