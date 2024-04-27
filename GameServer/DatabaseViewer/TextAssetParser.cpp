@@ -51,18 +51,19 @@ void TextAssetParser::parseAllTextAssets(const ClientDataAccess::OctoContentStor
                 UnityAsset::SerializedAssetFile asset(UnityAsset::Stream(file.data()));
                 for(const auto &object: asset.m_Objects) {
                     const auto &type = asset.m_Types.at(object.typeIndex);
-                    if(type.m_ScriptTypeIndex < 0 && !type.m_ScriptID.has_value() && type.classID == UnityAsset::UnityTypes::TextAssetClassID) {
+                    if(type.m_ScriptTypeIndex < 0 && !type.m_ScriptID.has_value() && type.classID == UnityAsset::UnityClasses::TextAsset::ClassID) {
 
-                        auto textAsset = UnityAsset::UnityTypes::deserializeTextAsset(object.objectData);
+                        auto textAsset = std::make_unique<UnityAsset::UnityClasses::TextAsset>();
+                        textAsset->deserialize(object.objectData);
 
-                        if(textAsset.m_Name == "credit") {
+                        if(textAsset->m_Name == "credit") {
                             /*
                              * Uses a different format.
                              */
                             continue;
                         }
 
-                        parseTextAsset(language, textAsset.m_Script);
+                        parseTextAsset(language, textAsset->m_Script);
                     }
                 }
             }

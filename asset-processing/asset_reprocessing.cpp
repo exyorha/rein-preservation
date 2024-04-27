@@ -95,10 +95,29 @@ static void pruneMethodList(std::vector<int32_t> &indices, const std::unordered_
     indices.erase(end, indices.end());
 }
 
+template<typename T>
+static inline std::unique_ptr<T> deserializeClass(const UnityAsset::Stream &stream) {
+    std::unique_ptr<T> result = std::make_unique<T>();
+    result->deserialize(stream);
+    return result;
+}
+
+template<typename T>
+static inline UnityAsset::Stream serializeClass(T &object) {
+    UnityAsset::Stream stream;
+    object.serialize(stream);
+    return stream;
+}
+
+template<typename T>
+static inline UnityAsset::Stream serializeClass(std::unique_ptr<T> &object) {
+    return serializeClass(*object);
+}
+
 std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityAsset::SerializedType &type, const UnityAsset::Stream &original,
                                                                     std::optional<UnityAsset::StreamedResourceManipulator> &streamedManipulator,
                                                                     bool repackingStreamingData, CollectedApplicationInformation &info) {
-    if(type.classID == UnityAsset::UnityTypes::ShaderClassID) {
+    if(type.classID == UnityAsset::UnityClasses::Shader::ClassID) {
 
         if(repackingStreamingData)
             return std::nullopt;
@@ -107,22 +126,22 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
         return reprocessShader(original);
 
-    } else if(type.classID == UnityAsset::UnityTypes::TextureClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::Texture::ClassID) {
 
         checkNoScriptData(type);
 
         throw std::runtime_error("unexpected asset of the base Texture class");
 
-    } else if(type.classID == UnityAsset::UnityTypes::Texture2DClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::Texture2D::ClassID) {
 
         checkNoScriptData(type);
 
-        auto textureAsset = UnityAsset::UnityTypes::deserializeTexture2D(original);
+        auto textureAsset = deserializeClass<UnityAsset::UnityClasses::Texture2D>(original);
 
         bool streamed;
         std::optional<std::vector<unsigned char>> uncrunchedData;
 
-        if(textureAsset.m_TextureFormat == UnityAsset::TextureFormat::ETC2_RGBA8Crunched) {
+        if(textureAsset->m_TextureFormat == UnityAsset::TextureFormat::ETC2_RGBA8Crunched) {
             if(repackingStreamingData)
                 throw std::logic_error("should never get the second chance call for the crunched data");
 
@@ -132,32 +151,32 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
                 }
             };
 
-            auto crunchedData = getImageData(textureAsset.m_CompleteImageSize, textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData,
+            auto crunchedData = getImageData(textureAsset->m_CompleteImageSize, textureAsset->image_data, streamedManipulator, textureAsset->m_StreamData,
                                              streamed);
 
             crnd::crn_file_info fileInfo;
             memset(&fileInfo, 0, sizeof(fileInfo));
             fileInfo.m_struct_size = sizeof(fileInfo);
 
-            if(!crnd::crnd_validate_file(crunchedData, textureAsset.m_CompleteImageSize, &fileInfo))
+            if(!crnd::crnd_validate_file(crunchedData, textureAsset->m_CompleteImageSize, &fileInfo))
                 throw std::runtime_error("the crunched data has failed to validate");
 
             crnd::crn_texture_info textureInfo;
             memset(&textureInfo, 0, sizeof(textureInfo));
             textureInfo.m_struct_size = sizeof(textureInfo);
 
-            if(!crnd::crnd_get_texture_info(crunchedData, textureAsset.m_CompleteImageSize, &textureInfo)) {
+            if(!crnd::crnd_get_texture_info(crunchedData, textureAsset->m_CompleteImageSize, &textureInfo)) {
                 throw std::runtime_error("failed to get the texture info from the crunched data");
             }
 
-            if(textureInfo.m_width != textureAsset.m_Width || textureInfo.m_height != textureAsset.m_Height ||
-                textureInfo.m_levels != textureAsset.m_MipCount || textureInfo.m_faces != 1) {
+            if(textureInfo.m_width != textureAsset->m_Width || textureInfo.m_height != textureAsset->m_Height ||
+                textureInfo.m_levels != textureAsset->m_MipCount || textureInfo.m_faces != 1) {
 
                 throw std::runtime_error("the data in the crunch header is inconsistent with the data in the asset");
             }
 
             std::unique_ptr<std::remove_pointer<crnd::crnd_unpack_context>::type, CrunchUnpackContentDeleter> context(
-                crnd::crnd_unpack_begin(crunchedData, textureAsset.m_CompleteImageSize)
+                crnd::crnd_unpack_begin(crunchedData, textureAsset->m_CompleteImageSize)
             );
 
             if(!context) {
@@ -170,7 +189,7 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
 
             auto &output = uncrunchedData.emplace();
             for(uint32_t level = 0; level < textureInfo.m_levels; level++) {
-                if(!crnd::crnd_get_level_info(crunchedData, textureAsset.m_CompleteImageSize, level, &levelInfo))
+                if(!crnd::crnd_get_level_info(crunchedData, textureAsset->m_CompleteImageSize, level, &levelInfo))
                     throw std::runtime_error("failed to get the crunched mipmap level info");
 
                 auto levelPitch = levelInfo.m_blocks_x * levelInfo.m_bytes_per_block;
@@ -185,232 +204,234 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
                     throw std::runtime_error("failed to unpack a crunched mip level");
             }
 
-            textureAsset.m_CompleteImageSize = output.size();
-            textureAsset.m_TextureFormat = UnityAsset::TextureFormat::ETC2_RGBA8;
+            textureAsset->m_CompleteImageSize = output.size();
+            textureAsset->m_TextureFormat = UnityAsset::TextureFormat::ETC2_RGBA8;
         }
 
-        auto layout = UnityAsset::TextureImageLayout(textureAsset);
+        UnityAsset::TextureImageLayout layout(*textureAsset);
 
         const unsigned char *sourceData;
 
         if(uncrunchedData.has_value()) {
             sourceData = uncrunchedData->data();
         } else {
-            sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
+            sourceData = getImageData(layout.totalDataSize(), textureAsset->image_data, streamedManipulator, textureAsset->m_StreamData, streamed);
         }
 
         if(repackingStreamingData) {
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
             } else {
                 return std::nullopt;
             }
         } else {
-            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset->m_ColorSpace));
 
             if(!result.has_value())
                 return std::nullopt;
 
-            textureAsset.m_TextureFormat = result->newFormat;
-            textureAsset.m_CompleteImageSize = result->newData.size();
+            textureAsset->m_TextureFormat = result->newFormat;
+            textureAsset->m_CompleteImageSize = result->newData.size();
 
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, std::move(result->newData));
 
             } else {
 
-                textureAsset.image_data = std::move(result->newData);
+                textureAsset->image_data = std::move(result->newData);
             }
         }
 
-        return UnityAsset::UnityTypes::serializeTexture2D(textureAsset);
+        return serializeClass(textureAsset);
 
-    } else if(type.classID == UnityAsset::UnityTypes::Texture3DClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::Texture3D::ClassID) {
 
         checkNoScriptData(type);
 
-        auto textureAsset = UnityAsset::UnityTypes::deserializeTexture3D(original);
+        auto textureAsset = deserializeClass<UnityAsset::UnityClasses::Texture3D>(original);
 
-        auto layout = UnityAsset::TextureImageLayout(textureAsset);
+        UnityAsset::TextureImageLayout layout(*textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset->image_data, streamedManipulator, textureAsset->m_StreamData, streamed);
 
         if(repackingStreamingData) {
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
             } else {
                 return std::nullopt;
             }
         } else {
 
-            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset->m_ColorSpace));
             if(!result.has_value())
                 return std::nullopt;
 
-            textureAsset.m_Format = result->newFormat;
-            textureAsset.m_DataSize = result->newData.size();
+            textureAsset->m_Format = result->newFormat;
+            textureAsset->m_DataSize = result->newData.size();
 
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
-                textureAsset.image_data = std::move(result->newData);
+                textureAsset->image_data = std::move(result->newData);
             }
         }
 
-        return UnityAsset::UnityTypes::serializeTexture3D(textureAsset);
+        return serializeClass(textureAsset);
 
-    } else if(type.classID == UnityAsset::UnityTypes::Texture2DArrayClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::Texture2DArray::ClassID) {
 
         checkNoScriptData(type);
 
-        auto textureAsset = UnityAsset::UnityTypes::deserializeTexture2DArray(original);
+        auto textureAsset = deserializeClass<UnityAsset::UnityClasses::Texture2DArray>(original);
 
-        auto layout = UnityAsset::TextureImageLayout(textureAsset);
+        UnityAsset::TextureImageLayout layout(*textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset->image_data, streamedManipulator, textureAsset->m_StreamData, streamed);
 
         if(repackingStreamingData) {
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
             } else {
                 return std::nullopt;
             }
         } else {
 
-            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset->m_ColorSpace));
             if(!result.has_value())
                 return std::nullopt;
 
 
-            textureAsset.m_Format = result->newFormat;
-            textureAsset.m_DataSize = result->newData.size();
+            textureAsset->m_Format = result->newFormat;
+            textureAsset->m_DataSize = result->newData.size();
 
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
-                textureAsset.image_data = std::move(result->newData);
+                textureAsset->image_data = std::move(result->newData);
             }
 
         }
 
-        return UnityAsset::UnityTypes::serializeTexture2DArray(textureAsset);
+        return serializeClass(textureAsset);
 
-    } else if(type.classID == UnityAsset::UnityTypes::CubemapClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::Cubemap::ClassID) {
 
         checkNoScriptData(type);
 
-        auto textureAsset = UnityAsset::UnityTypes::deserializeCubemap(original);
+        auto textureAsset = deserializeClass<UnityAsset::UnityClasses::Cubemap>(original);
 
-        auto layout = UnityAsset::TextureImageLayout(textureAsset);
+        auto &cubemapData = static_cast<UnityAsset::UnityTypes::Cubemap &>(*textureAsset);
+
+        UnityAsset::TextureImageLayout layout(cubemapData);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), cubemapData.image_data, streamedManipulator, cubemapData.m_StreamData, streamed);
 
         if(repackingStreamingData) {
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+                storeStreamedImageData(cubemapData.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
             } else {
                 return std::nullopt;
             }
         } else {
 
-            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(cubemapData.m_ColorSpace));
             if(!result.has_value())
                 return std::nullopt;
 
-            textureAsset.m_TextureFormat = result->newFormat;
-            textureAsset.m_CompleteImageSize = result->newData.size() / textureAsset.m_ImageCount;
+            cubemapData.m_TextureFormat = result->newFormat;
+            cubemapData.m_CompleteImageSize = result->newData.size() / cubemapData.m_ImageCount;
 
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
+                storeStreamedImageData(cubemapData.m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
-                textureAsset.image_data = std::move(result->newData);
+                cubemapData.image_data = std::move(result->newData);
             }
         }
 
-        return UnityAsset::UnityTypes::serializeCubemap(textureAsset);
+        return serializeClass(textureAsset);
 
-    } else if(type.classID == UnityAsset::UnityTypes::CubemapArrayClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::CubemapArray::ClassID) {
 
         checkNoScriptData(type);
 
-        auto textureAsset = UnityAsset::UnityTypes::deserializeCubemapArray(original);
+        auto textureAsset = deserializeClass<UnityAsset::UnityClasses::CubemapArray>(original);
 
-        auto layout = UnityAsset::TextureImageLayout(textureAsset);
+        UnityAsset::TextureImageLayout layout(*textureAsset);
 
         bool streamed;
-        auto sourceData = getImageData(layout.totalDataSize(), textureAsset.image_data, streamedManipulator, textureAsset.m_StreamData, streamed);
+        auto sourceData = getImageData(layout.totalDataSize(), textureAsset->image_data, streamedManipulator, textureAsset->m_StreamData, streamed);
 
         if(repackingStreamingData) {
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, sourceData, layout.totalDataSize());
             } else {
                 return std::nullopt;
             }
         } else {
 
 
-            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset.m_ColorSpace));
+            auto result = reprocessTextureImages(layout, sourceData, static_cast<UnityAsset::ColorSpace>(textureAsset->m_ColorSpace));
             if(!result.has_value())
                 return std::nullopt;
 
-            textureAsset.m_Format = result->newFormat;
-            textureAsset.m_DataSize = result->newData.size();
+            textureAsset->m_Format = result->newFormat;
+            textureAsset->m_DataSize = result->newData.size();
 
             if(streamed) {
-                storeStreamedImageData(textureAsset.m_StreamData, *streamedManipulator, std::move(result->newData));
+                storeStreamedImageData(textureAsset->m_StreamData, *streamedManipulator, std::move(result->newData));
             } else {
 
-                textureAsset.image_data = std::move(result->newData);
+                textureAsset->image_data = std::move(result->newData);
             }
         }
 
-        return UnityAsset::UnityTypes::serializeCubemapArray(textureAsset);
+        return serializeClass(textureAsset);
 
-    } else if(type.classID == UnityAsset::UnityTypes::MeshClassID && repackingStreamingData) {
+    } else if(type.classID == UnityAsset::UnityClasses::Mesh::ClassID && repackingStreamingData) {
         checkNoScriptData(type);
 
-        auto meshAsset = UnityAsset::UnityTypes::deserializeMesh(original);
+        auto meshAsset = deserializeClass<UnityAsset::UnityClasses::Mesh>(original);
 
-        if(meshAsset.m_StreamData.size == 0 || !streamedManipulator.has_value()) {
+        if(meshAsset->m_StreamData.size == 0 || !streamedManipulator.has_value()) {
             return std::nullopt;
         }
 
-        printf("Rewriting the streamed data of the mesh asset '%s' \n", meshAsset.m_Name.c_str());
+        printf("Rewriting the streamed data of the mesh asset '%s' \n", meshAsset->m_Name.c_str());
 
-        auto originalData = streamedManipulator->getViewOfOriginalData(meshAsset.m_StreamData.offset, meshAsset.m_StreamData.size);
+        auto originalData = streamedManipulator->getViewOfOriginalData(meshAsset->m_StreamData.offset, meshAsset->m_StreamData.size);
 
-        storeStreamedImageData(meshAsset.m_StreamData, *streamedManipulator, originalData);
+        storeStreamedImageData(meshAsset->m_StreamData, *streamedManipulator, originalData);
 
-        return UnityAsset::UnityTypes::serializeMesh(meshAsset);
+        return serializeClass(meshAsset);
 
-    } else if(type.classID == UnityAsset::UnityTypes::UnityConnectSettingsClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::UnityConnectSettings::ClassID) {
         checkNoScriptData(type);
 
-        auto settings = UnityAsset::UnityTypes::deserializeUnityConnectSettings(original);
-        settings.m_Enabled = false;
-        settings.m_EventOldUrl.clear();
-        settings.m_EventUrl.clear();
-        settings.m_ConfigUrl.clear();
-        settings.vCrashReportingSettings.m_Enabled = false;
-        settings.vCrashReportingSettings.m_EventUrl.clear();
-        settings.vUnityPurchasingSettings.m_Enabled = false;
-        settings.vUnityAnalyticsSettings.m_Enabled = false;
-        settings.vUnityAdsSettings.m_Enabled = false;
-        settings.vUnityAdsSettings.m_GameId.clear();
-        settings.vPerformanceReportingSettings.m_Enabled = false;
+        auto settings = deserializeClass<UnityAsset::UnityClasses::UnityConnectSettings>(original);
+        settings->m_Enabled = false;
+        settings->m_EventOldUrl.clear();
+        settings->m_EventUrl.clear();
+        settings->m_ConfigUrl.clear();
+        settings->vCrashReportingSettings.m_Enabled = false;
+        settings->vCrashReportingSettings.m_EventUrl.clear();
+        settings->vUnityPurchasingSettings.m_Enabled = false;
+        settings->vUnityAnalyticsSettings.m_Enabled = false;
+        settings->vUnityAdsSettings.m_Enabled = false;
+        settings->vUnityAdsSettings.m_GameId.clear();
+        settings->vPerformanceReportingSettings.m_Enabled = false;
 
-        return UnityAsset::UnityTypes::serializeUnityConnectSettings(settings);
+        return serializeClass(settings);
 
-    } else if(type.classID == UnityAsset::UnityTypes::BuildSettingsClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::BuildSettings::ClassID) {
         checkNoScriptData(type);
 
-        auto settings = UnityAsset::UnityTypes::deserializeBuildSettings(original);
+        auto settings = deserializeClass<UnityAsset::UnityClasses::BuildSettings>(original);
 
         /*
          * Add the desktop OpenGL as supported, and set it as preferred by
@@ -419,14 +440,14 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
          * or Tegra.
          */
         // GraphicsDeviceType::OpenGLCore
-        settings.m_GraphicsAPIs.emplace(settings.m_GraphicsAPIs.begin(), 17);
+        settings->m_GraphicsAPIs.emplace(settings->m_GraphicsAPIs.begin(), 17);
 
-        return UnityAsset::UnityTypes::serializeBuildSettings(settings);
+        return serializeClass(settings);
 
-    } else if(type.classID == UnityAsset::UnityTypes::RuntimeInitializeOnLoadManagerClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::RuntimeInitializeOnLoadManager::ClassID) {
         checkNoScriptData(type);
 
-        auto settings = UnityAsset::UnityTypes::deserializeRuntimeInitializeOnLoadManager(original);
+        auto settings = deserializeClass<UnityAsset::UnityClasses::RuntimeInitializeOnLoadManager>(original);
 
         std::unordered_set<int32_t> methodsToBeDisabled;
 
@@ -435,12 +456,12 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
          * Assembly-CSharp namespace SRDebugger class AutoInitialize method OnLoad
          */
 
-        for(size_t index = 0, count = settings.m_ClassMethodInfos.size(); index < count; index++) {
-            const auto &method = settings.m_ClassMethodInfos[index];
+        for(size_t index = 0, count = settings->m_ClassMethodInfos.size(); index < count; index++) {
+            const auto &method = settings->m_ClassMethodInfos[index];
 
-            const auto &classDef = settings.m_ClassInfos.at(method.m_ClassIndex);
-            const auto &assemblyName = settings.m_AssemblyNames.at(classDef.m_AssemblyNameIndex);
-            const auto &namespaceName = settings.m_NamespaceNames.at(classDef.m_NamespaceIndex);
+            const auto &classDef = settings->m_ClassInfos.at(method.m_ClassIndex);
+            const auto &assemblyName = settings->m_AssemblyNames.at(classDef.m_AssemblyNameIndex);
+            const auto &namespaceName = settings->m_NamespaceNames.at(classDef.m_NamespaceIndex);
 
             if(classDef.m_ClassName == "IronSourceInitilizer" /* sic */ ||
                 assemblyName.starts_with("UnityEngine.Purchasing") ||
@@ -457,33 +478,33 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
             }
         }
 
-        pruneMethodList(settings.m_BeforeUnityMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_AfterUnityMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_BeforeMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_AfterMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_AfterAssembliesLoadedUnityMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_AfterAssembliesLoadedMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_BeforeSplashScreenUnityMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_BeforeSplashScreenMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_SubsystemRegistrationUnityMethodExecutionOrders, methodsToBeDisabled);
-        pruneMethodList(settings.m_SubsystemRegistrationMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_BeforeUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_AfterUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_BeforeMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_AfterMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_AfterAssembliesLoadedUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_AfterAssembliesLoadedMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_BeforeSplashScreenUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_BeforeSplashScreenMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_SubsystemRegistrationUnityMethodExecutionOrders, methodsToBeDisabled);
+        pruneMethodList(settings->m_SubsystemRegistrationMethodExecutionOrders, methodsToBeDisabled);
 
-        return UnityAsset::UnityTypes::serializeRuntimeInitializeOnLoadManager(settings);
+        return serializeClass(settings);
 
-    } else if(type.classID == UnityAsset::UnityTypes::PlayerSettingsClassID) {
+    } else if(type.classID == UnityAsset::UnityClasses::PlayerSettings::ClassID) {
 
         checkNoScriptData(type);
 
-        auto settings = UnityAsset::UnityTypes::deserializePlayerSettings(original);
+        auto settings = deserializeClass<UnityAsset::UnityClasses::PlayerSettings>(original);
 
-        settings.submitAnalytics = false;
+        settings->submitAnalytics = false;
 
-        settings.resolutionScalingMode = 0;
+        settings->resolutionScalingMode = 0;
 
-        info.companyName.emplace(settings.companyName);
-        info.productName.emplace(settings.productName);
+        info.companyName.emplace(settings->companyName);
+        info.productName.emplace(settings->productName);
 
-        return UnityAsset::UnityTypes::serializePlayerSettings(settings);
+        return serializeClass(settings);
 
     } else {
         return std::nullopt;
@@ -502,22 +523,22 @@ void AssetReprocessing::addGLCoreSubprograms(UnityAsset::UnityTypes::SerializedP
 }
 
 std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const UnityAsset::Stream &original) {
-    auto shader = UnityAsset::UnityTypes::deserializeShader(original);
+    auto shader = deserializeClass<UnityAsset::UnityClasses::Shader>(original);
 
     std::optional<uint32_t> glesPlatformIndex;
 
-    if(shader.compressedLengths.size() != shader.decompressedLengths.size() || shader.compressedLengths.size() != shader.offsets.size()) {
+    if(shader->compressedLengths.size() != shader->decompressedLengths.size() || shader->compressedLengths.size() != shader->offsets.size()) {
         throw std::runtime_error("mismatched number of first-level compressed elements");
     }
 
-    size_t elementCount = shader.compressedLengths.size();
+    size_t elementCount = shader->compressedLengths.size();
 
-    if(elementCount != shader.platforms.size()) {
+    if(elementCount != shader->platforms.size()) {
         throw std::runtime_error("the number of first-level compressed elements doesn't match the number of platforms");
     }
 
-    for(size_t index = 0, size = shader.platforms.size(); index < size; index++) {
-        auto platform = shader.platforms[index];
+    for(size_t index = 0, size = shader->platforms.size(); index < size; index++) {
+        auto platform = shader->platforms[index];
 
         if(platform == 15) {
             /*
@@ -539,9 +560,9 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const Unity
         return std::nullopt;
     }
 
-    printf("AssetReprocessing: adding GL core platform to shader: '%s'\n", shader.m_ParsedForm.m_Name.c_str());
+    printf("AssetReprocessing: adding GL core platform to shader: '%s'\n", shader->m_ParsedForm.m_Name.c_str());
 
-    for(auto &subShader: shader.m_ParsedForm.m_SubShaders) {
+    for(auto &subShader: shader->m_ParsedForm.m_SubShaders) {
         for(auto &pass: subShader.m_Passes) {
             addGLCoreSubprograms(pass.progVertex);
             addGLCoreSubprograms(pass.progFragment);
@@ -553,10 +574,10 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const Unity
     }
 
     UnityAsset::ShaderBlob blob(
-        shader.compressedLengths[*glesPlatformIndex],
-        shader.decompressedLengths[*glesPlatformIndex],
-        shader.offsets[*glesPlatformIndex],
-        shader.compressedBlob);
+        shader->compressedLengths[*glesPlatformIndex],
+        shader->decompressedLengths[*glesPlatformIndex],
+        shader->offsets[*glesPlatformIndex],
+        shader->compressedBlob);
 
     for(auto &entry: blob.entries) {
         uint32_t version, platform;
@@ -602,14 +623,14 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const Unity
         }
     }
 
-    shader.platforms.emplace_back(15);
-    auto &outputCompressedLengths = shader.compressedLengths.emplace_back();
-    auto &outputDecompressedLengths = shader.decompressedLengths.emplace_back();
-    auto &outputOffsets = shader.offsets.emplace_back();
+    shader->platforms.emplace_back(15);
+    auto &outputCompressedLengths = shader->compressedLengths.emplace_back();
+    auto &outputDecompressedLengths = shader->decompressedLengths.emplace_back();
+    auto &outputOffsets = shader->offsets.emplace_back();
 
-    blob.serialize(outputCompressedLengths, outputDecompressedLengths, outputOffsets, shader.compressedBlob);
+    blob.serialize(outputCompressedLengths, outputDecompressedLengths, outputOffsets, shader->compressedBlob);
 
-    return UnityAsset::UnityTypes::serializeShader(shader);
+    return serializeClass(shader);
 }
 
 bool AssetReprocessing::rgbaImageHasTransparentPixels(const unsigned char *data, const UnityAsset::TextureSubImage &image) {
