@@ -330,23 +330,7 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
             if(count != 1)
                 throw std::runtime_error("Unexpected count value for COMPANION");
 
-            auto query = db().prepare(R"SQL(
-                INSERT INTO i_user_companion (
-                    user_id,
-                    user_companion_uuid,
-                    companion_id,
-                    acquisition_datetime
-                ) VALUES (
-                    ?,
-                    hex(randomblob(16)),
-                    ?,
-                    current_net_timestamp()
-                )
-            )SQL");
-
-            query->bind(1, m_userId);
-            query->bind(2, possessionId);
-            query->exec();
+            giveUserCompanion(possessionId);
         }
         break;
 
@@ -437,6 +421,17 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
                 throw std::runtime_error("Unexpected count value for COSTUME_ENHANCED");
 
             giveUserCostumeEnhanced(possessionId);
+
+        }
+        break;
+
+        case PossessionType::COMPANION_ENHANCED:
+        {
+
+            if(count != 1)
+                throw std::runtime_error("Unexpected count value for COMPANION_ENHANCED");
+
+            giveUserCompanionEnhanced(possessionId);
 
         }
         break;
@@ -559,6 +554,61 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
     buildDefaultDeckIfNoneExists();
 }
 
+void UserContext::giveUserCompanionEnhanced(int32_t companionEnhancedId) {
+    auto query = db().prepare("SELECT companion_id, level FROM m_companion_enhanced WHERE companion_enhanced_id = ?");
+    query->bind(1, companionEnhancedId);
+    if(!query->step())
+        throw std::runtime_error("no such enhanced companion");
+
+    auto companionId = query->columnInt(0);
+    auto level = query->columnInt(1);
+    query->reset();
+
+    giveUserCompanion(companionId, level);
+}
+
+void UserContext::giveUserCompanion(int32_t companionId, int32_t level) {
+
+    auto query = db().prepare(R"SQL(
+        INSERT INTO i_user_companion (
+            user_id,
+            user_companion_uuid,
+            companion_id,
+            level,
+            acquisition_datetime
+        ) VALUES (
+            ?,
+            hex(randomblob(16)),
+            ?,
+            ?,
+            current_net_timestamp()
+        )
+        ON CONFLICT (user_id, companion_id) DO NOTHING
+        RETURNING user_companion_uuid
+    )SQL");
+
+    query->bind(1, m_userId);
+    query->bind(2, companionId);
+    query->bind(3, level);
+    if(!query->step()) {
+        m_log.warning("giveUserCompanion: user already has the companion %d",
+                    companionId);
+
+        auto duplicationItems = db().prepare(
+            "SELECT possession_type, possession_id, count FROM m_companion_duplication_exchange_possession_group WHERE companion_id = ?"
+        );
+        duplicationItems->bind(1, companionId);
+        while(duplicationItems->step()) {
+            auto type = duplicationItems->columnInt(0);
+            auto possessionId = duplicationItems->columnInt(1);
+            auto count = duplicationItems->columnInt(2);
+            givePossession(type, possessionId, count);
+        }
+
+        return;
+    }
+}
+
 void UserContext::giveUserCostumeEnhanced(int32_t costumeEnhancedId) {
     auto query = db().prepare(R"SQL(
         SELECT
@@ -646,8 +696,19 @@ void UserContext::giveUserCostume(
 
     std::string costumeUUID;
     if(!query->step()) {
-        m_log.error("giveUserCostume: user already has the costume %d, this costume probably should go to the overflow when that's implemented",
+        m_log.warning("giveUserCostume: user already has the costume %d",
                     costumeId);
+
+        auto duplicationItems = db().prepare(
+            "SELECT possession_type, possession_id, count FROM m_costume_duplication_exchange_possession_group WHERE costume_id = ?"
+        );
+        duplicationItems->bind(1, costumeId);
+        while(duplicationItems->step()) {
+            auto type = duplicationItems->columnInt(0);
+            auto possessionId = duplicationItems->columnInt(1);
+            auto count = duplicationItems->columnInt(2);
+            givePossession(type, possessionId, count);
+        }
 
         return;
     }

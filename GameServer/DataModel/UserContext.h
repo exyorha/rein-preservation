@@ -312,6 +312,9 @@ private:
         int32_t awakenCount = 0);
     void giveUserCostumeEnhanced(int32_t costumeEnhancedId);
 
+    void giveUserCompanionEnhanced(int32_t companionEnhancedId);
+    void giveUserCompanion(int32_t companionId, int32_t level = 1);
+
     void leaveSpecialStates();
 
     void commonStartQuest(int32_t questId, const std::optional<bool> &isBattleOnly = std::nullopt);
