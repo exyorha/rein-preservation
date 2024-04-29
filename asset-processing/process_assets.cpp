@@ -138,17 +138,6 @@ int main(int argc, char **argv) {
                         name.c_str(), assetBundle.crc(), bundle.assetBundleCRC.value_or(0));
             }
 
-            if(bundle.dataCompression != UnityAsset::UnityCompressionType::LZMA &&
-                /*
-                 * Audio is mostly incompressible ogg, so don't waste time LZMA'ng it.
-                 */
-               !name.starts_with("audio/") && !name.starts_with("voice/")) {
-                bundle.dataCompression = UnityAsset::UnityCompressionType::LZMA;
-
-                streamToBePacked = UnityAsset::Stream();
-                bundle.serialize(streamToBePacked);
-            }
-
             writer.addFile(name, assetBundle.generation(), streamToBePacked);
         }
 
