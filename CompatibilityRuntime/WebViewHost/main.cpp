@@ -1,10 +1,14 @@
 #include <include/cef_command_line.h>
-#include "WebViewApp.h"
-#include "ParentedContainerWindow.h"
-#include "WebViewRPCServer.h"
 
-int main(int argc, char **argv) {
-    CefMainArgs mainArgs(argc, argv);
+#include "WebViewApp.h"
+
+#ifdef _WIN32
+#include "WebViewRPCServerWindows.h"
+#else
+#include "WebViewRPCServerLinux.h"
+#endif
+
+static int applicationMain(const CefMainArgs &mainArgs) {
 
     CefRefPtr<WebViewApp> app(new WebViewApp);
 
@@ -25,23 +29,46 @@ int main(int argc, char **argv) {
     } shutdownScope;
 
     auto commandLine = CefCommandLine::GetGlobalCommandLine();
-#if 0
-    if(!commandLine->HasSwitch("webview-parent-window")) {
-        fprintf(stderr, "--webview-parent-window was not specified\n");
+
+#ifdef _WIN32
+    if(!commandLine->HasSwitch("webview-rpc-server")) {
+        fprintf(stderr, "--webview-rpc-server was not specified\n");
         return 1;
     }
 
-    ParentedContainerWindow container(strtoull(commandLine->GetSwitchValue("webview-parent-window").ToString().c_str(), nullptr, 10));
-#endif
-
+    WebViewRPCServerWindows rpcServer(commandLine->GetSwitchValue("webview-rpc-server").ToWString());
+#else
     if(!commandLine->HasSwitch("webview-rpc-client-socket")) {
         fprintf(stderr, "--webview-rpc-client-socket was not specified\n");
         return 1;
     }
 
-    WebViewRPCServer rpcServer(strtoll(commandLine->GetSwitchValue("webview-rpc-client-socket").ToString().c_str(), nullptr, 10));
+    WebViewRPCServerLinux rpcServer(strtoll(commandLine->GetSwitchValue("webview-rpc-client-socket").ToString().c_str(), nullptr, 10));
+#endif
 
     CefRunMessageLoop();
 
     return 0;
 }
+
+#ifdef _WIN32
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+    (void)hPrevInstance;
+    (void)pCmdLine;
+    (void)nCmdShow;
+
+    CefMainArgs mainArgs(hInstance);
+
+    return applicationMain(mainArgs);
+}
+
+#else
+
+int main(int argc, char **argv) {
+    CefMainArgs mainArgs(argc, argv);
+
+    return applicationMain(mainArgs);
+}
+
+#endif
+

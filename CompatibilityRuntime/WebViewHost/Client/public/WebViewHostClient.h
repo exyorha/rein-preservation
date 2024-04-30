@@ -29,7 +29,7 @@ public:
 
 private:
 
-    WebViewHostClientChannelLinux m_channel;
+    WebViewHostClientChannel m_channel;
     std::optional<webview::protocol::WebViewService::Stub> m_stub;
     WebViewProtocolController m_controller;
 };

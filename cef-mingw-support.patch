@@ -1,0 +1,66 @@
+--- cef_variables.cmake.orig	2024-04-30 10:59:59.892475387 +0300
++++ cef_variables.cmake	2024-04-30 12:28:09.866685585 +0300
+@@ -389,6 +389,7 @@
+     endif()
+   endif()
+ 
++  if(NOT MINGW)
+   # Consumers who run into LNK4099 warnings can pass /Z7 instead (see issue #385).
+   set(CEF_DEBUG_INFO_FLAG "/Zi" CACHE STRING "Optional flag specifying specific /Z flag to use")
+ 
+@@ -398,9 +399,16 @@
+     list(APPEND CEF_COMPILER_FLAGS_DEBUG ${CEF_RUNTIME_LIBRARY_FLAG}d)
+     list(APPEND CEF_COMPILER_FLAGS_RELEASE ${CEF_RUNTIME_LIBRARY_FLAG})
+   endif()
++  endif()
+ 
+   # Platform-specific compiler/linker flags.
+   set(CEF_LIBTYPE STATIC)
++
++  if(MINGW)
++    list(APPEND CEF_COMPILER_FLAGS -Wno-attributes)
++  endif()
++
++  if(NOT MINGW)
+   list(APPEND CEF_COMPILER_FLAGS
+     /MP           # Multiprocess compilation
+     /Gy           # Enable function-level linking
+@@ -487,6 +495,7 @@
+     /DELAYLOAD:wsock32.dll
+     /DELAYLOAD:wtsapi32.dll
+     )
++    endif()
+   list(APPEND CEF_COMPILER_DEFINES
+     WIN32 _WIN32 _WINDOWS             # Windows platform
+     UNICODE _UNICODE                  # Unicode build
+@@ -504,6 +513,7 @@
+     NDEBUG _NDEBUG                    # Not a debug build
+     )
+ 
++  if(NOT MINGW)
+   if(PROJECT_ARCH STREQUAL "x86")
+     # Set the initial stack size to 0.5MiB, instead of the 1.5MiB minimum
+     # needed by CEF's main thread. This saves significant memory on threads
+@@ -520,7 +530,7 @@
+       /STACK:0x800000
+       )
+   endif()
+-
++endif()
+   # Standard libraries.
+   set(CEF_STANDARD_LIBS
+     comctl32.lib
+@@ -537,8 +547,13 @@
+   set(CEF_BINARY_DIR_RELEASE  "${_CEF_ROOT}/Release")
+ 
+   # CEF library paths.
++  if(MINGW)
++  set(CEF_LIB_DEBUG   "${CEF_BINARY_DIR_DEBUG}/libcef.dll")
++  set(CEF_LIB_RELEASE "${CEF_BINARY_DIR_RELEASE}/libcef.dll")
++  else()
+   set(CEF_LIB_DEBUG   "${CEF_BINARY_DIR_DEBUG}/libcef.lib")
+   set(CEF_LIB_RELEASE "${CEF_BINARY_DIR_RELEASE}/libcef.lib")
++  endif()
+ 
+   # List of CEF binary files.
+   set(CEF_BINARY_FILES

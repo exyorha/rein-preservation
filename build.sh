@@ -51,7 +51,7 @@ cmake \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
-    -DCEF_ROOT="$(realpath -- cef_binary_121.3.13+g5c4a81b+chromium-121.0.6167.184_linux64_minimal)" \
+    -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_linux64_minimal)" \
     -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
@@ -173,7 +173,8 @@ cmake -S . -B mingw-build \
     -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
     -G "Ninja" \
     -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config" \
-    -DBUILD_ASSET_PROCESSING=OFF
+    -DBUILD_ASSET_PROCESSING=OFF \
+    -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_windows64_minimal)" \
 
 cmake --build mingw-build
 cmake --install mingw-build --component GameAssembly --strip

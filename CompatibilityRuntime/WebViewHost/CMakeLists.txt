@@ -13,7 +13,7 @@ if(OS_LINUX OR OS_WINDOWS)
   ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 endif()
 
-add_executable(WebViewHost
+add_executable(WebViewHost WIN32
   main.cpp
   ParentedContainerWindow.cpp
   ParentedContainerWindow.h
@@ -34,6 +34,21 @@ add_executable(WebViewHost
   WebViewRPCService.cpp
   WebViewRPCService.h
 )
+
+
+if(WIN32)
+  target_sources(WebViewHost PRIVATE
+    WebViewRPCServerWindows.cpp
+    WebViewRPCServerWindows.h
+  )
+  target_link_options(WebViewHost PRIVATE -mwindows -municode -static -static-libgcc)
+else()
+  target_sources(WebViewHost PRIVATE
+    WebViewRPCServerLinux.cpp
+    WebViewRPCServerLinux.h
+  )
+endif()
+
 set_source_files_properties(WebViewRPCService.cpp WebViewRPCImplementation.cpp PROPERTIES COMPILE_OPTIONS -fexceptions)
 
 SET_EXECUTABLE_TARGET_PROPERTIES(WebViewHost)
@@ -48,9 +63,6 @@ add_library(WebViewHostClient STATIC
 
   Client/public/WebViewHostClientChannel.h
 
-  Client/public/WebViewHostClientChannelLinux.h
-  Client/WebViewHostClientChannelLinux.cpp
-
   Client/public/WebViewHostClientConfiguration.h
   Client/WebViewHostClientConfiguration.cpp
 )
@@ -59,8 +71,17 @@ target_link_libraries(WebViewHostClient PUBLIC WebViewProtocol)
 
 if(WIN32)
   set(webview_directory "webview/windows")
+  target_sources(WebViewHostClient PRIVATE
+    Client/public/WebViewHostClientChannelWindows.h
+    Client/WebViewHostClientChannelWindows.cpp
+  )
+  target_compile_definitions(WebViewHostClient PRIVATE -DUNICODE -D_UNICODE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
 else()
   set(webview_directory "webview/linux")
+  target_sources(WebViewHostClient PRIVATE
+    Client/public/WebViewHostClientChannelLinux.h
+    Client/WebViewHostClientChannelLinux.cpp
+  )
 endif()
 
 if(NOT WIN32)
@@ -71,11 +92,3 @@ if(NOT WIN32)
 endif()
 
 install(TARGETS WebViewHost DESTINATION ${webview_directory} COMPONENT GameAssembly)
-
-list(TRANSFORM CEF_BINARY_FILES PREPEND "${CEF_BINARY_DIR_RELEASE}/" OUTPUT_VARIABLE cef_binaries)
-install(FILES ${cef_binaries} DESTINATION ${webview_directory} COMPONENT GameAssembly)
-
-list(TRANSFORM CEF_RESOURCE_FILES PREPEND "${CEF_RESOURCE_DIR}/" OUTPUT_VARIABLE cef_resources)
-list(REMOVE_ITEM cef_resources "${CEF_RESOURCE_DIR}/locales")
-install(FILES ${cef_resources} DESTINATION ${webview_directory} COMPONENT GameAssembly)
-install(FILES "${CEF_RESOURCE_DIR}/locales/en-US.pak" DESTINATION "${webview_directory}/locales" COMPONENT GameAssembly)

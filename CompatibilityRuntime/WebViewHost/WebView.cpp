@@ -2,20 +2,29 @@
 #include "WebViewContainerDelegate.h"
 #include "WebViewClient.h"
 #include "WebViewBrowserViewDelegate.h"
-#include "include/internal/cef_types_wrappers.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <include/internal/cef_types_linux.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
+#endif
 
 WebView::WebView(int x, int y, int width, int height, intptr_t parentWindow) {
     m_window = CefWindow::CreateTopLevelWindow(CefRefPtr<WebViewContainerDelegate>(new WebViewContainerDelegate));
 
+#ifdef _WIN32
+    HWND cefWindow = m_window->GetWindowHandle();
+    SetParent(cefWindow, reinterpret_cast<HWND>(parentWindow));
+    SetWindowPos(cefWindow, HWND_TOP, x, y, width, height, SWP_FRAMECHANGED);
+#else
     auto display = cef_get_xdisplay();
 
     Window cefWindow = m_window->GetWindowHandle();
     XReparentWindow(display, cefWindow, static_cast<Window>(parentWindow), 0, 0);
     setFrame(x, y, width, height);
+#endif
 
     CefBrowserSettings browserSettings;
     m_browser = CefBrowserView::CreateBrowserView(
@@ -235,22 +244,36 @@ void WebView::stop() {
 }
 
 void WebView::setFrame(int32_t x, int32_t y, int32_t width, int32_t height) {
+
+#ifdef _WIN32
+    SetWindowPos(m_window->GetWindowHandle(), nullptr, x, y, width, height, SWP_NOZORDER | SWP_ASYNCWINDOWPOS);
+#else
     auto display = cef_get_xdisplay();
 
     XMoveResizeWindow(display, m_window->GetWindowHandle(), x, y, width, height);
     XSync(display, True);
+#endif
 }
 
 void WebView::setPosition(int32_t x, int32_t y) {
+#ifdef _WIN32
+    SetWindowPos(m_window->GetWindowHandle(), nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_ASYNCWINDOWPOS | SWP_NOSIZE);
+#else
     auto display = cef_get_xdisplay();
 
     XMoveWindow(display, m_window->GetWindowHandle(), x, y);
     XSync(display, True);
+#endif
 }
 
 void WebView::setSize(int32_t width, int32_t height) {
+#ifdef _WIN32
+    SetWindowPos(m_window->GetWindowHandle(), nullptr, 0, 0, width, height, SWP_NOZORDER |
+        SWP_ASYNCWINDOWPOS | SWP_NOMOVE);
+#else
     auto display = cef_get_xdisplay();
 
     XResizeWindow(display, m_window->GetWindowHandle(), width, height);
     XSync(display, True);
+#endif
 }
