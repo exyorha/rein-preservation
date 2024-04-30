@@ -3,6 +3,8 @@
 
 #include <include/cef_client.h>
 
+class WebViewRenderHandler;
+
 class WebViewClient final : public CefClient {
 private:
     ~WebViewClient();
@@ -10,7 +12,12 @@ private:
     IMPLEMENT_REFCOUNTING(WebViewClient);
 
 public:
-    WebViewClient();
+    explicit WebViewClient(const CefRefPtr<WebViewRenderHandler> &renderHandler);
+
+    CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+
+private:
+    CefRefPtr<WebViewRenderHandler> m_renderHandler;
 };
 
 #endif

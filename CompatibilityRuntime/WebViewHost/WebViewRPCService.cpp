@@ -1,5 +1,8 @@
 #include "WebViewRPCService.h"
 #include "WebView.h"
+#include "WebViewProtocolController.h"
+#include "WebViewRPCServer.h"
+#include "WebViewSharedImageBuffer.h"
 
 WebViewRPCService::WebViewRPCService() = default;
 
@@ -325,7 +328,15 @@ void WebViewRPCService::Init(
 {
 
   try {
-    m_impl.init(request->arg1(), request->arg2(), request->arg3(), request->arg4(), request->arg5(), request->parentwindowhandle());
+    m_impl.init(
+      request->arg1(),
+      request->arg2(),
+      request->arg3(),
+      request->arg4(),
+      request->arg5(),
+      request->parentwindowhandle(),
+        static_cast<WebViewProtocolController *>(controller)->server()->receiveImageBuffer(request->sharedmemoryregion()));
+
   } catch(const std::exception &e) {
     controller->SetFailed(e.what());
   } catch(...) {
@@ -613,7 +624,8 @@ void WebViewRPCService::SetFrame(
 {
 
   try {
-    m_impl.setFrame(request->arg1(), request->arg2(), request->arg3(), request->arg4(), request->arg5());
+    m_impl.setFrame(request->arg1(), request->arg2(), request->arg3(), request->arg4(), request->arg5(),
+        static_cast<WebViewProtocolController *>(controller)->server()->receiveImageBuffer(request->sharedmemoryregion()));
   } catch(const std::exception &e) {
     controller->SetFailed(e.what());
   } catch(...) {
@@ -773,7 +785,8 @@ void WebViewRPCService::SetSize(
 {
 
   try {
-    m_impl.setSize(request->arg1(), request->arg2(), request->arg3());
+    m_impl.setSize(request->arg1(), request->arg2(), request->arg3(),
+        static_cast<WebViewProtocolController *>(controller)->server()->receiveImageBuffer(request->sharedmemoryregion()));
   } catch(const std::exception &e) {
     controller->SetFailed(e.what());
   } catch(...) {

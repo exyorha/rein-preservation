@@ -1,4 +1,5 @@
 #include <WebView/CEFWebViewImplementation.h>
+#include <WebView/CEFSurface.h>
 
 CEFWebViewImplementation::CEFWebViewImplementation(const WebViewHostClientConfiguration &config) : m_client(config) {
 
@@ -142,6 +143,11 @@ void CEFWebViewImplementation::clearHttpAuthUsernamePassword(const std::string &
 }
 
 void CEFWebViewImplementation::destroy(const std::string & arg1) {
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+        m_surfaces.erase(arg1);
+    }
+
     webview::protocol::DestroyRequest request;
     webview::protocol::VoidResponse response;
     WebViewProtocolController ctrl;
@@ -245,6 +251,12 @@ void CEFWebViewImplementation::goForward(const std::string & arg1) {
 }
 
 bool CEFWebViewImplementation::hide(const std::string & arg1, bool arg2, int32_t arg3, float arg4, const std::string & arg5) {
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+        auto surface = getSurfaceLocked(arg1);
+        surface->setHidden(true);
+    }
+
     webview::protocol::HideRequest request;
     webview::protocol::BoolResponse response;
     WebViewProtocolController ctrl;
@@ -261,21 +273,41 @@ bool CEFWebViewImplementation::hide(const std::string & arg1, bool arg2, int32_t
     return response.result();
 }
 
-void CEFWebViewImplementation::init(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5) {
+void CEFWebViewImplementation::init(const std::string & arg1, int32_t x, int32_t y, int32_t width, int32_t height) {
+    std::unique_lock<std::mutex> locker(m_surfacesMutex);
+
+    auto result = m_surfaces.emplace(arg1, nullptr);
+    if(!result.second)
+        throw std::runtime_error("a surface with the specified ID already exists");
+
+    width = std::max<int32_t>(width, 1);
+    height = std::max<int32_t>(height, 1);
+
+    auto buffer = m_client.channel().allocateImageBuffer(WebViewSharedImageBuffer::sizeBuffer(width, height));
+
     webview::protocol::InitRequest request;
     webview::protocol::VoidResponse response;
+
+    request.set_sharedmemoryregion(m_client.channel().sendSharedImageBufferWithNextRequest(buffer.get()));
+
+    auto surface = std::make_unique<CEFSurface>(x, y, width, height, std::move(buffer));
+
     WebViewProtocolController ctrl;
     request.set_arg1(arg1);
-    request.set_arg2(arg2);
-    request.set_arg3(arg3);
-    request.set_arg4(arg4);
-    request.set_arg5(arg5);
+    request.set_arg2(x);
+    request.set_arg3(y);
+    request.set_arg4(width);
+    request.set_arg5(height);
     request.set_parentwindowhandle(getParentWindowHandle());
     m_client.stub().Init(&ctrl, &request, &response, nullptr);
 
     if(ctrl.Failed()) {
+        m_surfaces.erase(result.first);
+
         throw std::runtime_error(ctrl.ErrorText());
     }
+
+    result.first->second = std::move(surface);
 }
 
 void CEFWebViewImplementation::load(const std::string & arg1, const std::string & arg2) {
@@ -503,15 +535,29 @@ void CEFWebViewImplementation::setDefaultFontSize(const std::string & arg1, int3
     }
 }
 
-void CEFWebViewImplementation::setFrame(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5) {
+void CEFWebViewImplementation::setFrame(const std::string & arg1, int32_t x, int32_t y, int32_t width, int32_t height) {
+    width = std::max<int32_t>(width, 1);
+    height = std::max<int32_t>(height, 1);
+
     webview::protocol::SetFrameRequest request;
     webview::protocol::VoidResponse response;
+
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+        auto surface = getSurfaceLocked(arg1);
+
+        auto buffer = m_client.channel().allocateImageBuffer(WebViewSharedImageBuffer::sizeBuffer(width, height));
+        request.set_sharedmemoryregion(m_client.channel().sendSharedImageBufferWithNextRequest(buffer.get()));
+
+        surface->setFrame(x, y, width, height, std::move(buffer));
+    }
+
     WebViewProtocolController ctrl;
     request.set_arg1(arg1);
-    request.set_arg2(arg2);
-    request.set_arg3(arg3);
-    request.set_arg4(arg4);
-    request.set_arg5(arg5);
+    request.set_arg2(x);
+    request.set_arg3(y);
+    request.set_arg4(width);
+    request.set_arg5(height);
     m_client.stub().SetFrame(&ctrl, &request, &response, nullptr);
 
     if(ctrl.Failed()) {
@@ -609,13 +655,20 @@ void CEFWebViewImplementation::setOpenLinksInExternalBrowser(const std::string &
     }
 }
 
-void CEFWebViewImplementation::setPosition(const std::string & arg1, int32_t arg2, int32_t arg3) {
+void CEFWebViewImplementation::setPosition(const std::string & arg1, int32_t x, int32_t y) {
+
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+        auto surface = getSurfaceLocked(arg1);
+        surface->setPosition(x, y);
+    }
+
     webview::protocol::SetPositionRequest request;
     webview::protocol::VoidResponse response;
     WebViewProtocolController ctrl;
     request.set_arg1(arg1);
-    request.set_arg2(arg2);
-    request.set_arg3(arg3);
+    request.set_arg2(x);
+    request.set_arg3(y);
     m_client.stub().SetPosition(&ctrl, &request, &response, nullptr);
 
     if(ctrl.Failed()) {
@@ -636,13 +689,28 @@ void CEFWebViewImplementation::setShowSpinnerWhileLoading(const std::string & ar
     }
 }
 
-void CEFWebViewImplementation::setSize(const std::string & arg1, int32_t arg2, int32_t arg3) {
+void CEFWebViewImplementation::setSize(const std::string & arg1, int32_t width, int32_t height) {
+    width = std::max<int32_t>(width, 1);
+    height = std::max<int32_t>(height, 1);
+
     webview::protocol::SetSizeRequest request;
     webview::protocol::VoidResponse response;
+
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+        auto surface = getSurfaceLocked(arg1);
+
+        auto buffer = m_client.channel().allocateImageBuffer(WebViewSharedImageBuffer::sizeBuffer(width, height));
+        request.set_sharedmemoryregion(m_client.channel().sendSharedImageBufferWithNextRequest(buffer.get()));
+
+        surface->setSize(width, height, std::move(buffer));
+    }
+
+
     WebViewProtocolController ctrl;
     request.set_arg1(arg1);
-    request.set_arg2(arg2);
-    request.set_arg3(arg3);
+    request.set_arg2(width);
+    request.set_arg3(height);
     m_client.stub().SetSize(&ctrl, &request, &response, nullptr);
 
     if(ctrl.Failed()) {
@@ -767,6 +835,13 @@ void CEFWebViewImplementation::setZoomEnabled(const std::string & arg1, bool arg
 }
 
 bool CEFWebViewImplementation::show(const std::string & arg1, bool arg2, int32_t arg3, float arg4, const std::string & arg5) {
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+        auto surface = getSurfaceLocked(arg1);
+
+        surface->setHidden(false);
+    }
+
     webview::protocol::ShowRequest request;
     webview::protocol::BoolResponse response;
     WebViewProtocolController ctrl;
@@ -806,4 +881,12 @@ void CEFWebViewImplementation::stop(const std::string & arg1) {
     if(ctrl.Failed()) {
         throw std::runtime_error(ctrl.ErrorText());
     }
+}
+
+CEFSurface *CEFWebViewImplementation::getSurfaceLocked(const std::string &name) const {
+    auto it = m_surfaces.find(name);
+    if(it == m_surfaces.end() || !it->second)
+        throw std::runtime_error("no such surface");
+
+    return it->second.get();
 }

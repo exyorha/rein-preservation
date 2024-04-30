@@ -126,6 +126,8 @@ endif()
 
 if(TARGET WebViewHostClient)
     target_sources(GameExecutable PRIVATE
+        WebView/CEFSurface.cpp
+        WebView/CEFSurface.h
         WebView/CEFWebViewImplementation.cpp
         WebView/CEFWebViewImplementation.h
     )

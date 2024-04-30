@@ -6,7 +6,7 @@
 #include <include/cef_app.h>
 
 
-WebViewRPCServerWindows::WebViewRPCServerWindows(const std::wstring &server) : m_callInProgress(false), m_receiveBuffer(128 * 1024) {
+WebViewRPCServerWindows::WebViewRPCServerWindows(const std::wstring &server) : m_receiveBuffer(128 * 1024) {
     if(!WaitNamedPipe(server.c_str(), NMPWAIT_USE_DEFAULT_WAIT))
         throw std::runtime_error("WaitNamedPipe has failed");
 
@@ -26,16 +26,6 @@ WebViewRPCServerWindows::~WebViewRPCServerWindows() {
     m_requestReceivingThread.join();
 }
 
-void WebViewRPCServerWindows::clearCallInProgress() {
-    {
-        std::unique_lock<std::mutex> locker(m_callInProgressMutex);
-        m_callInProgress = false;
-    }
-
-    m_callInProgressCondvar.notify_all();
-}
-
-
 void WebViewRPCServerWindows::receiveRequests() {
     LOG(INFO) <<  "WebViewRPCServerWindows: receiving requests";
 
@@ -48,12 +38,7 @@ void WebViewRPCServerWindows::receiveRequests() {
 
 void WebViewRPCServerWindows::runMainLoop() {
     while(true) {
-
-        {
-            std::unique_lock<std::mutex> locker(m_callInProgressMutex);
-
-            m_callInProgressCondvar.wait(locker, [this]() { return !m_callInProgress; });
-        }
+        waitNoCallInProgress();
 
         DWORD bytesRead;
 
@@ -70,10 +55,7 @@ void WebViewRPCServerWindows::runMainLoop() {
             return;
         }
 
-        {
-            std::unique_lock<std::mutex> locker(m_callInProgressMutex);
-            m_callInProgress = true;
-        }
+        setCallInProgress();
 
         CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerWindows::executeRPCCall, base::Unretained(this), std::move(fullRequest)));
     }
@@ -108,4 +90,49 @@ bool WebViewRPCServerWindows::executeRPCCallAndSendResponse(std::unique_ptr<webv
     clearCallInProgress();
 
     return true;
+}
+
+std::unique_ptr<WebViewSharedImageBuffer> WebViewRPCServerWindows::receiveImageBuffer(intptr_t handle) {
+    if(handle == 0)
+        return nullptr;
+
+    return std::make_unique<WindowsSharedImageBuffer>(reinterpret_cast<HANDLE>(handle));
+}
+
+WebViewRPCServerWindows::WindowsSharedImageBuffer::WindowsSharedImageBuffer(HANDLE inHandle) {
+    struct HandleHolder {
+        inline HandleHolder(HANDLE handle) : handle(handle) {
+
+        }
+
+        ~HandleHolder() {
+            CloseHandle(handle);
+        }
+
+        HANDLE handle;
+    } handle(inHandle);
+
+    m_base = MapViewOfFile(handle.handle, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+    if(!m_base)
+        throw std::runtime_error("MapViewOfFile has failed");
+
+    MEMORY_BASIC_INFORMATION info;
+    if(VirtualQuery(m_base, &info, sizeof(info)) != sizeof(info)) {
+        UnmapViewOfFile(m_base);
+        throw std::runtime_error("VirtualQuery has failed");
+    }
+
+    m_size = info.RegionSize;
+}
+
+WebViewRPCServerWindows::WindowsSharedImageBuffer::~WindowsSharedImageBuffer() {
+    UnmapViewOfFile(m_base);
+}
+
+void *WebViewRPCServerWindows::WindowsSharedImageBuffer::base() const {
+    return m_base;
+}
+
+size_t WebViewRPCServerWindows::WindowsSharedImageBuffer::size() const {
+    return m_size;
 }

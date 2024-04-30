@@ -5,13 +5,31 @@
 #include <thread>
 
 #include "WebViewRPCServer.h"
+#include "WebViewSharedImageBuffer.h"
+
+struct cmsghdr;
 
 class WebViewRPCServerLinux final: public WebViewRPCServer {
 public:
     explicit WebViewRPCServerLinux(intptr_t connectedSocket);
     ~WebViewRPCServerLinux();
 
+    std::unique_ptr<WebViewSharedImageBuffer> receiveImageBuffer(intptr_t handle) override;
+
 private:
+    class LinuxSharedImageBuffer final : public WebViewSharedImageBuffer {
+    public:
+        explicit LinuxSharedImageBuffer(int fd);
+        ~LinuxSharedImageBuffer() override;
+
+        void *base() const override;
+        size_t size() const override;
+
+    private:
+        void *m_base;
+        size_t m_size;
+    };
+
     void receiveRequests();
 
     void runMainLoop();
@@ -19,14 +37,12 @@ private:
     void executeRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request);
     bool executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCRequest> &&request);
 
-    bool ensuredRead(void *dest, size_t size);
-    bool ensuredWrite(const void *dest, size_t size);
-    bool pollFor(int condition);
-
     int m_socket;
     WebViewRPCService m_service;
     std::vector<unsigned char> m_receiveBuffer;
+    std::vector<unsigned char> m_controlBuffer;
     std::thread m_requestReceivingThread;
+    const cmsghdr *m_fds;
 };
 
 #endif

@@ -5,12 +5,33 @@
 
 #include <cstring>
 
-WebViewRPCServer::WebViewRPCServer() = default;
+WebViewRPCServer::WebViewRPCServer() : m_callInProgress(false) {
+
+}
 
 
 WebViewRPCServer::~WebViewRPCServer() = default;
 
+void WebViewRPCServer::clearCallInProgress() {
+    {
+        std::unique_lock<std::mutex> locker(m_callInProgressMutex);
+        m_callInProgress = false;
+    }
 
+    m_callInProgressCondvar.notify_all();
+}
+
+void WebViewRPCServer::waitNoCallInProgress() {
+
+    std::unique_lock<std::mutex> locker(m_callInProgressMutex);
+
+    m_callInProgressCondvar.wait(locker, [this]() { return !m_callInProgress; });
+}
+
+void WebViewRPCServer::setCallInProgress() {
+    std::unique_lock<std::mutex> locker(m_callInProgressMutex);
+    m_callInProgress = true;
+}
 
 std::optional<std::string> WebViewRPCServer::doExecuteRPCCall(
     std::unique_ptr<webview::protocol::RPCRequest> &&fullRequest) {
@@ -29,7 +50,7 @@ std::optional<std::string> WebViewRPCServer::doExecuteRPCCall(
         return std::nullopt;
     }
 
-    WebViewProtocolController controller;
+    WebViewProtocolController controller(this);
     m_service.CallMethod(method, &controller, request.get(), response.get(), nullptr);
 
     webview::protocol::RPCResponse fullResponse;

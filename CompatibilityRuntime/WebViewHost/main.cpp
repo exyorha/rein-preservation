@@ -19,6 +19,8 @@ static int applicationMain(const CefMainArgs &mainArgs) {
     }
 
     CefSettings settings;
+    settings.windowless_rendering_enabled = true;
+    settings.background_color = 0;
     if(!CefInitialize(mainArgs, settings, app.get(), nullptr))
         return 0;
 

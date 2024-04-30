@@ -4,6 +4,12 @@
 #include <WebView/WebViewImplementation.h>
 #include <WebViewHostClient.h>
 
+#include <unordered_map>
+#include <memory>
+#include <mutex>
+
+class CEFSurface;
+
 class CEFWebViewImplementation final : public WebViewImplementation {
 public:
     explicit CEFWebViewImplementation(const WebViewHostClientConfiguration &configuration);
@@ -83,7 +89,11 @@ private:
     int64_t getParentWindowHandle();
     static std::string getWebViewHostPath();
 
+    CEFSurface *getSurfaceLocked(const std::string &name) const;
+
     WebViewHostClient m_client;
+    std::mutex m_surfacesMutex;
+    std::unordered_map<std::string, std::unique_ptr<CEFSurface>> m_surfaces;
 };
 
 #endif

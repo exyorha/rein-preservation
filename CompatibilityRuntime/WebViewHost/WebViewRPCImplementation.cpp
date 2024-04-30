@@ -27,9 +27,9 @@ void WebViewRPCImplementation::setJavaScriptEnabled(bool flag) {
         m_settings.javascript = STATE_DISABLED;
 }
 
-void WebViewRPCImplementation::init(const std::string & name, int32_t x, int32_t y, int32_t width, int32_t height, intptr_t parentWindow) {
+void WebViewRPCImplementation::init(const std::string & name, int32_t x, int32_t y, int32_t width, int32_t height, intptr_t parentWindow, std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory) {
 
-    auto webView = std::make_unique<WebView>(x, y, width, height, parentWindow);
+    auto webView = std::make_unique<WebView>(x, y, width, height, parentWindow, std::move(sharedMemory));
     if(!m_webViews.emplace(name, std::move(webView)).second)
         throw std::runtime_error("a WebView with this name already exists");
 }
@@ -154,8 +154,9 @@ void WebViewRPCImplementation::setCalloutEnabled(const std::string & arg1, bool 
 void WebViewRPCImplementation::setDefaultFontSize(const std::string & arg1, int32_t arg2) {
     return get(arg1).setDefaultFontSize(arg2);
 }
-void WebViewRPCImplementation::setFrame(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5) {
-    return get(arg1).setFrame(arg2, arg3, arg4, arg5);
+void WebViewRPCImplementation::setFrame(const std::string & arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory) {
+    return get(arg1).setFrame(arg2, arg3, arg4, arg5, std::move(sharedMemory));
 }
 void WebViewRPCImplementation::setHeaderField(const std::string & arg1, const std::string & arg2, const std::string & arg3) {
     return get(arg1).setHeaderField(arg2, arg3);
@@ -178,8 +179,9 @@ void WebViewRPCImplementation::setPosition(const std::string & arg1, int32_t arg
 void WebViewRPCImplementation::setShowSpinnerWhileLoading(const std::string & arg1, bool arg2) {
     return get(arg1).setShowSpinnerWhileLoading(arg2);
 }
-void WebViewRPCImplementation::setSize(const std::string & arg1, int32_t arg2, int32_t arg3) {
-    return get(arg1).setSize(arg2, arg3);
+void WebViewRPCImplementation::setSize(const std::string & arg1, int32_t arg2, int32_t arg3,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory) {
+    return get(arg1).setSize(arg2, arg3, std::move(sharedMemory));
 }
 void WebViewRPCImplementation::setSpinnerText(const std::string & arg1, const std::string & arg2) {
     return get(arg1).setSpinnerText(arg2);

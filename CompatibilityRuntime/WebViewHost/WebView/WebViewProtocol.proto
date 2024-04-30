@@ -116,6 +116,7 @@ message InitRequest {
   int32 arg4 = 4;
   int32 arg5 = 5;
   int64 parentWindowHandle = 6;
+  int64 sharedMemoryRegion = 7;
 };
 
 message LoadRequest {
@@ -211,6 +212,7 @@ message SetFrameRequest {
   int32 arg3 = 3;
   int32 arg4 = 4;
   int32 arg5 = 5;
+  int64 sharedMemoryRegion = 6;
 };
 
 message SetHeaderFieldRequest {
@@ -262,6 +264,7 @@ message SetSizeRequest {
   string arg1 = 1;
   int32 arg2 = 2;
   int32 arg3 = 3;
+  int64 sharedMemoryRegion = 4;
 };
 
 message SetSpinnerTextRequest {

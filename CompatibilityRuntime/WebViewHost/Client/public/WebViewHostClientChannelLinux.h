@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include "WebViewSharedImageBuffer.h"
+
 class WebViewHostClientConfiguration;
 
 class WebViewHostClientChannelLinux final : public google::protobuf::RpcChannel {
@@ -20,10 +22,10 @@ public:
         google::protobuf::Message* response,
         google::protobuf::Closure* done) override;
 
-private:
-    bool ensuredWrite(const void *dest, size_t size);
-    bool ensuredRead(void *dest, size_t size);
+    std::unique_ptr<WebViewSharedImageBuffer> allocateImageBuffer(size_t size);
+    int64_t sendSharedImageBufferWithNextRequest(WebViewSharedImageBuffer *buffer);
 
+private:
     class FileDescriptor {
     public:
         inline explicit FileDescriptor(int fd = -1) noexcept : m_fd(fd) {}
@@ -43,9 +45,28 @@ private:
         int m_fd;
     };
 
+    class LinuxImageBuffer final : public WebViewSharedImageBuffer{
+    public:
+        explicit LinuxImageBuffer(size_t size);
+        ~LinuxImageBuffer() override;
+
+        inline int fd() const {
+            return m_fd;
+        }
+
+        void *base() const override;
+        size_t size() const override;
+
+    private:
+        FileDescriptor m_fd;
+        void *m_base;
+        size_t m_size;
+    };
+
     pid_t m_pid;
     FileDescriptor m_fd;
     std::vector<unsigned char> m_receiveBuffer;
+    std::vector<FileDescriptor> m_pendingFileDescriptors;
 
 };
 

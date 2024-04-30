@@ -1,41 +1,33 @@
 #include "WebView.h"
-#include "WebViewContainerDelegate.h"
 #include "WebViewClient.h"
-#include "WebViewBrowserViewDelegate.h"
+#include "WebViewRenderHandler.h"
+
+#include <include/cef_base.h>
 
 #ifdef _WIN32
 #include <windows.h>
-#else
-#include <include/internal/cef_types_linux.h>
-#include <X11/X.h>
-#include <X11/Xlib.h>
 #endif
 
-WebView::WebView(int x, int y, int width, int height, intptr_t parentWindow) {
-    m_window = CefWindow::CreateTopLevelWindow(CefRefPtr<WebViewContainerDelegate>(new WebViewContainerDelegate));
-
+WebView::WebView(int x, int y, int width, int height, intptr_t parentWindow,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory) :
+    m_renderHandler(new WebViewRenderHandler(CefRect(x, y, width, height), std::move(sharedMemory))) {
+    CefWindowInfo windowInfo;
 #ifdef _WIN32
-    HWND cefWindow = m_window->GetWindowHandle();
-    SetParent(cefWindow, reinterpret_cast<HWND>(parentWindow));
-    SetWindowPos(cefWindow, HWND_TOP, x, y, width, height, SWP_FRAMECHANGED);
+    windowInfo.SetAsWindowless(reinterpret_cast<HWND>(parentWindow));
 #else
-    auto display = cef_get_xdisplay();
-
-    Window cefWindow = m_window->GetWindowHandle();
-    XReparentWindow(display, cefWindow, static_cast<Window>(parentWindow), 0, 0);
-    setFrame(x, y, width, height);
+    windowInfo.SetAsWindowless(parentWindow);
 #endif
+
 
     CefBrowserSettings browserSettings;
-    m_browser = CefBrowserView::CreateBrowserView(
-        CefRefPtr<WebViewClient>(new WebViewClient),
+
+    m_browser = CefBrowserHost::CreateBrowserSync(
+        windowInfo,
+        CefRefPtr<WebViewClient>(new WebViewClient(m_renderHandler)),
         "",
         browserSettings,
         nullptr,
-        nullptr,
-        CefRefPtr<WebViewBrowserViewDelegate>(new WebViewBrowserViewDelegate));
-
-    m_window->AddChildView(m_browser);
+        nullptr);
 }
 
 WebView::~WebView() = default;
@@ -62,11 +54,11 @@ bool WebView::animateTo(int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, 
 }
 
 bool WebView::canGoBack() {
-    return m_browser->GetBrowser()->CanGoBack();
+    return m_browser->CanGoBack();
 }
 
 bool WebView::canGoForward() {
-    return m_browser->GetBrowser()->CanGoForward();
+    return m_browser->CanGoForward();
 }
 
 void WebView::cleanCache() {
@@ -78,7 +70,7 @@ void WebView::evaluateJavaScript(const std::string & arg1, const std::string & a
 }
 
 std::string WebView::getUrl() {
-    return m_browser->GetBrowser()->GetMainFrame()->GetURL();
+    return m_browser->GetMainFrame()->GetURL();
 }
 
 std::string WebView::getUserAgent() {
@@ -92,11 +84,11 @@ float WebView::getWebViewAlpha() {
 }
 
 void WebView::goBack() {
-    m_browser->GetBrowser()->GoBack();
+    m_browser->GoBack();
 }
 
 void WebView::goForward() {
-    m_browser->GetBrowser()->GoForward();
+    m_browser->GoForward();
 }
 
 bool WebView::hide(bool arg1, int32_t arg2, float arg3, const std::string & arg4) {
@@ -106,13 +98,13 @@ bool WebView::hide(bool arg1, int32_t arg2, float arg3, const std::string & arg4
      * TODO: animations
      */
 
-    m_window->SetVisible(false);
+    m_browser->GetHost()->WasHidden(true);
 
     return true;
 }
 
 void WebView::load(const std::string &url) {
-    m_browser->GetBrowser()->GetMainFrame()->LoadURL(url);
+    m_browser->GetMainFrame()->LoadURL(url);
 }
 
 void WebView::loadHTMLString(const std::string & arg1, const std::string & arg2) {
@@ -120,11 +112,11 @@ void WebView::loadHTMLString(const std::string & arg1, const std::string & arg2)
 }
 
 void WebView::print() {
-    m_browser->GetBrowser()->GetHost()->Print();
+    m_browser->GetHost()->Print();
 }
 
 void WebView::reload() {
-    m_browser->GetBrowser()->Reload();
+    m_browser->Reload();
 }
 
 void WebView::removePermissionTrustDomain(const std::string & arg1) {
@@ -230,7 +222,7 @@ bool WebView::show(bool arg1, int32_t arg2, float arg3, const std::string & arg4
      * TODO: animations
      */
 
-    m_window->SetVisible(true);
+    m_browser->GetHost()->WasHidden(false);
 
     return true;
 }
@@ -240,40 +232,26 @@ void WebView::showWebViewDialog(bool arg1) {
 }
 
 void WebView::stop() {
-    m_browser->GetBrowser()->StopLoad();
+    m_browser->StopLoad();
 }
 
-void WebView::setFrame(int32_t x, int32_t y, int32_t width, int32_t height) {
-
-#ifdef _WIN32
-    SetWindowPos(m_window->GetWindowHandle(), nullptr, x, y, width, height, SWP_NOZORDER | SWP_ASYNCWINDOWPOS);
-#else
-    auto display = cef_get_xdisplay();
-
-    XMoveResizeWindow(display, m_window->GetWindowHandle(), x, y, width, height);
-    XSync(display, True);
-#endif
+void WebView::setFrame(int32_t x, int32_t y, int32_t width, int32_t height,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory) {
+    m_renderHandler->setRect(CefRect(x, y, width, height));
+    m_renderHandler->replaceSharedMemoryRegion(std::move(sharedMemory));
+    m_browser->GetHost()->WasResized();
 }
 
 void WebView::setPosition(int32_t x, int32_t y) {
-#ifdef _WIN32
-    SetWindowPos(m_window->GetWindowHandle(), nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_ASYNCWINDOWPOS | SWP_NOSIZE);
-#else
-    auto display = cef_get_xdisplay();
-
-    XMoveWindow(display, m_window->GetWindowHandle(), x, y);
-    XSync(display, True);
-#endif
+    auto rect = m_renderHandler->rect();
+    m_renderHandler->setRect(CefRect(x, y, rect.width, rect.height));
+    m_browser->GetHost()->WasResized();
 }
 
-void WebView::setSize(int32_t width, int32_t height) {
-#ifdef _WIN32
-    SetWindowPos(m_window->GetWindowHandle(), nullptr, 0, 0, width, height, SWP_NOZORDER |
-        SWP_ASYNCWINDOWPOS | SWP_NOMOVE);
-#else
-    auto display = cef_get_xdisplay();
-
-    XResizeWindow(display, m_window->GetWindowHandle(), width, height);
-    XSync(display, True);
-#endif
+void WebView::setSize(int32_t width, int32_t height,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory) {
+    auto rect = m_renderHandler->rect();
+    m_renderHandler->setRect(CefRect(rect.x, rect.y, width, height));
+    m_renderHandler->replaceSharedMemoryRegion(std::move(sharedMemory));
+    m_browser->GetHost()->WasResized();
 }

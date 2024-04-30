@@ -10,15 +10,18 @@
 #include <unistd.h>
 #include <spawn.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
 
-WebViewHostClientChannelLinux::WebViewHostClientChannelLinux(const WebViewHostClientConfiguration &config) {
+WebViewHostClientChannelLinux::WebViewHostClientChannelLinux(const WebViewHostClientConfiguration &config) :
+    m_receiveBuffer(256 * 1024) {
+
     std::optional<FileDescriptor> clientSideDescriptor;
     std::optional<FileDescriptor> browserSideDescriptor;
 
     {
 
         int commSockets[2];
-        if(socketpair(AF_UNIX, SOCK_STREAM, 0, commSockets) < 0) {
+        if(socketpair(AF_UNIX, SOCK_SEQPACKET, 0, commSockets) < 0) {
             throw std::system_error(errno, std::generic_category());
         }
 
@@ -113,24 +116,51 @@ void WebViewHostClientChannelLinux::CallMethod(
             fullRequest.set_request(request->SerializeAsString());
 
         auto requestData = fullRequest.SerializeAsString();
-        uint32_t requestLength = requestData.size();
 
-        if(!ensuredWrite(&requestLength, sizeof(requestLength)))
-            throw std::runtime_error("failed to write the request header");
+        std::vector<unsigned char> control;
 
-        if(!ensuredWrite(requestData.data(), requestData.size()))
-            throw std::runtime_error("failed to write the request body");
+        if(!m_pendingFileDescriptors.empty()) {
+            control.resize(CMSG_SPACE(m_pendingFileDescriptors.size() * sizeof(int)));
+        }
+
+        struct iovec iov;
+        iov.iov_base = requestData.data();
+        iov.iov_len = requestData.size();
+
+        struct msghdr message;
+        memset(&message, 0, sizeof(message));
+        message.msg_iov = &iov;
+        message.msg_iovlen = 1;
+        message.msg_control = control.data();
+        message.msg_controllen = control.size();
+
+        if(!m_pendingFileDescriptors.empty()) {
+            auto hdr = CMSG_FIRSTHDR(&message);
+            hdr->cmsg_level = SOL_SOCKET;
+            hdr->cmsg_type = SCM_RIGHTS;
+            hdr->cmsg_len = CMSG_LEN(m_pendingFileDescriptors.size() * sizeof(int));
+
+            auto fdp = reinterpret_cast<unsigned char *>(CMSG_DATA(hdr));
+            for(const auto &fd: m_pendingFileDescriptors) {
+                int fdValue = fd;
+                memcpy(fdp, &fdValue, sizeof(fdValue));
+                fdp += sizeof(fdValue);
+            }
+        }
+
+        auto result = sendmsg(m_fd, &message, MSG_EOR | MSG_NOSIGNAL);
+        m_pendingFileDescriptors.clear();
+
+        if(result < 0)
+            throw std::runtime_error("failed to send the request");
+
+        if(result != requestData.size())
+            throw std::runtime_error("not the whole message was sent");
     }
 
-    uint32_t responseLength;
-    if(!ensuredRead(&responseLength, sizeof(responseLength)))
-        throw std::runtime_error("failed to read the response header");
-
-    if(m_receiveBuffer.size() < responseLength)
-        m_receiveBuffer.resize(responseLength);
-
-    if(!ensuredRead(m_receiveBuffer.data(), responseLength))
-        throw std::runtime_error("failed to read the response header");
+    auto responseLength = recv(m_fd, m_receiveBuffer.data(), m_receiveBuffer.size(), 0);
+    if(responseLength < 0)
+        throw std::runtime_error("failed to receive the response");
 
     webview::protocol::RPCResponse fullResponse;
     if(!fullResponse.ParseFromArray(m_receiveBuffer.data(), responseLength))
@@ -153,53 +183,59 @@ void WebViewHostClientChannelLinux::CallMethod(
         done->Run();
 }
 
-
-bool WebViewHostClientChannelLinux::ensuredWrite(const void *dest, size_t size) {
-    if(size == 0)
-        return true;
-
-    auto bytes = static_cast<const unsigned char *>(dest);
-    while(size > 0) {
-        ssize_t result;
-        do {
-            result = send(m_fd, bytes, size, 0);
-        } while(result < 0 && errno == EINTR);
-
-        if(result <= 0) {
-            fprintf(stderr, "WebViewHostClientChannelLinux::ensuredRead: send signaled %s\n", strerror(errno));
-            return false;
-        }
-
-        bytes += result;
-        size -= result;
-    }
-
-    return true;
+std::unique_ptr<WebViewSharedImageBuffer> WebViewHostClientChannelLinux::allocateImageBuffer(size_t size) {
+    return std::make_unique<LinuxImageBuffer>(size);
 }
 
-bool WebViewHostClientChannelLinux::ensuredRead(void *dest, size_t size) {
+WebViewHostClientChannelLinux::LinuxImageBuffer::LinuxImageBuffer(size_t size) : m_base(nullptr), m_size(size) {
     if(size == 0)
-        return true;
+        throw std::logic_error("the size cannot be zero");
 
-    auto bytes = static_cast<unsigned char *>(dest);
-    while(size > 0) {
-        ssize_t result;
-        do {
-            result = recv(m_fd, bytes, size, 0);
-        } while(result < 0 && errno == EINTR);
+    auto rawfd = memfd_create("WebViewHostClientChannelLinux_ImageBuffer", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if(rawfd < 0)
+        throw std::system_error(errno, std::generic_category());
 
-        if(result < 0) {
-            fprintf(stderr, "WebViewHostClientChannelLinux::ensuredRead: recv signaled %s\n", strerror(errno));
-            return false;
-        } else if(result == 0) {
-            fprintf(stderr, "WebViewHostClientChannelLinux::ensuredRead: end of file\n");
-            return false;
-        }
+    m_fd = FileDescriptor(rawfd);
 
-        bytes += result;
-        size -= result;
-    }
+    if(ftruncate64(m_fd, size) < 0)
+        throw std::system_error(errno, std::generic_category());
 
-    return true;
+    if(fcntl(m_fd, F_ADD_SEALS, F_SEAL_SEAL | F_SEAL_SHRINK | F_SEAL_GROW) < 0)
+        throw std::system_error(errno, std::generic_category());
+
+    m_base = mmap(nullptr, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, 0);
+    if(m_base == MAP_FAILED)
+        throw std::system_error(errno, std::generic_category());
 }
 
+WebViewHostClientChannelLinux::LinuxImageBuffer::~LinuxImageBuffer() {
+    munmap(m_base, m_size);
+}
+
+void *WebViewHostClientChannelLinux::LinuxImageBuffer::base() const {
+    return m_base;
+}
+
+size_t WebViewHostClientChannelLinux::LinuxImageBuffer::size() const {
+    return m_size;
+}
+
+/*
+ * For linux, the image buffer handle encoding is:
+ * 0 - 'no valid FD'
+ * > 0 - the FD in the SCM_RIGHTS array at the index of (handle - 1).
+ */
+int64_t WebViewHostClientChannelLinux::sendSharedImageBufferWithNextRequest(WebViewSharedImageBuffer *buffer) {
+    if(buffer == nullptr)
+        return 0;
+
+    auto newFd = fcntl(static_cast<LinuxImageBuffer *>(buffer)->fd(), F_DUPFD_CLOEXEC);
+    if(newFd < 0)
+        throw std::runtime_error("fcntl(F_DUPFD_CLOEXEC) has failed");
+
+    FileDescriptor owned(newFd);
+
+    m_pendingFileDescriptors.emplace_back(std::move(owned));
+
+    return m_pendingFileDescriptors.size();
+}

@@ -3,19 +3,33 @@
 
 #include <string>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
 
 #include <windows.h>
 
 #include "WebViewRPCServer.h"
+#include "WebViewSharedImageBuffer.h"
 
 class WebViewRPCServerWindows final: public WebViewRPCServer {
 public:
     explicit WebViewRPCServerWindows(const std::wstring &server);
     ~WebViewRPCServerWindows();
 
+    std::unique_ptr<WebViewSharedImageBuffer> receiveImageBuffer(intptr_t handle) override;
+
 private:
+    class WindowsSharedImageBuffer final : public WebViewSharedImageBuffer {
+    public:
+        explicit WindowsSharedImageBuffer(HANDLE handle);
+        ~WindowsSharedImageBuffer() override;
+
+        void *base() const override;
+        size_t size() const override;
+
+    private:
+        void *m_base;
+        size_t m_size;
+    };
+
     void receiveRequests();
 
     void runMainLoop();
@@ -23,11 +37,6 @@ private:
     void executeRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request);
     bool executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCRequest> &&request);
 
-    void clearCallInProgress();
-
-    std::mutex m_callInProgressMutex;
-    std::condition_variable m_callInProgressCondvar;
-    bool m_callInProgress;
     std::vector<unsigned char> m_receiveBuffer;
     HANDLE m_handle;
     std::thread m_requestReceivingThread;
