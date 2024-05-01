@@ -40,6 +40,9 @@ WebViewHostClientChannelLinux::WebViewHostClientChannelLinux(const WebViewHostCl
         std::vector<std::string> hostInvocation;
         hostInvocation.emplace_back(config.hostExecutablePath.string());
         hostInvocation.emplace_back("--webview-rpc-client-socket=" + std::to_string(*browserSideDescriptor));
+        hostInvocation.emplace_back("--disable-gpu");
+        hostInvocation.emplace_back("--disable-gpu-compositing");
+        hostInvocation.emplace_back("--disable-software-rasterizer");
 
         std::vector<char *> pointers;
         pointers.reserve(hostInvocation.size() + 1);

@@ -1,7 +1,8 @@
 #include <WebView/CEFWebViewImplementation.h>
 #include <WebView/CEFSurface.h>
 
-CEFWebViewImplementation::CEFWebViewImplementation(const WebViewHostClientConfiguration &config) : m_client(config) {
+CEFWebViewImplementation::CEFWebViewImplementation(const WebViewHostClientConfiguration &config) : m_client(config),
+    m_installer(this) {
 
 }
 
@@ -889,4 +890,53 @@ CEFSurface *CEFWebViewImplementation::getSurfaceLocked(const std::string &name) 
         throw std::runtime_error("no such surface");
 
     return it->second.get();
+}
+
+void CEFWebViewImplementation::beforeSwapBuffers() {
+    if(!m_compositor.has_value())
+        return;
+
+    m_compositor->disposeStaleTextures();
+
+    bool renderedAny = false;
+
+    {
+        std::unique_lock<std::mutex> locker(m_surfacesMutex);
+
+        for(const auto &surfacePair: m_surfaces) {
+            auto surface = surfacePair.second.get();
+            if(!surface)
+                continue;
+
+            if(surface->shouldRender()) {
+                if(!renderedAny) {
+                    renderedAny = true;
+                    m_compositor->beforeRender();
+                }
+
+                m_compositor->renderSurface(surface);
+            }
+        }
+    }
+
+    if(renderedAny) {
+        m_compositor->afterRender();
+    }
+}
+
+void CEFWebViewImplementation::afterSwapBuffers() {
+    std::unique_lock<std::mutex> locker(m_surfacesMutex);
+    for(const auto &surfacePair: m_surfaces) {
+        auto surface = surfacePair.second.get();
+        if(!surface)
+            continue;
+
+        if(surface->getAndClearNeedsUploadFlag()) {
+            if(!m_compositor.has_value()) {
+                m_compositor.emplace();
+            }
+
+            m_compositor->uploadSurface(surface);
+        }
+    }
 }

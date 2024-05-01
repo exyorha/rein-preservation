@@ -5,9 +5,12 @@
 #include <cstdint>
 
 struct WebViewSharedImageBufferHeader {
+    static constexpr uint32_t FlagClean = 1;
+
     uint32_t width;
     uint32_t height;
-    uint8_t pad[8];
+    volatile uint32_t flags;
+    uint8_t pad[4];
 };
 
 static_assert(sizeof(WebViewSharedImageBufferHeader) == 16, "WebViewSharedImageBufferHeader is expected to be 16 byte long");
@@ -52,6 +55,15 @@ public:
         return
             sizeof(WebViewSharedImageBufferHeader) +
             static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(uint32_t);
+    }
+
+    bool setAndReturnCleanFlag() {
+        return (__atomic_fetch_or(&imageHeader()->flags, WebViewSharedImageBufferHeader::FlagClean, __ATOMIC_ACQ_REL) &
+            WebViewSharedImageBufferHeader::FlagClean) != 0;
+    }
+
+    void clearCleanFlag() {
+        __atomic_fetch_and(&imageHeader()->flags, ~WebViewSharedImageBufferHeader::FlagClean, __ATOMIC_ACQ_REL);
     }
 
 private:

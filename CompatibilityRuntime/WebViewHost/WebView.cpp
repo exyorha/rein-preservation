@@ -28,6 +28,8 @@ WebView::WebView(int x, int y, int width, int height, intptr_t parentWindow,
         browserSettings,
         nullptr,
         nullptr);
+
+    m_browser->GetHost()->WasResized();
 }
 
 WebView::~WebView() = default;

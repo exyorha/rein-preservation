@@ -9,8 +9,12 @@ add_executable(GameExecutable
     GameServerInterface.cpp
     GameServerInterface.h
 
-    GLES/BaseGLESContext.cpp
-    GLES/BaseGLESContext.h
+
+    GLES/GLESAPISet.cpp
+    GLES/GLESAPISet.h
+    GLES/GLESObjectHandle.h
+    GLES/GLESRenderingOverlay.cpp
+    GLES/GLESRenderingOverlay.h
 
     main.cpp
 
@@ -126,6 +130,8 @@ endif()
 
 if(TARGET WebViewHostClient)
     target_sources(GameExecutable PRIVATE
+        WebView/CEFCompositor.cpp
+        WebView/CEFCompositor.h
         WebView/CEFSurface.cpp
         WebView/CEFSurface.h
         WebView/CEFWebViewImplementation.cpp
@@ -166,9 +172,6 @@ if(TARGET PkgConfig::MPV)
         VideoPlayer/MPVPlayer.h
 
         VideoPlayer/MPVTypes.h
-
-        VideoPlayer/VideoRenderingOpenGLAPISet.cpp
-        VideoPlayer/VideoRenderingOpenGLAPISet.h
     )
 
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_MPV)

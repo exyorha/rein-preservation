@@ -5,7 +5,10 @@
 #include <cstring>
 #include <memory>
 
+#include <GLES/GLESObjectHandle.h>
+
 class WebViewSharedImageBuffer;
+class CEFCompositor;
 
 class CEFSurface {
 public:
@@ -47,6 +50,16 @@ public:
     void setFrame(int32_t x, int32_t y, uint32_t width, uint32_t height,
                   std::unique_ptr<WebViewSharedImageBuffer> &&buffer);
 
+    bool getAndClearNeedsUploadFlag();
+
+    bool shouldRender() const;
+
+    void upload(CEFCompositor *compositor);
+
+    inline const GLESTextureHandle &texture() const {
+        return m_texture;
+    }
+
 private:
     std::unique_ptr<WebViewSharedImageBuffer> m_buffer;
     int32_t m_x;
@@ -54,6 +67,10 @@ private:
     uint32_t m_width;
     uint32_t m_height;
     bool m_hidden;
+    CEFCompositor *m_compositor;
+    GLESTextureHandle m_texture;
+    uint32_t m_allocatedWidth;
+    uint32_t m_allocatedHeight;
 };
 
 #endif

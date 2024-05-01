@@ -1,5 +1,6 @@
 #include <GLES/SDL/SDLWrapper.h>
 #include <GLES/SDL/RealSDLSymbols.h>
+#include <GLES/GLESRenderingOverlay.h>
 
 #include <SDL2/SDL_video.h>
 
@@ -37,4 +38,12 @@ void SDLCALL SDL_DestroyWindow(SDL_Window *window) {
     unregisterSDLWindow(window);
 
     RealSDLSymbols::getSingleton().realDestroyWindow(window);
+}
+
+void SDLCALL SDL_GL_SwapWindow(SDL_Window *window) {
+    GLESRenderingOverlay::invokeBeforeSwapBuffers();
+
+    RealSDLSymbols::getSingleton().realGL_SwapWindow(window);
+
+    GLESRenderingOverlay::invokeAfterSwapBuffers();
 }

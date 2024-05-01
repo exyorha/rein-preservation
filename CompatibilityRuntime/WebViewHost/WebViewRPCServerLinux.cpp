@@ -126,6 +126,8 @@ void WebViewRPCServerLinux::runMainLoop() {
 }
 
 std::unique_ptr<WebViewSharedImageBuffer> WebViewRPCServerLinux::receiveImageBuffer(intptr_t handle) {
+    printf("WebViewRPCServerLinux::receiveImageBuffer: %ld\n", handle);
+
     if(handle == 0)
         return nullptr;
 

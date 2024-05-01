@@ -1,7 +1,9 @@
 #ifndef VIDEO_PLAYER_MPV_PLAYER_H
 #define VIDEO_PLAYER_MPV_PLAYER_H
 
-#include <VideoPlayer/VideoRenderingOpenGLAPISet.h>
+#include <GLES/GLESAPISet.h>
+#include <GLES/GLESObjectHandle.h>
+
 #include <VideoPlayer/MPVPropertyFormat.h>
 #include <VideoPlayer/MPVPropertyObserver.h>
 
@@ -93,9 +95,8 @@ private:
     /*
      * Fields that are accessed on the rendering thread *only*.
      */
-    static std::optional<VideoRenderingOpenGLAPISet> m_openglAPI;
-    GLuint m_framebuffer;
-    GLuint m_texture;
+    GLESFramebufferHandle m_framebuffer;
+    GLESTextureHandle m_texture;
     unsigned int m_currentlyAllocatedTextureWidth;
     unsigned int m_currentlyAllocatedTextureHeight;
 };

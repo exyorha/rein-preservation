@@ -2,15 +2,20 @@
 #define WEB_VIEW_CEF_WEB_VIEW_IMPLEMENTATION_H
 
 #include <WebView/WebViewImplementation.h>
+#include <WebView/CEFCompositor.h>
+
 #include <WebViewHostClient.h>
+
+#include <GLES/GLESRenderingOverlay.h>
 
 #include <unordered_map>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 class CEFSurface;
 
-class CEFWebViewImplementation final : public WebViewImplementation {
+class CEFWebViewImplementation final : public WebViewImplementation, private GLESRenderingOverlay {
 public:
     explicit CEFWebViewImplementation(const WebViewHostClientConfiguration &configuration);
     ~CEFWebViewImplementation() override;
@@ -89,11 +94,16 @@ private:
     int64_t getParentWindowHandle();
     static std::string getWebViewHostPath();
 
+    void beforeSwapBuffers() override;
+    void afterSwapBuffers() override;
+
     CEFSurface *getSurfaceLocked(const std::string &name) const;
 
     WebViewHostClient m_client;
     std::mutex m_surfacesMutex;
     std::unordered_map<std::string, std::unique_ptr<CEFSurface>> m_surfaces;
+    std::optional<CEFCompositor> m_compositor;
+    GLESRenderingOverlay::Installer m_installer;
 };
 
 #endif
