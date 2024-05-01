@@ -228,7 +228,7 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
     }
 
     mpv_opengl_fbo fbo = {
-        .fbo = static_cast<int>(m_framebuffer),
+        .fbo = static_cast<int>(m_framebuffer.handle()),
         .w = static_cast<int>(m_currentlyAllocatedTextureWidth),
         .h = static_cast<int>(m_currentlyAllocatedTextureHeight),
         .internal_format = GL_RGBA
