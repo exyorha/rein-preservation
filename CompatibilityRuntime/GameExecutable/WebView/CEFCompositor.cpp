@@ -116,6 +116,8 @@ void CEFCompositor::disposeStaleTextures() {
 void CEFCompositor::beforeRender() {
     const auto &api = GLESAPISet::get();
 
+    api.glGetIntegerv(GL_VIEWPORT, m_previousViewport.data());
+
     api.glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_oldDrawFramebuffer);
     api.glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_oldReadFramebuffer);
     api.glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -143,10 +145,27 @@ void CEFCompositor::beforeRender() {
 
     api.glGetIntegerv(GL_CURRENT_PROGRAM, &m_oldProgram);
     api.glUseProgram(m_program);
+
+    api.glGetIntegerv(GL_BLEND_SRC_RGB, &m_oldSrcRGB);
+    api.glGetIntegerv(GL_BLEND_DST_RGB, &m_oldDstRGB);
+    api.glGetIntegerv(GL_BLEND_SRC_ALPHA, &m_oldSrcAlpha);
+    api.glGetIntegerv(GL_BLEND_DST_ALPHA, &m_oldDstAlpha);
+    /*
+     * TODO: assuming that the alpha is premultiplied - Chromium's alpha
+     * *should* be premultiplied, but this needs checking
+     */
+    api.glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    api.glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_oldEquationRGB);
+    api.glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_oldEquationAlpha);
+    api.glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 }
 
 void CEFCompositor::afterRender() {
     const auto &api = GLESAPISet::get();
+
+    api.glBlendEquationSeparate(m_oldEquationRGB, m_oldEquationAlpha);
+    api.glBlendFuncSeparate(m_oldSrcRGB, m_oldDstRGB, m_oldSrcAlpha, m_oldDstAlpha);
 
     api.glUseProgram(m_oldProgram);
     api.glBindTexture(GL_TEXTURE_2D, m_oldTexture2D);
@@ -168,6 +187,8 @@ void CEFCompositor::afterRender() {
 
     api.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_oldDrawFramebuffer);
     api.glBindFramebuffer(GL_READ_FRAMEBUFFER, m_oldReadFramebuffer);
+
+    api.glViewport(m_previousViewport[0], m_previousViewport[1], m_previousViewport[2], m_previousViewport[3]);
 }
 
 void CEFCompositor::renderSurface(CEFSurface *surface) {

@@ -38,6 +38,8 @@ public:
     PFNGLVIEWPORTPROC glViewport;
     PFNGLGETINTEGERVPROC glGetIntegerv;
     PFNGLGETBOOLEANVPROC glGetBooleanv;
+    PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
+    PFNGLBLENDEQUATIONSEPARATEPROC glBlendEquationSeparate;
 
     PFNGLCREATEPROGRAMPROC glCreateProgram;
     PFNGLDELETEPROGRAMPROC glDeleteProgram;
@@ -54,6 +56,7 @@ public:
     PFNGLCOMPILESHADERPROC glCompileShader;
     PFNGLGETSHADERIVPROC glGetShaderiv;
     PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+
 
     static const GLESAPISet &get();
 

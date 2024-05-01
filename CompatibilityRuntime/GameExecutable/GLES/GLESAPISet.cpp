@@ -38,6 +38,8 @@ GLESAPISet::GLESAPISet() {
     bindFunction("glViewport", glViewport);
     bindFunction("glGetIntegerv", glGetIntegerv);
     bindFunction("glGetBooleanv", glGetBooleanv);
+    bindFunction("glBlendFuncSeparate", glBlendFuncSeparate);
+    bindFunction("glBlendEquationSeparate", glBlendEquationSeparate);
 
     bindFunction("glCreateProgram", glCreateProgram);
     bindFunction("glDeleteProgram", glDeleteProgram);

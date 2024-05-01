@@ -2,6 +2,7 @@
 #define WEBVIEW_CEF_COMPOSITOR_H
 
 #include <vector>
+#include <array>
 
 #include <GLES/GLESObjectHandle.h>
 
@@ -44,6 +45,13 @@ private:
     GLint m_oldTexture2D;
     GLint m_oldVAO;
     GLint m_oldProgram;
+    GLint m_oldSrcRGB;
+    GLint m_oldDstRGB;
+    GLint m_oldSrcAlpha;
+    GLint m_oldDstAlpha;
+    GLint m_oldEquationRGB;
+    GLint m_oldEquationAlpha;
+    std::array<GLint, 4> m_previousViewport;
 
     static const std::string_view m_vertexShaderCode;
     static const std::string_view m_fragmentShaderCode;
