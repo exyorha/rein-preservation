@@ -15,6 +15,7 @@ public:
     WebViewHostClientConfiguration &operator =(WebViewHostClientConfiguration &&other) noexcept;
 
     std::filesystem::path hostExecutablePath;
+    std::filesystem::path homePath;
 
     bool isUsable() const;
 

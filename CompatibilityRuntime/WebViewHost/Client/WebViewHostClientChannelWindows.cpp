@@ -27,7 +27,13 @@ WebViewHostClientChannelWindows::WebViewHostClientChannelWindows(const WebViewHo
     m_handle = HandleHolder(rawHandle);
 
     std::wstringstream cmdline;
-    cmdline << "\"" << config.hostExecutablePath.wstring() << "\" \"--webview-rpc-server=" << pipeName << "\"";
+    cmdline << L"\"" << config.hostExecutablePath.wstring() << L"\" \"--webview-rpc-server=" << pipeName << L"\"";
+
+    if(!config.homePath.empty()) {
+        cmdline << L" \"--home-path=" << config.homePath << L"\"";
+    }
+
+    cmdline << L" --disable-gpu --disable-gpu-compositing --disable-software-rasterizer";
 
     STARTUPINFO si;
     memset(&si, 0, sizeof(si));

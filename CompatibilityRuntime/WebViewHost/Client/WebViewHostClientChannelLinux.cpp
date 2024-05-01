@@ -44,6 +44,10 @@ WebViewHostClientChannelLinux::WebViewHostClientChannelLinux(const WebViewHostCl
         hostInvocation.emplace_back("--disable-gpu-compositing");
         hostInvocation.emplace_back("--disable-software-rasterizer");
 
+        if(!config.homePath.empty()) {
+            hostInvocation.emplace_back("--home-path=" + config.homePath.string());
+        }
+
         std::vector<char *> pointers;
         pointers.reserve(hostInvocation.size() + 1);
 

@@ -18,10 +18,21 @@ static int applicationMain(const CefMainArgs &mainArgs) {
         return exitCode;
     }
 
+    auto earlyCommandLine = CefCommandLine::CreateCommandLine();
+#ifdef _WIN32
+    earlyCommandLine->InitFromString(GetCommandLineW());
+#else
+    earlyCommandLine->InitFromArgv(mainArgs.argc, mainArgs.argv);
+#endif
+
     CefSettings settings;
     settings.windowless_rendering_enabled = true;
     settings.background_color = 0;
     settings.no_sandbox = true;
+
+    if(earlyCommandLine->HasSwitch("home-path")) {
+        CefString(&settings.root_cache_path).FromString(earlyCommandLine->GetSwitchValue("home-path"));
+    }
 
     if(!CefInitialize(mainArgs, settings, app.get(), nullptr))
         return 0;
