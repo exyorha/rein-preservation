@@ -25,6 +25,9 @@ public:
     float screenHeight() override;
     float screenWidth() override;
 
+    static int32_t screenHeightStatic();
+    static int32_t screenWidthStatic();
+
     void setAllowAutoPlay(bool flag) override;
     void setAllowJavaScriptOpenWindow(bool flag) override;
     void setJavaScriptEnabled(bool flag) override;
@@ -91,10 +94,9 @@ public:
     void stop(const std::string & name) override;
 
 private:
-    int64_t getParentWindowHandle();
     static std::string getWebViewHostPath();
 
-    void beforeSwapBuffers() override;
+    void beforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight) override;
     void afterSwapBuffers() override;
 
     CEFSurface *getSurfaceLocked(const std::string &name) const;

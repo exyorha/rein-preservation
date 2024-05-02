@@ -26,8 +26,8 @@ public:
     using SDL_GL_GetProcAddress_Type = void *(*SDLCALL)(const char *proc);
     SDL_GL_GetProcAddress_Type realGL_GetProcAddress;
 
-    using SDL_GetWindowSize_Type = void (*SDLCALL)(SDL_Window *window, int *w, int *h);
-    SDL_GetWindowSize_Type realGetWindowSize;
+    using SDL_GL_GetDrawableSize_Type = void (*SDLCALL)(SDL_Window *window, int *w, int *h);
+    SDL_GL_GetDrawableSize_Type realGL_GetDrawableSize;
 
     using SDL_GL_SwapWindow_Type = void (*SDLCALL)(SDL_Window *window);
     SDL_GL_SwapWindow_Type realGL_SwapWindow;

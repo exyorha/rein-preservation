@@ -12,12 +12,12 @@ public:
     GLESRenderingOverlay(const GLESRenderingOverlay &other) = delete;
     GLESRenderingOverlay &operator =(const GLESRenderingOverlay &other) = delete;
 
-    virtual void beforeSwapBuffers();
+    virtual void beforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight);
     virtual void afterSwapBuffers();
 
     static void install(GLESRenderingOverlay *overlay) noexcept;
 
-    static void invokeBeforeSwapBuffers();
+    static void invokeBeforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight);
     static void invokeAfterSwapBuffers();
 
     class Installer {

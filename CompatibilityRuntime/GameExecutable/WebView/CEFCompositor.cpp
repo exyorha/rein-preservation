@@ -1,5 +1,6 @@
 #include <WebView/CEFCompositor.h>
 #include <WebView/CEFSurface.h>
+#include <WebView/CEFWebViewImplementation.h>
 
 #include <GLES/GLESAPISet.h>
 
@@ -191,13 +192,23 @@ void CEFCompositor::afterRender() {
     api.glViewport(m_previousViewport[0], m_previousViewport[1], m_previousViewport[2], m_previousViewport[3]);
 }
 
-void CEFCompositor::renderSurface(CEFSurface *surface) {
+void CEFCompositor::renderSurface(CEFSurface *surface, int32_t drawableWidth, int32_t drawableHeight) {
     if(!surface->texture())
         return;
 
+    float scaleFactorX = drawableWidth * 1.0f / CEFWebViewImplementation::screenWidthStatic();
+    float scaleFactorY = drawableHeight * 1.0f / CEFWebViewImplementation::screenHeightStatic();
+
     const auto &api = GLESAPISet::get();
 
-    api.glViewport(surface->x(), surface->y(), surface->width(), surface->height());
+    auto y = roundf(surface->y() * scaleFactorY);
+    auto height = roundf(surface->height() * scaleFactorY);
+
+    api.glViewport(
+        roundf(surface->x() * scaleFactorX),
+        drawableHeight - height - y,
+        roundf(surface->width() * scaleFactorX),
+        height);
     api.glBindTexture(GL_TEXTURE_2D, surface->texture());
     api.glDrawArrays(GL_TRIANGLES, 0, 3);
 }

@@ -6,8 +6,9 @@ GLESRenderingOverlay::GLESRenderingOverlay() = default;
 
 GLESRenderingOverlay::~GLESRenderingOverlay() = default;
 
-void GLESRenderingOverlay::beforeSwapBuffers() {
-
+void GLESRenderingOverlay::beforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight) {
+    (void)drawableWidth;
+    (void)drawableHeight;
 }
 
 void GLESRenderingOverlay::afterSwapBuffers() {
@@ -18,10 +19,10 @@ void GLESRenderingOverlay::install(GLESRenderingOverlay *overlay) noexcept {
     m_overlay.store(overlay);
 }
 
-void GLESRenderingOverlay::invokeBeforeSwapBuffers() {
+void GLESRenderingOverlay::invokeBeforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight) {
     auto overlay = m_overlay.load();
     if(overlay) {
-        overlay->beforeSwapBuffers();
+        overlay->beforeSwapBuffers(drawableWidth, drawableHeight);
     }
 }
 

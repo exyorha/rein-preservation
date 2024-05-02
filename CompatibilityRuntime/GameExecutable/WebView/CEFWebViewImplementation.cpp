@@ -1,12 +1,48 @@
 #include <WebView/CEFWebViewImplementation.h>
 #include <WebView/CEFSurface.h>
 
+#include <translator_api.h>
+
 CEFWebViewImplementation::CEFWebViewImplementation(const WebViewHostClientConfiguration &config) : m_client(config),
     m_installer(this) {
 
+    /*
+     * TODO if needed:
+        auto dpi = reinterpret_cast<float (*)()>(translator_resolve_native_icall("UnityEngine.Screen::get_dpi"))();
+     */
 }
 
 CEFWebViewImplementation::~CEFWebViewImplementation() = default;
+
+float CEFWebViewImplementation::screenHeight() {
+    return screenHeightStatic();
+}
+
+float CEFWebViewImplementation::screenWidth() {
+    return screenWidthStatic();
+}
+
+int32_t CEFWebViewImplementation::screenHeightStatic() {
+    using ScreenHeightPtr = uint32_t (*)();
+
+    static ScreenHeightPtr screenHeightPtr = nullptr;
+    if(!screenHeightPtr) {
+        screenHeightPtr = reinterpret_cast<ScreenHeightPtr>(translator_resolve_native_icall("UnityEngine.Screen::get_height"));
+    }
+
+    return screenHeightPtr();
+}
+
+int32_t CEFWebViewImplementation::screenWidthStatic() {
+    using ScreenWidthPtr = uint32_t (*)();
+
+    static ScreenWidthPtr screenWidthPtr = nullptr;
+    if(!screenWidthPtr) {
+        screenWidthPtr = reinterpret_cast<ScreenWidthPtr>(translator_resolve_native_icall("UnityEngine.Screen::get_width"));
+    }
+
+    return screenWidthPtr();
+}
 
 void CEFWebViewImplementation::addJavaScript(const std::string & arg1, const std::string & arg2, const std::string & arg3) {
     webview::protocol::AddJavaScriptRequest request;
@@ -299,7 +335,6 @@ void CEFWebViewImplementation::init(const std::string & arg1, int32_t x, int32_t
     request.set_arg3(y);
     request.set_arg4(width);
     request.set_arg5(height);
-    request.set_parentwindowhandle(getParentWindowHandle());
     m_client.stub().Init(&ctrl, &request, &response, nullptr);
 
     if(ctrl.Failed()) {
@@ -892,7 +927,7 @@ CEFSurface *CEFWebViewImplementation::getSurfaceLocked(const std::string &name) 
     return it->second.get();
 }
 
-void CEFWebViewImplementation::beforeSwapBuffers() {
+void CEFWebViewImplementation::beforeSwapBuffers(int32_t width, int32_t height) {
     if(!m_compositor.has_value())
         return;
 
@@ -914,7 +949,7 @@ void CEFWebViewImplementation::beforeSwapBuffers() {
                     m_compositor->beforeRender();
                 }
 
-                m_compositor->renderSurface(surface);
+                m_compositor->renderSurface(surface, width, height);
             }
         }
     }

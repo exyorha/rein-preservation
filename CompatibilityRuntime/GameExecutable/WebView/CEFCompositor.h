@@ -17,7 +17,7 @@ public:
     CEFCompositor &operator =(const CEFCompositor &other) = delete;
 
     void uploadSurface(CEFSurface *surface);
-    void renderSurface(CEFSurface *surface);
+    void renderSurface(CEFSurface *surface, int32_t drawableWidth, int32_t drawableHeight);
 
     void scheduleTextureDisposal(GLESTextureHandle &&handle);
     void disposeStaleTextures();

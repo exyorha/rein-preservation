@@ -139,17 +139,6 @@ if(TARGET WebViewHostClient)
     )
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_CEF)
     target_link_libraries(GameExecutable PRIVATE WebViewHostClient)
-
-    if(WIN32)
-        target_sources(GameExecutable PRIVATE
-            WebView/CEFWebViewWindowingWin32.cpp
-        )
-
-    else()
-        target_sources(GameExecutable PRIVATE
-            WebView/CEFWebViewWindowingSDL.cpp
-        )
-    endif()
 endif()
 
 if(TARGET PkgConfig::MPV)

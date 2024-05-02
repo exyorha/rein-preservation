@@ -41,7 +41,13 @@ void SDLCALL SDL_DestroyWindow(SDL_Window *window) {
 }
 
 void SDLCALL SDL_GL_SwapWindow(SDL_Window *window) {
-    GLESRenderingOverlay::invokeBeforeSwapBuffers();
+    int width, height;
+
+    const auto &symbols = RealSDLSymbols::getSingleton();
+
+    symbols.realGL_GetDrawableSize(window, &width, &height);
+
+    GLESRenderingOverlay::invokeBeforeSwapBuffers(width, height);
 
     RealSDLSymbols::getSingleton().realGL_SwapWindow(window);
 
