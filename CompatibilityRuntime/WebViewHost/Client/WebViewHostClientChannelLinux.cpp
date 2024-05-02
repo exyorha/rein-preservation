@@ -44,6 +44,7 @@ WebViewHostClientChannelLinux::WebViewHostClientChannelLinux(const WebViewHostCl
         hostInvocation.emplace_back("--disable-gpu-compositing");
         hostInvocation.emplace_back("--disable-software-rasterizer");
         hostInvocation.emplace_back("--in-process-gpu");
+        hostInvocation.emplace_back("--enable-begin-frame-scheduling");
 
         if(!config.homePath.empty()) {
             hostInvocation.emplace_back("--home-path=" + config.homePath.string());

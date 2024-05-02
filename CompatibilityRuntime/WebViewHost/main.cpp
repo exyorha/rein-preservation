@@ -3,6 +3,7 @@
 #include "WebViewApp.h"
 
 #ifdef _WIN32
+#include <include/internal/cef_win.h>
 #include "WebViewRPCServerWindows.h"
 #else
 #include "WebViewRPCServerLinux.h"
@@ -67,7 +68,8 @@ static int applicationMain(const CefMainArgs &mainArgs) {
 }
 
 #ifdef _WIN32
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+
+static int WINAPI wWinMainInner(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
     (void)hPrevInstance;
     (void)pCmdLine;
     (void)nCmdShow;
@@ -75,6 +77,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     CefMainArgs mainArgs(hInstance);
 
     return applicationMain(mainArgs);
+}
+
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+#if defined(ARCH_CPU_32_BITS)
+    auto result = CefRunWinMainWithPreferredStackSize(wWinMainInner, hInstance, hPrevInstance, pCmdLine, nCmdShow);
+    if(result == -1) {
+        return wWinMainInner(hInstance, hPrevInstance, pCmdLine, nCmdShow);
+    } else {
+        return result;
+    }
+#else
+    return wWinMainInner(hInstance, hPrevInstance, pCmdLine, nCmdShow);
+#endif
 }
 
 #else

@@ -96,6 +96,12 @@ endif()
 
 if(WIN32)
     target_sources(GameExecutable PRIVATE
+        GLES/WGL/WGLHooking.cpp
+        GLES/WGL/WGLHooking.h
+
+        GLES/WGL/WindowsImportRedirection.cpp
+        GLES/WGL/WindowsImportRedirection.h
+
         EntryPointWindows.cpp
 
         ProcessCommandLineWindows.cpp

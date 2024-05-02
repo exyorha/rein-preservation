@@ -33,7 +33,7 @@ WebViewHostClientChannelWindows::WebViewHostClientChannelWindows(const WebViewHo
         cmdline << L" \"--home-path=" << config.homePath << L"\"";
     }
 
-    cmdline << L" --disable-gpu --disable-gpu-compositing --disable-software-rasterizer";
+    cmdline << L" --disable-gpu --disable-gpu-compositing --disable-software-rasterizer --in-process-gpu --enable-begin-frame-scheduling";
 
     STARTUPINFO si;
     memset(&si, 0, sizeof(si));
