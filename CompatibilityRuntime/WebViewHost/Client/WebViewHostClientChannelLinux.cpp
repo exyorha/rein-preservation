@@ -109,6 +109,53 @@ auto WebViewHostClientChannelLinux::FileDescriptor::operator =(FileDescriptor &&
     return *this;
 }
 
+void WebViewHostClientChannelLinux::postEvent(const webview::protocol::RPCMessage &fullRequest, bool includeFds) {
+
+    auto requestData = fullRequest.SerializeAsString();
+
+    std::vector<unsigned char> control;
+
+    if(!m_pendingFileDescriptors.empty()) {
+        control.resize(CMSG_SPACE(m_pendingFileDescriptors.size() * sizeof(int)));
+    }
+
+    struct iovec iov;
+    iov.iov_base = requestData.data();
+    iov.iov_len = requestData.size();
+
+    struct msghdr message;
+    memset(&message, 0, sizeof(message));
+    message.msg_iov = &iov;
+    message.msg_iovlen = 1;
+    message.msg_control = control.data();
+    message.msg_controllen = control.size();
+
+    if(!m_pendingFileDescriptors.empty() && includeFds) {
+        auto hdr = CMSG_FIRSTHDR(&message);
+        hdr->cmsg_level = SOL_SOCKET;
+        hdr->cmsg_type = SCM_RIGHTS;
+        hdr->cmsg_len = CMSG_LEN(m_pendingFileDescriptors.size() * sizeof(int));
+
+        auto fdp = reinterpret_cast<unsigned char *>(CMSG_DATA(hdr));
+        for(const auto &fd: m_pendingFileDescriptors) {
+            int fdValue = fd;
+            memcpy(fdp, &fdValue, sizeof(fdValue));
+            fdp += sizeof(fdValue);
+        }
+    }
+
+    auto result = sendmsg(m_fd, &message, MSG_EOR | MSG_NOSIGNAL);
+
+    if(includeFds)
+        m_pendingFileDescriptors.clear();
+
+    if(result < 0)
+        throw std::runtime_error("failed to send the request");
+
+    if(result != requestData.size())
+        throw std::runtime_error("not the whole message was sent");
+}
+
 void WebViewHostClientChannelLinux::CallMethod(
     const google::protobuf::MethodDescriptor* method,
     google::protobuf::RpcController* controller,
@@ -119,52 +166,14 @@ void WebViewHostClientChannelLinux::CallMethod(
     controller->Reset();
 
     {
-        webview::protocol::RPCRequest fullRequest;
+        webview::protocol::RPCMessage message;
+        auto &fullRequest = *message.mutable_callrequest();
+
         fullRequest.set_method(method->name());
         if(request)
             fullRequest.set_request(request->SerializeAsString());
 
-        auto requestData = fullRequest.SerializeAsString();
-
-        std::vector<unsigned char> control;
-
-        if(!m_pendingFileDescriptors.empty()) {
-            control.resize(CMSG_SPACE(m_pendingFileDescriptors.size() * sizeof(int)));
-        }
-
-        struct iovec iov;
-        iov.iov_base = requestData.data();
-        iov.iov_len = requestData.size();
-
-        struct msghdr message;
-        memset(&message, 0, sizeof(message));
-        message.msg_iov = &iov;
-        message.msg_iovlen = 1;
-        message.msg_control = control.data();
-        message.msg_controllen = control.size();
-
-        if(!m_pendingFileDescriptors.empty()) {
-            auto hdr = CMSG_FIRSTHDR(&message);
-            hdr->cmsg_level = SOL_SOCKET;
-            hdr->cmsg_type = SCM_RIGHTS;
-            hdr->cmsg_len = CMSG_LEN(m_pendingFileDescriptors.size() * sizeof(int));
-
-            auto fdp = reinterpret_cast<unsigned char *>(CMSG_DATA(hdr));
-            for(const auto &fd: m_pendingFileDescriptors) {
-                int fdValue = fd;
-                memcpy(fdp, &fdValue, sizeof(fdValue));
-                fdp += sizeof(fdValue);
-            }
-        }
-
-        auto result = sendmsg(m_fd, &message, MSG_EOR | MSG_NOSIGNAL);
-        m_pendingFileDescriptors.clear();
-
-        if(result < 0)
-            throw std::runtime_error("failed to send the request");
-
-        if(result != requestData.size())
-            throw std::runtime_error("not the whole message was sent");
+        postEvent(message, true);
     }
 
     auto responseLength = recv(m_fd, m_receiveBuffer.data(), m_receiveBuffer.size(), 0);

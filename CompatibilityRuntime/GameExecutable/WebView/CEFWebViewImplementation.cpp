@@ -1,3 +1,4 @@
+#include "WebView/CEFSurfaceInputReceiver.h"
 #include <WebView/CEFWebViewImplementation.h>
 #include <WebView/CEFSurface.h>
 
@@ -327,7 +328,7 @@ void CEFWebViewImplementation::init(const std::string & arg1, int32_t x, int32_t
 
     request.set_sharedmemoryregion(m_client.channel().sendSharedImageBufferWithNextRequest(buffer.get()));
 
-    auto surface = std::make_unique<CEFSurface>(x, y, width, height, std::move(buffer));
+    auto surface = std::make_unique<CEFSurface>(arg1, x, y, width, height, std::move(buffer), static_cast<CEFSurfaceInputReceiver *>(this));
 
     WebViewProtocolController ctrl;
     request.set_arg1(arg1);
@@ -974,4 +975,9 @@ void CEFWebViewImplementation::afterSwapBuffers() {
             m_compositor->uploadSurface(surface);
         }
     }
+}
+
+
+void CEFWebViewImplementation::forwardInputEvent(const webview::protocol::RPCMessage &message) {
+    m_client.channel().postEvent(message);
 }

@@ -20,7 +20,8 @@ public:
     virtual std::unique_ptr<WebViewSharedImageBuffer> receiveImageBuffer(intptr_t handle) = 0;
 
 protected:
-    std::optional<std::string> doExecuteRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request);
+    std::optional<std::string> doExecuteRPCCall(std::unique_ptr<webview::protocol::RPCMessage> &&request);
+    void handleNonCallMessage(std::unique_ptr<webview::protocol::RPCMessage> &&request);
 
     void clearCallInProgress();
     void waitNoCallInProgress();

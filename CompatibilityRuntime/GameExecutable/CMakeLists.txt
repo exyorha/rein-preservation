@@ -16,6 +16,18 @@ add_executable(GameExecutable
     GLES/GLESRenderingOverlay.cpp
     GLES/GLESRenderingOverlay.h
 
+    Input/TouchEmulator.cpp
+    Input/TouchEmulator.h
+
+    Input/TouchInputAreaReceiver.cpp
+    Input/TouchInputAreaReceiver.h
+
+    Input/TouchInputReceiver.cpp
+    Input/TouchInputReceiver.h
+
+    Input/UnityTouchInputReceiver.cpp
+    Input/UnityTouchInputReceiver.h
+
     main.cpp
 
     Input.cpp
@@ -140,6 +152,8 @@ if(TARGET WebViewHostClient)
         WebView/CEFCompositor.h
         WebView/CEFSurface.cpp
         WebView/CEFSurface.h
+        WebView/CEFSurfaceInputReceiver.cpp
+        WebView/CEFSurfaceInputReceiver.h
         WebView/CEFWebViewImplementation.cpp
         WebView/CEFWebViewImplementation.h
     )

@@ -76,6 +76,10 @@ public:
     void ShowWebViewDialog(::google::protobuf::RpcController *controller, const ::webview::protocol::ShowWebViewDialogRequest *request, ::webview::protocol::VoidResponse *response, google::protobuf::Closure *done) override;
     void Stop(::google::protobuf::RpcController *controller, const ::webview::protocol::StopRequest *request, ::webview::protocol::VoidResponse *response, google::protobuf::Closure *done) override;
 
+    inline void handleNonCallMessage(std::unique_ptr<webview::protocol::RPCMessage> &&request) {
+        m_impl.handleNonCallMessage(std::move(request));
+    }
+
 private:
     WebViewRPCImplementation m_impl;
 

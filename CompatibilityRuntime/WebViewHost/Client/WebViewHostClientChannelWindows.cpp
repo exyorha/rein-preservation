@@ -102,6 +102,17 @@ auto WebViewHostClientChannelWindows::HandleHolder::operator =(HandleHolder &&ot
     return *this;
 }
 
+void WebViewHostClientChannelWindows::postEvent(const webview::protocol::RPCMessage &message) {
+    auto requestData = message.SerializeAsString();
+
+    DWORD bytesWritten;
+    if(!WriteFile(m_handle,
+                  requestData.data(), requestData.size(),
+                  &bytesWritten,
+                  nullptr) || bytesWritten != requestData.size())
+        throw std::runtime_error("WriteFile has failed");
+}
+
 void WebViewHostClientChannelWindows::CallMethod(
     const google::protobuf::MethodDescriptor* method,
     google::protobuf::RpcController* controller,
@@ -114,12 +125,13 @@ void WebViewHostClientChannelWindows::CallMethod(
     std::string requestData;
 
     {
-        webview::protocol::RPCRequest fullRequest;
+        webview::protocol::RPCMessage message;
+        auto &fullRequest = *message.mutable_callrequest();
         fullRequest.set_method(method->name());
         if(request)
             fullRequest.set_request(request->SerializeAsString());
 
-        requestData = fullRequest.SerializeAsString();
+        requestData = message.SerializeAsString();
     }
 
     DWORD bytesRead;

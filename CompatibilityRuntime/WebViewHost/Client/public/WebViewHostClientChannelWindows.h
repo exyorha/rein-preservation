@@ -10,6 +10,10 @@
 
 #include "WebViewSharedImageBuffer.h"
 
+namespace webview::protocol {
+    class RPCMessage;
+}
+
 class WebViewHostClientConfiguration;
 class WebViewSharedImageBuffer;
 
@@ -27,6 +31,8 @@ public:
 
     std::unique_ptr<WebViewSharedImageBuffer> allocateImageBuffer(size_t size);
     int64_t sendSharedImageBufferWithNextRequest(WebViewSharedImageBuffer *buffer);
+
+    void postEvent(const webview::protocol::RPCMessage &message);
 
 private:
 

@@ -3,6 +3,7 @@
 
 #include <WebView/WebViewImplementation.h>
 #include <WebView/CEFCompositor.h>
+#include <WebView/CEFSurfaceInputReceiver.h>
 
 #include <WebViewHostClient.h>
 
@@ -15,7 +16,7 @@
 
 class CEFSurface;
 
-class CEFWebViewImplementation final : public WebViewImplementation, private GLESRenderingOverlay {
+class CEFWebViewImplementation final : public WebViewImplementation, private GLESRenderingOverlay, private CEFSurfaceInputReceiver {
 public:
     explicit CEFWebViewImplementation(const WebViewHostClientConfiguration &configuration);
     ~CEFWebViewImplementation() override;
@@ -98,6 +99,8 @@ private:
 
     void beforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight) override;
     void afterSwapBuffers() override;
+
+    void forwardInputEvent(const webview::protocol::RPCMessage &message) override;
 
     CEFSurface *getSurfaceLocked(const std::string &name) const;
 

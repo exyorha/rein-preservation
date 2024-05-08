@@ -6,6 +6,7 @@
 
 #include <windows.h>
 
+#include "WebView/WebViewProtocol.pb.h"
 #include "WebViewRPCServer.h"
 #include "WebViewSharedImageBuffer.h"
 
@@ -34,8 +35,8 @@ private:
 
     void runMainLoop();
 
-    void executeRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request);
-    bool executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCRequest> &&request);
+    void executeRPCCall(std::unique_ptr<webview::protocol::RPCMessage> &&request);
+    bool executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCMessage> &&request);
 
     std::vector<unsigned char> m_receiveBuffer;
     HANDLE m_handle;

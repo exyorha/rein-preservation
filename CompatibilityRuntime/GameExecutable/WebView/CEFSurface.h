@@ -7,17 +7,26 @@
 
 #include <GLES/GLESObjectHandle.h>
 
+#include <Input/TouchInputAreaReceiver.h>
+
 class WebViewSharedImageBuffer;
 class CEFCompositor;
+class CEFSurfaceInputReceiver;
 
-class CEFSurface {
+class CEFSurface final : public TouchInputAreaReceiver {
 public:
-    CEFSurface(int32_t x, int32_t y, uint32_t width, uint32_t height,
-               std::unique_ptr<WebViewSharedImageBuffer> &&buffer);
+    CEFSurface(const std::string &id,
+               int32_t x, int32_t y, uint32_t width, uint32_t height,
+               std::unique_ptr<WebViewSharedImageBuffer> &&buffer,
+               CEFSurfaceInputReceiver *inputReceiver);
     ~CEFSurface();
 
     CEFSurface(const CEFSurface &other) = delete;
     CEFSurface &operator =(const CEFSurface &other) = delete;
+
+    inline const std::string &id() const {
+        return m_id;
+    }
 
     inline bool hidden() const {
         return m_hidden;
@@ -60,7 +69,14 @@ public:
         return m_texture;
     }
 
+    bool touchUpdated(const UnityEngine_Touch &touch) override;
+
+protected:
+    CoveredArea getCoveredArea() const override;
+
 private:
+    std::string m_id;
+    CEFSurfaceInputReceiver *m_inputReceiver;
     std::unique_ptr<WebViewSharedImageBuffer> m_buffer;
     int32_t m_x;
     int32_t m_y;

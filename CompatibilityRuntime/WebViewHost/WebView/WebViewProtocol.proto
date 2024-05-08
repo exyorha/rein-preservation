@@ -4,9 +4,30 @@ package webview.protocol;
 
 option cc_generic_services = true;
 
+message RPCMessage {
+  oneof content {
+    RPCRequest callRequest = 1;
+    TouchEvent touchEvent = 2;
+  }
+};
+
 message RPCRequest {
     string method = 1;
     bytes request = 2;
+};
+
+message TouchEvent {
+  string browser_id = 1;
+  int32 id = 2;
+  float x = 3;
+  float y = 4;
+  float radius_x = 5;
+  float radius_y = 6;
+  float rotation_angle = 7;
+  float pressure = 8;
+  int32 type = 9;
+  uint32 modifiers = 10;
+  int32 pointer_type = 11;
 };
 
 message RPCResponse {

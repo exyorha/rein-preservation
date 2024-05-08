@@ -1,4 +1,5 @@
 #include "WebViewRPCServerWindows.h"
+#include "WebView/WebViewProtocol.pb.h"
 
 #include <include/wrapper/cef_closure_task.h>
 #include <include/base/cef_callback.h>
@@ -49,20 +50,26 @@ void WebViewRPCServerWindows::runMainLoop() {
 
         LOG(INFO) << "WebViewRPCServerWindows: received " << bytesRead << " bytes";
 
-        auto fullRequest = std::make_unique<webview::protocol::RPCRequest>();
+        auto fullRequest = std::make_unique<webview::protocol::RPCMessage>();
         if(!fullRequest->ParseFromArray(m_receiveBuffer.data(), bytesRead)) {
             LOG(ERROR) << "WebViewRPCServer: failed to parse the RPC request";
             return;
         }
 
-        setCallInProgress();
+        if(fullRequest->has_callrequest()) {
 
-        CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerWindows::executeRPCCall, base::Unretained(this), std::move(fullRequest)));
+            setCallInProgress();
+
+            CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerWindows::executeRPCCall, base::Unretained(this), std::move(fullRequest)));
+        } else {
+
+            CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerWindows::handleNonCallMessage, base::Unretained(this), std::move(fullRequest)));
+        }
     }
 }
 
 
-void WebViewRPCServerWindows::executeRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request) {
+void WebViewRPCServerWindows::executeRPCCall(std::unique_ptr<webview::protocol::RPCMessage> &&request) {
     if(!executeRPCCallAndSendResponse(std::move(request))) {
 
         LOG(ERROR) << "WebViewRPCServerWindows: an error occurred during RPC processing";
@@ -71,7 +78,7 @@ void WebViewRPCServerWindows::executeRPCCall(std::unique_ptr<webview::protocol::
     }
 }
 
-bool WebViewRPCServerWindows::executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCRequest> &&request) {
+bool WebViewRPCServerWindows::executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCMessage> &&request) {
     auto result = doExecuteRPCCall(std::move(request));
     if(!result.has_value()) {
         return false;

@@ -9,6 +9,10 @@
 
 class WebViewHostClientConfiguration;
 
+namespace webview::protocol {
+    class RPCMessage;
+}
+
 class WebViewHostClientChannelLinux final : public google::protobuf::RpcChannel {
 public:
     explicit WebViewHostClientChannelLinux(const WebViewHostClientConfiguration &config);
@@ -25,7 +29,14 @@ public:
     std::unique_ptr<WebViewSharedImageBuffer> allocateImageBuffer(size_t size);
     int64_t sendSharedImageBufferWithNextRequest(WebViewSharedImageBuffer *buffer);
 
+    inline void postEvent(const webview::protocol::RPCMessage &message) {
+        postEvent(message, false);
+    }
+
 private:
+
+    void postEvent(const webview::protocol::RPCMessage &message, bool includeFds);
+
     class FileDescriptor {
     public:
         inline explicit FileDescriptor(int fd = -1) noexcept : m_fd(fd) {}

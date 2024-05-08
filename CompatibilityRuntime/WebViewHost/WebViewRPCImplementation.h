@@ -11,6 +11,10 @@
 class WebView;
 class WebViewSharedImageBuffer;
 
+namespace webview::protocol {
+    class RPCMessage;
+}
+
 class WebViewRPCImplementation {
 public:
     WebViewRPCImplementation();
@@ -88,6 +92,8 @@ public:
     bool show(const std::string & name, bool fade, int32_t edge, float duration, const std::string & identifier);
     void showWebViewDialog(const std::string & name, bool flag);
     void stop(const std::string & name);
+
+    void handleNonCallMessage(std::unique_ptr<webview::protocol::RPCMessage> &&request);
 
 private:
     WebView &get(const std::string &name);

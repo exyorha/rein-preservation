@@ -72,6 +72,7 @@ public:
     void showWebViewDialog(bool flag);
     void stop();
 
+    void dispatchTouchEvent(const cef_touch_event_t &event);
 
 private:
     CefRefPtr<WebViewRenderHandler> m_renderHandler;

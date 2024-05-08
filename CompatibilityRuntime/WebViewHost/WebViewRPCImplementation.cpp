@@ -1,6 +1,9 @@
 #include "WebViewRPCImplementation.h"
-#include "include/internal/cef_types.h"
 #include "include/cef_cookie.h"
+
+#include <include/cef_base.h>
+
+#include "WebView/WebViewProtocol.pb.h"
 
 #include "WebView.h"
 
@@ -216,3 +219,23 @@ void WebViewRPCImplementation::showWebViewDialog(const std::string & arg1, bool 
 void WebViewRPCImplementation::stop(const std::string & arg1) {
     return get(arg1).stop();
 }
+
+void WebViewRPCImplementation::handleNonCallMessage(std::unique_ptr<webview::protocol::RPCMessage> &&request) {
+    if(request->has_touchevent()) {
+        const auto &touch = request->touchevent();
+
+        get(touch.browser_id()).dispatchTouchEvent(cef_touch_event_t{
+            .id = touch.id(),
+            .x = touch.x(),
+            .y = touch.y(),
+            .radius_x = touch.radius_x(),
+            .radius_y = touch.radius_y(),
+            .rotation_angle = touch.rotation_angle(),
+            .pressure = touch.pressure(),
+            .type = static_cast<cef_touch_event_type_t>(touch.type()),
+            .modifiers = touch.modifiers(),
+            .pointer_type = static_cast<cef_pointer_type_t>(touch.pointer_type())
+        });
+    }
+}
+

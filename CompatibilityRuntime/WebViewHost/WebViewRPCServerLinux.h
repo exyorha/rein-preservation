@@ -34,8 +34,8 @@ private:
 
     void runMainLoop();
 
-    void executeRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request);
-    bool executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCRequest> &&request);
+    void executeRPCCall(std::unique_ptr<webview::protocol::RPCMessage> &&request);
+    bool executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCMessage> &&request);
 
     int m_socket;
     WebViewRPCService m_service;

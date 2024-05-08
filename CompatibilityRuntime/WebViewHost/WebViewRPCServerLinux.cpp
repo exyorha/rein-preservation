@@ -1,4 +1,5 @@
 #include "WebViewRPCServerLinux.h"
+#include "WebView/WebViewProtocol.pb.h"
 
 #include <fcntl.h>
 
@@ -37,7 +38,7 @@ void WebViewRPCServerLinux::receiveRequests() {
     CefPostTask(TID_UI, base::BindOnce(CefQuitMessageLoop));
 }
 
-void WebViewRPCServerLinux::executeRPCCall(std::unique_ptr<webview::protocol::RPCRequest> &&request) {
+void WebViewRPCServerLinux::executeRPCCall(std::unique_ptr<webview::protocol::RPCMessage> &&request) {
     if(!executeRPCCallAndSendResponse(std::move(request))) {
 
         fprintf(stderr, "WebViewRPCServerLinux: an error occurred during RPC processing\n");
@@ -46,7 +47,7 @@ void WebViewRPCServerLinux::executeRPCCall(std::unique_ptr<webview::protocol::RP
     }
 }
 
-bool WebViewRPCServerLinux::executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCRequest> &&request) {
+bool WebViewRPCServerLinux::executeRPCCallAndSendResponse(std::unique_ptr<webview::protocol::RPCMessage> &&request) {
     auto result = doExecuteRPCCall(std::move(request));
     if(!result.has_value()) {
         return false;
@@ -113,15 +114,19 @@ void WebViewRPCServerLinux::runMainLoop() {
             }
         }
 
-        auto fullRequest = std::make_unique<webview::protocol::RPCRequest>();
+        auto fullRequest = std::make_unique<webview::protocol::RPCMessage>();
         if(!fullRequest->ParseFromArray(m_receiveBuffer.data(), messageLength)) {
             fprintf(stderr, "WebViewRPCServer: failed to parse the RPC request\n");
             return;
         }
 
-        setCallInProgress();
+        if(fullRequest->has_callrequest()) {
+            setCallInProgress();
 
-        CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerLinux::executeRPCCall, base::Unretained(this), std::move(fullRequest)));
+            CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerLinux::executeRPCCall, base::Unretained(this), std::move(fullRequest)));
+        } else {
+            CefPostTask(TID_UI, base::BindOnce(&WebViewRPCServerLinux::handleNonCallMessage, base::Unretained(this), std::move(fullRequest)));
+        }
     }
 }
 
