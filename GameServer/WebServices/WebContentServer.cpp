@@ -54,18 +54,11 @@ std::optional<std::filesystem::path> WebContentServer::mapPath(const std::string
     return m_root / normalized;;
 }
 
-
-void WebContentServer::handle(const std::string_view &path, LLServices::HttpRequest &&request) {
-
-    if(request.command() != EVHTTP_REQ_GET && request.command() != EVHTTP_REQ_HEAD) {
-        request.sendError(405, "Method Not Allowed");
-        return;
-    }
+bool WebContentServer::tryServePath(const std::string_view &path, LLServices::HttpRequest &&request) {
 
     auto filePath = mapPath(path);
     if(!filePath.has_value()) {
-        request.sendError(404, "Not Found");
-        return;
+        return false;
     }
 
     struct FileDescriptorHolder {
@@ -85,9 +78,7 @@ void WebContentServer::handle(const std::string_view &path, LLServices::HttpRequ
 #endif
 
     if(fd.fd < 0) {
-        request.sendError(404, "Not Found");
-
-        return;
+        return false;
     }
 
     auto type = filePath->extension().generic_string();
@@ -131,13 +122,13 @@ void WebContentServer::handle(const std::string_view &path, LLServices::HttpRequ
     auto ifMatch = request.inputHeaders().find("If-Match");
     if(ifMatch && std::string_view(ifMatch) != etagString && strcmp(ifMatch, "*") != 0) {
         request.sendError(412, "Precondition Failed");
-        return;
+        return true;
     }
 
     auto ifNoneMatch = request.inputHeaders().find("If-None-Match");
     if(ifNoneMatch && std::string_view(ifNoneMatch) == etagString) {
         request.sendError(304, "Not Modified");
-        return;
+        return true;
     }
 
     LLServices::Buffer buffer;
@@ -153,7 +144,7 @@ void WebContentServer::handle(const std::string_view &path, LLServices::HttpRequ
             auto parsedRanges = parseRanges(ranges, st.st_size);
             if(parsedRanges.empty()) {
                 request.sendError(416, "Requested Range Not Satisfiable");
-                return;
+                return true;
             } else {
                 partial = true;
 
@@ -225,6 +216,28 @@ void WebContentServer::handle(const std::string_view &path, LLServices::HttpRequ
     } else {
         request.sendReply(200, "OK", buffer);
     }
+
+    return true;
+}
+
+void WebContentServer::handle(const std::string_view &path, LLServices::HttpRequest &&request) {
+
+    if(request.command() != EVHTTP_REQ_GET && request.command() != EVHTTP_REQ_HEAD) {
+        request.sendError(405, "Method Not Allowed");
+        return;
+    }
+
+    bool found = tryServePath(path, std::move(request));
+
+    if(!found && m_fallbackPage.has_value()) {
+        found = tryServePath(*m_fallbackPage, std::move(request));
+    }
+
+    if(!found) {
+        request.sendError(404, "Not Found");
+    }
+
+
 }
 
 std::string WebContentServer::formatRange(const std::pair<size_t, size_t> &range, size_t fileSize) {

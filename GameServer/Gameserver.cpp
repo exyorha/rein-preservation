@@ -66,6 +66,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
 
     m_webServer.overridePath(std::move(path), std::filesystem::path(masterDatabasePath));
 
+    m_webServer.setFallbackPage("/default_page.html");
+
     m_gameAPI.registerService(&m_userService);
     m_gameAPI.registerService(&m_dataService);
     m_gameAPI.registerService(&m_gamePlayService);

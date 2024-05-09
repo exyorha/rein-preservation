@@ -20,6 +20,10 @@ public:
 
     void overridePath(std::string &&path, std::filesystem::path &&filename);
 
+    inline void setFallbackPage(std::string &&fallbackPage) {
+        m_fallbackPage.emplace(std::move(fallbackPage));
+    }
+
 private:
 
     struct MimeType {
@@ -42,8 +46,11 @@ private:
 
     static const MimeType m_mimeTypes[];
 
+    bool tryServePath(const std::string_view &path, LLServices::HttpRequest &&request);
+
     std::filesystem::path m_root;
     std::vector<OverridePath> m_overridePaths;
+    std::optional<std::string> m_fallbackPage;
 };
 
 #endif

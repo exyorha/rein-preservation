@@ -25,6 +25,9 @@ endif()
 
 if(BUILD_GAME_SERVER)
     add_subdirectory(GameServer)
+    if(NOT CMAKE_CROSSCOMPILING)
+        add_subdirectory(reinweb)
+    endif()
 endif()
 
 if(BUILD_ASSET_PROCESSING)
