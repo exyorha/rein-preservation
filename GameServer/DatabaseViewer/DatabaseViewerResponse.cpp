@@ -14,7 +14,7 @@ void DatabaseViewerResponse::finish() {
 
     std::string xml(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-        "<?xml-stylesheet href=\"/style.xsl\" type=\"text/xsl\"?>\n");
+        "<?xml-stylesheet href=\"/databaseviewer-assets/style.xsl\" type=\"text/xsl\"?>\n");
 
     m_response.writeXML(xml);
 

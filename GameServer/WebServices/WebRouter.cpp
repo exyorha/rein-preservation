@@ -18,9 +18,6 @@ void WebRouter::handle(LLServices::HttpRequest &&request) {
         return;
     }
 
-    if(path == "/")
-        path = "/database";
-
     auto cleanPath = *path;
 
     for(const auto &subpath: m_subpaths) {

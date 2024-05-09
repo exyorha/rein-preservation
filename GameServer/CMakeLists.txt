@@ -278,6 +278,9 @@ add_executable(GameServer
     WebServices/WebContentServer.cpp
     WebServices/WebContentServer.h
 
+    WebServices/WebRedirector.cpp
+    WebServices/WebRedirector.h
+
     WebServices/WebRoutable.cpp
     WebServices/WebRoutable.h
 

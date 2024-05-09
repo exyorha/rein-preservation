@@ -54,12 +54,13 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
 
     m_cliService.initCLI(m_db);
 
+    m_router.handleSubpath("/web.app.nierreincarnation.com", &m_webRedirector);
     m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
     m_router.handleSubpath("/resources-api.app.nierreincarnation.com", &m_octoServices);
     m_router.handleSubpath("/server-cli", &m_cliService);
     m_router.handleSubpath("/database", &m_dbViewer);
 
-    std::string path("/web.app.nierreincarnation.com/assets/release/");
+    std::string path("/assets/release/");
     path.append(m_db.masterDatabaseVersion());
     path.append("/database.bin");
 

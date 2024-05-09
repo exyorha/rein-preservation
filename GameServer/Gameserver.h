@@ -10,6 +10,7 @@
 #include "WebServices/WebContentServer.h"
 #include "WebServices/OctoWebServices.h"
 #include "WebServices/ServerCLIService.h"
+#include "WebServices/WebRedirector.h"
 
 #include "GRPC/GRPCLikeServer.h"
 
@@ -86,6 +87,7 @@ private:
     OctoWebServices m_octoServices;
     Database m_db;
     DatabaseViewerService m_dbViewer;
+    WebRedirector m_webRedirector;
     WebRouter m_router;
     LLServices::HttpServer m_http;
 

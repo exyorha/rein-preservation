@@ -119,7 +119,7 @@ static void UnityEngine_SendMouseEvent_DoSendMouseEvents(int32_t unknown, void (
     }
 
     if(icall_GetKeyDown(interned_tilde)) {
-        icall_OpenURL(stringFromUtf8(getGameServerEndpoint()));
+        icall_OpenURL(stringFromUtf8(getGameServerEndpoint() + "/database"));
     }
 }
 

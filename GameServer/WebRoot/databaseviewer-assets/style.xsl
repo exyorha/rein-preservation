@@ -9,14 +9,14 @@
     <xsl:template match="/">
         <html lang="en">
             <head>
-                <link rel="stylesheet" type="text/css" href="/style.css" />
+                <link rel="stylesheet" type="text/css" href="/databaseviewer-assets/style.css" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             </head>
 
             <body>
                 <xsl:apply-templates />
 
-                <script type="text/javascript" src="/dynamic.js"></script>
+                <script type="text/javascript" src="/databaseviewer-assets/dynamic.js"></script>
             </body>
         </html>
     </xsl:template>
