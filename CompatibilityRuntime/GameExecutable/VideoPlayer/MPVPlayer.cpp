@@ -1,5 +1,4 @@
-#include <VideoPlayer/VideoRenderingOpenGLAPISet.h>
-
+#include "GLES/GLESObjectHandle.h"
 #include <VideoPlayer/MPVPlayer.h>
 #include <VideoPlayer/MPVError.h>
 
@@ -8,15 +7,10 @@
 #include <vector>
 #include <cstring>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <GLES/SDL/SDLWrapper.h>
+#ifndef _WIN32
 #include <GLES/SDL/RealSDLSymbols.h>
+#include <GLES/SDL/SDLWrapper.h>
 #endif
-
-
-std::optional<VideoRenderingOpenGLAPISet> MPVPlayer::m_openglAPI;
 
 MPVPlayer::MPVPlayer() : m_renderer(nullptr), m_framebuffer(0),
     m_texture(0), m_currentlyAllocatedTextureWidth(0), m_currentlyAllocatedTextureHeight(0) {
@@ -146,10 +140,6 @@ void MPVPlayer::initializeRenderer() {
         .get_proc_address_ctx = nullptr
     };
 
-    if(!m_openglAPI.has_value()) {
-        m_openglAPI.emplace(&glParams);
-    }
-
     params.emplace_back(mpv_render_param{ MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &glParams });
 
 #ifndef _WIN32
@@ -169,13 +159,9 @@ void MPVPlayer::initializeRenderer() {
     if(result < 0)
         throw MPVError(result);
 
-    const auto &glapi = *m_openglAPI;
-    glapi.glGenFramebuffers(1, &m_framebuffer);
-
-
-    if(glapi.glLabelObjectEXT) {
-        glapi.glLabelObjectEXT(GL_FRAMEBUFFER, m_framebuffer, -1, "MPV final framebuffer");
-    }
+    const auto &glapi = GLESAPISet::get();
+    m_framebuffer = GLESFramebufferHandle::create();
+    m_framebuffer.label("MPV final framebuffer");
 
     printf("MPVPlayer::initializeRenderer finished!\n");
 }
@@ -187,14 +173,10 @@ void MPVPlayer::destroyRenderer() {
      * This method is called on the render thread.
      */
 
-    if(m_openglAPI.has_value()) {
-        const auto &glapi = *m_openglAPI;
+    const auto &glapi = GLESAPISet::get();
 
-        if(m_framebuffer != 0) {
-            glapi.glDeleteFramebuffers(1, &m_framebuffer);
-            m_framebuffer = 0;
-        }
-    }
+    m_framebuffer = GLESFramebufferHandle();
+    m_texture = GLESTextureHandle();
 
     if(m_renderer) {
 
@@ -209,24 +191,23 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
      * This method is called on the render thread.
      */
 
-    const auto &glapi = *m_openglAPI;
+    const auto &glapi = GLESAPISet::get();
 
-    if(m_framebuffer == 0 || !m_renderer)
+    if(!m_framebuffer || !m_renderer)
         return;
 
     if(m_currentlyAllocatedTextureWidth != desiredWidth ||
         m_currentlyAllocatedTextureHeight != desiredHeight ||
-        m_texture == 0) {
+        !m_texture) {
 
-        if(m_texture != 0) {
-            glapi.glDeleteTextures(1, &m_texture);
-            m_texture = 0;
+        if(m_texture) {
+            m_texture = GLESTextureHandle();
         }
 
         if(desiredWidth <= 0 || desiredHeight == 0)
             return;
 
-        glapi.glGenTextures(1, &m_texture);
+        m_texture = GLESTextureHandle::create();
 
         if(glapi.glLabelObjectEXT) {
             glapi.glLabelObjectEXT(GL_TEXTURE, m_texture, -1, "MPV final texture");
@@ -247,7 +228,7 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
     }
 
     mpv_opengl_fbo fbo = {
-        .fbo = static_cast<int>(m_framebuffer),
+        .fbo = static_cast<int>(m_framebuffer.handle()),
         .w = static_cast<int>(m_currentlyAllocatedTextureWidth),
         .h = static_cast<int>(m_currentlyAllocatedTextureHeight),
         .internal_format = GL_RGBA
@@ -267,19 +248,6 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
 
 void *MPVPlayer::mpvOpenGLGetProcAddress(void *ctx, const char *name) {
     (void)ctx;
-
-#ifdef _WIN32
-
-    static HMODULE opengl32Module = GetModuleHandle(L"opengl32.dll");
-
-    auto proc = wglGetProcAddress(name);
-    if(proc) {
-        return reinterpret_cast<void *>(proc);
-    }
-
-    return reinterpret_cast<void *>(GetProcAddress(opengl32Module, name));
-#else
-    return RealSDLSymbols::getSingleton().realGL_GetProcAddress(name);
-#endif
+    return GLESAPISet::getGLProcAddress(name);
 }
 

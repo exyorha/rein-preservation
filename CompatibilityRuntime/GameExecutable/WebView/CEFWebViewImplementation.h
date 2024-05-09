@@ -2,9 +2,21 @@
 #define WEB_VIEW_CEF_WEB_VIEW_IMPLEMENTATION_H
 
 #include <WebView/WebViewImplementation.h>
+#include <WebView/CEFCompositor.h>
+#include <WebView/CEFSurfaceInputReceiver.h>
+
 #include <WebViewHostClient.h>
 
-class CEFWebViewImplementation final : public WebViewImplementation {
+#include <GLES/GLESRenderingOverlay.h>
+
+#include <unordered_map>
+#include <memory>
+#include <mutex>
+#include <optional>
+
+class CEFSurface;
+
+class CEFWebViewImplementation final : public WebViewImplementation, private GLESRenderingOverlay, private CEFSurfaceInputReceiver {
 public:
     explicit CEFWebViewImplementation(const WebViewHostClientConfiguration &configuration);
     ~CEFWebViewImplementation() override;
@@ -13,6 +25,9 @@ public:
 
     float screenHeight() override;
     float screenWidth() override;
+
+    static int32_t screenHeightStatic();
+    static int32_t screenWidthStatic();
 
     void setAllowAutoPlay(bool flag) override;
     void setAllowJavaScriptOpenWindow(bool flag) override;
@@ -80,10 +95,20 @@ public:
     void stop(const std::string & name) override;
 
 private:
-    int64_t getParentWindowHandle();
     static std::string getWebViewHostPath();
 
+    void beforeSwapBuffers(int32_t drawableWidth, int32_t drawableHeight) override;
+    void afterSwapBuffers() override;
+
+    void forwardInputEvent(const webview::protocol::RPCMessage &message) override;
+
+    CEFSurface *getSurfaceLocked(const std::string &name) const;
+
     WebViewHostClient m_client;
+    std::mutex m_surfacesMutex;
+    std::unordered_map<std::string, std::unique_ptr<CEFSurface>> m_surfaces;
+    std::optional<CEFCompositor> m_compositor;
+    GLESRenderingOverlay::Installer m_installer;
 };
 
 #endif

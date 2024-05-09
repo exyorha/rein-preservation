@@ -19,6 +19,10 @@ public:
     WebViewHostClient(const WebViewHostClient &other) = delete;
     WebViewHostClient &operator =(const WebViewHostClient &other) = delete;
 
+    inline WebViewHostClientChannel &channel() {
+        return m_channel;
+    }
+
     inline webview::protocol::WebViewService::Stub &stub() {
         return *m_stub;
     }

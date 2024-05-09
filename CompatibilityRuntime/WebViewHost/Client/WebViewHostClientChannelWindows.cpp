@@ -27,7 +27,13 @@ WebViewHostClientChannelWindows::WebViewHostClientChannelWindows(const WebViewHo
     m_handle = HandleHolder(rawHandle);
 
     std::wstringstream cmdline;
-    cmdline << "\"" << config.hostExecutablePath.wstring() << "\" \"--webview-rpc-server=" << pipeName << "\"";
+    cmdline << L"\"" << config.hostExecutablePath.wstring() << L"\" \"--webview-rpc-server=" << pipeName << L"\"";
+
+    if(!config.homePath.empty()) {
+        cmdline << L" \"--home-path=" << config.homePath.wstring() << L"\"";
+    }
+
+    cmdline << L" --disable-gpu --disable-gpu-compositing --disable-software-rasterizer --in-process-gpu --enable-begin-frame-scheduling";
 
     STARTUPINFO si;
     memset(&si, 0, sizeof(si));
@@ -96,6 +102,17 @@ auto WebViewHostClientChannelWindows::HandleHolder::operator =(HandleHolder &&ot
     return *this;
 }
 
+void WebViewHostClientChannelWindows::postEvent(const webview::protocol::RPCMessage &message) {
+    auto requestData = message.SerializeAsString();
+
+    DWORD bytesWritten;
+    if(!WriteFile(m_handle,
+                  requestData.data(), requestData.size(),
+                  &bytesWritten,
+                  nullptr) || bytesWritten != requestData.size())
+        throw std::runtime_error("WriteFile has failed");
+}
+
 void WebViewHostClientChannelWindows::CallMethod(
     const google::protobuf::MethodDescriptor* method,
     google::protobuf::RpcController* controller,
@@ -108,15 +125,14 @@ void WebViewHostClientChannelWindows::CallMethod(
     std::string requestData;
 
     {
-        webview::protocol::RPCRequest fullRequest;
+        webview::protocol::RPCMessage message;
+        auto &fullRequest = *message.mutable_callrequest();
         fullRequest.set_method(method->name());
         if(request)
             fullRequest.set_request(request->SerializeAsString());
 
-        requestData = fullRequest.SerializeAsString();
+        requestData = message.SerializeAsString();
     }
-
-    printf("WebViewHostClientChannelWindows: transact: sending %zu bytes\n", requestData.size());
 
     DWORD bytesRead;
     if(!TransactNamedPipe(m_handle,
@@ -124,10 +140,6 @@ void WebViewHostClientChannelWindows::CallMethod(
                       m_receiveBuffer.data(), m_receiveBuffer.size(), &bytesRead,
                       nullptr))
         throw std::runtime_error("TransactNamedPipe has failed");
-
-
-    printf("WebViewHostClientChannelWindows: transact: received %u bytes\n", bytesRead);
-
 
     webview::protocol::RPCResponse fullResponse;
     if(!fullResponse.ParseFromArray(m_receiveBuffer.data(), bytesRead))
@@ -148,4 +160,56 @@ void WebViewHostClientChannelWindows::CallMethod(
 
     if(done)
         done->Run();
+}
+
+
+std::unique_ptr<WebViewSharedImageBuffer> WebViewHostClientChannelWindows::allocateImageBuffer(size_t size) {
+    return std::make_unique<WindowsImageBuffer>(size);
+}
+
+WebViewHostClientChannelWindows::WindowsImageBuffer::WindowsImageBuffer(size_t size) : m_base(nullptr), m_size(size) {
+    if(size == 0)
+        throw std::runtime_error("the buffer size cannot be zero");
+
+    auto rawhandle = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE,
+                                       static_cast<DWORD>(size >> 32),
+                                       static_cast<DWORD>(size),
+                                       nullptr);
+    if(!rawhandle)
+        throw std::runtime_error("CreateFileMapping has failed");
+
+    m_handle = HandleHolder(rawhandle);
+
+    m_base = MapViewOfFile(m_handle, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+    if(m_base == nullptr)
+        throw std::runtime_error("MapViewOfFile has failed");
+}
+
+WebViewHostClientChannelWindows::WindowsImageBuffer::~WindowsImageBuffer() {
+    UnmapViewOfFile(m_base);
+}
+
+void *WebViewHostClientChannelWindows::WindowsImageBuffer::base() const {
+    return m_base;
+}
+
+size_t WebViewHostClientChannelWindows::WindowsImageBuffer::size() const {
+    return m_size;
+}
+
+int64_t WebViewHostClientChannelWindows::sendSharedImageBufferWithNextRequest(WebViewSharedImageBuffer *buffer) {
+    if(buffer == nullptr)
+        return 0;
+
+    HANDLE outputHandle;
+
+    if(!DuplicateHandle(
+        GetCurrentProcess(), static_cast<WindowsImageBuffer *>(buffer)->handle(),
+        m_process, &outputHandle,
+        0,
+        FALSE,
+        DUPLICATE_SAME_ACCESS))
+        throw std::runtime_error("DuplicateHandle has failed");
+
+    return reinterpret_cast<int64_t>(outputHandle);
 }

@@ -20,6 +20,7 @@
 
 #ifdef _WIN32
 #include "WindowsHelpers.h"
+#include <GLES/WGL/WGLHooking.h>
 #else
 #include <GLES/SDL/SDLWrapper.h>
 #endif
@@ -418,6 +419,10 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
 bool gameEarlyInit() {
     if(!applyUnityPatches())
         return false;
+
+#ifdef _WIN32
+    installWGLOverlayHook();
+#endif
 
     translator_set_post_initialize_callback(postInitialize);
 

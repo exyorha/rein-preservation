@@ -9,6 +9,11 @@
 #include <include/internal/cef_types_wrappers.h>
 
 class WebView;
+class WebViewSharedImageBuffer;
+
+namespace webview::protocol {
+    class RPCMessage;
+}
 
 class WebViewRPCImplementation {
 public:
@@ -31,7 +36,8 @@ public:
 
     void clearHttpAuthUsernamePassword(const std::string & host, const std::string & realm);
 
-    void init(const std::string & name, int32_t x, int32_t y, int32_t width, int32_t height, intptr_t parentWindow);
+    void init(const std::string & name, int32_t x, int32_t y, int32_t width, int32_t height, intptr_t parentWindow,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory);
     void destroy(const std::string & name);
 
     void addJavaScript(const std::string & arg1, const std::string & jsString, const std::string & identifier);
@@ -64,7 +70,8 @@ public:
     void setBouncesEnabled(const std::string & name, bool flag);
     void setCalloutEnabled(const std::string & name, bool enabled);
     void setDefaultFontSize(const std::string & name, int32_t enabled);
-    void setFrame(const std::string & name, int32_t x, int32_t y, int32_t width, int32_t height);
+    void setFrame(const std::string & name, int32_t x, int32_t y, int32_t width, int32_t height,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory);
     void setHeaderField(const std::string & name, const std::string & key, const std::string & value);
     void setHorizontalScrollBarEnabled(const std::string & name, bool enabled);
     void setImmersiveModeEnabled(const std::string & name, bool enabled);
@@ -72,7 +79,8 @@ public:
     void setOpenLinksInExternalBrowser(const std::string & name, bool flag);
     void setPosition(const std::string & name, int32_t x, int32_t y);
     void setShowSpinnerWhileLoading(const std::string & name, bool show);
-    void setSize(const std::string & name, int32_t width, int32_t height);
+    void setSize(const std::string & name, int32_t width, int32_t height,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory);
     void setSpinnerText(const std::string & name, const std::string & text);
     void setSupportMultipleWindows(const std::string & name, bool flag);
     void setUseWideViewPort(const std::string & name, bool use);
@@ -84,6 +92,8 @@ public:
     bool show(const std::string & name, bool fade, int32_t edge, float duration, const std::string & identifier);
     void showWebViewDialog(const std::string & name, bool flag);
     void stop(const std::string & name);
+
+    void handleNonCallMessage(std::unique_ptr<webview::protocol::RPCMessage> &&request);
 
 private:
     WebView &get(const std::string &name);

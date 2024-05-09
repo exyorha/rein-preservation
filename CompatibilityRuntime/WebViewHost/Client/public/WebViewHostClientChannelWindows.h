@@ -6,8 +6,16 @@
 #include <windows.h>
 
 #include <vector>
+#include <cstring>
+
+#include "WebViewSharedImageBuffer.h"
+
+namespace webview::protocol {
+    class RPCMessage;
+}
 
 class WebViewHostClientConfiguration;
+class WebViewSharedImageBuffer;
 
 class WebViewHostClientChannelWindows final : public google::protobuf::RpcChannel {
 public:
@@ -20,6 +28,11 @@ public:
         const google::protobuf::Message* request,
         google::protobuf::Message* response,
         google::protobuf::Closure* done) override;
+
+    std::unique_ptr<WebViewSharedImageBuffer> allocateImageBuffer(size_t size);
+    int64_t sendSharedImageBufferWithNextRequest(WebViewSharedImageBuffer *buffer);
+
+    void postEvent(const webview::protocol::RPCMessage &message);
 
 private:
 
@@ -44,6 +57,24 @@ private:
 
     private:
         HANDLE m_handle;
+    };
+
+    class WindowsImageBuffer final : public WebViewSharedImageBuffer {
+    public:
+        explicit WindowsImageBuffer(size_t size);
+        ~WindowsImageBuffer() override;
+
+        inline HANDLE handle() const {
+            return m_handle;
+        }
+
+        void *base() const override;
+        size_t size() const override;
+
+    private:
+        HandleHolder m_handle;
+        void *m_base;
+        size_t m_size;
     };
 
     HandleHolder m_handle;

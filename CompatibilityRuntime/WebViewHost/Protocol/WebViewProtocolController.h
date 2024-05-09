@@ -5,9 +5,11 @@
 #include <optional>
 #include <string>
 
+class WebViewRPCServer;
+
 class WebViewProtocolController final : public google::protobuf::RpcController {
 public:
-    WebViewProtocolController() = default;
+    explicit inline WebViewProtocolController(WebViewRPCServer *server = nullptr) : m_server(server) {}
     ~WebViewProtocolController() override = default;
 
     void Reset() override {
@@ -38,7 +40,12 @@ public:
         (void)callback;
     }
 
+    inline WebViewRPCServer *server() const {
+        return m_server;
+    }
+
 private:
+    WebViewRPCServer *m_server;
     std::optional<std::string> m_error;
 };
 

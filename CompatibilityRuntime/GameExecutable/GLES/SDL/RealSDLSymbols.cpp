@@ -15,12 +15,11 @@ RealSDLSymbols::RealSDLSymbols() {
 
     BIND_SYMBOL(CreateWindow)
     BIND_SYMBOL(DestroyWindow)
-    BIND_SYMBOL(GetWindowData)
-    BIND_SYMBOL(SetWindowData)
     BIND_SYMBOL(GetWindowWMInfo)
-    BIND_SYMBOL(GetWindowSize)
 
     BIND_SYMBOL(GL_GetProcAddress)
+    BIND_SYMBOL(GL_GetDrawableSize)
+    BIND_SYMBOL(GL_SwapWindow)
 
 
 #undef BIND_SYMBOL

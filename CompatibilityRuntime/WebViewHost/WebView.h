@@ -2,13 +2,17 @@
 #define WEBVIEW_H
 
 #include <cstdint>
+#include <memory>
 
-#include <include/views/cef_window.h>
-#include <include/views/cef_browser_view.h>
+#include <include/cef_browser.h>
+
+class WebViewRenderHandler;
+class WebViewSharedImageBuffer;
 
 class WebView {
 public:
-    WebView(int x, int y, int width, int height, intptr_t parentWindow);
+    WebView(int x, int y, int width, int height, intptr_t parentWindow,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory);
     ~WebView();
 
     WebView(const WebView &other) = delete;
@@ -45,7 +49,8 @@ public:
     void setBouncesEnabled(bool flag);
     void setCalloutEnabled(bool enabled);
     void setDefaultFontSize(int32_t enabled);
-    void setFrame(int32_t x, int32_t y, int32_t width, int32_t height);
+    void setFrame(int32_t x, int32_t y, int32_t width, int32_t height,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory);
     void setHeaderField(const std::string & key, const std::string & value);
     void setHorizontalScrollBarEnabled(bool enabled);
     void setImmersiveModeEnabled(bool enabled);
@@ -53,7 +58,8 @@ public:
     void setOpenLinksInExternalBrowser(bool flag);
     void setPosition(int32_t x, int32_t y);
     void setShowSpinnerWhileLoading(bool show);
-    void setSize(int32_t width, int32_t height);
+    void setSize(int32_t width, int32_t height,
+              std::unique_ptr<WebViewSharedImageBuffer> &&sharedMemory);
     void setSpinnerText(const std::string & text);
     void setSupportMultipleWindows(bool flag);
     void setUseWideViewPort(bool use);
@@ -66,10 +72,11 @@ public:
     void showWebViewDialog(bool flag);
     void stop();
 
+    void dispatchTouchEvent(const cef_touch_event_t &event);
 
 private:
-    CefRefPtr<CefWindow> m_window;
-    CefRefPtr<CefBrowserView> m_browser;
+    CefRefPtr<WebViewRenderHandler> m_renderHandler;
+    CefRefPtr<CefBrowser> m_browser;
 };
 
 #endif

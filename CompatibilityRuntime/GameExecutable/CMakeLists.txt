@@ -9,8 +9,24 @@ add_executable(GameExecutable
     GameServerInterface.cpp
     GameServerInterface.h
 
-    GLES/BaseGLESContext.cpp
-    GLES/BaseGLESContext.h
+
+    GLES/GLESAPISet.cpp
+    GLES/GLESAPISet.h
+    GLES/GLESObjectHandle.h
+    GLES/GLESRenderingOverlay.cpp
+    GLES/GLESRenderingOverlay.h
+
+    Input/TouchEmulator.cpp
+    Input/TouchEmulator.h
+
+    Input/TouchInputAreaReceiver.cpp
+    Input/TouchInputAreaReceiver.h
+
+    Input/TouchInputReceiver.cpp
+    Input/TouchInputReceiver.h
+
+    Input/UnityTouchInputReceiver.cpp
+    Input/UnityTouchInputReceiver.h
 
     main.cpp
 
@@ -92,6 +108,12 @@ endif()
 
 if(WIN32)
     target_sources(GameExecutable PRIVATE
+        GLES/WGL/WGLHooking.cpp
+        GLES/WGL/WGLHooking.h
+
+        GLES/WGL/WindowsImportRedirection.cpp
+        GLES/WGL/WindowsImportRedirection.h
+
         EntryPointWindows.cpp
 
         ProcessCommandLineWindows.cpp
@@ -126,22 +148,17 @@ endif()
 
 if(TARGET WebViewHostClient)
     target_sources(GameExecutable PRIVATE
+        WebView/CEFCompositor.cpp
+        WebView/CEFCompositor.h
+        WebView/CEFSurface.cpp
+        WebView/CEFSurface.h
+        WebView/CEFSurfaceInputReceiver.cpp
+        WebView/CEFSurfaceInputReceiver.h
         WebView/CEFWebViewImplementation.cpp
         WebView/CEFWebViewImplementation.h
     )
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_CEF)
     target_link_libraries(GameExecutable PRIVATE WebViewHostClient)
-
-    if(WIN32)
-        target_sources(GameExecutable PRIVATE
-            WebView/CEFWebViewWindowingWin32.cpp
-        )
-
-    else()
-        target_sources(GameExecutable PRIVATE
-            WebView/CEFWebViewWindowingSDL.cpp
-        )
-    endif()
 endif()
 
 if(TARGET PkgConfig::MPV)
@@ -164,9 +181,6 @@ if(TARGET PkgConfig::MPV)
         VideoPlayer/MPVPlayer.h
 
         VideoPlayer/MPVTypes.h
-
-        VideoPlayer/VideoRenderingOpenGLAPISet.cpp
-        VideoPlayer/VideoRenderingOpenGLAPISet.h
     )
 
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_MPV)

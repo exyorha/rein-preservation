@@ -1,6 +1,7 @@
 add_library(WebViewProtocol STATIC
     WebView/WebViewProtocol.proto
     Protocol/WebViewProtocolController.h
+    Protocol/WebViewSharedImageBuffer.h
 )
 
 protobuf_generate(TARGET WebViewProtocol)
@@ -15,18 +16,14 @@ endif()
 
 add_executable(WebViewHost WIN32
   main.cpp
-  ParentedContainerWindow.cpp
-  ParentedContainerWindow.h
   WebView.cpp
   WebView.h
   WebViewApp.cpp
   WebViewApp.h
-  WebViewBrowserViewDelegate.cpp
-  WebViewBrowserViewDelegate.h
   WebViewClient.cpp
   WebViewClient.h
-  WebViewContainerDelegate.cpp
-  WebViewContainerDelegate.h
+  WebViewRenderHandler.cpp
+  WebViewRenderHandler.h
   WebViewRPCImplementation.cpp
   WebViewRPCImplementation.h
   WebViewRPCServer.cpp
@@ -49,7 +46,8 @@ else()
   )
 endif()
 
-set_source_files_properties(WebViewRPCService.cpp WebViewRPCImplementation.cpp PROPERTIES COMPILE_OPTIONS -fexceptions)
+set_source_files_properties(WebViewRPCService.cpp WebViewRPCImplementation.cpp WebViewRPCServerLinux.cpp
+  PROPERTIES COMPILE_OPTIONS -fexceptions)
 
 SET_EXECUTABLE_TARGET_PROPERTIES(WebViewHost)
 
