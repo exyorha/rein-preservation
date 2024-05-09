@@ -5,6 +5,8 @@
 #include <WebView/WebViewImplementationFactory.h>
 #include <WebView/WebViewImplementation.h>
 
+#include "WebSupport.h"
+
 std::unique_ptr<WebViewImplementation> UniWebViewInterface::m_impl;
 
 std::shared_ptr<JNIClass> UniWebViewInterface::makeClass() {
@@ -165,7 +167,7 @@ void UniWebViewInterface::init(const std::string & arg1, int32_t arg2, int32_t a
 }
 
 void UniWebViewInterface::load(const std::string & arg1, const std::string & arg2) {
-    return m_impl->load(arg1, arg2);
+    return m_impl->load(arg1, redirectURL(arg2));
 }
 
 void UniWebViewInterface::loadHTMLString(const std::string & arg1, const std::string & arg2, const std::string & arg3) {

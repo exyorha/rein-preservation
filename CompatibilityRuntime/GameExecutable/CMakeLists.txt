@@ -91,6 +91,9 @@ add_executable(GameExecutable
 
     UnityWebRequest.cpp
 
+    WebSupport.cpp
+    WebSupport.h
+
 )
 
 if(NOT WIN32)
