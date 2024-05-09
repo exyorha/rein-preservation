@@ -61,6 +61,8 @@ add_executable(GameExecutable
     Java/JNIState.h
     Java/JNIString.cpp
     Java/JNIString.h
+    Java/JNISystem.cpp
+    Java/JNISystem.h
     Java/JNIThrowable.cpp
     Java/JNIThrowable.h
     Java/JNIUnityPlayer.cpp

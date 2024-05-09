@@ -18,6 +18,7 @@ std::shared_ptr<JNIClass> JNIObject::parent(const std::string_view &name) {
 std::shared_ptr<JNIClass> JNIObject::makeClass() {
     auto co = std::make_shared<JNIClass>("java/lang/Object", nullptr);
     co->registerMethod("toString", "()Ljava/lang/String;", &JNIObject::toString);
+    co->registerMethod("hashCode", "()I", &JNIObject::hashCode);
 
     return co;
 }
@@ -32,4 +33,12 @@ std::shared_ptr<JNIObject> JNIObject::toString() {
 
 void JNIObject::unexpectedNullValue() {
     throw std::runtime_error("unexpected null value");
+}
+
+int32_t JNIObject::hashCode() {
+    return identityHashCode();
+}
+
+int32_t JNIObject::identityHashCode() const {
+    return static_cast<int32_t>(std::hash<const void *>()(this));
 }

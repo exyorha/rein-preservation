@@ -25,6 +25,9 @@ public:
         return m_objectClass;
     }
 
+    int32_t identityHashCode() const;
+    virtual int32_t hashCode();
+
 protected:
     static std::shared_ptr<JNIClass> parent(const std::string_view &name);
 
