@@ -71,3 +71,4 @@ if(NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(bionic/build_integration)
 endif()
 
+add_subdirectory(Launcher)
