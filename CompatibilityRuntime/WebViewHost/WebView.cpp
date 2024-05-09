@@ -106,7 +106,7 @@ bool WebView::hide(bool arg1, int32_t arg2, float arg3, const std::string & arg4
 }
 
 void WebView::load(const std::string &url) {
-    m_browser->GetMainFrame()->LoadURL("https://google.com");//url);
+    m_browser->GetMainFrame()->LoadURL(url);
 }
 
 void WebView::loadHTMLString(const std::string & arg1, const std::string & arg2) {
