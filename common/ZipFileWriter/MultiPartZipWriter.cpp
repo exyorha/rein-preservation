@@ -1,4 +1,4 @@
-#include "multi_part_zip_writer.h"
+#include <ZipFileWriter/MultiPartZipWriter.h>
 
 #include <UnityAsset/Streams/Stream.h>
 #include <UnityAsset/Streams/FileInputOutput.h>
@@ -6,6 +6,8 @@
 #include <system_error>
 
 #include <zlib.h>
+
+namespace ZipFileWriter {
 
 MultiPartZipWriter::MultiPartZipWriter(const std::filesystem::path &basepath) : m_basepath(basepath), m_centralDirectoryEntries(0) {
 
@@ -16,8 +18,16 @@ MultiPartZipWriter::~MultiPartZipWriter() = default;
 void MultiPartZipWriter::addFile(const std::string_view &fileName, uint64_t modtimeMicroseconds, const UnityAsset::Stream &data) {
     auto modtimeSeconds = static_cast<time_t>(modtimeMicroseconds / UINT64_C(1000000));
     struct tm modtimeParts;
+
+#ifdef _WIN32
+    auto error = gmtime_s(&modtimeParts, &modtimeSeconds);
+    if(error != 0) {
+        throw std::system_error(error, std::generic_category());
+    }
+#else
     if(!gmtime_r(&modtimeSeconds, &modtimeParts))
         throw std::system_error(errno, std::generic_category());
+#endif
 
     uint16_t modTimeDOS =
         ((modtimeParts.tm_hour & 31) << 11) |
@@ -253,4 +263,6 @@ std::ofstream &MultiPartZipWriter::getSpanForDataBytes(size_t bytes) {
     } else {
         return m_spans.back();
     }
+}
+
 }

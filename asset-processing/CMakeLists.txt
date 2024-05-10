@@ -27,14 +27,11 @@ add_executable(process_assets
     HalfFloat.cpp
     HalfFloat.h
 
-    multi_part_zip_writer.cpp
-    multi_part_zip_writer.h
-
     process_assets.cpp
     unzip_handle.cpp
     unzip_handle.h
 )
-target_link_libraries(process_assets PRIVATE PkgConfig::MINIZIP UnityAsset lz4 ClientDataAccess)
+target_link_libraries(process_assets PRIVATE PkgConfig::MINIZIP UnityAsset lz4 ClientDataAccess ZipFileWriter)
 target_include_directories(process_assets PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 set_target_properties(process_assets PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED TRUE)

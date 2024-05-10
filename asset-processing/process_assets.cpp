@@ -6,12 +6,13 @@
 #include <UnityAsset/Streams/FileInputOutput.h>
 #include <UnityAsset/FileContainer/AssetBundle/AssetBundleFile.h>
 
+#include  <ZipFileWriter/MultiPartZipWriter.h>
+
 #include <Octo/Proto/Database.pb.h>
 
-#include "UnityAsset/UnityCompression.h"
 #include "conversion_context.h"
 #include "bc7e_ispc.h"
-#include "multi_part_zip_writer.h"
+
 #include "asset_reprocessing.h"
 
 static int usage(void) {
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
 
         printf("Loaded the Octo database of revision %d\n", octoDB.revision());
 
-        MultiPartZipWriter writer(argv[5]);
+        ZipFileWriter::MultiPartZipWriter writer(argv[5]);
 
         for(const auto &assetBundle: octoDB.assetbundlelist()) {
             std::string name(assetBundle.name());
