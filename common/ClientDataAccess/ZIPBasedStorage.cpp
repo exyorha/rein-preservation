@@ -1,5 +1,7 @@
 #include <ClientDataAccess/ZIPBasedStorage.h>
 
+#include <cstddef>
+#include <ctime>
 #include <fstream>
 #include <vector>
 #include <cstring>
@@ -82,12 +84,7 @@ namespace ClientDataAccess {
 
             auto filename = ptr;
 
-            uint32_t offset = header.relativeOffsetOfLocalHeader;
-            if constexpr (LessCompatibleButAvoidReopeningZIPs) {
-                offset += sizeof(LocalFileHeader) + header.fileNameLength + header.extraFieldLength;
-            }
-
-            m_files.emplace(std::string_view(ptr, header.fileNameLength), std::make_pair(header.diskNumberStart, offset));
+            m_files.emplace(std::string_view(ptr, header.fileNameLength), header);
 
             ptr += header.fileNameLength + header.extraFieldLength + header.fileCommentLength;
         }
@@ -100,23 +97,114 @@ namespace ClientDataAccess {
         if(it == m_files.end())
             return std::nullopt;
 
+        const auto &header = it->second;
+
         std::filesystem::path finalPath(m_zipPath);
 
         std::stringstream suffix;
-        if(it->second.first == m_lastDisk) {
+        if(header.diskNumberStart == m_lastDisk) {
             suffix << ".zip";
         } else {
             suffix << ".z";
             suffix.width(2);
             suffix.fill('0');
-            suffix << (it->second.first + 1);
+            suffix << (header.diskNumberStart + 1);
         }
 
-        suffix << "@" << it->second.second;
+        uint32_t offset = header.relativeOffsetOfLocalHeader;
+        if constexpr (LessCompatibleButAvoidReopeningZIPs) {
+            offset += sizeof(LocalFileHeader) + header.fileNameLength + header.extraFieldLength;
+        }
+
+        suffix << "@" << offset;
 
         finalPath.replace_extension(suffix.str());
 
         return finalPath;
+    }
+
+    std::optional<PhysicalLocationInZIP> ZIPBasedStorage::lookupLocation(const std::string_view &filename) const {
+        auto it = m_files.find(filename);
+        if(it == m_files.end())
+            return std::nullopt;
+
+        const auto &header = it->second;
+
+        off_t offset = header.relativeOffsetOfLocalHeader;
+        uint32_t length = header.uncompressedSize;
+
+        std::filesystem::path finalPath(m_zipPath);
+
+        std::stringstream suffix;
+        if(header.diskNumberStart == m_lastDisk) {
+            suffix << ".zip";
+        } else {
+            suffix << ".z";
+            suffix.width(2);
+            suffix.fill('0');
+            suffix << (header.diskNumberStart + 1);
+        }
+
+        finalPath.replace_extension(suffix.str());
+
+        uint16_t dosDate = header.lastModifiedDate;
+        uint16_t dosTime = header.lastModifiedTime;
+
+        if constexpr (LessCompatibleButAvoidReopeningZIPs) {
+            offset += sizeof(LocalFileHeader) + header.fileNameLength + header.extraFieldLength;
+        } else {
+            LocalFileHeader fileHeader;
+            readLocalHeader(filename, offset, fileHeader, offset);
+            length = fileHeader.compressedSize;
+            dosDate = fileHeader.lastModifiedDate;
+            dosTime = fileHeader.lastModifiedTime;
+        }
+
+        struct tm timeparts;
+        memset(&timeparts, 0, sizeof(timeparts));
+
+        timeparts.tm_hour = (dosTime >> 11) & 31;
+        timeparts.tm_min = (dosTime >> 5) & 63;
+        timeparts.tm_sec = (dosTime & 31) << 1;
+        timeparts.tm_year = ((dosDate >> 9) & 127) + 80;
+        timeparts.tm_mon = ((dosDate >> 5) & 15) - 1;
+        timeparts.tm_mday = dosDate & 31;
+
+#ifdef _WIN32
+        auto modtime = _mkgmtime(&timeparts);
+#else
+        auto modtime = timegm(&timeparts);
+#endif
+
+        return PhysicalLocationInZIP{
+            .zipFilePath = std::move(finalPath),
+            .fileOffset = static_cast<uint64_t>(offset),
+            .fileLength = length,
+            .modtime = modtime
+        };
+    }
+
+    void ZIPBasedStorage::readLocalHeader(const std::filesystem::path &filename, off_t localHeaderOffset, LocalFileHeader &header,
+                                          off_t &dataOffset) {
+
+        std::ifstream stream;
+        stream.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+        stream.open(filename, std::ios::in | std::ios::binary);
+
+        stream.seekg(localHeaderOffset);
+        stream.read(reinterpret_cast<char *>(&header), sizeof(header));
+        if(header.signature != LocalFileHeaderSignature)
+            throw std::runtime_error("bad local file header signature");
+
+        if(header.compressedSize == UINT32_C(0xFFFFFFFF) || header.uncompressedSize == UINT32_C(0xFFFFFFFF)) {
+            throw std::runtime_error("files must be addressable without Zip64 extensions");
+        }
+
+        if(header.compressionMethod != 0 || header.compressedSize != header.uncompressedSize) {
+            throw std::runtime_error("files must not be compressed");
+        }
+
+        dataOffset = localHeaderOffset + sizeof(LocalFileHeader) + header.fileNameLength + header.extraFieldLength;
     }
 
     std::optional<PhysicalLocationInZIP> ZIPBasedStorage::unwrapZIPPath(std::filesystem::path &&path) {
@@ -149,33 +237,18 @@ namespace ClientDataAccess {
         extensionString.erase(delim);
         location.zipFilePath.replace_extension(extensionString);
 
-
         if constexpr (LessCompatibleButAvoidReopeningZIPs) {
             location.fileOffset = offset;
             location.fileLength = std::string::npos;
         } else {
-
-            std::ifstream stream;
-            stream.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-            stream.open(location.zipFilePath, std::ios::in | std::ios::binary);
-
-            LocalFileHeader header;
-            stream.seekg(offset);
-            stream.read(reinterpret_cast<char *>(&header), sizeof(header));
-            if(header.signature != LocalFileHeaderSignature)
-                throw std::runtime_error("bad local file header signature");
-
-            if(header.compressedSize == UINT32_C(0xFFFFFFFF) || header.uncompressedSize == UINT32_C(0xFFFFFFFF)) {
-                throw std::runtime_error("files must be addressable without Zip64 extensions");
-            }
-
-            if(header.compressionMethod != 0 || header.compressedSize != header.uncompressedSize) {
-                throw std::runtime_error("files must not be compressed");
-            }
-
-            location.fileOffset = offset + sizeof(header) + header.fileNameLength + header.extraFieldLength;
-            location.fileLength = header.uncompressedSize;
+            LocalFileHeader fileHeader;
+            off_t dataOffset;
+            readLocalHeader(location.zipFilePath, offset, fileHeader, dataOffset);
+            location.fileOffset = dataOffset;
+            location.fileLength = fileHeader.compressedSize;
         }
+
+        location.modtime = 0;
 
         return result;
     }

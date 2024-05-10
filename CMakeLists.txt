@@ -24,10 +24,10 @@ if(BUILD_COMPATIBILITY_RUNTIME)
 endif()
 
 if(BUILD_GAME_SERVER)
-    add_subdirectory(GameServer)
     if(NOT CMAKE_CROSSCOMPILING)
         add_subdirectory(reinweb)
     endif()
+    add_subdirectory(GameServer)
 endif()
 
 if(BUILD_ASSET_PROCESSING)

@@ -1,21 +1,22 @@
 #include "Gameserver.h"
-#include "DataModel/DatabaseEnums.h"
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Statement.h>
 
+#include <WebContentServer/LooseFileWebContentStorage.h>
+#include <WebContentServer/ZipArchiveWebContentStorage.h>
+
 #include <filesystem>
-#include <fstream>
 
 #if defined(_WIN32)
 #include <windows.h>
 #endif
 
 Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               std::filesystem::path &&octoListPath, const std::filesystem::path &webRoot) :
+               std::filesystem::path &&octoListPath, std::filesystem::path &&webRoot) :
     m_cliService(&m_eventLoop, &m_logSink),
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
     m_contentStorage(std::move(octoListPath)),
-    m_webServer(webRoot),
+    m_webServer(createWebContentStorage(std::move(webRoot))),
     m_octoServices(m_contentStorage),
     m_db(individualDatabasePath, masterDatabasePath),
     m_dbViewer(m_contentStorage, m_db, webRoot.parent_path()),
@@ -129,5 +130,19 @@ std::filesystem::path Gameserver::defaultWebRootPath() {
     auto executablePath = std::filesystem::read_symlink("/proc/self/exe");
 #endif
 
-    return executablePath.parent_path() / "WebRoot";
+    auto directory = executablePath.parent_path();
+
+    auto looseDir = directory / "WebRoot";
+    if(std::filesystem::exists(looseDir)) {
+        return looseDir;
+    } else {
+        return directory / "WebRoot.zip";
+    }
+}
+
+std::unique_ptr<WebContentStorage> Gameserver::createWebContentStorage(std::filesystem::path &&path) {
+    if(std::filesystem::is_directory(path))
+        return std::make_unique<LooseFileWebContentStorage>(std::move(path));
+    else
+        return std::make_unique<ZipArchiveWebContentStorage>(std::move(path));
 }

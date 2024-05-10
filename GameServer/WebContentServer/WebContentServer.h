@@ -1,16 +1,18 @@
-#ifndef WEB_CONTENT_SERVER_H
-#define WEB_CONTENT_SERVER_H
+#ifndef WEB_CONTENT_SERVER_WEB_CONTENT_SERVER_H
+#define WEB_CONTENT_SERVER_WEB_CONTENT_SERVER_H
 
 #include "WebServices/WebRoutable.h"
+#include "WebContentServer/WebContentStorage.h"
 
 #include <filesystem>
 #include <vector>
 #include <optional>
 #include <string_view>
+#include <memory>
 
 class WebContentServer final : public WebRoutable {
 public:
-    explicit WebContentServer(const std::filesystem::path &root);
+    explicit WebContentServer(std::unique_ptr<WebContentStorage> &&storage);
     ~WebContentServer();
 
     WebContentServer(const WebContentServer &other) = delete;
@@ -36,7 +38,7 @@ private:
         std::filesystem::path filename;
     };
 
-    std::optional<std::filesystem::path> mapPath(const std::string_view &path);
+    std::optional<WebContentLocation> mapPath(const std::string_view &path);
 
     static std::vector<std::pair<size_t, size_t>> parseRanges(std::string_view rangeHeader, size_t fileSize);
 
@@ -48,7 +50,7 @@ private:
 
     bool tryServePath(const std::string_view &path, LLServices::HttpRequest &&request);
 
-    std::filesystem::path m_root;
+    std::unique_ptr<WebContentStorage> m_storage;
     std::vector<OverridePath> m_overridePaths;
     std::optional<std::string> m_fallbackPage;
 };

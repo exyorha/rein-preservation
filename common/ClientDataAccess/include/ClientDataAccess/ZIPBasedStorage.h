@@ -13,6 +13,7 @@ namespace ClientDataAccess {
         std::filesystem::path zipFilePath;
         uint64_t fileOffset;
         uint64_t fileLength;
+        time_t modtime;
     };
 
     class ZIPBasedStorage {
@@ -24,6 +25,7 @@ namespace ClientDataAccess {
         ZIPBasedStorage &operator =(const ZIPBasedStorage &other) = delete;
 
         std::optional<std::filesystem::path> lookup(const std::string_view &filename) const;
+        std::optional<PhysicalLocationInZIP> lookupLocation(const std::string_view &filename) const;
 
         static std::optional<PhysicalLocationInZIP> unwrapZIPPath(std::filesystem::path &&path);
 
@@ -80,10 +82,13 @@ namespace ClientDataAccess {
 
         static constexpr bool LessCompatibleButAvoidReopeningZIPs = true;
 
+        static void readLocalHeader(const std::filesystem::path &filename, off_t localHeaderOffset, LocalFileHeader &header,
+                                    off_t &dataOffset);
+
         std::filesystem::path m_zipPath;
         uint16_t m_lastDisk;
         std::vector<char> m_centralDirectory;
-        std::unordered_map<std::string_view, std::pair<uint16_t, uint32_t>> m_files;
+        std::unordered_map<std::string_view, CentralDirectoryHeader> m_files;
     };
 
 }

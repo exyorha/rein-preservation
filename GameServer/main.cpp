@@ -215,7 +215,7 @@ static int gameserver_main(int argc, char **argv) {
         pathFromArgument(individualDatabasePath),
         pathFromArgument(masterDatabasePath),
         pathFromArgument(octoListPath),
-        webRootPath);
+        std::move(webRootPath));
 
     for(const auto &listener: configuredListeners) {
         std::visit([&server](const auto &value) {

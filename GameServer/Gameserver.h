@@ -6,8 +6,9 @@
 #include "LLServices/Networking/EventLoop.h"
 #include "LLServices/Networking/HttpServer.h"
 
+#include "WebContentServer/WebContentServer.h"
+
 #include "WebServices/WebRouter.h"
-#include "WebServices/WebContentServer.h"
 #include "WebServices/OctoWebServices.h"
 #include "WebServices/ServerCLIService.h"
 #include "WebServices/WebRedirector.h"
@@ -54,7 +55,7 @@
 struct Gameserver {
 public:
     Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               std::filesystem::path &&octoListPath, const std::filesystem::path &webRoot);
+               std::filesystem::path &&octoListPath, std::filesystem::path &&webRoot);
     ~Gameserver();
 
     Gameserver(const Gameserver &other) = delete;
@@ -77,6 +78,8 @@ public:
     static std::filesystem::path defaultWebRootPath();
 
 private:
+    static std::unique_ptr<WebContentStorage> createWebContentStorage(std::filesystem::path &&path);
+
     LLServices::EventLoop m_eventLoop;
     LLServices::ConsoleLogSink m_logSink;
     ServerCLIService m_cliService;

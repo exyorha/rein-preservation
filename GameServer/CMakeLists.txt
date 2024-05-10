@@ -266,6 +266,18 @@ add_executable(GameServer
     ServerCommandLine.cpp
     ServerCommandLine.h
 
+    WebContentServer/LooseFileWebContentStorage.cpp
+    WebContentServer/LooseFileWebContentStorage.h
+
+    WebContentServer/WebContentServer.cpp
+    WebContentServer/WebContentServer.h
+
+    WebContentServer/WebContentStorage.cpp
+    WebContentServer/WebContentStorage.h
+
+    WebContentServer/ZipArchiveWebContentStorage.cpp
+    WebContentServer/ZipArchiveWebContentStorage.h
+
     WebServices/OctoWebServices.cpp
     WebServices/OctoWebServices.h
 
@@ -274,9 +286,6 @@ add_executable(GameServer
 
     WebServices/ServerCLIService.cpp
     WebServices/ServerCLIService.h
-
-    WebServices/WebContentServer.cpp
-    WebServices/WebContentServer.h
 
     WebServices/WebRedirector.cpp
     WebServices/WebRedirector.h
@@ -451,6 +460,13 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 install(TARGETS GameServer DESTINATION GameServer COMPONENT GameServer)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/WebRoot DESTINATION GameServer COMPONENT GameServer)
 install(FILES ${PROJECT_SOURCE_DIR}/dbview_schema.sql DESTINATION GameServer COMPONENT GameServer)
 install(FILES ${PROJECT_SOURCE_DIR}/dbview_schema.json DESTINATION GameServer COMPONENT GameServer)
+
+if(NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(makewebzip)
+
+    install(
+        CODE "execute_process(COMMAND $<TARGET_FILE:makewebzip> \${CMAKE_INSTALL_PREFIX}/GameServer/WebRoot.zip ${GameServer_SOURCE_DIR}/WebRoot ${reinweb_SOURCE_DIR}/public COMMAND_ERROR_IS_FATAL ANY)"
+        COMPONENT GameServer)
+endif()
