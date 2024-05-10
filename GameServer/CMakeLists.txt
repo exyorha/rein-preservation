@@ -109,8 +109,6 @@ add_executable(GameServer
     DatabaseViewer/DatabaseViewerSQL.h
     DatabaseViewer/HierarchicalPathParser.cpp
     DatabaseViewer/HierarchicalPathParser.h
-    DatabaseViewer/ReloadableResource.cpp
-    DatabaseViewer/ReloadableResource.h
     DatabaseViewer/UTF8Helpers.cpp
     DatabaseViewer/UTF8Helpers.h
     DatabaseViewer/XMLFile.cpp
@@ -204,6 +202,8 @@ add_executable(GameServer
     GRPC/PBOutputOverLLBuffer.cpp
     GRPC/PBOutputOverLLBuffer.h
 
+    LLServices/JSON/JSONTree.cpp
+    LLServices/JSON/JSONTree.h
     LLServices/JSON/JSONWriter.cpp
     LLServices/JSON/JSONWriter.h
     LLServices/JSON/StreamingJSONCallback.cpp
@@ -263,8 +263,17 @@ add_executable(GameServer
 
     main.cpp
 
+    ReloadableResource.cpp
+    ReloadableResource.h
+
     ServerCommandLine.cpp
     ServerCommandLine.h
+
+    WebAPI/WebAPIService.cpp
+    WebAPI/WebAPIService.h
+
+    WebAPI/WebDatabase.cpp
+    WebAPI/WebDatabase.h
 
     WebContentServer/LooseFileWebContentStorage.cpp
     WebContentServer/LooseFileWebContentStorage.h

@@ -24,7 +24,8 @@ const char* const Database::m_setupQueries[]{
 LLServices::LogFacility LogDatabase("Database");
 
 Database::Database(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath) :
-    m_db(individualDatabasePath), m_masterDatabase(masterDatabasePath), m_queryLoggingEnabled(true) {
+    m_db(individualDatabasePath, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_URI),
+    m_masterDatabase(masterDatabasePath), m_queryLoggingEnabled(true) {
 
     bool transient = individualDatabasePath.empty();
 

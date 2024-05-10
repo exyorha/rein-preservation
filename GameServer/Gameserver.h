@@ -13,6 +13,8 @@
 #include "WebServices/ServerCLIService.h"
 #include "WebServices/WebRedirector.h"
 
+#include "WebAPI/WebAPIService.h"
+
 #include "GRPC/GRPCLikeServer.h"
 
 #include "ServiceImplementations/CageOrnamentService.h"
@@ -86,11 +88,12 @@ private:
     LLServices::LogManagerScope m_logManagerScope;
     ClientDataAccess::OctoContentStorage m_contentStorage;
     GRPCLikeServer m_gameAPI;
-    WebContentServer m_webServer;
     OctoWebServices m_octoServices;
     Database m_db;
     DatabaseViewerService m_dbViewer;
     WebRedirector m_webRedirector;
+    WebAPIService m_webAPI;
+    WebContentServer m_webServer;
     WebRouter m_router;
     LLServices::HttpServer m_http;
 

@@ -16,10 +16,11 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_cliService(&m_eventLoop, &m_logSink),
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
     m_contentStorage(std::move(octoListPath)),
-    m_webServer(createWebContentStorage(std::move(webRoot))),
     m_octoServices(m_contentStorage),
     m_db(individualDatabasePath, masterDatabasePath),
     m_dbViewer(m_contentStorage, m_db, webRoot.parent_path()),
+    m_webAPI(m_db, webRoot.parent_path()),
+    m_webServer(createWebContentStorage(std::move(webRoot))),
     m_router(&m_webServer),
     m_http(&m_eventLoop, &m_router),
 
@@ -57,6 +58,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
 
     m_router.handleSubpath("/web.app.nierreincarnation.com", &m_webRedirector);
     m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
+    m_router.handleSubpath("/api-web.app.nierreincarnation.com", &m_webAPI);
     m_router.handleSubpath("/resources-api.app.nierreincarnation.com", &m_octoServices);
     m_router.handleSubpath("/server-cli", &m_cliService);
     m_router.handleSubpath("/database", &m_dbViewer);

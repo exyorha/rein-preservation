@@ -1,5 +1,5 @@
-#ifndef DATABASE_VIEWER_RELOADABLE_RESOURCE_H
-#define DATABASE_VIEWER_RELOADABLE_RESOURCE_H
+#ifndef RELOADABLE_RESOURCE_H
+#define RELOADABLE_RESOURCE_H
 
 #include <filesystem>
 #include <optional>

@@ -1,4 +1,4 @@
-#include "DatabaseViewer/ReloadableResource.h"
+#include "ReloadableResource.h"
 
 #include "LLServices/Logging/LogFacility.h"
 

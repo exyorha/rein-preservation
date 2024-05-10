@@ -1,7 +1,7 @@
 #ifndef DATABASE_VIEWER_DATABASE_VIEWER_SCHEMA_H
 #define DATABASE_VIEWER_DATABASE_VIEWER_SCHEMA_H
 
-#include "DatabaseViewer/ReloadableResource.h"
+#include "ReloadableResource.h"
 
 #include "DatabaseViewerEntitySet.h"
 
