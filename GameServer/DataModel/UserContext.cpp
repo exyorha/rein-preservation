@@ -1810,7 +1810,7 @@ void UserContext::startMainQuest(
     /*
      * TODO: questFlowType (0 - no active, 1 probably main, replay - ??)
      */
-    QuestFlowType questFlowType = QuestFlowType::UNKNOWN;
+    QuestFlowType questFlowType = QuestFlowType::SUB_FLOW;
 
     if(isMainFlow) {
         questFlowType = QuestFlowType::MAIN_FLOW;
@@ -1879,6 +1879,44 @@ void UserContext::startMainQuest(
     }
 
     // TODO: should update i_user_quest_auto_orbit
+
+
+    /*
+     * This is probably also not correct.
+     */
+    if(questFlowType == QuestFlowType::REPLAY_FLOW) {
+        auto alternates = db().prepare(R"SQL(
+            SELECT sub_flow_quest_id FROM m_quest_relation_main_flow
+            WHERE replay_flow_quest_id = ? AND sub_flow_quest_id != main_flow_quest_id
+        )SQL");
+        alternates->bind(1, questId);
+
+        while(alternates->step()) {
+            auto id = alternates->columnInt(0);
+
+            m_log.debug("starting quest %d: starting related main flow quest %d\n",
+                        questId, id);
+
+            commonStartQuest(id, isBattleOnly);
+        }
+    } else if(questFlowType == QuestFlowType::SUB_FLOW) {
+        auto alternates = db().prepare(R"SQL(
+            SELECT replay_flow_quest_id FROM m_quest_relation_main_flow
+            WHERE sub_flow_quest_id = ? AND replay_flow_quest_id != main_flow_quest_id
+        )SQL");
+        alternates->bind(1, questId);
+
+        while(alternates->step()) {
+            auto id = alternates->columnInt(0);
+
+            m_log.debug("starting quest %d: starting related main flow quest %d\n",
+                        questId, id);
+
+            commonStartQuest(id, isBattleOnly);
+        }
+    }
+
+
 }
 
 void UserContext::getOrResetAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber) {
@@ -1924,7 +1962,7 @@ void UserContext::getAndClearAttributesAtStartOfQuest(int32_t questId, int32_t &
     }
 }
 
-void UserContext::retireQuest(int32_t questId) {
+void UserContext::retireQuest(int32_t questId, bool clearingRelatedQuests) {
     auto updateQuest = db().prepare(R"SQL(
         UPDATE i_user_quest SET
             quest_state_type = CASE clear_count WHEN 0 THEN ? ELSE ? END
@@ -1937,6 +1975,32 @@ void UserContext::retireQuest(int32_t questId) {
     updateQuest->bind(4, questId);
     updateQuest->bind(5, static_cast<int32_t>(QuestStateType::InProgress));
     updateQuest->exec();
+
+
+    if(!clearingRelatedQuests) {
+        /*
+        * This is probably also not correct.
+        */
+        auto alternates = db().prepare(R"SQL(
+            SELECT replay_flow_quest_id FROM m_quest_relation_main_flow
+            WHERE sub_flow_quest_id = ? AND replay_flow_quest_id != main_flow_quest_id
+            UNION
+            SELECT sub_flow_quest_id FROM m_quest_relation_main_flow
+            WHERE replay_flow_quest_id = ? AND sub_flow_quest_id != main_flow_quest_id
+        )SQL");
+        alternates->bind(1, questId);
+        alternates->bind(2, questId);
+
+        while(alternates->step()) {
+            auto id = alternates->columnInt(0);
+
+            m_log.debug("retiring quest %d: clearing related main flow quest %d\n",
+                        questId, id);
+
+            retireQuest(id, true);
+        }
+    }
+
 }
 
 void UserContext::finishQuest(
@@ -1944,7 +2008,8 @@ void UserContext::finishQuest(
     int32_t userDeckNumber,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
     google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards,
-    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayFlowFirstClearReward) {
+    google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayFlowFirstClearReward,
+    bool clearingRelatedQuests) {
 
     auto getQuestRewardInfo = db().prepare(R"SQL(
         SELECT
@@ -2000,99 +2065,123 @@ void UserContext::finishQuest(
 
     updateQuest->reset();
 
-    if(replayFlowFirstClearReward) {
-        /*
-         * In the replay flow, we issue the replay flow rewards on the each
-         * clear of *this specific replay flow quest*, that is, this one
-         * quest_id.
-         *
-         * TODO: it's possible that the response reward list needs to be
-         * different.
-         */
+    if(!clearingRelatedQuests) {
 
-        if(questReplayFlowRewardGroupId != 0) {
-            issueReplayFlowRewardGroup(questReplayFlowRewardGroupId, replayFlowFirstClearReward);
+        if(replayFlowFirstClearReward) {
+            /*
+            * In the replay flow, we issue the replay flow rewards on the each
+            * clear of *this specific replay flow quest*, that is, this one
+            * quest_id.
+            *
+            * TODO: it's possible that the response reward list needs to be
+            * different.
+            */
+
+            if(questReplayFlowRewardGroupId != 0) {
+                issueReplayFlowRewardGroup(questReplayFlowRewardGroupId, replayFlowFirstClearReward);
+            }
+
+            /*
+            * Now, for the purposes of determining whether the first clear
+            * rewards should be given, the normal difficulty replay flow quest
+            * is considered to be the 'same' as the main flow quest, even though
+            * the quest ID is going to be different.
+            *
+            * So we need to add the clear count of the corresponding main flow
+            * quest, if the quest we're completing now has normal difficulty.
+            */
+
+            auto getMainFlowClears = db().prepare(R"SQL(
+                SELECT COALESCE(SUM(clear_count), 0)
+                FROM
+                    m_quest_relation_main_flow,
+                    i_user_quest ON i_user_quest.quest_id = m_quest_relation_main_flow.main_flow_quest_id
+                WHERE
+                    user_id = ? AND
+                    replay_flow_quest_id = ? AND
+                    difficulty_type = ?
+            )SQL");
+            getMainFlowClears->bind(1, m_userId);
+            getMainFlowClears->bind(2, questId);
+            getMainFlowClears->bind(3, static_cast<int32_t>(DifficultyType::NORMAL));
+            if(getMainFlowClears->step()) {
+                clearCount += getMainFlowClears->columnInt(0);
+            }
+        }
+
+
+        if(clearCount == 1 && questFirstClearRewardGroupId != 0) {
+            /*
+            * TODO: it's possible that *for the replay flow* the response reward
+            * list needs to be different.
+            */
+            issueFirstClearRewardGroup(questFirstClearRewardGroupId, firstClearRewards, dropRewards);
+        }
+
+
+        if(gold != 0) {
+            givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM),
+                        consumableItemIdForGold(),
+                        gold
+            );
+        }
+
+        if(userExperience != 0) {
+            giveUserExperience(userExperience);
+        }
+
+        if(userDeckNumber != 0) {
+            giveUserDeckExperience(deckType,
+                                userDeckNumber,
+                                characterExperience,
+                                costumeExperience);
+
         }
 
         /*
-         * Now, for the purposes of determining whether the first clear
-         * rewards should be given, the normal difficulty replay flow quest
-         * is considered to be the 'same' as the main flow quest, even though
-         * the quest ID is going to be different.
-         *
-         * So we need to add the clear count of the corresponding main flow
-         * quest, if the quest we're completing now has normal difficulty.
-         */
-
-        auto getMainFlowClears = db().prepare(R"SQL(
-            SELECT COALESCE(SUM(clear_count), 0)
+        * TODO: This is simplification: add all battle drop.
+        */
+        auto getAllBattleDrop = db().prepare(R"SQL(
+            SELECT
+                possession_type, possession_id, count
             FROM
-                m_quest_relation_main_flow,
-                i_user_quest ON i_user_quest.quest_id = m_quest_relation_main_flow.main_flow_quest_id
-            WHERE
-                user_id = ? AND
-                replay_flow_quest_id = ? AND
-                difficulty_type = ?
+                m_quest_pickup_reward_group,
+                m_battle_drop_reward ON m_battle_drop_reward.battle_drop_reward_id = m_quest_pickup_reward_group.battle_drop_reward_id
+
+            WHERE quest_pickup_reward_group_id = ?
+            ORDER BY sort_order
         )SQL");
-        getMainFlowClears->bind(1, m_userId);
-        getMainFlowClears->bind(2, questId);
-        getMainFlowClears->bind(3, static_cast<int32_t>(DifficultyType::NORMAL));
-        if(getMainFlowClears->step()) {
-            clearCount += getMainFlowClears->columnInt(0);
+        getAllBattleDrop->bind(1, questPickupRewardGroupId);
+        while(getAllBattleDrop->step()) {
+            auto type = getAllBattleDrop->columnInt(0);
+            auto id = getAllBattleDrop->columnInt(1);
+            auto count = getAllBattleDrop->columnInt(2);
+
+            givePossession(type, id, count, dropRewards);
+        }
+
+        /*
+        * This is probably also not correct.
+        */
+        auto alternates = db().prepare(R"SQL(
+            SELECT replay_flow_quest_id FROM m_quest_relation_main_flow
+            WHERE sub_flow_quest_id = ? AND replay_flow_quest_id != main_flow_quest_id
+            UNION
+            SELECT sub_flow_quest_id FROM m_quest_relation_main_flow
+            WHERE replay_flow_quest_id = ? AND sub_flow_quest_id != main_flow_quest_id
+        )SQL");
+        alternates->bind(1, questId);
+        alternates->bind(2, questId);
+
+        while(alternates->step()) {
+            auto id = alternates->columnInt(0);
+
+            m_log.debug("finishing quest %d: clearing related main flow quest %d\n",
+                        questId, id);
+
+            finishQuest(id, userDeckNumber, firstClearRewards, dropRewards, replayFlowFirstClearReward, true);
         }
     }
-
-
-    if(clearCount == 1 && questFirstClearRewardGroupId != 0) {
-        /*
-         * TODO: it's possible that *for the replay flow* the response reward
-         * list needs to be different.
-         */
-        issueFirstClearRewardGroup(questFirstClearRewardGroupId, firstClearRewards, dropRewards);
-    }
-
-
-    if(gold != 0) {
-        givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM),
-                       consumableItemIdForGold(),
-                       gold
-        );
-    }
-
-    if(userExperience != 0) {
-        giveUserExperience(userExperience);
-    }
-
-    if(userDeckNumber != 0) {
-        giveUserDeckExperience(deckType,
-                               userDeckNumber,
-                               characterExperience,
-                               costumeExperience);
-
-    }
-
-    /*
-     * TODO: This is simplification: add all battle drop.
-     */
-    auto getAllBattleDrop = db().prepare(R"SQL(
-        SELECT
-            possession_type, possession_id, count
-        FROM
-            m_quest_pickup_reward_group,
-            m_battle_drop_reward ON m_battle_drop_reward.battle_drop_reward_id = m_quest_pickup_reward_group.battle_drop_reward_id
-
-        WHERE quest_pickup_reward_group_id = ?
-        ORDER BY sort_order
-    )SQL");
-    getAllBattleDrop->bind(1, questPickupRewardGroupId);
-    while(getAllBattleDrop->step()) {
-        auto type = getAllBattleDrop->columnInt(0);
-        auto id = getAllBattleDrop->columnInt(1);
-        auto count = getAllBattleDrop->columnInt(2);
-
-        givePossession(type, id, count, dropRewards);
-    }
-
 }
 
 

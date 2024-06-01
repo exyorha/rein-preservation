@@ -117,13 +117,14 @@ public:
     void setMainQuestFlowStatus(QuestFlowType flowType);
     void getOrResetAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber);
     void getAndClearAttributesAtStartOfQuest(int32_t questId, int32_t &userDeckNumber);
-    void retireQuest(int32_t questId);
+    void retireQuest(int32_t questId, bool clearingRelatedQuests = false);
     void finishQuest(
         int32_t questId,
         int32_t userDeckNumber,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *firstClearRewards,
         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *dropRewards,
-        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayFlowFirstClearReward = nullptr);
+        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *replayFlowFirstClearReward = nullptr,
+        bool clearingRelatedQuests = false);
 
     void setMainQuestProgressStatus(int32_t currentQuestSceneId, int32_t headQuestSceneId, QuestFlowType currentQuestFlowType);
 
