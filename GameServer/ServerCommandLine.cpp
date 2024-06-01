@@ -31,6 +31,7 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
     { .cmd = "gift", .help = "sends a gift (execute just 'gift' for the syntax details)", .handler = &ServerCommandLine::commandGift },
     { .cmd = "portalcage", .help = "moves the player to the Mama's Room (will log out)", .handler = &ServerCommandLine::commandPortalCage },
     { .cmd = "addpremium", .help = "adds the premium item with the specified ID (will log out)", .handler = &ServerCommandLine::commandAddPremiumItem },
+    { .cmd = "allweapons", .help = "gives the player all purchasable (via the store or gacha) weapons and costumes that they don't already have (will log out)", .handler = &ServerCommandLine::commandAllWeapons },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -454,6 +455,34 @@ void ServerCommandLine::commandAddPremiumItemUser(WordListParser &parser, UserCo
     }
 
     user.givePossession(static_cast<int32_t>(PossessionType::PREMIUM_ITEM), itemID, 1);
+}
+
+void ServerCommandLine::commandAllWeapons(WordListParser &parser) {
+    runCommandInUserContext(parser, &ServerCommandLine::commandAllWeaponsUser);
+}
+
+void ServerCommandLine::commandAllWeaponsUser(WordListParser &parser, UserContext &user) {
+    auto selectAllPurchasableWeapons = user.db().prepare(R"SQL(
+        SELECT DISTINCT possession_type, possession_id
+        FROM
+            m_shop,
+            m_shop_item_cell_group USING (shop_item_cell_group_id),
+            m_shop_item_cell USING (shop_item_cell_id),
+            m_shop_item_content_possession USING (shop_item_id)
+        WHERE
+            shop_id = 6105
+    )SQL");
+
+    while(selectAllPurchasableWeapons->step()) {
+        auto possessionType = static_cast<PossessionType>(selectAllPurchasableWeapons->columnInt(0));
+        auto possessionId = selectAllPurchasableWeapons->columnInt(1);
+
+        if((possessionType == PossessionType::WEAPON && !user.getWeaponLevel(possessionId).has_value()) ||
+           (possessionType == PossessionType::COSTUME && !user.hasCostume(possessionId))) {
+
+            user.givePossession(static_cast<int32_t>(possessionType), possessionId, 1);
+        }
+    }
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {

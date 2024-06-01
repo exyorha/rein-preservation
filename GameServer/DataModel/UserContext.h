@@ -240,6 +240,8 @@ public:
 
     void buyShopItem(int32_t shopId, int32_t shopItemId);
 
+    bool hasCostume(int32_t costumeId);
+
 private:
 
     struct CollectedConditionRequirements {

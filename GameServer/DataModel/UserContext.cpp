@@ -2537,6 +2537,9 @@ std::optional<int32_t> UserContext::getWeaponLevel(int32_t weaponId) {
     query->bind(2, weaponId);
 
     while(query->step()) {
+        if(query->columnType(0) == SQLITE_NULL)
+            return std::nullopt;
+
         auto effectiveWeaponId = query->columnInt(0);
         auto level = query->columnInt(1);
 
@@ -5809,3 +5812,9 @@ void UserContext::buyShopItem(int32_t shopId, int32_t shopItemId) {
     recordPurchase->exec();
 }
 
+bool UserContext::hasCostume(int32_t costumeId) {
+    auto result = db().prepare("SELECT 1 FROM i_user_costume WHERE user_id = ? AND costume_id = ?");
+    result->bind(1, m_userId);
+    result->bind(2, costumeId);
+    return result->step();
+}

@@ -44,6 +44,8 @@ private:
     void commandPortalCageUser(WordListParser &parser, UserContext &user);
     void commandAddPremiumItem(WordListParser &parser);
     void commandAddPremiumItemUser(WordListParser &parser, UserContext &user);
+    void commandAllWeapons(WordListParser &parser);
+    void commandAllWeaponsUser(WordListParser &parser, UserContext &user);
 
     std::filesystem::path backupLocation() const;
 
