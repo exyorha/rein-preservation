@@ -1818,7 +1818,9 @@ void UserContext::startMainQuest(
         questFlowType = QuestFlowType::REPLAY_FLOW;
     }
 
-    setMainQuestFlowStatus(questFlowType);
+    if(isMainFlow || isReplayFlow) {
+        setMainQuestFlowStatus(questFlowType);
+    }
 
     setMainQuestProgressStatus(firstScene, firstScene, questFlowType);
 
