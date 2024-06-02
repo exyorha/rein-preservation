@@ -7,8 +7,6 @@
 
 #include <musl-elf.h>
 
-#include "SystemAPIThunking.h"
-
 #include <Bionic/BionicABITypes.h>
 #include <Bionic/BionicCallouts.h>
 
@@ -34,31 +32,27 @@ const uint32_t GlobalContext::PageSize = queryPageSize();
 
 GlobalContext *GlobalContext::GlobalContextRegisterer::m_context = nullptr;
 
-GlobalContext::GlobalContext() : m_registerer(this) {
+GlobalContext::GlobalContext() : m_registerer(this), m_linkingSet(&m_thunkSymbolSource) {
 
 #ifdef CR_GARBAGE_COLLECT_HOST_STACKS
     initializeHostGC();
 #endif
 
     auto directory = thisLibraryDirectory();
-    m_armlib.emplace(directory / "bionic.so.pe");
+    m_linkingSet.loadExecutable(directory / "bionic.so.pe");
+
+    const Image *il2cpp;
     if(getenv("ARM_DEBUG")) {
-        m_il2cpp.emplace(directory / "libil2cpp.so");
+        il2cpp = m_linkingSet.loadExecutable(directory / "libil2cpp.so");
     } else {
-        m_il2cpp.emplace(directory / "libil2cpp.so.pe");
+        il2cpp = m_linkingSet.loadExecutable(directory / "libil2cpp.so.pe");
     }
 
-    /*
-     * Bind the personality routine located in bionic with the unwinder located in libil2cpp.
-     */
-    *reinterpret_cast<void **>(m_armlib->getSymbolChecked("__compatibility_runtime_actual_Unwind_SetIP")) = m_il2cpp->getSymbolChecked("_Unwind_SetIP");
-    *reinterpret_cast<void **>(m_armlib->getSymbolChecked("__compatibility_runtime_actual_Unwind_SetGR")) = m_il2cpp->getSymbolChecked("_Unwind_SetGR");
-    *reinterpret_cast<void **>(m_armlib->getSymbolChecked("__compatibility_runtime_actual_Unwind_RaiseException")) =
-        m_il2cpp->getSymbolChecked("_Unwind_RaiseException");
+    m_linkingSet.bind();
 
-    bindBionicCallouts(*m_armlib);
+    bindBionicCallouts(m_linkingSet);
 
-    installGCHooks(*m_il2cpp);
+    installGCHooks(*il2cpp);
 
     // We don't run the dynamic linker (yet?), so we need to do some handover
     // stuff the linker does.
@@ -86,11 +80,7 @@ GlobalContext::GlobalContext() : m_registerer(this) {
     printf("Running bionic's __compatibility_runtime_init_libc\n");
     bionic_init_libc(&kernelArgumentBlock);
 
-    printf("Running bionic constructors\n");
-    m_armlib->runConstructors();
-
-    printf("Running il2cpp constructors\n");
-    m_il2cpp->runConstructors();
+    m_linkingSet.runConstructors();
 
     Il2CppVMCharacteristics::initialize();
 }

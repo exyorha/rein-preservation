@@ -1,6 +1,8 @@
 #include <Translator/GCHooks.h>
 #include <Translator/JITThreadContext.h>
 
+#include <ELF/Image.h>
+
 #include <cstdarg>
 
 #include "GlobalContext.h"

@@ -5,9 +5,9 @@
 #include <Bionic/BionicABITypes.h>
 #include <Translator/thunking.h>
 
-class Image;
+class ElfSymbolSource;
 
-void bindBionicCallouts(const Image &bionic);
+void bindBionicCallouts(const ElfSymbolSource &bionic);
 
 // Called before the bionic constructors to do the initialization normally done by the dynamic linker
 using BionicInitLibcType = void (*)(BionicKernelArgumentBlock* args);

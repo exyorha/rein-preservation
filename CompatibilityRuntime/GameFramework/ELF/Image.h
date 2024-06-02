@@ -1,7 +1,7 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include "ELF/ELFExecutableMapperLinux.h"
+
 #include <shared_mutex>
 #include <optional>
 #include <filesystem>
@@ -10,10 +10,11 @@
 #include <musl-elf.h>
 
 #include <ELF/ELFExecutableMapper.h>
+#include <ELF/ElfSymbolSource.h>
 
-class Image {
+class Image final : public ElfSymbolSource {
 public:
-    explicit Image(const std::filesystem::path &path);
+    Image(const ElfSymbolSource *symbolSource, const std::filesystem::path &path);
     ~Image();
 
     Image(const Image &other) = delete;
@@ -31,8 +32,7 @@ public:
         return m_mapper.phnum();
     }
 
-    bool getSymbol(const char *name, void *&symbol) const;
-    void *getSymbolChecked(const char *name) const;
+    bool lookup(const char *name, void *&value, bool *isWeak) const override;
 
     inline intptr_t displacement() const {
         return m_mapper.displacement();
@@ -45,6 +45,8 @@ public:
         return reinterpret_cast<T *>(address + displacement());
     }
 
+    void bind();
+
 private:
     void parseDynamic();
     void processRelocations(const Elf64_Rela *entries, size_t sizeBytes);
@@ -54,6 +56,7 @@ private:
 
     using InitFiniFunc = void (*)();
 
+    const ElfSymbolSource *m_symbolSource;
     ELFExecutableMapper m_mapper;
     std::filesystem::path m_path;
     const InitFiniFunc *m_initArray;
@@ -69,6 +72,7 @@ private:
     size_t m_relocationsSize;
     const Elf64_Rela *m_pltRelocations;
     size_t m_pltRelocationsSize;
+    bool m_symbolic;
 };
 
 #endif

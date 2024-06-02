@@ -2,6 +2,8 @@
 #include <Bionic/BionicCallouts.h>
 #include <Windows/StringConversions.h>
 
+#include <ELF/Image.h>
+
 #include <cerrno>
 #include <cstdio>
 
@@ -89,7 +91,7 @@ ssize_t plat_readlink(const char *pathname,
          * Querying the path to the executable.
          */
 
-        auto path = androidPathFromWindowsPath(GlobalContext::get().il2cpp().path().wstring());
+        auto path = androidPathFromWindowsPath(GlobalContext::get().linkingSet().mainImage()->path().wstring());
 
         auto bytesToCopy = std::min<size_t>(path.size(), bufsiz);
         memcpy(buf, path.data(), bytesToCopy);

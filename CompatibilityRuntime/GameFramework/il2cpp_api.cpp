@@ -20,7 +20,7 @@ static Il2CppMethodPointer il2cpp_resolve_arm_icall(const char *name) {
     typedef void * (*FunctionPointer)(const char* name);
 
     static FunctionPointer arm_il2cpp_resolve_icall =
-        reinterpret_cast<FunctionPointer>(GlobalContext::get().il2cpp().getSymbolChecked("il2cpp_resolve_icall"));
+        reinterpret_cast<FunctionPointer>(GlobalContext::get().linkingSet().getSymbolChecked("il2cpp_resolve_icall"));
 
     return reinterpret_cast<Il2CppMethodPointer>(armcall(arm_il2cpp_resolve_icall, name));
 }
@@ -31,7 +31,7 @@ void il2cpp_add_internal_call(const char* name, Il2CppMethodPointer method) {
     typedef void(*FunctionPointer)(const char* name, void *method);
 
     static FunctionPointer arm_il2cpp_add_internal_call =
-        reinterpret_cast<FunctionPointer>(GlobalContext::get().il2cpp().getSymbolChecked("il2cpp_add_internal_call"));
+        reinterpret_cast<FunctionPointer>(GlobalContext::get().linkingSet().getSymbolChecked("il2cpp_add_internal_call"));
 
     auto thunk = GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(thunkContext.release(), &InternalCallThunk::thunkCall);
 

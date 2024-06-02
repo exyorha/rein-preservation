@@ -4,6 +4,8 @@
 
 #include "GlobalContext.h"
 
+#include <ELF/Image.h>
+
 int translator_main(TranslatorEngineMain engineMain, void *arg) {
     auto globalContext = std::make_unique<GlobalContext>();
 
@@ -11,7 +13,7 @@ int translator_main(TranslatorEngineMain engineMain, void *arg) {
 }
 
 void *translator_get_il2cpp_base_address() {
-    return reinterpret_cast<void *>(GlobalContext::get().il2cpp().displacement());
+    return reinterpret_cast<void *>(GlobalContext::get().linkingSet().mainImage()->displacement());
 }
 
 void translator_flush_instruction_cache(void *baseAddress, size_t size) {

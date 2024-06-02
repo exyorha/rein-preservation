@@ -55,7 +55,6 @@ File.open(ARGV[1], "wb") do |outf|
 
     outf.puts "#include <il2cpp-api.h>"
     outf.puts "#include \"support.h\""
-    outf.puts "#include <ELF/Image.h>"
     outf.puts "#include <Translator/thunking.h>"
     outf.puts "#include \"GlobalContext.h\""
     outf.puts "#include \"il2cpp-api-internal.h\""
@@ -90,7 +89,7 @@ File.open(ARGV[1], "wb") do |outf|
 
                 outf.puts "#{$2} #{func}(#{$4}) {"
                 outf.puts "  typedef #{$2}(*FunctionPointer)(#{$4});"
-                outf.puts "  static FunctionPointer arm_#{$3} = reinterpret_cast<FunctionPointer>(GlobalContext::get().il2cpp().getSymbolChecked(#{$3.inspect}));"
+                outf.puts "  static FunctionPointer arm_#{$3} = reinterpret_cast<FunctionPointer>(GlobalContext::get().linkingSet().getSymbolChecked(#{$3.inspect}));"
                 if $1.nil?
                     outf.puts "  return armcall(arm_#{$3}#{argpack});"
                 else

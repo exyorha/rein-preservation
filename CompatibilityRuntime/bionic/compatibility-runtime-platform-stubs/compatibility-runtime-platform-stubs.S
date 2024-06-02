@@ -147,3 +147,6 @@ writev = _compatibility_runtime_stub
 
 .globl sched_yield
 sched_yield = _compatibility_runtime_stub
+
+.globl dl_iterate_phdr
+dl_iterate_phdr = _compatibility_runtime_stub

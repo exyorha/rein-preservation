@@ -12,10 +12,9 @@
 
 #include "support.h"
 #include <Translator/thunking.h>
-#include "SystemAPIThunking.h"
-#include "GlobalContext.h"
 
-Image::Image(const std::filesystem::path &path) :
+Image::Image(const ElfSymbolSource *symbolSource, const std::filesystem::path &path) :
+    m_symbolSource(symbolSource),
     m_mapper(path),
     m_initArray(nullptr), m_initArraySize(0),
     m_finiArray(nullptr), m_finiArraySize(0),
@@ -25,11 +24,14 @@ Image::Image(const std::filesystem::path &path) :
     m_got(nullptr),
     m_relocations(nullptr), m_relocationsSize(0),
     m_pltRelocations(nullptr), m_pltRelocationsSize(0),
-    m_path(path) {
+    m_path(path),
+    m_symbolic(false) {
 
 
     parseDynamic();
+}
 
+void Image::bind() {
     if(m_relocations && m_relocationsSize > 0)
         processRelocations(m_relocations, m_relocationsSize);
 
@@ -119,6 +121,10 @@ void Image::parseDynamic() {
                 throw std::runtime_error("unexpected size of a Rela relocation");
             break;
 
+        case DT_SYMBOLIC:
+            m_symbolic = true;
+            break;
+
         default:
 
             fprintf(stderr, "the image has an unhandled .dynamic entry with the tag 0x%08" PRIx64 "\n", static_cast<uint64_t>(entry->d_tag));
@@ -138,7 +144,7 @@ void Image::parseDynamic() {
 
 Image::~Image() = default;
 
-bool Image::getSymbol(const char *name, void *&value) const {
+bool Image::lookup(const char *name, void *&value, bool *isWeak) const {
     auto hash = symbolHash(name);
 
     auto nbucket = m_hash[0];
@@ -150,8 +156,13 @@ bool Image::getSymbol(const char *name, void *&value) const {
         const auto &symbol = m_symbolTable[symbolEntry];
 
         if(strcmp(name, m_stringTable + symbol.st_name) == 0) {
-            if(symbol.st_shndx == SHN_UNDEF) {
+            if(symbol.st_shndx == SHN_UNDEF ||
+                ELF64_ST_BIND(symbol.st_info) == STB_LOCAL) {
                 return false;
+            }
+
+            if(isWeak) {
+                *isWeak = ELF64_ST_BIND(symbol.st_info) == STB_WEAK;
             }
 
             value = displace<void>(symbol.st_value);
@@ -179,18 +190,6 @@ uint32_t Image::symbolHash(const char *name) {
     }
 
     return hash;
-}
-
-void *Image::getSymbolChecked(const char *name) const {
-    void *result;
-
-    if(!getSymbol(name, result)) {
-        fprintf(stderr, "Image::getSymbolChecked: a required symbol is not defined: \"%s\"\n", name);
-        fflush(stderr);
-        abort();
-    }
-
-    return result;
 }
 
 void Image::processRelocations(const Elf64_Rela *entries, size_t sizeBytes) {
@@ -232,25 +231,27 @@ void *Image::resolveSymbol(uint32_t symbolIndex) {
         throw std::logic_error("the symbol index is out of range");
 
     const auto &symbol = m_symbolTable[symbolIndex];
-    if(symbol.st_shndx == SHN_UNDEF) {
-        auto name = m_stringTable + symbol.st_name;
 
-        const Image *armlibToCheck = nullptr;
+    if(ELF64_ST_BIND(symbol.st_info) == STB_LOCAL ||
+       (m_symbolic && ELF64_ST_BIND(symbol.st_info) != STB_WEAK && symbol.st_shndx != SHN_UNDEF)) {
+        /*
+         * Local symbols always resolve within the executable.
+         *
+         * If symbolic linking is requested, all other defined and
+         * non-weak symbols resolve within the executable.
+         */
+        if(symbol.st_shndx == SHN_UNDEF)
+            throw std::runtime_error("undefined local symbol");
 
-        auto &ctx = GlobalContext::get();
-        if(ctx.hasArmlib()) {
-            armlibToCheck = &ctx.armlib();
-        }
-
-        void *symbol;
-
-        if(armlibToCheck && armlibToCheck->getSymbol(name, symbol)) {
-            return symbol;
-        } else {
-            return resolveUndefinedARMSymbol(name);
-        }
-
-    } else {
         return displace(symbol.st_value);
     }
+
+    auto name = m_stringTable + symbol.st_name;
+
+    void *value;
+
+    if(!m_symbolSource->lookup(name, value))
+        throw std::runtime_error("unresolved symbol: " + std::string(name));
+
+    return value;
 }

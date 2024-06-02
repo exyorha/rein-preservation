@@ -1,4 +1,4 @@
-#include "SystemAPIThunking.h"
+#include "ThunkSymbolSource.h"
 #include <Translator/ThunkManager.h>
 #include <Translator/thunking.h>
 
@@ -223,17 +223,23 @@ static void stubCall(void) {
     panic("Unimplemented system API function called: '%s'\n", name);
 }
 
-void *resolveUndefinedARMSymbol(const std::string_view &name) {
+ThunkSymbolSource::ThunkSymbolSource() = default;
+ThunkSymbolSource::~ThunkSymbolSource() = default;
+
+bool ThunkSymbolSource::lookup(const char *name, void *&value, bool *isWeak) const {
+    if(isWeak)
+        *isWeak = false;
 
     auto it = systemAPI.find(name);
     if(it == systemAPI.end()) {
-        fprintf(stderr, "System API not implemented: '%.*s', the call will fail at runtime\n", static_cast<int>(name.size()), name.data());
+        fprintf(stderr, "System API not implemented: '%s', the call will fail at runtime\n", name);
 
-        auto nameDup = strdup(std::string(name).c_str());
-        return GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(nameDup), stubCall);
-
-//        throw std::runtime_error("System API symbol is not implemented: " + std::string(name));
+        auto nameDup = strdup(name);
+        value = GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(reinterpret_cast<void *>(nameDup), stubCall);
+    } else {
+        value = it->second();
     }
 
-    return it->second();
+    return true;
 }
+

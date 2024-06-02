@@ -1,6 +1,8 @@
 #include <Bionic/BionicSyscalls.h>
 #include <Bionic/BionicCallouts.h>
 
+#include <ELF/Image.h>
+
 #include <cerrno>
 #include <fcntl.h>
 
@@ -31,7 +33,7 @@ ssize_t plat_readlink(const char *pathname,
          * Querying the path to the executable.
          */
 
-        auto path = GlobalContext::get().il2cpp().path().u8string();
+        auto path = GlobalContext::get().linkingSet().mainImage()->path().u8string();
 
         strncpy(buf, reinterpret_cast<const char *>(path.c_str()), bufsiz);
 

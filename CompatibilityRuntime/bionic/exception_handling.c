@@ -8,9 +8,7 @@
 extern void __attribute__((noreturn)) __compatibility_runtime_armcall_exception(void);
 void __attribute__((noreturn)) __compatibility_runtime_armcall_rethrower(_Unwind_Exception *exception);
 
-void (*__compatibility_runtime_actual_Unwind_SetIP)(struct _Unwind_Context *, unsigned long) = NULL;
-void (*__compatibility_runtime_actual_Unwind_SetGR)(struct _Unwind_Context *, int, unsigned long) = NULL;
-_Unwind_Reason_Code (*__compatibility_runtime_actual_Unwind_RaiseException)(struct _Unwind_Exception *) = NULL;
+
 static void unwinderError(const char *message) {
     write(STDERR_FILENO, message, strlen(message));
 }
@@ -42,9 +40,9 @@ _Unwind_Reason_Code __compatibility_runtime_armcall_personality(
         /*
          * We're being called to handle an exception.
          */
-        __compatibility_runtime_actual_Unwind_SetIP(context, (_Unwind_Word)__compatibility_runtime_armcall_exception);
-        __compatibility_runtime_actual_Unwind_SetGR(context, 0, exceptionClass);
-        __compatibility_runtime_actual_Unwind_SetGR(context, 1, (_Unwind_Word)exception);
+        _Unwind_SetIP(context, (_Unwind_Word)__compatibility_runtime_armcall_exception);
+        _Unwind_SetGR(context, 0, exceptionClass);
+        _Unwind_SetGR(context, 1, (_Unwind_Word)exception);
 
         return _URC_INSTALL_CONTEXT;
 
@@ -58,7 +56,7 @@ _Unwind_Reason_Code __compatibility_runtime_armcall_personality(
 }
 
 void __compatibility_runtime_armcall_rethrower(_Unwind_Exception *exception) {
-    __compatibility_runtime_actual_Unwind_RaiseException(exception);
+    _Unwind_RaiseException(exception);
     unwinderError("__compatibility_runtime_armcall_rethrower: _Unwind_RaiseException has failed\n");
     abort();
 }

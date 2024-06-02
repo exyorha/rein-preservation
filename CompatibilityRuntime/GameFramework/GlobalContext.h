@@ -1,11 +1,15 @@
 #ifndef GLOBAL_CONTEXT_H
 #define GLOBAL_CONTEXT_H
 
-#include <ELF/Image.h>
+#include <ELF/ElfLinkingSet.h>
+
+#include <filesystem>
 
 #include <Translator/ThunkManager.h>
 #include <Translator/DiversionManager.h>
 #include <Translator/JIT.h>
+
+#include <ThunkSymbolSource.h>
 
 class GlobalContext {
 public:
@@ -27,16 +31,8 @@ public:
         return m_jit;
     }
 
-    inline bool hasArmlib() const {
-        return m_armlib.has_value();
-    }
-
-    inline const Image &armlib() const {
-        return m_armlib.value();
-    }
-
-    inline const Image &il2cpp() const {
-        return m_il2cpp.value();
+    inline const ElfLinkingSet &linkingSet() const {
+        return m_linkingSet;
     }
 
     static const uint32_t PageSize;
@@ -76,8 +72,8 @@ private:
     ThunkManager m_thunkManager;
     DiversionManager m_diversionManager;
     JIT m_jit;
-    std::optional<Image> m_armlib;
-    std::optional<Image> m_il2cpp;
+    ThunkSymbolSource m_thunkSymbolSource;
+    ElfLinkingSet m_linkingSet;
 };
 
 #endif

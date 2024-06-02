@@ -1,9 +1,10 @@
 #include <Bionic/BionicDynamicLoaderAPI.h>
 
+#include <ELF/Image.h>
+
 #include <cstdio>
 
 #include "GlobalContext.h"
-#include "SystemAPIThunking.h"
 
 int emulated_dladdr(const void *addr, bionic_Dl_info *info) {
     return 0;
@@ -21,23 +22,19 @@ char *emulated_dlerror(void) {
 
 typedef int (*bionic_dl_iterate_phdr_callback)(struct bionic_dl_phdr_info *info, size_t size, void *data);
 
-static int emulated_dl_iterate_phdr_module(const Image &image, bionic_dl_iterate_phdr_callback callback, void *data) {
-    struct bionic_dl_phdr_info info;
-    info.dlpi_addr = image.displacement();
-    info.dlpi_name = image.path().filename().generic_string().c_str();
-    info.dlpi_phdr = image.phdr();
-    info.dlpi_phnum = image.phnum();
-
-    return callback(&info, sizeof(info), data);
-}
-
 int emulated_dl_iterate_phdr(bionic_dl_iterate_phdr_callback callback, void *data) {
+    for(const auto &image: GlobalContext::get().linkingSet().images()) {
+        struct bionic_dl_phdr_info info;
+        info.dlpi_addr = image->displacement();
+        info.dlpi_name = image->path().filename().generic_string().c_str();
+        info.dlpi_phdr = image->phdr();
+        info.dlpi_phnum = image->phnum();
+        auto result = callback(&info, sizeof(info), data);
+        if(result != 0)
+            return result;
+    }
 
-    auto result = emulated_dl_iterate_phdr_module(GlobalContext::get().armlib(), callback, data);
-    if(result != 0)
-        return result;
-
-    return emulated_dl_iterate_phdr_module(GlobalContext::get().il2cpp(), callback, data);
+    return 0;
 }
 
 void *emulated_dlopen(const char *filename, int flags) {
@@ -52,9 +49,9 @@ void *emulated_dlsym(void *handle, const char *sym) {
     printf("emulated_dlsym(%p, %s)\n", handle, sym);
 
     void *value;
-    if(GlobalContext::get().armlib().getSymbol(sym, value)) {
+    if(GlobalContext::get().linkingSet().lookup(sym, value)) {
         return value;
     }
 
-    return resolveUndefinedARMSymbol(sym);
+    return nullptr;
 }

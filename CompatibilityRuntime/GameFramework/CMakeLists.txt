@@ -27,6 +27,10 @@ add_library(GameAssembly SHARED
     Bionic/BionicThreading.h
 
     ELF/ELFExecutableMapper.h
+    ELF/ElfLinkingSet.cpp
+    ELF/ElfLinkingSet.h
+    ELF/ElfSymbolSource.cpp
+    ELF/ElfSymbolSource.h
     ELF/Image.cpp
     ELF/Image.h
 
@@ -94,8 +98,8 @@ add_library(GameAssembly SHARED
     support.h
     support.cpp
 
-    SystemAPIThunking.cpp
-    SystemAPIThunking.h
+    ThunkSymbolSource.cpp
+    ThunkSymbolSource.h
 
     Translator/ARMCallCleanableFrame.cpp
     Translator/ARMCallCleanableFrame.h

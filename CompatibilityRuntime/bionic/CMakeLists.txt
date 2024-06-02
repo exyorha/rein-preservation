@@ -668,7 +668,6 @@ target_link_options(bionic PRIVATE
     -Wl,-z,defs
     -Wl,--build-id=none
     -Wl,--hash-style=sysv
-    -Wl,-Bsymbolic
     -Wl,-z,norelro
     -Wl,-s
 )
