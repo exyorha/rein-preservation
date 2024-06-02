@@ -49,6 +49,15 @@ GlobalContext::GlobalContext() : m_registerer(this), m_linkingSet(&m_thunkSymbol
     }
 
     m_linkingSet.bind();
+    /*
+     * Bind the personality routine located in bionic with the unwinder located in libil2cpp.
+     */
+    *reinterpret_cast<void **>(m_linkingSet.getSymbolChecked("__compatibility_runtime_actual_Unwind_SetIP")) =
+        m_linkingSet.getSymbolChecked("_Unwind_SetIP");
+    *reinterpret_cast<void **>(m_linkingSet.getSymbolChecked("__compatibility_runtime_actual_Unwind_SetGR")) =
+        m_linkingSet.getSymbolChecked("_Unwind_SetGR");
+    *reinterpret_cast<void **>(m_linkingSet.getSymbolChecked("__compatibility_runtime_actual_Unwind_RaiseException")) =
+        m_linkingSet.getSymbolChecked("_Unwind_RaiseException");
 
     bindBionicCallouts(m_linkingSet);
 
