@@ -1,2 +1,0 @@
-#cmakedefine SERVER_GITVERSION "@SERVER_GITVERSION@"
-

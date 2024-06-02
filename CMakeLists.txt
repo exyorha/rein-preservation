@@ -15,6 +15,8 @@ if(WIN32 AND NOT TARGET protobuf::protoc)
     set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION "${HOST_PROTOC}")
 endif()
 
+add_subdirectory(gitversion)
+
 add_subdirectory(third_party)
 
 add_subdirectory(common)

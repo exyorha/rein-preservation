@@ -95,7 +95,6 @@ add_executable(GameExecutable
     WebSupport.h
 
 )
-
 if(NOT WIN32)
     target_sources(GameExecutable PRIVATE
         EntryPointLinux.cpp
@@ -131,10 +130,11 @@ if(WIN32)
     )
     target_compile_definitions(GameExecutable PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
     target_link_libraries(GameExecutable PRIVATE opengl32 ws2_32)
+    set_source_files_properties(GameExecutable.rc PROPERTIES COMPILE_OPTIONS -c65001)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Il2CppUtilities ClientDataAccess)
+target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Il2CppUtilities ClientDataAccess gitversion)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

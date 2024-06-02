@@ -81,14 +81,6 @@ add_subdirectory(thirdparty/libevent)
 
 add_subdirectory(master_database_ext)
 
-execute_process(
-    COMMAND git describe --always --dirty
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE SERVER_GITVERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-configure_file(gitversion.h.in ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h @ONLY)
-
 add_executable(GameServer
     DatabaseViewer/DatabaseTextImporter.cpp
     DatabaseViewer/DatabaseTextImporter.h
@@ -430,7 +422,6 @@ add_executable(GameServer
     ServiceImplementations/WeaponService.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/migrations.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h
 )
 target_include_directories(GameServer PRIVATE ${CMAKE_CURRENT_BINARY_DIR} .)
 if(WIN32)
@@ -440,6 +431,7 @@ if(WIN32)
     target_sources(GameServer PRIVATE
         GameServer.rc
     )
+    set_source_files_properties(GameServer.rc PROPERTIES COMPILE_OPTIONS -c65001)
 endif()
 
 protobuf_generate(TARGET GameServer)
@@ -449,7 +441,7 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess UnityAsset)
+target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess UnityAsset gitversion)
 target_include_directories(GameServer PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/libevent/include
     ${PROJECT_BINARY_DIR}/thirdparty/libevent/include)
 

@@ -1,7 +1,7 @@
 #include <windows.h>
 #include "gitversion.h"
 
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "Launcher.manifest"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "WebViewHost.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION 1,0,0,0
@@ -9,7 +9,7 @@ PRODUCTVERSION 1,0,0,0
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEFLAGS 0
 FILEOS VOS_NT_WINDOWS32
-FILETYPE VFT_DLL
+FILETYPE VFT_APP
 FILESUBTYPE VFT2_UNKNOWN
 BEGIN
     BLOCK "StringFileInfo"
@@ -17,12 +17,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Reincarnation Preservation Project"
-            VALUE "FileDescription", "NieR Reincarnation Launcher"
+            VALUE "FileDescription", "WebView Host Process"
             VALUE "FileVersion", PROJECT_GITVERSION
-            VALUE "InternalName", "Launcher"
+            VALUE "InternalName", "WebViewHost"
             VALUE "LegalCopyright", "NieR Reincarnation is © SQUARE ENIX Co., Ltd and Applibot Inc. This unofficial port is © Reincarnation Preservation Project and is created without endorsement. Built with Unity, Unity is © Unity Techonologies. Contains open source software distributed under respective licensing terms, see OPENSOURCE.html for details."
             VALUE "LegalTrademarks", "All trademarks are property of their respective owners and are used for identification purposes only."
-            VALUE "OriginalFilename", "NieRLauncher.exe"
+            VALUE "OriginalFilename", "WebViewHost.exe"
             VALUE "ProductName", "NieR Reincarnation"
             VALUE "ProductVersion", "3.7.1/PC"
         END
@@ -33,5 +33,6 @@ BEGIN
         VALUE "Translation", 0x0409, 1200
     END
 END
+
 
 

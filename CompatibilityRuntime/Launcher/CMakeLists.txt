@@ -27,6 +27,7 @@ if(WIN32)
     target_compile_definitions(Launcher PRIVATE -DWIN32_LEAN_AND_MEAN -DUNICODE -D_UNICODE -DNOMINMAX)
     target_link_options(Launcher PRIVATE -Wl,-Bstatic -static-libgcc)
     target_link_libraries(Launcher PRIVATE msimg32)
+    set_source_files_properties(Launcher.rc PROPERTIES COMPILE_OPTIONS -c65001)
 else()
     target_sources(Launcher PRIVATE
         LauncherPlatformX11.cpp
@@ -42,6 +43,7 @@ set_target_properties(Launcher PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
 )
+target_link_libraries(Launcher PRIVATE gitversion)
 
 check_ipo_supported(RESULT supported OUTPUT error)
 if(supported)

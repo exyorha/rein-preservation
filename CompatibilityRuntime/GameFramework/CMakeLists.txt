@@ -124,11 +124,14 @@ add_library(GameAssembly SHARED
     Translator/WrappedARMException.h
 
     translator_api/translator_api.h
+
+    GameFramework.rc
 )
+set_source_files_properties(GameFramework.rc PROPERTIES COMPILE_OPTIONS -c65001)
 target_include_directories(GameAssembly PUBLIC il2cpp_api_replacements ${PROJECT_SOURCE_DIR}/thirdparty/il2cpp_api
     ${CMAKE_CURRENT_BINARY_DIR}/include translator_api)
 target_include_directories(GameAssembly PRIVATE . ${PROJECT_SOURCE_DIR}/thirdparty/muslelf MiniGRPC/public)
-target_link_libraries(GameAssembly PRIVATE dynarmic ffi Il2CppUtilities)
+target_link_libraries(GameAssembly PRIVATE dynarmic ffi Il2CppUtilities gitversion)
 
 if(NOT WIN32)
     target_sources(GameAssembly PRIVATE

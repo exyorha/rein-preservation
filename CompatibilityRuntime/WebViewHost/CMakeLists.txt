@@ -30,8 +30,10 @@ add_executable(WebViewHost WIN32
   WebViewRPCServer.h
   WebViewRPCService.cpp
   WebViewRPCService.h
+  WebViewHost.rc
 )
 
+set_source_files_properties(WebViewHost.rc PROPERTIES COMPILE_OPTIONS -c65001)
 
 if(WIN32)
   target_sources(WebViewHost PRIVATE
@@ -53,7 +55,7 @@ SET_EXECUTABLE_TARGET_PROPERTIES(WebViewHost)
 
 add_dependencies(WebViewHost libcef_dll_wrapper)
 
-target_link_libraries(WebViewHost PRIVATE libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} WebViewProtocol)
+target_link_libraries(WebViewHost PRIVATE libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} WebViewProtocol gitversion)
 
 add_library(WebViewHostClient STATIC
   Client/public/WebViewHostClient.h

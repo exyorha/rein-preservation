@@ -68,8 +68,8 @@ void DatabaseViewerService::handle(const std::string_view &routedPath, LLService
     response.root().attributes().emplace_back("octo-version", std::to_string(m_contentStorage.database().revision()));
     response.root().attributes().emplace_back("master-db-version", m_db.masterDatabaseVersion());
 
-#if defined(SERVER_GITVERSION)
-    response.root().attributes().emplace_back("gitversion", SERVER_GITVERSION);
+#if defined(PROJECT_GITVERSION)
+    response.root().attributes().emplace_back("gitversion", PROJECT_GITVERSION);
 #endif
 
     auto &entities = response.root().children().emplace_back("entities");
