@@ -24,52 +24,109 @@
 
 #include <cinttypes>
 
+
 struct PatchSite {
     uintptr_t patchVA;
     const unsigned char *patchContents;
     size_t size;
 };
 
+struct UnityVariant {
+    uint32_t crc32;
+    const char *name;
+    const PatchSite *patchSites;
+    size_t numberOfPatchSites;
+};
+
+
 /*
  * These patches are only valid for this specific Unity version and variant.
  */
 #ifdef _WIN32
-#define EXPECTED_UNITY_VERSION "2019.4.29f1 'win64_development_il2cpp' variant"
-#define EXPECTED_UNITY_CRC32 UINT32_C(0xfe4782a0)
 
 /*
  * Kills the platform compatibility check in SerializedFile::ReadMetadata<1>: 'always compatible'.
  */
-static const unsigned char patch_11d0e1c[]{
+static const unsigned char dev_patch_11d0e1c[]{
     0x90, 0x90
 };
 
 /*
  * Kills the platform compatibility check in SerializedFile::ReadMetadata<0>: 'always compatible'.
  */
-static const unsigned char patch_11d1dda[]{
+static const unsigned char dev_patch_11d1dda[]{
     0x90, 0x90
 };
 
-static const PatchSite UnityPlayerPatchSites[] = {
-    { 0x11d0e1c, patch_11d0e1c, sizeof(patch_11d0e1c) },
-    { 0x11d1dda, patch_11d1dda, sizeof(patch_11d1dda) },
+static const PatchSite windows_development_patch_sites[] = {
+    { 0x11d0e1c, dev_patch_11d0e1c, sizeof(dev_patch_11d0e1c) },
+    { 0x11d1dda, dev_patch_11d1dda, sizeof(dev_patch_11d1dda) },
 };
+
+/*
+ * Kills the platform compatibility check in SerializedFile::ReadMetadata<1>: 'always compatible'.
+ */
+static const unsigned char nondev_patch_901616[]{
+    0x90, 0x90
+};
+
+/*
+ * Kills the platform compatibility check in SerializedFile::ReadMetadata<0>: 'always compatible'.
+ */
+static const unsigned char nondev_patch_9024f9[]{
+    0x90, 0x90
+};
+
+static const PatchSite windows_nondevelopment_patch_sites[] = {
+    { 0x901616, nondev_patch_901616, sizeof(nondev_patch_901616) },
+    { 0x9024f9, nondev_patch_9024f9, sizeof(nondev_patch_9024f9) },
+
+};
+
 #else
-#define EXPECTED_UNITY_VERSION "2019.4.29f1 'linux64_withgfx_development_il2cpp' variant"
-#define EXPECTED_UNITY_CRC32 UINT32_C(0xecae9fda)
 
 // SerializedFile::ReadMetadata<false>: allow all platforms
-static const unsigned char patch_13e3a0b[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+static const unsigned char dev_patch_13e3a0b[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
 
 // IsRendererSupported: allow all renderers
-static const unsigned char patch_1408950[] = { 0xb8, 0x01, 0x00, 0x00, 0x00, 0xc3 };
+static const unsigned char dev_patch_1408950[] = { 0xb8, 0x01, 0x00, 0x00, 0x00, 0xc3 };
 
-static const PatchSite UnityPlayerPatchSites[] = {
-    { 0x13e3a0b, patch_13e3a0b, sizeof(patch_13e3a0b) },
-    { 0x1408950, patch_1408950, sizeof(patch_1408950) },
+/*
+ * Kills the platform compatibility check in SerializedFile::ReadMetadata<false>: 'always compatible'.
+ */
+static const unsigned char nondev_patch_b5164f[]{
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90
 };
+
+static const unsigned char nondev_patch_b5316f[]{
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90
+};
+
+static const PatchSite linux_development_patch_sites[] = {
+    { 0x13e3a0b, dev_patch_13e3a0b, sizeof(dev_patch_13e3a0b) },
+    { 0x1408950, dev_patch_1408950, sizeof(dev_patch_1408950) },
+};
+
+static const PatchSite linux_nondevelopment_patch_sites[] = {
+    { 0xb5164f, nondev_patch_b5164f, sizeof(nondev_patch_b5164f) },
+    { 0xb5316f, nondev_patch_b5316f, sizeof(nondev_patch_b5316f) },
+};
+
 #endif
+
+static const UnityVariant unityVariants[]{
+#ifdef _WIN32
+    { 0xfe4782a0, "2019.4.29f1 'win64_development_il2cpp' variant", windows_development_patch_sites,
+        sizeof(windows_development_patch_sites) / sizeof(windows_development_patch_sites[0]) },
+    { 0x779fc794, "2019.4.29f1 'win64_nondevelopment_il2cpp' variant", windows_nondevelopment_patch_sites,
+        sizeof(windows_development_patch_sites) / sizeof(windows_nondevelopment_patch_sites[0]) },
+#else
+    { 0xecae9fda, "2019.4.29f1 'linux64_withgfx_development_il2cpp' variant", linux_development_patch_sites,
+        sizeof(linux_development_patch_sites) / sizeof(linux_development_patch_sites[0]) },
+    { 0x9d0adc7a, "2019.4.29f1 'linux64_withgfx_nondevelopment_il2cpp' variant", linux_nondevelopment_patch_sites,
+        sizeof(linux_nondevelopment_patch_sites) / sizeof(linux_nondevelopment_patch_sites[0]) },
+#endif
+};
 
 static uint32_t crc32Small(const unsigned char *data, size_t size, uint32_t previous = 0) {
     static const uint32_t table[]{
@@ -281,31 +338,37 @@ bool applyUnityPatches() {
         return false;
     }
 
-    if(crc != EXPECTED_UNITY_CRC32) {
-        fprintf(stderr, "The CRC-32 of the Unity player runtime, which was calculated to be 0x%08" PRIx32 "\n"
-                        "didn't match the expected value, 0x%08" PRIx32 ".\n"
-                        "\n"
-                        "We currently rely on patching the Unity binary to be able to use the OpenGL ES\n"
-                        "renderer on the desktop, and to be able to use the assets targeting Android\n"
-                        "on other platforms. As such, the only Unity version supported is\n"
-                        "%s.\n"
-                        "\n"
-                        "Any other version would be incompatible unless the patches are adjusted.\n"
-                        "\n"
-                        "Use the compatible version listed above, or defeat this check at your own peril.\n",
-                crc, EXPECTED_UNITY_CRC32, EXPECTED_UNITY_VERSION);
+    for(const auto &variant: unityVariants) {
+        if(crc == variant.crc32) {
 
-        return false;
+            if(!applyPatches(
+                variant.patchSites,
+                variant.numberOfPatchSites,
+                reinterpret_cast<intptr_t>(unityBaseAddress))) {
+
+                fprintf(stderr, "Failed to apply the in-memory executable patches to the Unity player\n");
+                return false;
+            }
+
+            return true;
+        }
     }
 
-    if(!applyPatches(
-        UnityPlayerPatchSites,
-        sizeof(UnityPlayerPatchSites) / sizeof(UnityPlayerPatchSites[0]),
-        reinterpret_cast<intptr_t>(unityBaseAddress))) {
+    fprintf(stderr, "The CRC-32 of the Unity player runtime, which was calculated to be 0x%08" PRIx32 "\n"
+                    "didn't match any of the expected values.\n"
+                    "\n"
+                    "We currently rely on patching the Unity binary to be able to use to use\n"
+                    "the assets targeting Android on other platforms. As such, only specific\n"
+                    "versions of Unity are supported:\n\n", crc);
 
-        fprintf(stderr, "Failed to apply the in-memory executable patches to the Unity player\n");
-        return false;
+    for(const auto &variant: unityVariants) {
+        fprintf(stderr, " - %s (CRC-32 0x%08X)\n", variant.name, variant.crc32);
     }
 
-    return true;
+    fprintf(stderr, "\n"
+                    "Any other version would be incompatible unless the patches are adjusted.\n"
+                    "\n"
+                    "Use the compatible version listed above, or defeat this check at your own peril.\n");
+
+    return false;
 }
