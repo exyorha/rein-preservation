@@ -38,14 +38,9 @@ Image::Image(const std::filesystem::path &path) :
 }
 
 void Image::runConstructors() {
-    printf("init array: %p, %zu; fini array: %p, %zu\n",
-           m_initArray, m_initArraySize,
-           m_finiArray, m_finiArraySize);
-
     if(m_initArray && m_initArraySize > 0) {
         auto numberOfFunctions = m_initArraySize / sizeof(InitFiniFunc);
         for(auto func = m_initArray, limit = func + numberOfFunctions; func < limit; ++func) {
-            printf("  init array: calling: %p\n", *func);
             armcall(*func);
         }
     }

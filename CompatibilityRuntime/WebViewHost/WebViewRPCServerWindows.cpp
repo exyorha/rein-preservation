@@ -48,8 +48,6 @@ void WebViewRPCServerWindows::runMainLoop() {
             break;
         }
 
-        LOG(INFO) << "WebViewRPCServerWindows: received " << bytesRead << " bytes";
-
         auto fullRequest = std::make_unique<webview::protocol::RPCMessage>();
         if(!fullRequest->ParseFromArray(m_receiveBuffer.data(), bytesRead)) {
             LOG(ERROR) << "WebViewRPCServer: failed to parse the RPC request";

@@ -197,7 +197,8 @@ static void UnityEngine_Logger_set_logEnabled(Il2CppObject *instance, bool enabl
  * The default one uses /dev/urandom.
  */
 static void System_Security_Cryptography_RNGCryptoServiceProvider_Check(Il2CppObject *this_, void *original) {
-    printf("System.Security.Cryptography.RNGCryptoServiceProvider::Check\n");
+    (void)this_;
+    (void)original;
 }
 
 static void System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(Il2CppObject *this_, Il2CppArray *outPtr, void *original) {
@@ -206,8 +207,6 @@ static void System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(Il2Cp
 
 
     ArrayWrapper<unsigned char> out(outPtr);
-
-    printf("System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes(%p, %zu)\n", out.data(), out.size());
 
     using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char>;
     std::generate(out.data(), out.data() + out.size(), random_bytes_engine());
@@ -386,8 +385,6 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
 
     ClientDataAccess::OctoContentStorage storage(ClientDataAccess::OctoContentStorage::findNewestOctoList(executableDirectory / "content"));
     contentStorageInstance = &storage;
-
-    printf("argc: %d\n", argc);
 
     for(int index = 1; index < argc; index++) {
         printf("arg[%d] = '%s'\n", index, argv[index]);
