@@ -1,6 +1,7 @@
 (function() {
-    var ServerCliComponent = function(element) {
-        this._element = element;
+    var ServerCliComponent = function(element, switchElement) {
+        this._element = element;;
+        this._switch = switchElement;
         this._log = this._element.getElementsByClassName('log')[0]
 
         var url = new URL('/server-cli', document.location.href)
@@ -17,6 +18,10 @@
         this._socket.onopen = this._wsopen.bind(this);
 
         this._element.onsubmit = this._formsubmit.bind(this);
+
+        this._switch.onclick = this._visibilitySwitch.bind(this);
+
+        this._updateVisibilitySwitch();
     };
 
     ServerCliComponent.prototype = {
@@ -56,6 +61,30 @@
             }
 
             this._element.reset();
+        },
+
+        _visibilitySwitch: function(ev) {
+            ev.preventDefault();
+
+            var hidden = window.localStorage.getItem('server-cli-hidden');
+            if(hidden === "hidden") {
+                hidden = null;
+            } else {
+                hidden = "hidden";
+            }
+
+            window.localStorage.setItem('server-cli-hidden', hidden);
+
+            this._updateVisibilitySwitch();
+        },
+
+        _updateVisibilitySwitch: function() {
+            var hidden = window.localStorage.getItem('server-cli-hidden');
+            if(hidden === "hidden") {
+                this._element.classList.add('hidden');
+            } else {
+                this._element.classList.remove('hidden');
+            }
         }
     };
 
@@ -90,7 +119,7 @@
         document.getElementById('server-time-value').innerText = currentServerTime.toLocaleString();
     };
 
-    new ServerCliComponent(document.getElementById('server-cli'));
+    new ServerCliComponent(document.getElementById('server-cli'), document.getElementById('server-cli-visibility-switch'));
 
     if(typeof document.body.dataset.serverTime !== 'undefined') {
         var serverTime = parseInt(document.body.dataset.serverTime, 10);

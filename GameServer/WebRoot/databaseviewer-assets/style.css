@@ -1,6 +1,21 @@
+html {
+    box-sizing: border-box;
+    height: 100%;
+}
+
 body {
     margin: 0;
     font-family: sans-serif;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-body {
+    flex-grow: 1;
+    overflow: auto;
 }
 
 .page-header {
@@ -51,21 +66,59 @@ body {
 #server-cli {
     display: flex;
     flex-direction: column;
+    max-height: 16em;
+    flex-grow: 0;
+    flex-shrink: 0;
+    background-color: #445;
+    color: white;
+}
+
+#server-cli .header {
+    padding: 0.5em;
+    background-color: #556;
+}
+
+#server-cli .header #server-cli-visibility-switch {
+    float: right;
+    cursor: pointer;
+    text-decoration: underline dashed;
+}
+
+#server-cli.hidden .log-section {
+    display: none;
+}
+
+#server-cli.hidden .commandline {
+    display: none;
+}
+
+#server-cli #server-cli-visibility-switch .show {
+    display: none;
+}
+
+#server-cli #server-cli-visibility-switch .hide {
+    display: inline;
+}
+
+#server-cli.hidden #server-cli-visibility-switch .show {
+    display: inline;
+}
+
+#server-cli.hidden #server-cli-visibility-switch .hide {
+    display: none;
+}
+
+#server-cli .log-section {
+    flex: 1;
+    background-color: #445;
+    border: solid 1px white;
+    overflow: auto;
     padding: 0.5em;
     position: relative;
-    /*position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50%;*/
 }
 
 #server-cli .log {
-    border: solid 1px black;
-    overflow: auto;
-    flex: 1;
     white-space: pre;
-    padding: 0.5em;
     font-family: monospace;
 }
 
@@ -73,39 +126,21 @@ body {
     margin-top: 0.5em;
 }
 
-#server-cli .overlay-message {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.5);
+#server-cli .commandline {
+    margin: 0.5em;
 }
 
-#server-cli .overlay-message span {
-    background-color: rgb(255, 255, 255);
-    padding: 0.5em;
-    border-radius: 0.5em;
-}
-
-#server-cli .overlay-message.connecting-overlay-message {
-    display: flex;
-}
-
-#server-cli .overlay-message.disconnected-overlay-message {
+#server-cli .disconnected-overlay-message {
     display: none;
 }
 
-#server-cli.connected .overlay-message.connecting-overlay-message,
-#server-cli.disconnected .overlay-message.connecting-overlay-message {
+#server-cli.connected .connecting-overlay-message,
+#server-cli.disconnected .connecting-overlay-message {
     display: none !important;
 }
 
-#server-cli.disconnected .overlay-message.disconnected-overlay-message {
-    display: flex !important;
+#server-cli.disconnected .disconnected-overlay-message {
+    display: inline !important;
 }
 
 ul.entity-list {

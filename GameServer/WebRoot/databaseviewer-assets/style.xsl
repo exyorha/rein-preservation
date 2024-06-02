@@ -32,57 +32,76 @@
             </xsl:attribute>
         </xsl:if>
 
-        <div class="page-header">
-            <a href="/database" class="title">
+        <div class="main-body">
 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="-257 -169 514 441" class="logo">
-                    <!-- left 'arm' -->
-                    <path d="M -257 68 H -223 V 174 H -107 V 272 H -142 V 209 H -257 Z" fill="white" id="leftarm" />
-                    <!-- right 'arm' -->
-                    <use href="#leftarm" transform="scale(-1,1)" />
+            <div class="page-header">
+                <a href="/database" class="title">
 
-                    <!-- 'stack' -->
-                    <path d="M -81 0 H 81 V 35 H -81 Z" id="stackbottom" fill="white" /><!-- bottommost -->
-                    <path d="M -55 -85 H 55 V -50 H -55 Z" fill="white" /><!-- middle -->
-                    <use href="#stackbottom" transform="translate(0,-169)" /><!-- topmost -->
-                </svg>
-                [re]serve
-            </a>
-            <div class="versions">
-                Server software: <xsl:value-of select="@gitversion" /><br />
-                Master database: <xsl:value-of select="@master-db-version" /><br />
-                Asset database: <xsl:value-of select="@octo-version" /><br />
-            </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="-257 -169 514 441" class="logo">
+                        <!-- left 'arm' -->
+                        <path d="M -257 68 H -223 V 174 H -107 V 272 H -142 V 209 H -257 Z" fill="white" id="leftarm" />
+                        <!-- right 'arm' -->
+                        <use href="#leftarm" transform="scale(-1,1)" />
 
-            <div id="server-time">
-                <div class="time-travel-container">
-                    <div class="time-travel-notice">
-                        You are time-traveling.
+                        <!-- 'stack' -->
+                        <path d="M -81 0 H 81 V 35 H -81 Z" id="stackbottom" fill="white" /><!-- bottommost -->
+                        <path d="M -55 -85 H 55 V -50 H -55 Z" fill="white" /><!-- middle -->
+                        <use href="#stackbottom" transform="translate(0,-169)" /><!-- topmost -->
+                    </svg>
+                    [re]serve
+                </a>
+                <div class="versions">
+                    Server software: <xsl:value-of select="@gitversion" /><br />
+                    Master database: <xsl:value-of select="@master-db-version" /><br />
+                    Asset database: <xsl:value-of select="@octo-version" /><br />
+                </div>
+
+                <div id="server-time">
+                    <div class="time-travel-container">
+                        <div class="time-travel-notice">
+                            You are time-traveling.
+                        </div>
+                    </div>
+
+                    Server time: <span id="server-time-value" /> <br />
+
+                    <div class="time-travel-container">
+                        Real-world time: <span id="real-world-time-value" />
                     </div>
                 </div>
-
-                Server time: <span id="server-time-value" /> <br />
-
-                <div class="time-travel-container">
-                    Real-world time: <span id="real-world-time-value" />
-                </div>
             </div>
+
+
+            <xsl:apply-templates />
         </div>
 
-        <xsl:apply-templates />
+        <form id="server-cli" class="hidden">
+            <div class="header">
 
-        <form id="server-cli">
-            <div class="log" />
+                <div id="server-cli-visibility-switch">
+                    <span class="hide">Minimize</span>
+                    <span class="show">Maximize</span>
+                </div>
+
+                Console
+
+                <span class="connecting-overlay-message">
+                    &#8212; connecting to the server...
+                </span>
+
+                <span class="disconnected-overlay-message">
+                    &#8212; disconnected from the server. Please reload the page.
+                </span>
+            </div>
+
+            <div class="log-section">
+
+                <div class="log" />
+
+            </div>
 
             <input class="commandline" type="text" name="command" />
 
-            <div class="overlay-message connecting-overlay-message">
-                <span>Connecting to the server...</span>
-            </div>
-
-            <div class="overlay-message disconnected-overlay-message">
-                <span>Disconnected from the server. Please reload the page.</span>
-            </div>
         </form>
     </xsl:template>
 
