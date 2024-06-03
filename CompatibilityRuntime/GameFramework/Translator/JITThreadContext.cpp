@@ -62,8 +62,6 @@ JITThreadContext::JITThreadContext(void *providedStack, size_t providedStackSize
     memset(&pthreadKeys, 0, sizeof(pthreadKeys));
 
     m_registration.emplace(this);
-
-    printf("JITThreadContext created: %p\n", this);
 }
 
 JITThreadContext::JITThreadContext() : JITThreadContext(nullptr, 0) {
@@ -71,8 +69,6 @@ JITThreadContext::JITThreadContext() : JITThreadContext(nullptr, 0) {
 }
 
 JITThreadContext::~JITThreadContext() {
-    printf("JITThreadContext being torn down: %p\n", this);
-
     m_registration.reset();
 
     if(m_threadStackAllocated) {
@@ -236,17 +232,11 @@ void JITThreadContext::threadStateInitialization() noexcept {
         fprintf(stderr, "GC_register_my_thread has failed for %p: %d\n", this, result);
     }
 #endif
-
-    printf("running the thread initialization of %p\n", this);
 }
 
 void JITThreadContext::threadStateTeardown() noexcept {
 
-    printf("running the thread destruction of %p\n", this);
-
     bionic_teardown_thread();
-
-    printf("running the thread destruction of %p done\n", this);
 
 #ifdef CR_GARBAGE_COLLECT_HOST_STACKS
     GC_unregister_my_thread();

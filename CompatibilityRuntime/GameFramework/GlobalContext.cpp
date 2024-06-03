@@ -95,11 +95,7 @@ GlobalContext::GlobalContext() : m_registerer(this), m_linkingSet(&m_thunkSymbol
 }
 
 GlobalContext::~GlobalContext() {
-    printf("Releasing the main thread context, %p\n", &JITThreadContext::get());
-
     JITThreadContext::clearCurrentThreadContext();
-
-    printf("Translator's GlobalContext is now waiting for all of the remaining threads to terminate.\n");
 
     JITThreadContext::waitForAllThreadsToExit();
 }
