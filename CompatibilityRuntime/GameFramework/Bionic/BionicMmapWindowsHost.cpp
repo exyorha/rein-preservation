@@ -43,14 +43,12 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 
     if(addr != nullptr && prot == BIONIC_PROT_NONE &&
         (flags & (BIONIC_MAP_ANONYMOUS | BIONIC_MAP_FIXED)) == (BIONIC_MAP_ANONYMOUS | BIONIC_MAP_FIXED)) {
-        printf("plat_mmap: Boehm GC guard page request, doing nothing\n");
+
+        /*
+         * This is Boehm GC requesting guard pages. Nothing needs to be done
+         */
 
         return addr;
-    }
-
-    if(addr) {
-        printf("plat_mmap: mmap with a specified base address: addr %p, len %zu, prot %d, flags %d, fildes %d, off %ld\n",
-                addr, len, prot, flags, fildes, off);
     }
 
     if(flags & BIONIC_MAP_FIXED) {
@@ -62,11 +60,6 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 
         if(addr != nullptr) {
             allocated = VirtualAlloc(addr, len, MEM_RESERVE | MEM_COMMIT, convertProtection(prot));
-            if(allocated) {
-                printf("plat_mmap: a VirtualAlloc with a specified base address was satisfied\n");
-            } else {
-                printf("plat_mmap: a VirtualAlloc with a specified base address was NOT satisfied, requesting system's pick\n");
-            }
         }
 
         if(!allocated)
@@ -127,8 +120,6 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
         requiredFileSizeToSatifyRequest = std::min<uint64_t>(requiredFileSizeToSatifyRequest, fileSize);
         len = requiredFileSizeToSatifyRequest - off;
 
-        printf("CreateFileMapping: handle %p, flags: %u; offset: %ld, len: %zu, actual file size: %lu bytes\n", fileHandle, flags,
-               off, len, fileSize);
         HANDLE rawMapping = CreateFileMapping(fileHandle, nullptr, PAGE_READONLY,
                                                 static_cast<DWORD>(requiredFileSizeToSatifyRequest >> 32),
                                                 static_cast<DWORD>(requiredFileSizeToSatifyRequest),
@@ -141,7 +132,6 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 
         WindowsHandle mapping(rawMapping);
 
-        printf("setting offset: %ld, length: %zu\n", off, len);
         auto viewBase = MapViewOfFileEx(rawMapping, FILE_MAP_READ,
                                       static_cast<DWORD>(static_cast<uint64_t>(off) >> 32),
                                       static_cast<DWORD>(static_cast<uint64_t>(off)),
