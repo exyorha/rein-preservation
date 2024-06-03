@@ -112,9 +112,8 @@ public:
 
     static void clearCurrentThreadContext() noexcept;
 
-    static inline void waitForAllThreadsToExit() noexcept {
-        ThreadContextRegistration::waitForAllThreadsToExit();
-    }
+    static void waitForAllThreadsToExit();
+
 private:
     class ThreadContextRegistration {
     public:
@@ -183,6 +182,8 @@ public:
 
     void addJoinableThread(JITThreadContext *ctx);
     void removeJoinableThread(JITThreadContext *ctx);
+
+    void forgetAll();
 
 private:
     std::mutex m_mutex;

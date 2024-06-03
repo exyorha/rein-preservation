@@ -50,7 +50,7 @@ void setJITContextOfCurrentThread(JITThreadContext *context) noexcept {
     if(!TlsSetValue(ThreadContextAssociationSlot, context)) {
         if(context)
             context->release();
-    } else {
+    } else if(context) {
         context->threadStateInitialization();
     }
 }

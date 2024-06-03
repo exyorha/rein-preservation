@@ -99,6 +99,7 @@ JITThreadContext &JITThreadContext::get() {
     if(!thisContext) {
         thisContext = new JITThreadContext;
         setJITContextOfCurrentThread(thisContext);
+        thisContext->release();
     }
 
     return *thisContext;
@@ -171,11 +172,13 @@ JITThreadContext::ThreadContextRegistration::~ThreadContextRegistration() {
 void JITThreadContext::ThreadContextRegistration::waitForAllThreadsToExit() noexcept {
     std::unique_lock<std::mutex> locker(m_contextListMutex);
 
-    m_exitCondvar.wait(locker, []() -> bool {
-        printf("JITThreadContext::ThreadContextRegistration::waitForAllThreadsToExit(): %zu threads remain.\n", m_contextList.size());
-
+    auto result = m_exitCondvar.wait_for(locker, std::chrono::milliseconds(250), []() -> bool {
         return m_contextList.size() == 0;
     });
+
+    if(!result) {
+        fprintf(stderr, "waitForAllThreadsToExit(): %zu threads still remain, but the timeout has been reached, continuing with the shutdown. Translation services will not be available to the remaining threads from this point on.\n", m_contextList.size());
+    }
 }
 
 void JITThreadContext::ThreadContextRegistration::collectThreadStacks(GarbageCollectorThreadVisitor *visitor) {
@@ -325,3 +328,18 @@ void JoinableThreadManager::removeJoinableThread(JITThreadContext *ctx) {
     }
 }
 
+void JoinableThreadManager::forgetAll() {
+    std::unique_lock<std::mutex> locker(m_mutex);
+
+    if(!m_unjoinedThreads.empty()) {
+        fprintf(stderr, "JoinableThreadManager: %zu unjoined threads remain, forgetting about them\n",
+                m_unjoinedThreads.size());
+
+        m_unjoinedThreads.clear();
+    }
+}
+
+void JITThreadContext::waitForAllThreadsToExit() {
+    m_joinableManager.forgetAll();
+    ThreadContextRegistration::waitForAllThreadsToExit();
+}
