@@ -1,6 +1,6 @@
-#include "grpcsharp.h"
-#include "CallExecutor.h"
-#include "il2cpp-api-types.h"
+#include <MiniGRPC/CompletionQueue.h>
+#include <MiniGRPC/grpcsharp.h>
+#include <MiniGRPC/CallExecutor.h>
 
 #include <translator_api.h>
 
@@ -57,6 +57,10 @@ namespace minigrpc {
     }
 
     void platformInitialize() {
+        static std::atomic_bool initializedBefore;
+        if(initializedBefore.exchange(true))
+            return;
+
         /*
          * Find the relevant classes and methods.
          */

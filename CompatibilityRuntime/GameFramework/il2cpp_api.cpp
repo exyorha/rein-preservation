@@ -1,18 +1,18 @@
 #include <Interop/InternalCallThunk.h>
 #include <Interop/InteropMethodLocator.h>
 #include <Interop/MethodDiversion.h>
+#include <Translator/thunking.h>
+
+#include <ELF/Image.h>
 
 #include <translator_api.h>
 
-#include "Translator/DiversionManager.h"
-#include "Translator/JITThreadContext.h"
-#include "il2cpp-api-types.h"
 #include "support.h"
-#include <Translator/thunking.h>
-#include <ELF/Image.h>
 
 #include "GlobalContext.h"
 #include "il2cpp-api-internal.h"
+
+#include <MiniGRPC/CompletionQueue.h>
 
 static void (*postInitializeCallback)(void);
 
@@ -52,7 +52,7 @@ void translator_set_post_initialize_callback(void (*callback)(void)) {
 int il2cpp_init(const char* domain_name) {
 
     auto result = internal_il2cpp_init(domain_name);
-    if(result != 0 && postInitializeCallback) {
+    if(result != 0) {
         postInitializeCallback();
     }
 
@@ -67,6 +67,12 @@ int il2cpp_init_utf16(const Il2CppChar * domain_name) {
     }
 
     return result;
+}
+
+void il2cpp_shutdown(void) {
+    minigrpc::CompletionQueue::setGlobalShutdown();
+
+    internal_il2cpp_shutdown();
 }
 
 Il2CppMethodPointer IL2CPP_EXPORT translator_resolve_native_icall(const char *name) {

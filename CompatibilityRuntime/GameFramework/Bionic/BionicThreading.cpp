@@ -207,7 +207,7 @@ int plat_pthread_cond_signal(bionic_cond_overlay *cond) {
     return 0;
 }
 
-static int plat_pthread_cond_setup(bionic_cond_overlay *cond, bionic_mutex_overlay *mutex, std::mutex *&waitMutex) {
+static int plat_pthread_cond_setup(bionic_cond_overlay *cond, bionic_mutex_overlay *mutex) {
 
     auto result = plat_cond_point_of_use_init(cond);
     if(result != 0)
@@ -221,9 +221,7 @@ static int plat_pthread_cond_setup(bionic_cond_overlay *cond, bionic_mutex_overl
 }
 
 int plat_pthread_cond_timedwait(bionic_cond_overlay *cond, bionic_mutex_overlay *mutex, const struct timespec *timeout) {
-    std::mutex *waitMutex;
-
-    auto result = plat_pthread_cond_setup(cond, mutex, waitMutex);
+    auto result = plat_pthread_cond_setup(cond, mutex);
     if(result != 0)
         return result;
 
@@ -237,9 +235,7 @@ int plat_pthread_cond_timedwait(bionic_cond_overlay *cond, bionic_mutex_overlay 
 }
 
 int plat_pthread_cond_wait(bionic_cond_overlay *cond, bionic_mutex_overlay *mutex) {
-    std::mutex *waitMutex;
-
-    auto result = plat_pthread_cond_setup(cond, mutex, waitMutex);
+    auto result = plat_pthread_cond_setup(cond, mutex);
     if(result != 0)
         return result;
 

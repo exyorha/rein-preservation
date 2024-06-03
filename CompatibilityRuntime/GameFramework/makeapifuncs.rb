@@ -74,7 +74,7 @@ File.open(ARGV[1], "wb") do |outf|
                    next
                 end
 
-                if func == "il2cpp_init" || func == "il2cpp_init_utf16"
+                if func == "il2cpp_init" || func == "il2cpp_init_utf16" || func == "il2cpp_shutdown"
                     func = "internal_#{func}"
                 end
 

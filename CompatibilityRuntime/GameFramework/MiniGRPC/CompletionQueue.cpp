@@ -6,6 +6,10 @@
 
 namespace minigrpc {
 
+    std::mutex CompletionQueue::m_queueMutex;
+    std::condition_variable CompletionQueue::m_queueCondvar;
+    bool CompletionQueue::m_globalShutdown = false;
+
     CompletionQueue::CompletionQueue(bool asynchronous) : m_shutdown(false) {
         printf("CompletionQueue: created new %p, asynchronous: %d\n", this, asynchronous);
     }
@@ -24,11 +28,22 @@ namespace minigrpc {
         m_queueCondvar.notify_all();
     }
 
+    void CompletionQueue::setGlobalShutdown() {
+        printf("CompletionQueue: global shutdown of all queues\n");
+
+        {
+            std::unique_lock<std::mutex> locker(m_queueMutex);
+            m_globalShutdown = true;
+        }
+        m_queueCondvar.notify_all();
+    }
+
+
     grpc_event CompletionQueue::next() {
         std::unique_lock<std::mutex> locker(m_queueMutex);
 
         m_queueCondvar.wait(locker, [this]() -> bool {
-            return m_shutdown || !m_events.empty();
+            return m_shutdown || !m_events.empty() || m_globalShutdown;
         });
 
         if(!m_events.empty()) {
@@ -43,14 +58,12 @@ namespace minigrpc {
             m_events.pop_front();
 
             return event;
-        } else if(m_shutdown) {
+        } else {
             grpc_event shutdownEvent = {
                 .type = GRPC_QUEUE_SHUTDOWN,
                 .success = 0
             };
             return shutdownEvent;
-        } else {
-            throw std::logic_error("CompletionQueue::next: unexpected exit");
         }
     }
 
@@ -65,6 +78,6 @@ namespace minigrpc {
             });
         }
 
-        m_queueCondvar.notify_one();
+        m_queueCondvar.notify_all();
     }
 }

@@ -23,15 +23,18 @@ namespace minigrpc {
 
         void post(void *tag, int success);
 
+        static void setGlobalShutdown();
+
     private:
         struct EnqueuedEvent {
             void *tag;
             int success;
         };
 
-        std::mutex m_queueMutex;
-        std::condition_variable m_queueCondvar;
+        static std::mutex m_queueMutex;
+        static std::condition_variable m_queueCondvar;
         bool m_shutdown;
+        static bool m_globalShutdown;
         std::deque<EnqueuedEvent> m_events;
     };
 

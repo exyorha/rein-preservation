@@ -10,6 +10,7 @@ extern "C" {
 
 int internal_il2cpp_init(const char* domain_name);
 int internal_il2cpp_init_utf16(const Il2CppChar * domain_name);
+void internal_il2cpp_shutdown(void);
 
 #if defined(__cplusplus)
 }
