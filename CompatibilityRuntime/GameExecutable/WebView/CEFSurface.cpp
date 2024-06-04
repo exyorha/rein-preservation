@@ -116,7 +116,10 @@ auto CEFSurface::getCoveredArea() const -> CoveredArea {
     if(m_hidden)
         return CoveredArea{ .x1 = 0, .y1 = 0, .x2 = 0, .y2 = 0 };
 
-    return CoveredArea{ .x1 = m_x, .y1 = m_y, .x2 = static_cast<int32_t>(m_x + m_width), .y2 = static_cast<int32_t>(m_y + m_height) };
+    int32_t y1 = CEFWebViewImplementation::screenHeightStatic() - m_y - m_height;
+    int32_t y2 = CEFWebViewImplementation::screenHeightStatic() - m_y;
+
+    return CoveredArea{ .x1 = m_x, .y1 = y1, .x2 = static_cast<int32_t>(m_x + m_width), .y2 = y2 };
 }
 
 bool CEFSurface::touchUpdated(const UnityEngine_Touch &touch) {
