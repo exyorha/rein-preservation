@@ -54,4 +54,8 @@ if(NOT MSVC)
     target_link_options(Launcher PRIVATE -Wl,--gc-sections)
 endif()
 
+if(MINGW)
+    target_link_options(Launcher PRIVATE -municode)
+endif()
+
 install(TARGETS Launcher DESTINATION . COMPONENT GameAssembly)

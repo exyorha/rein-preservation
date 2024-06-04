@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <vector>
 #include <string_view>
+#include <optional>
 
 #include <GLES/WGL/WindowsImportRedirection.h>
 
@@ -41,6 +42,7 @@ namespace {
 }
 
 static std::wstring commandLineString;
+static std::optional<std::filesystem::path> logPath;
 
 typedef int (*UnityMainType)(HINSTANCE hInstance, HINSTANCE hPrevInstance, const wchar_t *lpCommandLine, int nShow);
 
@@ -96,153 +98,181 @@ static int gameMainWindows(void *arg) {
     return gameMain(arguments.size(), argumentPointers.data(), invokeUnityWindows, args);
 }
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t *lpCommandLine, int nShow) {
+static void unrecoverableError(const char *what) {
+    std::string message("An unrecoverable error has occurred and the application will now exit.\n\n");
+    message.append(what);
 
-    {
-
-        bool noLog = false;
-        bool appendLog = false;
-        const wchar_t * specifiedLogFile = nullptr;
-
-        WideARGV wideARGV;
-        int wideARGC;
-        wideARGV.argv = CommandLineToArgvW(lpCommandLine, &wideARGC);
-        if(wideARGV.argv == nullptr)
-            throw std::runtime_error("CommandLineToArgvW has failed");
-
-        for(int argno = 0; argno < wideARGC; argno++) {
-            auto arg = wideARGV.argv[argno];
-
-            if(wcsicmp(arg, L"-nolog") == 0) {
-                noLog = true;
-            } else if(wcsicmp(arg, L"-logfile") == 0) {
-                if(++argno == wideARGC)
-                    break;
-
-                specifiedLogFile = wideARGV.argv[argno];
-                if(wcscmp(specifiedLogFile, L"-") == 0 || wcscmp(specifiedLogFile, L"") == 0)
-                    noLog = true;
-
-            } else if(wcsicmp(arg, L"-appendlog") == 0) {
-                appendLog = true;
-
-            } else {
-                if(!commandLineString.empty())
-                    commandLineString.push_back(L' ');
-
-                commandLineString.push_back(L'"');
-                for(const wchar_t *ptr = arg; *ptr; ptr++) {
-                    auto ch = *ptr;
-
-                    if(ch == L'\\' || ch == L'"') {
-                        commandLineString.push_back(L'\\');
-                    }
-                    commandLineString.push_back(ch);
-                }
-
-                commandLineString.push_back(L'"');;
-            }
-        }
-
-        if(!commandLineString.empty())
-            commandLineString.push_back(L' ');
-
-        commandLineString.append(L"-nolog");
-
-        if(!noLog) {
-
-            std::filesystem::path logfile;
-
-            if(specifiedLogFile) {
-                logfile = specifiedLogFile;
-            } else {
-                logfile = getApplicationDataDir() / "Player.log";
-            }
-
-            if(logfile.has_parent_path())
-                std::filesystem::create_directories(logfile.parent_path());
-
-
-            if(!appendLog) {
-                std::filesystem::path oldLog(logfile);
-
-                std::string stem = oldLog.stem().string();
-                stem.append("-prev");
-                stem.append(oldLog.extension().string());
-                oldLog.replace_filename(stem);
-
-                std::error_code ec;
-
-                std::filesystem::remove(oldLog, ec);
-                std::filesystem::rename(logfile, oldLog, ec);
-
-            }
-
-            auto earlyBoot = CreateFile(logfile.c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
-                                        OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-            if(earlyBoot != INVALID_HANDLE_VALUE) {
-
-                int stdfd = _open_osfhandle((intptr_t)earlyBoot, _O_APPEND);
-                close(STDIN_FILENO);
-                dup2(stdfd, STDOUT_FILENO);
-                dup2(stdfd, STDERR_FILENO);
-                close(stdfd);
-
-                fclose(stdout);
-
-                *stdout = *fdopen(STDOUT_FILENO, "wb");
-
-                setvbuf(stdout, nullptr, _IONBF, 256);
-
-                fclose(stderr);
-
-                *stderr = *fdopen(STDERR_FILENO, "wb");
-
-                setvbuf(stderr, nullptr, _IONBF, 256);
-
-                // Make the standard handles available for use even if they're currently used for GUI things
-                auto windowFlags =
-                    reinterpret_cast<ULONG *>(reinterpret_cast<unsigned char *>(
-                        NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters) + 0xA4);
-
-                *windowFlags &= ~(0x800 | 0x400);
-
-                SetStdHandle(STD_INPUT_HANDLE, nullptr);
-
-                HANDLE outputHandle = nullptr;
-                DuplicateHandle(GetCurrentProcess(), reinterpret_cast<HANDLE>(_get_osfhandle(STDOUT_FILENO)), GetCurrentProcess(), &outputHandle,
-                                    0, TRUE, DUPLICATE_SAME_ACCESS);
-                SetStdHandle(STD_OUTPUT_HANDLE, outputHandle);
-
-                HANDLE errorHandle = nullptr;
-                DuplicateHandle(GetCurrentProcess(), reinterpret_cast<HANDLE>(_get_osfhandle(STDERR_FILENO)), GetCurrentProcess(), &errorHandle,
-                                    0, TRUE, DUPLICATE_SAME_ACCESS);
-                SetStdHandle(STD_ERROR_HANDLE, errorHandle);
-
-            }
-        }
+    if(logPath.has_value()) {
+        message.append(
+            "\n"
+            "The game log file, contained at the following path, may contain more information:\n");
     }
 
-    ArgumentsPackageWindows args{
-        .hInstance = hInstance,
-        .hPrevInstance = hPrevInstance,
-        .lpCommandLine = commandLineString.data(),
-        .nCmdShow = nShow
-    };
+    auto messageWide = utf8ToUtf16(message);
 
-    auto handle = LoadLibrary(L"UnityPlayer.dll");
-    if(!handle)
-        throw std::runtime_error("Failed to load UnityPlayer.dll");
+    if(logPath.has_value()) {
+        messageWide.append(logPath->u16string());
+    }
 
-    rebindModuleImport(handle, "KERNEL32.dll", replacementKernelFunctions,
-                    sizeof(replacementKernelFunctions) / sizeof(replacementKernelFunctions[0]), true);
+    MessageBox(nullptr, reinterpret_cast<const wchar_t *>(messageWide.c_str()), nullptr, MB_OK);
+}
 
-    UnityMainPtr = reinterpret_cast<UnityMainType>(GetProcAddress(handle, "UnityMain"));
-    if(!UnityMainPtr)
-        throw std::runtime_error("Failed to find UnityMain in UnityPlayer.dll");
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t *lpCommandLine, int nShow) {
+    try {
 
-    if(!gameEarlyInit())
+        {
+
+            bool noLog = false;
+            bool appendLog = false;
+            const wchar_t * specifiedLogFile = nullptr;
+
+            WideARGV wideARGV;
+            int wideARGC;
+            wideARGV.argv = CommandLineToArgvW(lpCommandLine, &wideARGC);
+            if(wideARGV.argv == nullptr)
+                throw std::runtime_error("CommandLineToArgvW has failed");
+
+            for(int argno = 0; argno < wideARGC; argno++) {
+                auto arg = wideARGV.argv[argno];
+
+                if(wcsicmp(arg, L"-nolog") == 0) {
+                    noLog = true;
+                } else if(wcsicmp(arg, L"-logfile") == 0) {
+                    if(++argno == wideARGC)
+                        break;
+
+                    specifiedLogFile = wideARGV.argv[argno];
+                    if(wcscmp(specifiedLogFile, L"-") == 0 || wcscmp(specifiedLogFile, L"") == 0)
+                        noLog = true;
+
+                } else if(wcsicmp(arg, L"-appendlog") == 0) {
+                    appendLog = true;
+
+                } else {
+                    if(!commandLineString.empty())
+                        commandLineString.push_back(L' ');
+
+                    commandLineString.push_back(L'"');
+                    for(const wchar_t *ptr = arg; *ptr; ptr++) {
+                        auto ch = *ptr;
+
+                        if(ch == L'\\' || ch == L'"') {
+                            commandLineString.push_back(L'\\');
+                        }
+                        commandLineString.push_back(ch);
+                    }
+
+                    commandLineString.push_back(L'"');;
+                }
+            }
+
+            if(!commandLineString.empty())
+                commandLineString.push_back(L' ');
+
+            commandLineString.append(L"-nolog");
+
+            if(!noLog) {
+
+                auto &logfile = logPath.emplace();
+
+                if(specifiedLogFile) {
+                    logfile = specifiedLogFile;
+                } else {
+                    logfile = getApplicationDataDir() / "Player.log";
+                }
+
+                if(logfile.has_parent_path())
+                    std::filesystem::create_directories(logfile.parent_path());
+
+
+                if(!appendLog) {
+                    std::filesystem::path oldLog(logfile);
+
+                    std::string stem = oldLog.stem().string();
+                    stem.append("-prev");
+                    stem.append(oldLog.extension().string());
+                    oldLog.replace_filename(stem);
+
+                    std::error_code ec;
+
+                    std::filesystem::remove(oldLog, ec);
+                    std::filesystem::rename(logfile, oldLog, ec);
+
+                }
+
+                auto earlyBoot = CreateFile(logfile.c_str(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+                                            OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+                if(earlyBoot != INVALID_HANDLE_VALUE) {
+
+                    int stdfd = _open_osfhandle((intptr_t)earlyBoot, _O_APPEND);
+                    close(STDIN_FILENO);
+                    dup2(stdfd, STDOUT_FILENO);
+                    dup2(stdfd, STDERR_FILENO);
+                    close(stdfd);
+
+                    fclose(stdout);
+
+                    *stdout = *fdopen(STDOUT_FILENO, "wb");
+
+                    setvbuf(stdout, nullptr, _IONBF, 256);
+
+                    fclose(stderr);
+
+                    *stderr = *fdopen(STDERR_FILENO, "wb");
+
+                    setvbuf(stderr, nullptr, _IONBF, 256);
+
+                    // Make the standard handles available for use even if they're currently used for GUI things
+                    auto windowFlags =
+                        reinterpret_cast<ULONG *>(reinterpret_cast<unsigned char *>(
+                            NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters) + 0xA4);
+
+                    *windowFlags &= ~(0x800 | 0x400);
+
+                    SetStdHandle(STD_INPUT_HANDLE, nullptr);
+
+                    HANDLE outputHandle = nullptr;
+                    DuplicateHandle(GetCurrentProcess(), reinterpret_cast<HANDLE>(_get_osfhandle(STDOUT_FILENO)), GetCurrentProcess(), &outputHandle,
+                                        0, TRUE, DUPLICATE_SAME_ACCESS);
+                    SetStdHandle(STD_OUTPUT_HANDLE, outputHandle);
+
+                    HANDLE errorHandle = nullptr;
+                    DuplicateHandle(GetCurrentProcess(), reinterpret_cast<HANDLE>(_get_osfhandle(STDERR_FILENO)), GetCurrentProcess(), &errorHandle,
+                                        0, TRUE, DUPLICATE_SAME_ACCESS);
+                    SetStdHandle(STD_ERROR_HANDLE, errorHandle);
+
+                }
+            }
+        }
+
+        ArgumentsPackageWindows args{
+            .hInstance = hInstance,
+            .hPrevInstance = hPrevInstance,
+            .lpCommandLine = commandLineString.data(),
+            .nCmdShow = nShow
+        };
+
+        auto handle = LoadLibrary(L"UnityPlayer.dll");
+        if(!handle)
+            throw std::runtime_error("Failed to load UnityPlayer.dll");
+
+        rebindModuleImport(handle, "KERNEL32.dll", replacementKernelFunctions,
+                        sizeof(replacementKernelFunctions) / sizeof(replacementKernelFunctions[0]), true);
+
+        UnityMainPtr = reinterpret_cast<UnityMainType>(GetProcAddress(handle, "UnityMain"));
+        if(!UnityMainPtr)
+            throw std::runtime_error("Failed to find UnityMain in UnityPlayer.dll");
+
+        if(!gameEarlyInit())
+            return 1;
+
+        return translator_main(gameMainWindows, &args);
+    } catch(const std::exception &e) {
+        unrecoverableError(e.what());
         return 1;
+    } catch(...) {
+        unrecoverableError("No details are available.");
 
-    return translator_main(gameMainWindows, &args);
+        return 1;
+    }
 }
