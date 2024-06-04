@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <filesystem>
 
 #include "nuklear_config.h"
 
@@ -22,6 +23,8 @@ public:
     virtual struct nk_rect screenRect() const = 0;
     virtual std::vector<Resolution> queryResolutionList() const = 0;
     virtual void startGameWithCommandLine(std::vector<std::string> &commandLine) = 0;
+    virtual std::filesystem::path dataPath() const = 0;
+    virtual void openDirectory(const std::filesystem::path &path) const = 0;
 
 protected:
     void update();

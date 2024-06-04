@@ -22,6 +22,9 @@ public:
     std::vector<Resolution> queryResolutionList() const override;
     void startGameWithCommandLine(std::vector<std::string> &commandLine) override;
 
+    std::filesystem::path dataPath() const override;
+    void openDirectory(const std::filesystem::path &path) const override;
+
 private:
     static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

@@ -1,5 +1,9 @@
 #include "LauncherPlatformWin32.h"
 
+#include <objbase.h>
+#include <shellapi.h>
+#include <shlobj.h>
+
 #include <filesystem>
 
 const WNDCLASSEX LauncherPlatformWin32::m_windowClass = {
@@ -19,6 +23,8 @@ const WNDCLASSEX LauncherPlatformWin32::m_windowClass = {
 
 LauncherPlatformWin32::LauncherPlatformWin32(LauncherApplicationInterface *application) : LauncherPlatform(application), m_redraw(true),
     m_postingInput(false) {
+
+    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 
     windowClass.classAtom = RegisterClassEx(&m_windowClass);
     if(windowClass.classAtom == 0)
@@ -41,8 +47,8 @@ LauncherPlatformWin32::LauncherPlatformWin32(LauncherApplicationInterface *appli
         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
+        nk_gdifont_height(font.font) * 64,
+        nk_gdifont_height(font.font) * 40,
         nullptr,
         nullptr,
         reinterpret_cast<HINSTANCE>(&__ImageBase),
@@ -243,4 +249,32 @@ void LauncherPlatformWin32::startGameWithCommandLine(std::vector<std::string> &c
     argumentPointers.emplace_back(nullptr);
 
     _wexecv(executablePath.c_str(), argumentPointers.data());
+}
+
+std::filesystem::path LauncherPlatformWin32::dataPath() const {
+    struct StringFreer {
+        PWSTR string = nullptr;
+
+        ~StringFreer() {
+            if(string)
+                CoTaskMemFree(string);
+        }
+    } path;
+
+    auto result = SHGetKnownFolderPath(FOLDERID_LocalAppDataLow, KF_FLAG_CREATE, nullptr, &path.string);
+    if(FAILED(result))
+        throw std::runtime_error("SHGetKnownFolderPath has failed");
+
+    return std::filesystem::path(path.string) / "SQUARE ENIX Co_,Ltd_" / "NieR";
+}
+
+void LauncherPlatformWin32::openDirectory(const std::filesystem::path &path) const {
+    ShellExecute(
+        window.hwnd,
+        L"explore",
+        path.c_str(),
+        nullptr,
+        nullptr,
+        SW_SHOWNORMAL);
+
 }

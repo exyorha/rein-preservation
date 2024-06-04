@@ -20,6 +20,9 @@ public:
     std::vector<Resolution> queryResolutionList() const override;
     void startGameWithCommandLine(std::vector<std::string> &commandLine) override;
 
+    std::filesystem::path dataPath() const override;
+    void openDirectory(const std::filesystem::path &path) const override;
+
 private:
     struct DisplayHandle {
         Display *display = nullptr;

@@ -37,6 +37,7 @@ NK_API void nk_gdi_shutdown(nk_gdi_ctx gdi);
 NK_API GdiFont* nk_gdifont_create(const LOGFONT *logfont);
 NK_API void nk_gdifont_del(GdiFont* font);
 NK_API void nk_gdi_set_font(nk_gdi_ctx gdi, GdiFont* font);
+NK_API int nk_gdifont_height(GdiFont* font);
 
 NK_API void nk_gdi_get_size(nk_gdi_ctx gdi, unsigned int *width, unsigned int *height);
 
@@ -971,5 +972,10 @@ nk_gdi_render(nk_gdi_ctx gdi, struct nk_color clear)
 
 }
 #endif
+
+
+int nk_gdifont_height(GdiFont* font) {
+    return font->height;
+}
 
 #endif

@@ -1,7 +1,13 @@
 #include "LauncherPlatformX11.h"
 #include <filesystem>
 
+#include <sys/types.h>
+#include <pwd.h>
+#include <spawn.h>
+#include <signal.h>
+
 LauncherPlatformX11::LauncherPlatformX11(LauncherApplicationInterface *application) : LauncherPlatform(application) {
+    signal(SIGCHLD, SIG_IGN);
 
     display.display = XOpenDisplay(nullptr);
     if(!display.display)
@@ -22,7 +28,10 @@ LauncherPlatformX11::LauncherPlatformX11(LauncherApplicationInterface *applicati
 
     setWindowAttributes.colormap = colormap;
 
-    window = XCreateWindow(display.display, root, 0, 0, 640, 480, 0, XDefaultDepth(display.display, screen), InputOutput, visual, CWEventMask | CWColormap,
+    window = XCreateWindow(display.display, root, 0, 0,
+                           nk_xfont_height(font) * 64,
+                           nk_xfont_height(font) * 20, 0,
+                           XDefaultDepth(display.display, screen), InputOutput, visual, CWEventMask | CWColormap,
                            &setWindowAttributes);
 
     XStoreName(display.display, window, "Launcher");
@@ -130,4 +139,41 @@ void LauncherPlatformX11::startGameWithCommandLine(std::vector<std::string> &com
     args.emplace_back(nullptr);
 
     execv(gameExecutable.c_str(), args.data());
+}
+
+std::filesystem::path LauncherPlatformX11::dataPath() const {
+    std::filesystem::path path;
+
+    auto config = getenv("XDG_CONFIG_HOME");
+    if(config) {
+        path = config;
+    } else {
+        auto home = getenv("HOME");
+        if(home) {
+            path = home;
+        } else {
+            auto pwentry = getpwuid(getuid());
+            if(!pwentry)
+                throw std::runtime_error("no XDG_CONFIG_HOME, HOME, or passwd entry for the current user");
+
+            path = pwentry->pw_dir;
+        }
+
+        path /= ".config";
+    }
+
+    return path / "unity3d" / "SQUARE ENIX Co_,Ltd_" / "NieR";
+}
+
+void LauncherPlatformX11::openDirectory(const std::filesystem::path &path) const {
+    auto pathString = path.string();
+
+    char *const argv[]{
+        const_cast<char *>("xdg-open"),
+        pathString.data(),
+        nullptr
+    };
+
+    pid_t pid;
+    posix_spawnp(&pid, argv[0], nullptr, nullptr, argv, environ);
 }

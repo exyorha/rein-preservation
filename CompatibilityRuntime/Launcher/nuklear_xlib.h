@@ -40,6 +40,8 @@ NK_API struct nk_image nk_xsurf_load_image_from_memory(const void *membuf, nk_ui
 NK_API XFont*               nk_xfont_create(Display *dpy, const char *name);
 NK_API void                 nk_xfont_del(Display *dpy, XFont *font);
 
+NK_API int nk_xfont_height(XFont *font);
+
 #endif
 /*
  * ==============================================================
@@ -97,6 +99,7 @@ struct XFont {
 #endif
     struct nk_user_font handle;
 };
+
 struct XSurface {
     GC gc;
     Display *dpy;
@@ -1081,4 +1084,9 @@ nk_xlib_render(Drawable screen, struct nk_color clear)
     nk_clear(ctx);
     nk_xsurf_blit(screen, surf, surf->w, surf->h);
 }
+
+int nk_xfont_height(XFont *font) {
+    return font->height;
+}
+
 #endif

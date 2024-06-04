@@ -7,6 +7,8 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <array>
+#include <filesystem>
 
 struct nk_context;
 
@@ -43,9 +45,16 @@ private:
     bool m_customizeResolution = false;
     DisplayMode m_displayMode = DisplayMode::Fullscreen;
     int m_selectedResolution = 0;
+    bool m_disableTouchscreenEmulation = false;
+    bool m_useCustomGameServer = false;
+    std::array<char, 256> m_customGameServer;
+    bool m_useOpenGLES;
 
     std::vector<std::pair<unsigned int, unsigned int>> m_resolutions;
     std::string m_resolutionString;
+    std::filesystem::path m_dataPathFS;
+    std::string m_dataPath;
+
 };
 
 #endif
