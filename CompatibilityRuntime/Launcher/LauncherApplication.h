@@ -9,6 +9,7 @@
 #include <string>
 #include <array>
 #include <filesystem>
+#include "LauncherConfiguration.h"
 
 struct nk_context;
 
@@ -34,26 +35,14 @@ private:
 
     static void comboItemGetter(void *userData, int index, const char** item);
 
-    std::vector<std::string> buildCommandLine() const;
+    static std::string resolutionString(const std::pair<unsigned int, unsigned int> &resolution);
 
-    enum class DisplayMode : uint32_t {
-        Fullscreen,
-        Borderless,
-        Window
-    };
-
-    bool m_customizeResolution = false;
-    DisplayMode m_displayMode = DisplayMode::Fullscreen;
-    int m_selectedResolution = 0;
-    bool m_disableTouchscreenEmulation = false;
-    bool m_useCustomGameServer = false;
-    std::array<char, 256> m_customGameServer;
-    bool m_useOpenGLES;
+    LauncherConfiguration m_config;
 
     std::vector<std::pair<unsigned int, unsigned int>> m_resolutions;
-    std::string m_resolutionString;
     std::filesystem::path m_dataPathFS;
     std::string m_dataPath;
+    std::string m_resolutionString;
 
 };
 

@@ -4,9 +4,7 @@
 #include <sstream>
 #include <algorithm>
 
-LauncherApplication::LauncherApplication() {
-    m_customGameServer[0] = 0;
-}
+LauncherApplication::LauncherApplication() = default;
 
 LauncherApplication::~LauncherApplication() = default;
 
@@ -17,6 +15,13 @@ void LauncherApplication::update(LauncherPlatform *platform) {
         m_dataPath = m_dataPathFS.string();
 
         std::filesystem::create_directories(m_dataPathFS);
+
+        try {
+            m_config.load(m_dataPathFS / "Launcher.conf");
+        } catch(const std::exception &e) {
+            fprintf(stderr, "Failed to load the launcher configuration, restoring defaults: %s\n", e.what());
+            m_config = LauncherConfiguration();
+        }
     }
 
     auto ctx = platform->nuklear();
@@ -32,12 +37,12 @@ void LauncherApplication::update(LauncherPlatform *platform) {
         nk_layout_row_template_end(ctx);
 
         nk_spacer(ctx);
-        if(nk_option_label(ctx, "Allow the game to select", !m_customizeResolution))
-            m_customizeResolution = false;
+        if(nk_option_label(ctx, "Allow the game to select", !m_config.customizeResolution))
+            m_config.customizeResolution = false;
 
         nk_spacer(ctx);
-        if(nk_option_label(ctx, "As set below", m_customizeResolution))
-            m_customizeResolution = true;
+        if(nk_option_label(ctx, "As set below", m_config.customizeResolution))
+            m_config.customizeResolution = true;
 
         nk_layout_row_template_begin(ctx, 0);
         nk_layout_row_template_push_static(ctx, 2 * ctx->style.font->height);
@@ -45,7 +50,7 @@ void LauncherApplication::update(LauncherPlatform *platform) {
         nk_layout_row_template_push_dynamic(ctx);
         nk_layout_row_template_end(ctx);
 
-        if(!m_customizeResolution)
+        if(!m_config.customizeResolution)
             nk_widget_disable_begin(ctx);
 
         nk_spacer(ctx);
@@ -58,7 +63,8 @@ void LauncherApplication::update(LauncherPlatform *platform) {
             "Windowed",
         };
 
-        m_displayMode = static_cast<DisplayMode>(autoSizedCombo(ctx, items, sizeof(items) / sizeof(items[0]), static_cast<int>(m_displayMode)));
+        m_config.displayMode = static_cast<LauncherConfiguration::DisplayMode>(
+            autoSizedCombo(ctx, items, sizeof(items) / sizeof(items[0]), static_cast<int>(m_config.displayMode)));
 
         nk_spacer(ctx);
 
@@ -72,9 +78,19 @@ void LauncherApplication::update(LauncherPlatform *platform) {
             });
         }
 
-        m_selectedResolution = autoSizedCombo(ctx, &LauncherApplication::resolutionListItem, m_resolutions.size(), m_selectedResolution);
+        int selectedResolution = 0;
+        for(size_t index = 0, size = m_resolutions.size(); index < m_resolutions.size(); index++) {
+            if(resolutionString(m_resolutions[index]) == m_config.resolution) {
+                selectedResolution = index;
+                break;
+            }
+        }
 
-        if(!m_customizeResolution)
+        selectedResolution = autoSizedCombo(ctx, &LauncherApplication::resolutionListItem, m_resolutions.size(), selectedResolution);
+
+        m_config.resolution = resolutionString(m_resolutions.at(selectedResolution));
+
+        if(!m_config.customizeResolution)
             nk_widget_disable_end(ctx);
 
         nk_layout_row_dynamic(ctx, 0, 1);
@@ -83,21 +99,21 @@ void LauncherApplication::update(LauncherPlatform *platform) {
 
         if (nk_tree_push(ctx, NK_TREE_TAB, "Advanced settings", NK_MINIMIZED)) {
             nk_layout_row_dynamic(ctx, 0, 1);
-            m_disableTouchscreenEmulation = nk_check_label(ctx, "Disable touchscreen emulation", m_disableTouchscreenEmulation);
+            m_config.disableTouchscreenEmulation = nk_check_label(ctx, "Disable touchscreen emulation", m_config.disableTouchscreenEmulation);
 
             nk_layout_row_dynamic(ctx, 0, 2);
-            m_useCustomGameServer = nk_check_label(ctx, "Custom game server URL:", m_useCustomGameServer);
+            m_config.useCustomGameServer = nk_check_label(ctx, "Custom game server URL:", m_config.useCustomGameServer);
 
-            if(!m_useCustomGameServer)
+            if(!m_config.useCustomGameServer)
                 nk_widget_disable_begin(ctx);
 
-            nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, m_customGameServer.data(), m_customGameServer.size(), nullptr);
+            nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, m_config.customGameServer.data(), m_config.customGameServer.size(), nullptr);
 
-            if(!m_useCustomGameServer)
+            if(!m_config.useCustomGameServer)
                 nk_widget_disable_end(ctx);
 
             nk_layout_row_dynamic(ctx, 0, 1);
-            m_useOpenGLES = nk_check_label(ctx, "Use OpenGL ES instead of core profile OpenGL", m_useOpenGLES);
+            m_config.useOpenGLES = nk_check_label(ctx, "Use OpenGL ES instead of core profile OpenGL", m_config.useOpenGLES);
 
             nk_tree_pop(ctx);
         }
@@ -106,7 +122,14 @@ void LauncherApplication::update(LauncherPlatform *platform) {
         nk_spacer(ctx);
 
         if(nk_button_label(ctx, "Launch")) {
-            auto commandLine = buildCommandLine();
+            m_config.store(m_dataPathFS / "Launcher.conf");
+
+            auto commandLine = m_config.buildCommandLine();
+
+#ifndef _WIN32
+            commandLine.emplace_back("-logfile");
+            commandLine.emplace_back((m_dataPathFS / "Player.log").c_str());
+#endif
 
             printf("Launching the game with the command line options: ");
             for(const auto &option: commandLine) {
@@ -153,15 +176,18 @@ const char *LauncherApplication::resolutionListItem(int index) {
     if(index < 0 || index >= m_resolutions.size()) {
         m_resolutionString.clear();
     } else {
-        const auto &resolution = m_resolutions[index];
-
-        std::stringstream stream;
-        stream << resolution.first << "x" << resolution.second;
-
-        m_resolutionString = stream.str();
+        m_resolutionString = resolutionString(m_resolutions[index]);
     }
 
     return m_resolutionString.c_str();
+}
+
+std::string LauncherApplication::resolutionString(const std::pair<unsigned int, unsigned int> &resolution) {
+
+    std::stringstream stream;
+    stream << resolution.first << "x" << resolution.second;
+
+    return stream.str();
 }
 
 int LauncherApplication::autoSizedCombo(nk_context *ctx, const char **items, int itemCount, int selectedIndex) {
@@ -189,56 +215,4 @@ int LauncherApplication::autoSizedCombo(nk_context *ctx, ComboItemGetter itemGet
 void LauncherApplication::comboItemGetter(void *userData, int index, const char** item) {
     auto ctx = static_cast<ComboCallbackContext *>(userData);
     *item = (ctx->this_->*ctx->itemGetter)(index);
-}
-
-std::vector<std::string> LauncherApplication::buildCommandLine() const {
-    std::vector<std::string> commandLine;
-
-    if(m_customizeResolution) {
-        commandLine.emplace_back("-disable-downscale");
-
-        if(m_displayMode == DisplayMode::Window) {
-            commandLine.emplace_back("-screen-fullscreen");
-            commandLine.emplace_back("0");
-        } else {
-            commandLine.emplace_back("-screen-fullscreen");
-            commandLine.emplace_back("1");
-
-            if(m_displayMode == DisplayMode::Borderless) {
-                commandLine.emplace_back("-window-mode");
-                commandLine.emplace_back("borderless");
-            } else {
-                commandLine.emplace_back("-window-mode");
-                commandLine.emplace_back("exclusive");
-            }
-        }
-
-        if(m_selectedResolution >= 0 && m_selectedResolution < m_resolutions.size()) {
-            const auto &resolution = m_resolutions[m_selectedResolution];
-
-            commandLine.emplace_back("-screen-width");
-            commandLine.emplace_back(std::to_string(resolution.first));
-            commandLine.emplace_back("-screen-height");
-            commandLine.emplace_back(std::to_string(resolution.second));
-        }
-    }
-
-    if(m_disableTouchscreenEmulation)
-        commandLine.emplace_back("-disable-touch-emulation");
-
-    if(m_useCustomGameServer) {
-        commandLine.emplace_back("-gameserver");
-        commandLine.emplace_back(m_customGameServer.data());
-    }
-
-    if(m_useOpenGLES) {
-        commandLine.emplace_back("-force-gles");
-    }
-
-#ifndef _WIN32
-    commandLine.emplace_back("-logfile");
-    commandLine.emplace_back((m_dataPathFS / "Player.log").c_str());
-#endif
-
-    return commandLine;
 }

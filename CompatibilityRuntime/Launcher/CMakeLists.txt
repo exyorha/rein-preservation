@@ -3,8 +3,12 @@ include(CheckIPOSupported)
 add_executable(Launcher WIN32
     LauncherApplication.cpp
     LauncherApplication.h
+
     LauncherApplicationInterface.cpp
     LauncherApplicationInterface.h
+
+    LauncherConfiguration.cpp
+    LauncherConfiguration.h
 
     LauncherPlatform.cpp
     LauncherPlatform.h
