@@ -24,7 +24,13 @@ LauncherPlatformWin32::LauncherPlatformWin32(LauncherApplicationInterface *appli
     if(windowClass.classAtom == 0)
         throw std::runtime_error("RegisterClassEx has failed");
 
-    font.font = nk_gdifont_create(nullptr, 0);
+    NONCLIENTMETRICS metrics;
+    metrics.cbSize = offsetof(NONCLIENTMETRICS, iPaddedBorderWidth);
+
+    if(!SystemParametersInfo(SPI_GETNONCLIENTMETRICS, metrics.cbSize, &metrics, 0))
+        throw std::runtime_error("SystemParametersInfo has failed");
+
+    font.font = nk_gdifont_create(&metrics.lfMessageFont);
     if(!font.font)
         throw std::runtime_error("nk_gdifont_create has failed");
 

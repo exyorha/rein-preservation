@@ -34,7 +34,7 @@ NK_API void nk_gdi_render(nk_gdi_ctx gdi, struct nk_color clear);
 NK_API void nk_gdi_shutdown(nk_gdi_ctx gdi);
 
 /* font */
-NK_API GdiFont* nk_gdifont_create(const char* name, int size);
+NK_API GdiFont* nk_gdifont_create(const LOGFONT *logfont);
 NK_API void nk_gdifont_del(GdiFont* font);
 NK_API void nk_gdi_set_font(nk_gdi_ctx gdi, GdiFont* font);
 
@@ -531,14 +531,14 @@ nk_gdi_blit(nk_gdi_ctx gdi, HDC dc)
 #endif
 
 GdiFont*
-nk_gdifont_create(const char* name, int size)
+nk_gdifont_create(const LOGFONT *logfont)
 {
     TEXTMETRICW metric;
     GdiFont* font = (GdiFont*)calloc(1, sizeof(GdiFont));
     if (!font)
         return NULL;
     font->dc = CreateCompatibleDC(0);
-    font->handle = CreateFontA(size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, name);
+    font->handle = CreateFontIndirect(logfont);
     SelectObject(font->dc, font->handle);
     GetTextMetricsW(font->dc, &metric);
     font->height = metric.tmHeight;
