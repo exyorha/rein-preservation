@@ -80,8 +80,6 @@ void CEFSurface::upload(CEFCompositor *compositor) {
 
     if(!m_texture || m_allocatedWidth != m_width || m_allocatedHeight != m_height) {
 
-        printf("CEFSurface: recreating %p\n", this);
-
         m_texture = GLESTextureHandle::create();
         m_compositor = compositor;
 
@@ -102,9 +100,6 @@ void CEFSurface::upload(CEFCompositor *compositor) {
 
         api.glBindTexture(GL_TEXTURE_2D, m_texture);
     }
-
-
-    printf("CEFSurface: updating the pixel data for %p\n", this);
 
     api.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_buffer->width(), m_buffer->height(), GL_RGBA, GL_UNSIGNED_BYTE,
                         m_buffer->imageData());
