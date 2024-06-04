@@ -121,20 +121,6 @@ void JITThreadContext::capture(const Dynarmic::A64::Jit &jit) {
     pstate = jit.GetPstate();
 }
 
-void JITThreadContext::push(uint64_t value) {
-    sp -= 16;
-
-    *reinterpret_cast<uint64_t *>(sp) = value;
-}
-
-uint64_t JITThreadContext::pop() {
-    auto value = *reinterpret_cast<uint64_t *>(sp);
-
-    sp += 16;
-
-    return value;
-}
-
 void JITThreadContext::collectThreadStack(GarbageCollectorThreadVisitor *visitor) {
     auto stackBottom = reinterpret_cast<void *>(sp);
     auto stackTop = reinterpret_cast<char *>(m_threadStack) + m_threadStackSize;

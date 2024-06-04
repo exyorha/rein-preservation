@@ -75,12 +75,6 @@ public:
         return gprs[30];
     }
 
-    /*
-     * These two routines work with *16-byte* stack slots!
-     */
-    void push(uint64_t value);
-    uint64_t pop();
-
     inline void *threadARMStack() const {
         return m_threadStack;
     }
