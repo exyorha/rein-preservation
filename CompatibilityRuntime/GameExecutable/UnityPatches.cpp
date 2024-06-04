@@ -1,8 +1,6 @@
 #include "UnityPatches.h"
 #include "CommonUtilities.h"
 
-#include <unity_stub.h>
-
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
@@ -20,6 +18,7 @@
 #else
 #include <sys/mman.h>
 #include <link.h>
+#include <unity_stub.h>
 #endif
 
 #include <cinttypes>

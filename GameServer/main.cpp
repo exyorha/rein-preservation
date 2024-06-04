@@ -107,6 +107,14 @@ static int gameserver_main(int argc, char **argv) {
       WSAStartup(MAKEWORD(2, 2), &wsa_data);
 #endif
 
+#ifdef _WIN32
+    setvbuf(stdout, nullptr, _IONBF, 256);
+    setvbuf(stderr, nullptr, _IONBF, 256);
+#else
+    setlinebuf(stdout);
+    setlinebuf(stderr);
+#endif
+
     std::vector<std::variant<std::string, evutil_socket_t>> configuredListeners;
     std::optional<evutil_socket_t> exitOnEofFd;
 #ifdef _WIN32

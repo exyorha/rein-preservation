@@ -46,13 +46,17 @@ uint32_t ProcessCommandLineWindows::startProcess() {
     printf("Starting a process: executable: '%ls', command line: '%ls'\n", m_executablePath.c_str(), m_commandLine.c_str());
 
     STARTUPINFO si;
+    memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    si.dwFlags = STARTF_USESTDHANDLES;
 
     PROCESS_INFORMATION pi;
-    memset(&si, 0, sizeof(si));
 
     if(!CreateProcess(m_executablePath.c_str(), m_commandLine.data(), nullptr, nullptr, TRUE,
-        CREATE_BREAKAWAY_FROM_JOB | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP, nullptr, nullptr, &si, &pi))
+        CREATE_DEFAULT_ERROR_MODE | CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
         throw std::runtime_error("CreateProcess has failed");
 
     CloseHandle(pi.hProcess);

@@ -1,4 +1,4 @@
-add_executable(GameExecutable
+add_executable(GameExecutable WIN32
     AndroidJNI.cpp
 
     CommonUtilities.cpp
@@ -134,7 +134,7 @@ if(WIN32)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
-target_link_libraries(GameExecutable PRIVATE UnityStub GameAssembly Il2CppUtilities ClientDataAccess gitversion)
+target_link_libraries(GameExecutable PRIVATE GameAssembly Il2CppUtilities ClientDataAccess gitversion)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE
@@ -142,6 +142,10 @@ set_target_properties(GameExecutable PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
 )
+
+if(NOT WIN32)
+    target_link_libraries(GameExecutable PRIVATE UnityStub)
+endif()
 
 if(UNIX)
     target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*" "-Wl,--no-copy-dt-needed-entries")
