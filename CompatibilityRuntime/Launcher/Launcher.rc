@@ -1,6 +1,7 @@
 #include <windows.h>
 #include "gitversion.h"
 
+1 ICON "../GameServer/GameServer.ico"
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "Launcher.manifest"
 
 VS_VERSION_INFO VERSIONINFO
