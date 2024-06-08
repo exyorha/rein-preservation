@@ -18,7 +18,7 @@ public:
     struct RegisteredField {
         std::string_view name;
         std::string_view signature;
-        bool isStatic;
+        FieldInvokable invokable;
     };
 
     JNIClass(const std::string_view &name, const std::shared_ptr<JNIClass> &parentClass);
@@ -39,7 +39,7 @@ public:
     void registerMethod(const std::string_view &name, const std::string_view &signature,
                         MethodInvokable &&method);
 
-    void registerField(const std::string_view &name, const std::string_view &signature, bool isStatic);
+    void registerField(const std::string_view &name, const std::string_view &signature, FieldInvokable &&field);
 
     template<typename Result, typename Class, typename... Args>
     void registerMethod(const std::string_view &name, const std::string_view &signature, Result (Class::*meth)(Args... args)) {
@@ -51,6 +51,16 @@ public:
         registerMethod(name, signature, std::make_unique<JNIStaticMethodInvoker<Result, Args...>>(meth));
     }
 
+    template<typename FieldType, typename Class>
+    void registerField(const std::string_view &name, const std::string_view &signature, FieldType Class::*field) {
+        registerField(name, signature, std::make_unique<JNIFieldInvoker<FieldType, Class>>(field));
+    }
+
+    template<typename FieldType>
+    void registerField(const std::string_view &name, const std::string_view &signature, FieldType *field) {
+        registerField(name, signature, std::make_unique<JNIStaticFieldInvoker<FieldType>>(field));
+    }
+
     template<typename... Args>
     inline void registerConstructor(const std::string_view &signature, std::shared_ptr<JNIObject> (*meth)(Args... args)) {
         registerMethod("<init>", signature,
@@ -58,6 +68,9 @@ public:
                            std::in_place_type_t<JNIConstructorMethod>(),
                            std::make_unique<JNIConstructorMethodInvoker<Args...>>(meth)));
     }
+
+    std::shared_ptr<JNIObject> getClass() override;
+    std::shared_ptr<JNIObject> getName();
 
 private:
     const RegisteredMethod *doGetMethodID(const std::string_view &name, const std::string_view &signature, bool isStatic);

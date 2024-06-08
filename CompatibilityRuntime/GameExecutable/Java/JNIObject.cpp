@@ -19,15 +19,20 @@ std::shared_ptr<JNIClass> JNIObject::makeClass() {
     auto co = std::make_shared<JNIClass>("java/lang/Object", nullptr);
     co->registerMethod("toString", "()Ljava/lang/String;", &JNIObject::toString);
     co->registerMethod("hashCode", "()I", &JNIObject::hashCode);
+    co->registerMethod("getClass", "()Ljava/lang/Object;", &JNIObject::getClass);
 
     return co;
+}
+
+std::shared_ptr<JNIObject> JNIObject::getClass() {
+    return objectClass();
 }
 
 std::shared_ptr<JNIObject> JNIObject::toString() {
     std::stringstream stream;
     stream << typeid(*this).name() << " ";
     stream << std::hex;
-    stream <<reinterpret_cast<uintptr_t>(this);
+    stream << reinterpret_cast<uintptr_t>(this);
     return std::make_shared<JNIString>(stream.str());
 }
 

@@ -97,6 +97,46 @@ public:
     virtual ReturnType invoke(JNIObject &onObject, const JValueArray &args) = 0;
 };
 
+template<typename FieldType>
+class BaseJNIFieldInvoker {
+protected:
+    BaseJNIFieldInvoker() = default;
+
+public:
+    static constexpr bool isStatic = false;
+
+    virtual ~BaseJNIFieldInvoker() = default;
+
+    BaseJNIFieldInvoker(const BaseJNIFieldInvoker &other) = delete;
+    BaseJNIFieldInvoker &operator =(const BaseJNIFieldInvoker &other) = delete;
+
+    virtual FieldType get(JNIObject &onObject) = 0;
+    virtual void set(JNIObject &onObject, const FieldType &value) = 0;
+};
+
+template<typename FieldType>
+class JNIStaticFieldInvoker {
+public:
+    explicit JNIStaticFieldInvoker(FieldType *ptr) : m_ptr(ptr) {}
+    static constexpr bool isStatic = true;
+
+    ~JNIStaticFieldInvoker() = default;
+
+    JNIStaticFieldInvoker(const JNIStaticFieldInvoker &other) = delete;
+    JNIStaticFieldInvoker &operator =(const JNIStaticFieldInvoker &other) = delete;
+
+    inline FieldType get() const {
+        return *m_ptr;
+    }
+
+    inline void set(const FieldType &value) {
+        *m_ptr = value;
+    }
+
+private:
+    FieldType *m_ptr;
+};
+
 template<typename ReturnType>
 class BaseJNIStaticMethodInvoker {
 protected:
@@ -185,6 +225,27 @@ private:
     Pointer m_pointer;
 };
 
+template<typename FieldType, typename Class>
+class JNIFieldInvoker final : public BaseJNIFieldInvoker<FieldType> {
+public:
+
+    using Pointer = FieldType Class::*;
+
+    explicit JNIFieldInvoker(Pointer field) : m_field(field) {}
+    ~JNIFieldInvoker() override;
+
+    FieldType get(JNIObject &onObject) override {
+        return onObject.*m_field;
+    }
+
+    void set(JNIObject &onObject, const FieldType &value) {
+        return onObject.*m_field = value;
+    }
+
+private:
+    Pointer m_field;
+};
+
 using JNIObjectMethod = std::unique_ptr<BaseJNIMethodInvoker<std::shared_ptr<JNIObject>>>;
 using JNIVoidMethod = std::unique_ptr<BaseJNIMethodInvoker<void>>;
 using JNIFloatMethod = std::unique_ptr<BaseJNIMethodInvoker<float>>;
@@ -218,6 +279,20 @@ using MethodInvokable = std::variant<
     JNIConstructorMethod>;
 
 static bool isInvokableStatic(const MethodInvokable &invokable) {
+    return std::visit([](const auto &ptr) -> bool {
+        return std::remove_reference<decltype(*ptr)>::type::isStatic;
+    }, invokable);
+}
+using JNIObjectField = std::unique_ptr<BaseJNIFieldInvoker<std::shared_ptr<JNIObject>>>;
+
+using JNIStaticObjectField = std::unique_ptr<JNIStaticFieldInvoker<std::shared_ptr<JNIObject>>>;
+
+using FieldInvokable = std::variant<
+    JNIObjectField,
+    JNIStaticObjectField>;
+
+
+static bool isInvokableStatic(const FieldInvokable &invokable) {
     return std::visit([](const auto &ptr) -> bool {
         return std::remove_reference<decltype(*ptr)>::type::isStatic;
     }, invokable);

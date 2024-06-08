@@ -15,6 +15,9 @@
 #include <Java/JNIConstructor.h>
 #include <Java/JNIFloatArray.h>
 #include <Java/JNISystem.h>
+#include <Java/NativeGallery.h>
+#include <Java/NativeGalleryPermissionReceiver.h>
+#include <Java/AndroidContext.h>
 
 #ifdef BUILDING_WITH_MPV
 #include <VideoPlayer/Java/AVProMobileVideo.h>
@@ -47,4 +50,11 @@ void JNIGlobalState::init() {
     registerClass<AVProMobileVideo>();
     registerClass<AVProVideoPlayer>();
 #endif
+
+    registerClass<NativeGallery>();
+    registerClass<NativeGalleryPermissionReceiver>();
+    registerClass<AndroidContext>();
+
+    auto context = std::make_shared<AndroidContext>();
+    JNIUnityPlayer::currentActivity = context;
 }

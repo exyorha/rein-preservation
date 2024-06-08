@@ -476,7 +476,23 @@ static intptr_t AndroidJNI_GetObjectClass(intptr_t objectRef, void *original) {
     auto &jni = JNIState::get();
     return jni.guard([&jni, objectRef]() -> intptr_t {
         auto object = jni.resolveNonNull<JNIObject>(objectRef);
-        return jni.makeLocalReference(object->objectClass());
+        return jni.makeLocalReference(object->getClass());
     });
 }
 INTERPOSE_ICALL("UnityEngine.AndroidJNI::GetObjectClass", AndroidJNI_GetObjectClass);
+
+static intptr_t AndroidJNI_GetStaticObjectField(intptr_t classID, intptr_t fieldID, void *original) {
+    auto &jni = JNIState::get();
+    return jni.guard([&jni, fieldID]() -> intptr_t {
+        if(fieldID == 0) {
+            throw std::runtime_error("attempted to get a null field ID");
+        }
+
+        auto &invokable = reinterpret_cast<const JNIClass::RegisteredField *>(fieldID)->invokable;
+        auto &function = std::get<JNIStaticObjectField>(invokable);
+
+        return jni.makeLocalReference(function->get());
+    });
+}
+
+INTERPOSE_ICALL("UnityEngine.AndroidJNI::GetStaticObjectField", AndroidJNI_GetStaticObjectField);

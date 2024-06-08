@@ -35,6 +35,8 @@ add_executable(GameExecutable WIN32
 
     Java/AdjustSdkAdjust.cpp
     Java/AdjustSdkAdjust.h
+    Java/AndroidContext.cpp
+    Java/AndroidContext.h
     Java/AndroidUtilLog.cpp
     Java/AndroidUtilLog.h
     Java/JavaClasses.cpp
@@ -73,6 +75,10 @@ add_executable(GameExecutable WIN32
     Java/JValue.h
     Java/LiliumDefaultAttestCallback.cpp
     Java/LiliumDefaultAttestCallback.h
+    Java/NativeGallery.cpp
+    Java/NativeGallery.h
+    Java/NativeGalleryPermissionReceiver.cpp
+    Java/NativeGalleryPermissionReceiver.h
     Java/UniWebViewInterface.cpp
     Java/UniWebViewInterface.h
 

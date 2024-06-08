@@ -21,6 +21,8 @@ public:
 
     virtual std::shared_ptr<JNIObject> toString();
 
+    virtual std::shared_ptr<JNIObject> getClass();
+
     inline const std::shared_ptr<JNIClass> &objectClass() const {
         return m_objectClass;
     }

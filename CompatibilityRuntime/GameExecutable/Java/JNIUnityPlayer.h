@@ -6,6 +6,8 @@
 class JNIUnityPlayer final : public JNIObject {
 public:
     static std::shared_ptr<JNIClass> makeClass();
+
+    static std::shared_ptr<JNIObject> currentActivity;
 };
 
 #endif

@@ -1,4 +1,6 @@
 #include <Java/JNIClass.h>
+#include <Java/JNIGlobalState.h>
+#include <Java/JNIString.h>
 
 #include <sstream>
 
@@ -12,7 +14,16 @@ JNIClass::~JNIClass() = default;
 
 std::shared_ptr<JNIClass> JNIClass::makeClass() {
     auto co = std::make_shared<JNIClass>("java/lang/Class", parent("java/lang/Object"));
+    co->registerMethod("getName", "()Ljava/lang/String;", &JNIClass::getName);
     return co;
+}
+
+std::shared_ptr<JNIObject> JNIClass::getClass() {
+    return JNIGlobalState::get().findClass("java/lang/Class");
+}
+
+std::shared_ptr<JNIObject> JNIClass::getName() {
+    return std::make_shared<JNIString>(m_name);
 }
 
 void JNIClass::registerMethod(const std::string_view &name, const std::string_view &signature,
@@ -21,11 +32,11 @@ void JNIClass::registerMethod(const std::string_view &name, const std::string_vi
     m_methods.emplace_back(RegisteredMethod { .name = name, .signature = signature, .invokable = std::move(method) });
 }
 
-void JNIClass::registerField(const std::string_view &name, const std::string_view &signature, bool isStatic) {
+void JNIClass::registerField(const std::string_view &name, const std::string_view &signature, FieldInvokable &&field) {
     m_fields.emplace_back(RegisteredField{
         .name = name,
         .signature = signature,
-        .isStatic = isStatic
+        .invokable = std::move(field)
     });
 }
 
@@ -47,7 +58,7 @@ auto JNIClass::doGetFieldID(const std::string_view &name, const std::string_view
     const RegisteredField * {
 
     for(const auto &field : m_fields) {
-        if(field.name == name && field.signature == signature && field.isStatic) {
+        if(field.name == name && field.signature == signature && isInvokableStatic(field.invokable) == isStatic) {
             return &field;
         }
     }

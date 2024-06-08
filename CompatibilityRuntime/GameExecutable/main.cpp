@@ -255,6 +255,12 @@ static Il2CppArray *Dark_StateMachine_HandleNet_DecryptMasterData(Il2CppObject *
     return in;
 }
 
+static int32_t NativeGallery_RequestPermission(int32_t permissionType, void *original) {
+    printf("NativeGallery.RequestPermission: %d\n", permissionType);
+
+    return 1 /* granted */;
+}
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -347,6 +353,11 @@ static void postInitialize() {
      * JNI API to it.
      */
     translator_divert_method("Assembly-CSharp.dll::UniWebViewInterface::CheckPlatform", UniWebViewInterface_CheckPlatform);
+
+    /*
+     * Avoids the complexity of the whole permission flow.
+     */
+    translator_divert_method("NativeGallery.Runtime.dll::NativeGallery::RequestPermission", NativeGallery_RequestPermission);
 
     InitializeInput();
     InitializeOcto();
