@@ -1,5 +1,6 @@
 #include <Bionic/BionicSyscalls.h>
 
+#include <errno.h>
 #include <fcntl.h>
 
 int translateErrno(int hostPlatformError) {

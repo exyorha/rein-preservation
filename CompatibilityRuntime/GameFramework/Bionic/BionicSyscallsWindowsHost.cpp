@@ -117,6 +117,8 @@ int plat_stat(const char *path, struct bionic_stat *statbuf) {
     auto result = ::_wstat64(convPath.c_str(), &native);
     if(result >= 0) {
         translateStat(&native, statbuf);
+    } else {
+        bionic_set_errno(translateErrno(errno));
     }
 
     return result;
