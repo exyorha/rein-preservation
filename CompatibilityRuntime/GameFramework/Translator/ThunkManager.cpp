@@ -30,33 +30,30 @@ void *ThunkManager::allocateARMToX86ThunkCall(void *key, X86ThunkTarget x86Funct
         }
 
         auto address = static_cast<ARMThunk *>(m_armThunkAllocator.allocate(sizeof(ARMThunk)));
-        address->insn = UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMToX86ThunkCallSVC) << 5);
+        address->insn = ARMThunk::Instruction;
         address->functionToCall = x86FunctionToCall;
+        address->key = key;
 
         m_thunkX86ToArmTableForward.emplace(key, address);
-        m_thunkX86ToArmTableReverse.emplace(address, key);
 
         return address;
     }
 }
 
 void *ThunkManager::lookupARMToX86ThunkCall(void *armCallAddress, ThunkManager::X86ThunkTarget *functionToCall) {
-    std::shared_lock<std::shared_mutex> locker(m_thunkTableMutex);
-
-    auto it = m_thunkX86ToArmTableReverse.find(armCallAddress);
-
-    if(it != m_thunkX86ToArmTableReverse.end()) {
-        auto key = it->second;
-
-        if(functionToCall) {
-            auto thunk = static_cast<ARMThunk *>(armCallAddress);
-            *functionToCall = thunk->functionToCall;
-        }
-
-        return key;
+    auto thunk = static_cast<ARMThunk *>(armCallAddress);
+    if(thunk->insn != ARMThunk::Instruction) {
+        /*
+         * Not our thunk.
+         */
+        return nullptr;
     }
 
-    return nullptr;
+    if(functionToCall) {
+        *functionToCall = thunk->functionToCall;
+    }
+
+    return thunk->key;
 }
 
 ThunkManager::X86ThunkTarget ThunkManager::allocateX86ToARMThunkCall(void *key, ThunkManager::X86ThunkTarget functionToCall) {
@@ -123,6 +120,7 @@ ThunkManager::X86ThunkTarget ThunkManager::allocateX86ToARMThunkCall(void *key, 
         auto thunkFunc = reinterpret_cast<X86ThunkTarget>(thunk);
 
         m_thunkArmToX86TableForward.emplace(key, thunkFunc);
+        m_thunkArmToX86TableReverse.emplace(thunkFunc, key);
 
         return thunkFunc;
     }

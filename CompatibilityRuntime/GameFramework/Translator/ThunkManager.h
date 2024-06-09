@@ -27,13 +27,15 @@ public:
 private:
 
     struct ARMThunk {
+        static constexpr uint32_t Instruction =  UINT32_C(0xD4000001) | (static_cast<uint32_t>(ARMToX86ThunkCallSVC) << 5);
+
         uint32_t insn;
         X86ThunkTarget functionToCall;
+        void *key;
     };
 
     std::shared_mutex m_thunkTableMutex;
     std::unordered_map<void *, void *> m_thunkX86ToArmTableForward;
-    std::unordered_map<void *, void *> m_thunkX86ToArmTableReverse;
 
     std::unordered_map<void *, X86ThunkTarget> m_thunkArmToX86TableForward;
     std::unordered_map<X86ThunkTarget, void *> m_thunkArmToX86TableReverse;
