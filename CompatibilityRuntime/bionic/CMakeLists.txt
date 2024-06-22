@@ -621,16 +621,16 @@ add_library(bionic SHARED
 )
 
 target_compile_definitions(bionic PRIVATE
-    -D_LIBC=1
+    _LIBC=1
 
     # CR: We do *not* use logd.
     # -DTARGET_USES_LOGD
 
-    -DUSE_DLMALLOC
+    USE_DLMALLOC
 
-    -DANDROID_SMP=1
+    ANDROID_SMP=1
 
-    -DCOMPATIBILITY_RUNTIME_BUILD
+    COMPATIBILITY_RUNTIME_BUILD
 )
 
 
@@ -644,6 +644,8 @@ target_compile_options(bionic PRIVATE
 
     $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>
     -fno-exceptions
+
+    -Wno-asm-operand-widths
 )
 
 target_include_directories(bionic SYSTEM PUBLIC
@@ -680,7 +682,7 @@ set_target_properties(bionic PROPERTIES PREFIX "")
 
 set_source_files_properties(${cxa_src_sources} PROPERTIES COMPILE_OPTIONS -fvisibility=hidden)
 
-set_source_files_properties(${libc_dns} PROPERTIES COMPILE_DEFINITIONS "-DANDROID_CHANGES;-DINET6")
+set_source_files_properties(${libc_dns} PROPERTIES COMPILE_DEFINITIONS "ANDROID_CHANGES;INET6")
 set_source_files_properties(${libc_dns} PROPERTIES COMPILE_OPTIONS "-fvisibility=hidden;-Wno-unused-parameter;-include;netbsd-compat.h")
 set_source_files_properties(${libc_dns} PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/dns/include;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/private;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-netbsd/lib/libc/include;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-netbsd/android/include")
 
@@ -689,7 +691,7 @@ set_source_files_properties(${libc_freebsd} PROPERTIES INCLUDE_DIRECTORIES "${CM
 
 set_source_files_properties(${libc_netbsd} PROPERTIES COMPILE_OPTIONS "-Wno-sign-compare;-Wno-uninitialized;-include;netbsd-compat.h")
 set_source_files_properties(${libc_netbsd} PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-netbsd/android/include;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-netbsd/lib/libc/include")
-set_source_files_properties(${libc_netbsd} PROPERTIES COMPILE_DEFINITIONS "-DPOSIX_MISTAKE")
+set_source_files_properties(${libc_netbsd} PROPERTIES COMPILE_DEFINITIONS "POSIX_MISTAKE")
 
 set_source_files_properties(${libc_openbsd} PROPERTIES COMPILE_OPTIONS "-Wno-sign-compare;-Wno-uninitialized;-Wno-unused-parameter;-include;openbsd-compat.h")
 set_source_files_properties(${libc_openbsd} PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/private;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-openbsd/android/include;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-openbsd/lib/libc/include;${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/upstream-openbsd/lib/libc/gdtoa")
@@ -699,7 +701,7 @@ set_source_files_properties(${libc_gdtoa} PROPERTIES INCLUDE_DIRECTORIES "${CMAK
 
 set_source_files_properties(${libc_tzcode} PROPERTIES
     COMPILE_DEFINITIONS
-        "-DALL_STATE;-DSTD_INSPIRED;-DTM_GMTOFF=tm_gmtoff;-DTZDIR=\"/system/usr/share/zoneinfo\";-DUSG_COMPAT=1;-DNO_RUN_TIME_WARNINGS_ABOUT_YEAR_2000_PROBLEMS_THANK_YOU;-Dlint"
+        "ALL_STATE;STD_INSPIRED;TM_GMTOFF=tm_gmtoff;TZDIR=\"/system/usr/share/zoneinfo\";USG_COMPAT=1;NO_RUN_TIME_WARNINGS_ABOUT_YEAR_2000_PROBLEMS_THANK_YOU;lint"
     COMPILE_OPTIONS "-fvisibility=hidden"
     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/bionic/libc/tzcode")
 
@@ -710,7 +712,7 @@ set_source_files_properties(bionic/libc/bionic/__stack_chk_fail.cpp PROPERTIES C
 
 set_source_files_properties(bionic/libc/bionic/dlmalloc.c PROPERTIES COMPILE_OPTIONS -fvisibility=hidden)
 
-target_compile_definitions(bionic PRIVATE $<$<COMPILE_LANGUAGE:ASM>:-D__ASSEMBLY__>)
+target_compile_definitions(bionic PRIVATE $<$<COMPILE_LANGUAGE:ASM>:__ASSEMBLY__>)
 
 set_source_files_properties(
     bionic/libc/arch-arm64/generic/bionic/memchr.S
@@ -940,7 +942,7 @@ list(TRANSFORM libm_sources PREPEND bionic/libm/)
 add_library(bionic-math OBJECT
     ${libm_sources}
 )
-target_compile_definitions(bionic-math PRIVATE -DFLT_EVAL_METHOD=0)
+target_compile_definitions(bionic-math PRIVATE FLT_EVAL_METHOD=0)
 target_compile_options(bionic-math PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/bionic/libm/freebsd-compat.h -Wno-missing-braces
     -Wno-parentheses -Wno-sign-compare -Wno-uninitialized -Wno-unknown-pragmas -fvisibility=hidden -fno-builtin-rint -fno-builtin-rintf -fno-builtin-rintl
     -U__ANDROID_API__)

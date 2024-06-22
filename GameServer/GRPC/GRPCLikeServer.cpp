@@ -13,6 +13,8 @@
 
 #include <google/protobuf/service.h>
 
+#include <sstream>
+
 LLServices::LogFacility LogGRPCLikeServer("GRPCLikeServer");
 
 GRPCLikeServer::GRPCLikeServer() = default;
@@ -43,7 +45,7 @@ void GRPCLikeServer::handle(const std::string_view &path, LLServices::HttpReques
             throw std::runtime_error("no such service: " + std::string(serviceName));
         }
 
-        auto method = service->GetDescriptor()->FindMethodByName(methodName);
+        auto method = service->GetDescriptor()->FindMethodByName(std::string(methodName));
         if(!method) {
             std::stringstream error;
             error << "'" << serviceName << "' has no method '" << methodName << "'";

@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     for(const auto &entry: entries) {
         writer.addFile(
             entry.nameInZip,
-            std::chrono::system_clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(entry.modtime))
+            std::chrono::system_clock::to_time_t(std::chrono::file_clock::to_sys(entry.modtime))
                 * UINT64_C(1000000),
             UnityAsset::Stream(UnityAsset::readFile(entry.filePath)));
     }

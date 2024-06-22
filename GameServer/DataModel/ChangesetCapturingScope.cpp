@@ -6,6 +6,7 @@
 #include <sqlite3.h>
 
 #include <cstring>
+#include <optional>
 
 ChangesetCapturingScope::ChangesetCapturingScope(sqlite::Database &database) : m_database(database), m_session(database, "main") {
     sqlite3session_table_filter(m_session, tableFilter, this);

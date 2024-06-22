@@ -11,6 +11,7 @@
 #include <Bionic/BionicCallouts.h>
 
 #include <random>
+#include <algorithm>
 
 #if defined(_WIN32)
 #include <windows.h>

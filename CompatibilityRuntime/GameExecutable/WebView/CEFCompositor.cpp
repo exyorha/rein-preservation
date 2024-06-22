@@ -5,6 +5,7 @@
 #include <GLES/GLESAPISet.h>
 
 #include <sstream>
+#include <cmath>
 
 CEFCompositor::CEFCompositor() {
     m_vao = GLESVertexArrayHandle::create();

@@ -4,6 +4,7 @@
 #include <google/protobuf/service.h>
 
 #include <vector>
+#include <optional>
 
 #include "WebViewSharedImageBuffer.h"
 

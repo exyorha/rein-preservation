@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <optional>
 #include <fstream>
+#include <charconv>
 
 namespace ClientDataAccess {
 

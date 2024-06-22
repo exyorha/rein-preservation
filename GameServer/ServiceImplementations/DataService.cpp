@@ -93,7 +93,7 @@ void DataService::GetUserDataImpl(UserContext &user,
     for(const auto &tableName: request->table_name()) {
         user.serializeTable(tableName, json);
 
-        response->mutable_user_data_json()->emplace(tableName, json.output());
+        response->mutable_user_data_json()->emplace(tableName, std::string(json.output()));
 
         json.clear();
         json.reset();

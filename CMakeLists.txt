@@ -5,7 +5,7 @@ option(BUILD_COMPATIBILITY_RUNTIME "Include the client runtime in the build" ON)
 option(BUILD_GAME_SERVER "Include the game server in the build" ON)
 option(BUILD_ASSET_PROCESSING "Include the asset processing components in the build" ON)
 
-find_package(Protobuf CONFIG REQUIRED)
+find_package(Protobuf REQUIRED)
 
 if(WIN32 AND NOT TARGET protobuf::protoc)
     message(STATUS "Trying to find the host 'protoc'")

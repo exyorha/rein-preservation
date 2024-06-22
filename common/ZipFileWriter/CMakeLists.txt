@@ -1,3 +1,5 @@
+find_package(ZLIB REQUIRED)
+
 add_library(ZipFileWriter STATIC
     include/ZipFileWriter/MultiPartZipWriter.h
     MultiPartZipWriter.cpp

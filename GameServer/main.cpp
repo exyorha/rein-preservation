@@ -2,6 +2,7 @@
 #include <exception>
 #include <charconv>
 #include <thread>
+#include <variant>
 
 #include "Gameserver.h"
 #include "ExitOnEof.h"

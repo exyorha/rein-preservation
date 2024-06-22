@@ -5,6 +5,7 @@
 std::shared_ptr<JNIClass> AdjustSdkAdjust::makeClass() {
     auto co = std::make_shared<JNIClass>("com/adjust/sdk/Adjust", parent("java/lang/Object"));
     co->registerMethod("gdprForgetMe", "(Ljava/lang/Object;)V", &gdprForgetMe);
+    co->registerMethod("gdprForgetMe", "(Landroid/content/Context;)V", &gdprForgetMe);
     co->registerMethod("onResume", "()V", &onResume);
 
     return co;

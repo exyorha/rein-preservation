@@ -6,6 +6,8 @@
 
 #include <google/protobuf/service.h>
 
+#include <optional>
+
 class GRPCLikeCall final : public google::protobuf::RpcController, private google::protobuf::Closure {
 public:
     GRPCLikeCall(LLServices::HttpRequest &&request, google::protobuf::Service *service, const google::protobuf::MethodDescriptor *method);

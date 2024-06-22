@@ -2,6 +2,7 @@
 #define SLICE_BUFFER_H
 
 #include <vector>
+#include <cstring>
 
 namespace minigrpc {
 
