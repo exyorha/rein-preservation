@@ -45,6 +45,23 @@ prepend_include() {
 
 mkdir -p dl
 
+download_and_unpack_windows_dependency "https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-cpp-3.21.12.tar.gz" "protobuf-3.21.12"
+
+mkdir -p linux-build-deps
+
+cmake \
+    -S "$(realpath -- "windows-build-deps/protobuf-3.21.12")" \
+    -B "$(realpath -- "linux-build-deps/protobuf")" \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -Dprotobuf_BUILD_TESTS=FALSE \
+    -DBUILD_SHARED_LIBS=FALSE \
+    -Dprotobuf_WITH_ZLIB=FALSE \
+    -DCMAKE_INSTALL_PREFIX="$(realpath -- "linux-build-deps/prefix")"
+
+cmake --build "$(realpath -- "linux-build-deps/protobuf")" --parallel
+cmake --install "$(realpath -- "linux-build-deps/protobuf")"
+
 cmake \
     -S . \
     -B build -G "Kate - Ninja" \
@@ -52,11 +69,14 @@ cmake \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
     -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_linux64_minimal)" \
-    -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529
+    -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529 \
+    -DProtobuf_ROOT="$(realpath -- "linux-build-deps/prefix")"
+
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
 cmake --install build --component GameAssembly
 cmake --install build --component GameServer
+
 
 (cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > reincarnation/libmpv-lgpl-compliance.tgz
 
@@ -73,21 +93,17 @@ mkdir -p windows-build-deps
 
 windows_boost_version=boost_1_84_0
 windows_ffi_version=libffi-3.4.4
-windows_abseil_version=abseil-cpp-20240116.1
-windows_protobuf_version=protobuf-25.2
 windows_zlib_version=zlib-1.3.1
 
 download_and_unpack_windows_dependency "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z"
 download_and_unpack_windows_dependency "https://github.com/libffi/libffi/releases/download/v3.4.4/${windows_ffi_version}.tar.gz"
-download_and_unpack_windows_dependency "https://github.com/abseil/abseil-cpp/releases/download/20240116.1/${windows_abseil_version}.tar.gz"
-download_and_unpack_windows_dependency "https://github.com/protocolbuffers/protobuf/releases/download/v25.2/${windows_protobuf_version}.tar.gz"
 download_and_unpack_windows_dependency "https://www.zlib.net/${windows_zlib_version}.tar.gz"
 
-mkdir -p windows-build-deps/libffi-build windows-build-deps/c-ares-build
+mkdir -p windows-build-deps/libffi-build
 
 winprefix="$(realpath -- windows-build-root-path)"
 
-mkdir -p "$winprefix"
+mkdir -p "$winprefix/bin"
 
 if [ ! -f "${winprefix}/libmpv_installed" ]; then
     tar -C "${winprefix}" -xf winmpv/windows-libmpv.tar include lib
@@ -121,19 +137,6 @@ if [ ! -f "${winprefix}/ffi_installed" ]; then
     touch "${winprefix}/ffi_installed"
 fi
 
-if [ ! -f "${winprefix}/absl_installed" ]; then
-
-    cmake -S "windows-build-deps/${windows_abseil_version}" -B "windows-build-deps/abseil_build" \
-        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${winprefix}" \
-        -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
-        -DCMAKE_FIND_ROOT_PATH="${winprefix}" \
-        -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
-
-    cmake --build "windows-build-deps/abseil_build" --parallel 8 --target install
-
-    touch "${winprefix}/absl_installed"
-fi
-
 if [ ! -f "${winprefix}/zlib_installed" ]; then
 
     cmake -S "windows-build-deps/${windows_zlib_version}" -B "windows-build-deps/zlib_build" \
@@ -152,12 +155,13 @@ if [ ! -f "${winprefix}/zlib_installed" ]; then
 fi
 
 if [ ! -f "${winprefix}/protobuf_installed" ]; then
-    cmake -S "windows-build-deps/${windows_protobuf_version}" -B "windows-build-deps/protobuf_build" \
+    cmake -S "windows-build-deps/protobuf-3.21.12" -B "windows-build-deps/protobuf_build" \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${winprefix}" \
         -DCMAKE_TOOLCHAIN_FILE="$(realpath -- toolchain-windows-x86_64.txt)" \
         -DCMAKE_FIND_ROOT_PATH="${winprefix}" \
-        -DBUILD_SHARED_LIBS=OFF -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_ABSL_PROVIDER=package \
-        -Dprotobuf_BUILD_PROTOC_BINARIES=OFF
+        -DBUILD_SHARED_LIBS=OFF -Dprotobuf_BUILD_TESTS=OFF  \
+        -Dprotobuf_BUILD_PROTOC_BINARIES=OFF \
+        -DWITH_PROTOC="$(realpath -- "linux-build-deps/prefix/bin/protoc")"
 
     cmake --build "windows-build-deps/protobuf_build" --parallel 8 --target install
 
@@ -175,6 +179,7 @@ cmake -S . -B mingw-build \
     -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config" \
     -DBUILD_ASSET_PROCESSING=OFF \
     -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_windows64_minimal)" \
+    -DProtobuf_PROTOC_EXECUTABLE="$(realpath -- "linux-build-deps/prefix/bin/protoc")"
 
 cmake --build mingw-build
 cmake --install mingw-build --component GameAssembly --strip
