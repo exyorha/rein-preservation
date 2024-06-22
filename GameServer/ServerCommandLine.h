@@ -46,6 +46,8 @@ private:
     void commandAddPremiumItemUser(WordListParser &parser, UserContext &user);
     void commandAllWeapons(WordListParser &parser);
     void commandAllWeaponsUser(WordListParser &parser, UserContext &user);
+    void commandUpdateUnlocks(WordListParser &parser);
+    void commandUpdateUnlocksUser(WordListParser &parser, UserContext &user);
 
     std::filesystem::path backupLocation() const;
 

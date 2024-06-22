@@ -45,8 +45,6 @@ void GamePlayService::CheckBeforeGamePlayImpl(UserContext &user,
         user.givePossession(static_cast<int32_t>(PossessionType::COMPANION), 1, 1);
     }
 
-    user.updateUserUnlocks();
-
     user.beforeGamePlay();
 }
 

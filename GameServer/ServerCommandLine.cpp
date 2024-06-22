@@ -32,6 +32,7 @@ const ServerCommandLine::Command ServerCommandLine::m_commands[]{
     { .cmd = "portalcage", .help = "moves the player to the Mama's Room (will log out)", .handler = &ServerCommandLine::commandPortalCage },
     { .cmd = "addpremium", .help = "adds the premium item with the specified ID (will log out)", .handler = &ServerCommandLine::commandAddPremiumItem },
     { .cmd = "allweapons", .help = "gives the player all purchasable (via the store or gacha) weapons and costumes that they don't already have (will log out)", .handler = &ServerCommandLine::commandAllWeapons },
+    { .cmd = "reunlock",   .help = "recalculate all user unlockables (will log out)", .handler = &ServerCommandLine::commandUpdateUnlocks },
 };
 
 void ServerCommandLine::commandHelp(WordListParser &parser) {
@@ -483,6 +484,14 @@ void ServerCommandLine::commandAllWeaponsUser(WordListParser &parser, UserContex
             user.givePossession(static_cast<int32_t>(possessionType), possessionId, 1);
         }
     }
+}
+
+void ServerCommandLine::commandUpdateUnlocks(WordListParser &parser) {
+    runCommandInUserContext(parser, &ServerCommandLine::commandUpdateUnlocksUser);
+}
+
+void ServerCommandLine::commandUpdateUnlocksUser(WordListParser &parser, UserContext &user) {
+    user.updateUserUnlocks();
 }
 
 ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {
