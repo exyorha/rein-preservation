@@ -56,7 +56,9 @@ void TextAssetParser::parseAllTextAssets(const ClientDataAccess::OctoContentStor
                         auto textAsset = std::make_unique<UnityAsset::UnityClasses::TextAsset>();
                         textAsset->deserialize(object.objectData);
 
-                        if(textAsset->m_Name == "credit") {
+                        if(textAsset->m_Name == "credit" || // Uses a different format
+                           std::string_view(textAsset->m_Name).substr(1, 3) == "ID_" // Bulk dialogue that we don't care about
+                        ) {
                             /*
                              * Uses a different format.
                              */
