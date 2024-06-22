@@ -11,6 +11,9 @@ DatabaseTextImporter::DatabaseTextImporter(sqlite::Database &db) :
 DatabaseTextImporter::~DatabaseTextImporter() = default;
 
 void DatabaseTextImporter::addTextEntry(const std::string_view &language, const std::string_view &key, std::string &&value) {
+    if(key.find(".name.") == std::string_view::npos)
+        return;
+
     m_statement->bind(1, language);
     m_statement->bind(2, key);
     m_statement->bind(3, value);
