@@ -449,6 +449,10 @@ if(MINGW)
     target_link_options(GameServer PRIVATE -Wl,-Bstatic -static-libgcc)
 endif()
 
+if(UNIX)
+    target_link_options(GameServer PRIVATE -static-libstdc++ -static-libgcc)
+endif()
+
 file(GLOB migrations CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} migrations/*.sql)
 
 add_custom_command(

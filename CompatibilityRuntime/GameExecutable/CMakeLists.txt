@@ -154,7 +154,8 @@ if(NOT WIN32)
 endif()
 
 if(UNIX)
-    target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*" "-Wl,--no-copy-dt-needed-entries")
+    target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*" "-Wl,--no-copy-dt-needed-entries"
+        -static-libstdc++)
 endif()
 
 if(MINGW)

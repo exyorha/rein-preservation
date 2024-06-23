@@ -245,6 +245,7 @@ if(UNIX)
         -Wl,-Bsymbolic
         -Wl,-z,now
         -Wl,--no-copy-dt-needed
+        -static-libstdc++
     )
     target_compile_options(GameAssembly PRIVATE
         -ftls-model=initial-exec

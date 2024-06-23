@@ -40,6 +40,7 @@ else()
 
     find_package(X11 REQUIRED)
     target_link_libraries(Launcher PRIVATE X11::X11 X11::Xft X11::Xrandr)
+    target_link_options(Launcher PRIVATE -static-libstdc++ -static-libgcc)
 endif()
 
 set_target_properties(Launcher PROPERTIES
