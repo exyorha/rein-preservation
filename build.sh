@@ -47,11 +47,32 @@ mkdir -p dl
 
 windows_boost_version=boost_1_84_0
 windows_zlib_version=zlib-1.3.1
+windows_ffi_version=libffi-3.4.4
+
+download_and_unpack_windows_dependency "https://github.com/libffi/libffi/releases/download/v3.4.4/${windows_ffi_version}.tar.gz"
 download_and_unpack_windows_dependency "https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-cpp-3.21.12.tar.gz" "protobuf-3.21.12"
 download_and_unpack_windows_dependency "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z"
 download_and_unpack_windows_dependency "https://www.zlib.net/${windows_zlib_version}.tar.gz"
 
-mkdir -p linux-build-deps
+mkdir -p linux-build-deps/libffi-build linux-build-deps/prefix
+
+linprefix="$(realpath -- linux-build-deps/prefix)"
+
+if [ ! -f "${linprefix}/ffi_installed" ]; then
+
+    if [ ! -f linux-build-deps/libffi-build/config.status ]; then
+        ffisrc="$(realpath -- windows-build-deps/${windows_ffi_version})"
+        (cd linux-build-deps/libffi-build && ${ffisrc}/configure \
+            --build="$(gcc -dumpmachine)" \
+            --prefix="${linprefix}" \
+            --enable-static --disable-shared --with-pic --disable-docs)
+    fi
+
+    make -C linux-build-deps/libffi-build install
+
+    touch "${linprefix}/ffi_installed"
+fi
+
 
 cmake \
     -S "$(realpath -- "windows-build-deps/protobuf-3.21.12")" \
@@ -61,13 +82,13 @@ cmake \
     -Dprotobuf_BUILD_TESTS=FALSE \
     -DBUILD_SHARED_LIBS=FALSE \
     -Dprotobuf_WITH_ZLIB=FALSE \
-    -DCMAKE_INSTALL_PREFIX="$(realpath -- "linux-build-deps/prefix")"
+    -DCMAKE_INSTALL_PREFIX="${linprefix}"
 
 cmake --build "$(realpath -- "linux-build-deps/protobuf")" --parallel
 cmake --install "$(realpath -- "linux-build-deps/protobuf")"
 
 cmake -S $(realpath -- "windows-build-deps/${windows_zlib_version}") -B $(realpath -- "linux-build-deps/zlib" ) \
-    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(realpath -- "linux-build-deps/prefix")" \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${linprefix}" \
     -DZLIB_BUILD_EXAMPLES=OFF
 
 cmake --build "$(realpath -- "linux-build-deps/zlib")" --parallel
@@ -81,10 +102,11 @@ cmake \
     -DCMAKE_INSTALL_PREFIX="$(realpath -- reincarnation)" \
     -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_linux64_minimal)" \
     -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529 \
-    -DProtobuf_ROOT="$(realpath -- "linux-build-deps/prefix")" \
+    -DProtobuf_ROOT="${linprefix}" \
     -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
     -DZLIB_USE_STATIC_LIBS=TRUE \
-    -DZLIB_ROOT="$(realpath -- "linux-build-deps/prefix")" \
+    -DZLIB_ROOT="${linprefix}" \
+    -DCMAKE_PREFIX_PATH="${linprefix}"
 
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
@@ -104,10 +126,6 @@ if [ ! -f reincarnation/libmpv-2.dll ]; then
 fi
 
 mkdir -p windows-build-deps
-
-windows_ffi_version=libffi-3.4.4
-
-download_and_unpack_windows_dependency "https://github.com/libffi/libffi/releases/download/v3.4.4/${windows_ffi_version}.tar.gz"
 
 mkdir -p windows-build-deps/libffi-build
 
