@@ -46,8 +46,10 @@ prepend_include() {
 mkdir -p dl
 
 windows_boost_version=boost_1_84_0
+windows_zlib_version=zlib-1.3.1
 download_and_unpack_windows_dependency "https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-cpp-3.21.12.tar.gz" "protobuf-3.21.12"
 download_and_unpack_windows_dependency "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/${windows_boost_version}.7z"
+download_and_unpack_windows_dependency "https://www.zlib.net/${windows_zlib_version}.tar.gz"
 
 mkdir -p linux-build-deps
 
@@ -64,6 +66,13 @@ cmake \
 cmake --build "$(realpath -- "linux-build-deps/protobuf")" --parallel
 cmake --install "$(realpath -- "linux-build-deps/protobuf")"
 
+cmake -S $(realpath -- "windows-build-deps/${windows_zlib_version}") -B $(realpath -- "linux-build-deps/zlib" ) \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(realpath -- "linux-build-deps/prefix")" \
+    -DZLIB_BUILD_EXAMPLES=OFF
+
+cmake --build "$(realpath -- "linux-build-deps/zlib")" --parallel
+cmake --install "$(realpath -- "linux-build-deps/zlib")"
+
 cmake \
     -S . \
     -B build -G "Kate - Ninja" \
@@ -73,7 +82,9 @@ cmake \
     -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_linux64_minimal)" \
     -DANDROID_NDK_ROOT=/opt/android-sdk/ndk/21.4.7075529 \
     -DProtobuf_ROOT="$(realpath -- "linux-build-deps/prefix")" \
-    -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")"
+    -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
+    -DZLIB_USE_STATIC_LIBS=TRUE \
+    -DZLIB_ROOT="$(realpath -- "linux-build-deps/prefix")" \
 
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
@@ -95,10 +106,8 @@ fi
 mkdir -p windows-build-deps
 
 windows_ffi_version=libffi-3.4.4
-windows_zlib_version=zlib-1.3.1
 
 download_and_unpack_windows_dependency "https://github.com/libffi/libffi/releases/download/v3.4.4/${windows_ffi_version}.tar.gz"
-download_and_unpack_windows_dependency "https://www.zlib.net/${windows_zlib_version}.tar.gz"
 
 mkdir -p windows-build-deps/libffi-build
 
