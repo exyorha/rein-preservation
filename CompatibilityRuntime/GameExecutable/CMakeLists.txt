@@ -155,7 +155,8 @@ endif()
 
 if(UNIX)
     target_link_options(GameExecutable PRIVATE -Wl,-z,now "-Wl,--export-dynamic-symbol=SDL_*" "-Wl,--no-copy-dt-needed-entries"
-        -static-libstdc++)
+        -static-libstdc++
+        -Wl,--hash-style=sysv)
 endif()
 
 if(MINGW)

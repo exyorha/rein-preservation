@@ -450,7 +450,9 @@ if(MINGW)
 endif()
 
 if(UNIX)
-    target_link_options(GameServer PRIVATE -static-libstdc++ -static-libgcc)
+    target_link_options(GameServer PRIVATE -static-libstdc++ -static-libgcc
+        -Wl,--hash-style=sysv
+    )
 endif()
 
 file(GLOB migrations CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} migrations/*.sql)

@@ -246,6 +246,8 @@ if(UNIX)
         -Wl,-z,now
         -Wl,--no-copy-dt-needed
         -static-libstdc++
+        -Wl,-z,noexecstack
+        -Wl,--hash-style=sysv
     )
     target_compile_options(GameAssembly PRIVATE
         -ftls-model=initial-exec
