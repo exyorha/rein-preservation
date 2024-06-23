@@ -671,7 +671,6 @@ target_link_options(bionic PRIVATE
     -Wl,--build-id=none
     -Wl,--hash-style=sysv
     -Wl,-z,norelro
-    -Wl,-s
 )
 
 target_link_libraries(bionic PRIVATE
@@ -958,3 +957,10 @@ target_include_directories(bionic-math SYSTEM PRIVATE
 
 target_sources(bionic PRIVATE $<TARGET_OBJECTS:bionic-math>)
 
+add_custom_command(
+    TARGET bionic POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:bionic> "$<TARGET_FILE_DIR:bionic>/$<TARGET_FILE_NAME:bionic>.debug"
+    COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE_NAME:bionic>.debug $<TARGET_FILE:bionic>
+    COMMAND ${CMAKE_STRIP} $<TARGET_FILE:bionic>
+    VERBATIM
+)

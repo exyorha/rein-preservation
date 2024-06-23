@@ -11,7 +11,7 @@ execute_process(
         -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_ROOT}/build/cmake/android.toolchain.cmake
         -DANDROID_ABI=arm64-v8a
         -DANDROID_PLATFORM=android-21
-        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo
     COMMAND_ERROR_IS_FATAL ANY
 )
 
@@ -37,4 +37,7 @@ add_custom_command(
     VERBATIM
 )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bionic.so.pe DESTINATION . COMPONENT GameAssembly)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/bionic.so.pe
+    ${CMAKE_CURRENT_BINARY_DIR}/bionic_build/bionic.so.debug
+    DESTINATION . COMPONENT GameAssembly)
