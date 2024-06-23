@@ -1,6 +1,20 @@
 cmake_minimum_required(VERSION 3.20)
 project(rein-preservation)
 
+function(separate_unix_debug_info target_name)
+    if(UNIX)
+        add_custom_command(
+            TARGET ${target_name} POST_BUILD
+            COMMAND objcopy --only-keep-debug $<TARGET_FILE:${target_name}> "$<TARGET_FILE_DIR:${target_name}>/$<TARGET_FILE_NAME:${target_name}>.debug"
+            COMMAND objcopy --add-gnu-debuglink=$<TARGET_FILE_NAME:${target_name}>.debug $<TARGET_FILE:${target_name}>
+            VERBATIM
+        )
+
+        install(FILES "$<TARGET_FILE_DIR:${target_name}>/$<TARGET_FILE_NAME:${target_name}>.debug" ${ARGN})
+    endif()
+
+endfunction()
+
 option(BUILD_COMPATIBILITY_RUNTIME "Include the client runtime in the build" ON)
 option(BUILD_GAME_SERVER "Include the game server in the build" ON)
 option(BUILD_ASSET_PROCESSING "Include the asset processing components in the build" ON)

@@ -282,3 +282,5 @@ add_custom_command(
 
 install(TARGETS GameAssembly RUNTIME DESTINATION . COMPONENT GameAssembly)
 install(TARGETS GameAssembly LIBRARY DESTINATION . COMPONENT GameAssembly)
+
+separate_unix_debug_info(GameAssembly DESTINATION . COMPONENT GameAssembly)

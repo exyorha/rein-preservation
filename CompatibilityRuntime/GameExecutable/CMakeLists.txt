@@ -205,3 +205,5 @@ if(TARGET PkgConfig::MPV)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)
+
+separate_unix_debug_info(GameExecutable DESTINATION . COMPONENT GameAssembly)

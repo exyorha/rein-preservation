@@ -64,3 +64,5 @@ if(MINGW)
 endif()
 
 install(TARGETS Launcher DESTINATION . COMPONENT GameAssembly)
+
+separate_unix_debug_info(Launcher DESTINATION . COMPONENT GameAssembly)

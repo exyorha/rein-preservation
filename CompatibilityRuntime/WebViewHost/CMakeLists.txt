@@ -89,6 +89,9 @@ if(NOT WIN32)
     BUILD_WITH_INSTALL_RPATH TRUE
     INSTALL_RPATH "\$ORIGIN"
   )
+  target_link_options(WebViewHost PRIVATE -static-libstdc++)
 endif()
 
 install(TARGETS WebViewHost DESTINATION ${webview_directory} COMPONENT GameAssembly)
+
+separate_unix_debug_info(WebViewHost DESTINATION ${webview_directory} COMPONENT GameAssembly)

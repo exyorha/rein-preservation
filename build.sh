@@ -110,8 +110,8 @@ cmake \
 
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
-cmake --install build --component GameAssembly
-cmake --install build --component GameServer
+cmake --install build --component GameAssembly --strip
+cmake --install build --component GameServer --strip
 
 
 (cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > reincarnation/libmpv-lgpl-compliance.tgz

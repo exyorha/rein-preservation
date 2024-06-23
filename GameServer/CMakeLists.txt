@@ -477,3 +477,5 @@ if(NOT CMAKE_CROSSCOMPILING)
         CODE "execute_process(COMMAND $<TARGET_FILE:makewebzip> \${CMAKE_INSTALL_PREFIX}/GameServer/WebRoot.zip ${GameServer_SOURCE_DIR}/WebRoot ${reinweb_SOURCE_DIR}/public COMMAND_ERROR_IS_FATAL ANY)"
         COMPONENT GameServer)
 endif()
+
+separate_unix_debug_info(GameServer DESTINATION GameServer COMPONENT GameServer)
