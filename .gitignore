@@ -1,3 +1,4 @@
+/apks
 /.cache
 /build
 /compile_commands.json
@@ -7,3 +8,5 @@ __pycache__
 /reincarnation
 /mingw-build
 /cef_binary*
+/linux-build-deps
+
