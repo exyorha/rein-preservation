@@ -108,7 +108,7 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
         if (conf.page_table) {
             gprs.erase(std::find(gprs.begin(), gprs.end(), HostLoc::R14));
         }
-        if (conf.fastmem_pointer) {
+        if (conf.fastmem_pointer && *conf.fastmem_pointer != 0) {
             gprs.erase(std::find(gprs.begin(), gprs.end(), HostLoc::R13));
         }
         return gprs;

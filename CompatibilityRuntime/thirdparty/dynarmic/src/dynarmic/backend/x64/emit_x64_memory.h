@@ -155,8 +155,12 @@ template<typename EmitContext>
 Xbyak::RegExp EmitFastmemVAddr(BlockOfCode& code, EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, bool& require_abort_handling, std::optional<Xbyak::Reg64> tmp = std::nullopt);
 
 template<>
-[[maybe_unused]] Xbyak::RegExp EmitFastmemVAddr<A32EmitContext>(BlockOfCode&, A32EmitContext&, Xbyak::Label&, Xbyak::Reg64 vaddr, bool&, std::optional<Xbyak::Reg64>) {
-    return r13 + vaddr;
+[[maybe_unused]] Xbyak::RegExp EmitFastmemVAddr<A32EmitContext>(BlockOfCode&, A32EmitContext&ctx, Xbyak::Label&, Xbyak::Reg64 vaddr, bool&, std::optional<Xbyak::Reg64>) {
+    if(ctx.conf.fastmem_pointer == 0) {
+        return vaddr;
+    } else {
+        return r13 + vaddr;
+    }
 }
 
 template<>
@@ -164,7 +168,11 @@ template<>
     const size_t unused_top_bits = 64 - ctx.conf.fastmem_address_space_bits;
 
     if (unused_top_bits == 0) {
-        return r13 + vaddr;
+        if(ctx.conf.fastmem_pointer == 0) {
+            return vaddr;
+        } else {
+            return r13 + vaddr;
+        }
     } else if (ctx.conf.silently_mirror_fastmem) {
         if (!tmp) {
             tmp = ctx.reg_alloc.ScratchGpr();
