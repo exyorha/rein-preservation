@@ -19,10 +19,8 @@
 #include <Java/NativeGalleryPermissionReceiver.h>
 #include <Java/AndroidContext.h>
 
-#ifdef BUILDING_WITH_MPV
 #include <VideoPlayer/Java/AVProMobileVideo.h>
 #include <VideoPlayer/Java/AVProVideoPlayer.h>
-#endif
 
 void JNIGlobalState::init() {
     registerClass<JNIObject>();
@@ -46,10 +44,8 @@ void JNIGlobalState::init() {
 
     registerClass<UniWebViewInterface>();
 
-#ifdef BUILDING_WITH_MPV
     registerClass<AVProMobileVideo>();
     registerClass<AVProVideoPlayer>();
-#endif
 
     registerClass<NativeGallery>();
     registerClass<NativeGalleryPermissionReceiver>();

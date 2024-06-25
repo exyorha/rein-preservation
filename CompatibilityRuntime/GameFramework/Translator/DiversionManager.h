@@ -16,9 +16,7 @@ struct Diversion {
     DiversionHandler handler;
     void *userdata;
 
-    inline void invoke() const {
-        handler(this);
-    }
+    void invoke() const noexcept;
 
     inline uintptr_t continueThunkAddress() const {
         return reinterpret_cast<uintptr_t>(this);

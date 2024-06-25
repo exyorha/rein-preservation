@@ -14,9 +14,8 @@
 #include "GameEntryPoint.h"
 #include "GameServerInterface.h"
 
-#ifdef BUILDING_WITH_MPV
 #include <VideoPlayer/AVProVideoNativeBypass.h>
-#endif
+#include <VideoPlayer/DynamicallyLinkedMPV.h>
 
 #ifdef _WIN32
 #include "WindowsHelpers.h"
@@ -164,16 +163,36 @@ static bool Framework_Network_Download_AssetDownloader_IsStorageEnough(Il2CppObj
     return true;
 }
 
-#ifndef BUILDING_WITH_MPV
-/*
- * When we're built without mpv, always fail video init.
- */
-static bool RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform(void *original) {
+static bool RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform(bool (*original)()) {
     printf("RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitializePlatform\n");
 
-    return false;
+    if(!DynamicallyLinkedMPV::isInitialized()) {
+        /*
+         * Try to initialize the MPV library.
+         */
+
+        try {
+            DynamicallyLinkedMPV::initialize();
+        } catch(const std::exception &e) {
+            fprintf(stderr,
+                    "\n"
+                    "Failed to initialize the libmpv library: %s\n"
+                    "Make sure that it's present (installed).\n"
+                    "Cutscenes will not play during this session.\n"
+                    "\n",
+                    e.what());
+
+            /*
+             * The .NET portion of the middleware will fall back to dummy
+             * rendering without touching the Java API.
+             */
+
+            return false;
+        }
+    }
+
+    return original();
 }
-#endif
 
 /*
  * Stubbing out this avoids initializing the whole Firebase stuff, including the native library.
@@ -367,18 +386,10 @@ static void postInitialize() {
     translator_divert_method("Assembly-CSharp-firstpass.dll::Grpc.Core.Internal.GrpcThreadPool::.ctor",
                              Grpc_Core_Internal_GrpcThreadPool_ctor);
 
-#ifdef BUILDING_WITH_MPV
-
-    installAVProVideoNativeBypass();
-#else
-    /*
-     * If we're building without mpv, always report a failure to initialize
-     * the platform media player. The .NET portion of the middleware will
-     * fall back to dummy rendering without touching the Java API.
-     */
     translator_divert_method("Assembly-CSharp.dll::RenderHeads.Media.AVProVideo.AndroidMediaPlayer::InitialisePlatform",
                             RenderHeads_Media_AVProVideo_AndroidMediaPlayer_InitializePlatform);
-#endif
+
+    installAVProVideoNativeBypass();
 }
 
 static std::filesystem::path getExecutablePath() {

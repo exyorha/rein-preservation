@@ -12,5 +12,5 @@ MPVError::MPVError(const MPVError &other) noexcept = default;
 MPVError &MPVError::operator =(const MPVError &other) noexcept = default;
 
 const char* MPVError::what() const noexcept {
-    return mpv_error_string(m_error);
+    return DynamicallyLinkedMPV::get().mpv_error_string(m_error);
 }

@@ -1,4 +1,6 @@
 #include <Translator/DiversionManager.h>
+#include <Translator/WrappedARMException.h>
+#include <Translator/thunking.h>
 
 #include <mutex>
 
@@ -44,5 +46,13 @@ const Diversion * DiversionManager::getDiversion(void *armCodePointer) {
         return nullptr;
     } else {
         return it->second;
+    }
+}
+
+void Diversion::invoke() const noexcept {
+    try {
+        handler(this);
+    } catch(const WrappedARMException &exception) {
+        rethrowWrappedARMExceptionFromX86Call(exception);
     }
 }

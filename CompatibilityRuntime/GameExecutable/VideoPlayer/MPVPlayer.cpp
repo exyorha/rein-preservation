@@ -1,11 +1,14 @@
-#include "GLES/GLESObjectHandle.h"
 #include <VideoPlayer/MPVPlayer.h>
 #include <VideoPlayer/MPVError.h>
+#include <VideoPlayer/DynamicallyLinkedMPV.h>
 
 #include <mpv/client.h>
 #include <mpv/render.h>
+
 #include <vector>
 #include <cstring>
+
+#include <GLES/GLESObjectHandle.h>
 
 #ifndef _WIN32
 #include <GLES/SDL/RealSDLSymbols.h>
@@ -15,15 +18,17 @@
 MPVPlayer::MPVPlayer() : m_renderer(nullptr), m_framebuffer(0),
     m_texture(0), m_currentlyAllocatedTextureWidth(0), m_currentlyAllocatedTextureHeight(0) {
 
+    auto &mpv = DynamicallyLinkedMPV::get();
+
     {
-        auto raw = mpv_create();
+        auto raw = mpv.mpv_create();
         if(!raw)
             throw std::bad_alloc();
 
         m_mpv.reset(raw);
     }
 
-    auto result = mpv_request_log_messages(m_mpv.get(), "v");
+    auto result = mpv.mpv_request_log_messages(m_mpv.get(), "v");
     if(result < 0)
         throw MPVError(result);
 
@@ -35,7 +40,7 @@ MPVPlayer::MPVPlayer() : m_renderer(nullptr), m_framebuffer(0),
 MPVPlayer::~MPVPlayer() = default;
 
 void MPVPlayer::initialize() {
-    auto result = mpv_initialize(m_mpv.get());
+    auto result = DynamicallyLinkedMPV::get().mpv_initialize(m_mpv.get());
     if(result < 0)
         throw MPVError(result);
 
@@ -45,7 +50,7 @@ void MPVPlayer::initialize() {
 void MPVPlayer::dispatchEvents() {
     mpv_event *event;
     while(true) {
-        event = mpv_wait_event(m_mpv.get(), 0.0);
+        event = DynamicallyLinkedMPV::get().mpv_wait_event(m_mpv.get(), 0.0);
 
         if(event->event_id == MPV_EVENT_NONE)
             break;
@@ -76,7 +81,7 @@ void MPVPlayer::commandv(const char **arguments) {
 
     printf("\n");
 
-    auto result = mpv_command(m_mpv.get(), arguments);
+    auto result = DynamicallyLinkedMPV::get().mpv_command(m_mpv.get(), arguments);
 
     dispatchEvents();
 
@@ -88,7 +93,7 @@ void MPVPlayer::commandv(const char **arguments) {
 bool MPVPlayer::getPropertyp(const char *name, mpv_format format, void *data) {
     printf("MPVPlayer: querying a property: '%s'\n", name);
 
-    auto result = mpv_get_property(m_mpv.get(), name, format, data);
+    auto result = DynamicallyLinkedMPV::get().mpv_get_property(m_mpv.get(), name, format, data);
 
     dispatchEvents();
 
@@ -104,7 +109,7 @@ bool MPVPlayer::getPropertyp(const char *name, mpv_format format, void *data) {
 void MPVPlayer::setPropertyp(const char *name, mpv_format format, const void *data, bool optional) {
     printf("MPVPlayer: setting a property: '%s'\n", name);
 
-    auto result = mpv_set_property(m_mpv.get(), name, format, const_cast<void *>(data));
+    auto result = DynamicallyLinkedMPV::get().mpv_set_property(m_mpv.get(), name, format, const_cast<void *>(data));
 
     dispatchEvents();
 
@@ -113,7 +118,7 @@ void MPVPlayer::setPropertyp(const char *name, mpv_format format, const void *da
 }
 
 void MPVPlayer::observep(MPVBasePropertyObserver *observer, const char *propertyName, mpv_format format) {
-    auto result = mpv_observe_property(m_mpv.get(), reinterpret_cast<uintptr_t>(observer), propertyName, format);
+    auto result = DynamicallyLinkedMPV::get().mpv_observe_property(m_mpv.get(), reinterpret_cast<uintptr_t>(observer), propertyName, format);
 
     dispatchEvents();
 
@@ -155,7 +160,7 @@ void MPVPlayer::initializeRenderer() {
 
     params.emplace_back(mpv_render_param{ MPV_RENDER_PARAM_INVALID, nullptr });
 
-    auto result = mpv_render_context_create(&m_renderer, m_mpv.get(), params.data());
+    auto result = DynamicallyLinkedMPV::get().mpv_render_context_create(&m_renderer, m_mpv.get(), params.data());
     if(result < 0)
         throw MPVError(result);
 
@@ -180,7 +185,7 @@ void MPVPlayer::destroyRenderer() {
 
     if(m_renderer) {
 
-        mpv_render_context_free(m_renderer);
+        DynamicallyLinkedMPV::get().mpv_render_context_free(m_renderer);
 
         m_renderer = nullptr;
     }
@@ -242,7 +247,7 @@ void MPVPlayer::render(int32_t desiredWidth, int32_t desiredHeight) {
         mpv_render_param{ MPV_RENDER_PARAM_INVALID, nullptr }
     };
 
-    mpv_render_context_render(m_renderer, params.data());
+    DynamicallyLinkedMPV::get().mpv_render_context_render(m_renderer, params.data());
 }
 
 

@@ -23,6 +23,7 @@ std::shared_ptr<JNIClass> AVProMobileVideo::makeClass() {
 
     co->registerMethod("GetPluginVersion", "()Ljava/lang/String;", &AVProMobileVideo::GetPluginVersion);
     co->registerMethod("SetContext", "(Ljava/lang/Object;)V", &AVProMobileVideo::SetContext);
+    co->registerMethod("SetContext", "(Landroid/content/Context;)V", &AVProMobileVideo::SetContext);
     co->registerMethod("CreatePlayer", "(IZZIZ)Ljava/lang/Object;", &AVProMobileVideo::CreatePlayer);
     co->registerMethod("DestroyPlayer", "(I)V", &AVProMobileVideo::DestroyPlayer);
     co->registerMethod("Deinitialise", "()V", &AVProMobileVideo::Deinitialise);

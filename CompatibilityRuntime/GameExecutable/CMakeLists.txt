@@ -87,6 +87,30 @@ add_executable(GameExecutable WIN32
 
     ProcessCommandLine.h
 
+    VideoPlayer/AVProVideoNativeBypass.cpp
+    VideoPlayer/AVProVideoNativeBypass.h
+
+    VideoPlayer/DynamicallyLinkedMPV.cpp
+    VideoPlayer/DynamicallyLinkedMPV.h
+
+    VideoPlayer/Java/AVProMobileVideo.cpp
+    VideoPlayer/Java/AVProMobileVideo.h
+    VideoPlayer/Java/AVProVideoPlayer.cpp
+    VideoPlayer/Java/AVProVideoPlayer.h
+
+    VideoPlayer/MPVBasePropertyObserver.cpp
+    VideoPlayer/MPVBasePropertyObserver.h
+
+    VideoPlayer/MPVError.cpp
+    VideoPlayer/MPVError.h
+
+    VideoPlayer/MPVPlayer.cpp
+    VideoPlayer/MPVPlayer.h
+
+    VideoPlayer/MPVTypes.h
+
+    VideoPlayer/PlatformDynamicLibrary.h
+
     WebView/WebViewImplementation.cpp
     WebView/WebViewImplementation.h
     WebView/WebViewImplementationFactory.cpp
@@ -112,6 +136,9 @@ if(NOT WIN32)
 
         ProcessCommandLineLinux.cpp
         ProcessCommandLineLinux.h
+
+        VideoPlayer/LinuxDynamicLibrary.cpp
+        VideoPlayer/LinuxDynamicLibrary.h
     )
 
 endif()
@@ -129,6 +156,9 @@ if(WIN32)
         ProcessCommandLineWindows.cpp
         ProcessCommandLineWindows.h
 
+        VideoPlayer/WindowsDynamicLibrary.cpp
+        VideoPlayer/WindowsDynamicLibrary.h
+
         WindowsHelpers.cpp
         WindowsHelpers.h
 
@@ -140,7 +170,7 @@ if(WIN32)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
-target_link_libraries(GameExecutable PRIVATE GameAssembly Il2CppUtilities ClientDataAccess gitversion)
+target_link_libraries(GameExecutable PRIVATE GameAssembly Il2CppUtilities ClientDataAccess gitversion mpv_api SDL_api)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE
@@ -176,32 +206,6 @@ if(TARGET WebViewHostClient)
     )
     target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_CEF)
     target_link_libraries(GameExecutable PRIVATE WebViewHostClient)
-endif()
-
-if(TARGET PkgConfig::MPV)
-    target_sources(GameExecutable PRIVATE
-        VideoPlayer/AVProVideoNativeBypass.cpp
-        VideoPlayer/AVProVideoNativeBypass.h
-
-        VideoPlayer/Java/AVProMobileVideo.cpp
-        VideoPlayer/Java/AVProMobileVideo.h
-        VideoPlayer/Java/AVProVideoPlayer.cpp
-        VideoPlayer/Java/AVProVideoPlayer.h
-
-        VideoPlayer/MPVBasePropertyObserver.cpp
-        VideoPlayer/MPVBasePropertyObserver.h
-
-        VideoPlayer/MPVError.cpp
-        VideoPlayer/MPVError.h
-
-        VideoPlayer/MPVPlayer.cpp
-        VideoPlayer/MPVPlayer.h
-
-        VideoPlayer/MPVTypes.h
-    )
-
-    target_compile_definitions(GameExecutable PRIVATE -DBUILDING_WITH_MPV)
-    target_link_libraries(GameExecutable PRIVATE PkgConfig::MPV)
 endif()
 
 install(TARGETS GameExecutable DESTINATION . COMPONENT GameAssembly)

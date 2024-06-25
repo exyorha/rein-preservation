@@ -36,15 +36,12 @@ add_library(ffi INTERFACE)
 target_link_libraries(ffi INTERFACE ${FFI_LIBRARY})
 target_include_directories(ffi INTERFACE ${FFI_INCLUDEPATH})
 
-find_package(PkgConfig)
+add_library(mpv_api INTERFACE)
+target_include_directories(mpv_api INTERFACE thirdparty/mpv_api)
+target_compile_definitions(mpv_api INTERFACE -DMPV_ENABLE_DEPRECATED=0)
 
-if(PkgConfig_FOUND)
-    pkg_check_modules(MPV IMPORTED_TARGET mpv)
-endif()
-
-if(NOT TARGET PkgConfig::MPV)
-    message(STATUS "mpv was not found, will build without video playback (cutscene) support")
-endif()
+add_library(SDL_api INTERFACE)
+target_include_directories(SDL_api INTERFACE thirdparty/SDL_api)
 
 if(NOT WIN32)
     find_package(Iconv REQUIRED)
