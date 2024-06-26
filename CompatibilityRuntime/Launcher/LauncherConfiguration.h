@@ -20,8 +20,9 @@ struct LauncherConfiguration {
     bool disableTouchscreenEmulation = false;
     bool useCustomGameServer = false;
     std::array<char, 256> customGameServer = { 0 };
-    bool useOpenGLES;
+    bool useOpenGLES = false;
     std::string resolution;
+    bool unityFramePacing = false;
 
     std::vector<std::string> buildCommandLine() const;
 

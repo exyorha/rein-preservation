@@ -115,6 +115,8 @@ void LauncherApplication::update(LauncherPlatform *platform) {
             nk_layout_row_dynamic(ctx, 0, 1);
             m_config.useOpenGLES = nk_check_label(ctx, "Use OpenGL ES instead of core profile OpenGL", m_config.useOpenGLES);
 
+            m_config.unityFramePacing = nk_check_label(ctx, "Always use Unity frame pacing", m_config.unityFramePacing);
+
             nk_tree_pop(ctx);
         }
 

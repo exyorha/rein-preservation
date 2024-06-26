@@ -40,6 +40,11 @@ const LauncherConfiguration::Option LauncherConfiguration::m_options[]{
         .encode = &LauncherConfiguration::encodeString<&LauncherConfiguration::resolution>,
         .decode = &LauncherConfiguration::decodeString<&LauncherConfiguration::resolution>
     },
+    {
+        .key = "unityFramePacing",
+        .encode = &LauncherConfiguration::encodeBool<&LauncherConfiguration::unityFramePacing>,
+        .decode = &LauncherConfiguration::decodeBool<&LauncherConfiguration::unityFramePacing>
+    },
 };
 
 
@@ -128,6 +133,10 @@ std::vector<std::string> LauncherConfiguration::buildCommandLine() const {
 
     if(useOpenGLES) {
         commandLine.emplace_back("-force-gles");
+    }
+
+    if(unityFramePacing) {
+        commandLine.emplace_back("-unity-frame-pacing");
     }
 
     return commandLine;

@@ -26,6 +26,7 @@
 
 ClientDataAccess::OctoContentStorage *contentStorageInstance;
 static bool DownscalingDisabled = false;
+static bool NoVSyncHandling = false;
 
 static void com_adjust_sdk_Adjust_start(Il2CppObject *config, void (*original)(Il2CppObject *config)) {
     printf("com.adjust.sdk.Adjust::start\n");
@@ -280,6 +281,65 @@ static int32_t NativeGallery_RequestPermission(int32_t permissionType, void *ori
     return 1 /* granted */;
 }
 
+static void UnityEngine_Application_set_targetFrameRate(int32_t frameRate, void (*original)(int32_t frameRate)) {
+    if(NoVSyncHandling) {
+        return original(frameRate);
+    }
+
+    struct ScreenResolution {
+        unsigned int width;
+        unsigned int height;
+        int refreshRate;
+    };
+
+
+    ScreenResolution resolution;
+
+    auto getResolution =
+        reinterpret_cast<void (*)(ScreenResolution *resolution)>(translator_resolve_native_icall("UnityEngine.Screen::get_currentResolution_Injected"));
+
+    auto setVsyncCount =
+        reinterpret_cast<void (*)(int32_t)>(translator_resolve_native_icall("UnityEngine.QualitySettings::set_vSyncCount"));
+
+    getResolution(&resolution);
+
+    printf("Frame pacing: Application.targetFrameRate = %d; screen width: %u, height: %u, refresh rate: %d FPS\n", frameRate,
+           resolution.width, resolution.height,
+           resolution.refreshRate);
+
+    if(frameRate > 0 && resolution.refreshRate >= frameRate) {
+        double screenFramesForTargetFrame = resolution.refreshRate * 1.0 / frameRate;
+        int integerScreenFramesForTargetFrame = round(screenFramesForTargetFrame);
+        if(abs(integerScreenFramesForTargetFrame - screenFramesForTargetFrame) < 0.1 &&
+            integerScreenFramesForTargetFrame >= 1 && integerScreenFramesForTargetFrame <= 4) {
+
+            /*
+             * Switch to VSync if the target frame rate can be achieved
+             * closely enough by dividing the display frame rate by an
+             * integer divisor between 1 and 4.
+             */
+
+            printf("Frame pacing: switching to the VSync interval of %d, will synchronize to %d FPS (deviation of %f from the requested)\n",
+                   integerScreenFramesForTargetFrame, resolution.refreshRate / integerScreenFramesForTargetFrame,
+                    (double)frameRate - (double)resolution.refreshRate / integerScreenFramesForTargetFrame);
+
+            setVsyncCount(integerScreenFramesForTargetFrame);
+            original(-1);
+            return;
+        }
+    }
+
+    printf("Frame pacing: letting Unity do the pacing to %d, disabling V-Sync\n", frameRate);
+
+    /*
+     * No pacing requested.
+     */
+    setVsyncCount(0);
+    original(resolution.refreshRate);
+}
+
+INTERPOSE_ICALL("UnityEngine.Application::set_targetFrameRate", UnityEngine_Application_set_targetFrameRate);
+
 static void postInitialize() {
     printf("--------- GameExecutable: il2cpp is now initialized, installing managed code diversions\n");
 
@@ -420,6 +480,8 @@ int gameMain(int argc, char **argv, GameInvokeUnity unityEntryPoint, void *unity
             setGameServerEndpoint(argv[index]);
         } else if(strcmp(argv[index], "-disable-downscale") == 0) {
             DownscalingDisabled = true;
+        } else if(strcmp(argv[index], "-unity-frame-pacing") == 0) {
+            NoVSyncHandling = true;
         }
     }
 
