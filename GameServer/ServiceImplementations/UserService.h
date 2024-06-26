@@ -43,7 +43,12 @@ public:
                         ::apb::api::user::SetUserFavoriteCostumeIdResponse* response,
                         ::google::protobuf::Closure* done) override;
 
-  void GetAndroidArgs(::google::protobuf::RpcController* controller,
+    void GetUserProfile(::google::protobuf::RpcController* controller,
+                       const ::apb::api::user::GetUserProfileRequest* request,
+                       ::apb::api::user::GetUserProfileResponse* response,
+                       ::google::protobuf::Closure* done) override;
+
+    void GetAndroidArgs(::google::protobuf::RpcController* controller,
                         const ::apb::api::user::GetAndroidArgsRequest* request,
                         ::apb::api::user::GetAndroidArgsResponse* response,
                         ::google::protobuf::Closure* done) override;
@@ -62,7 +67,11 @@ private:
     void SetUserFavoriteCostumeIdImpl(UserContext &user, const ::apb::api::user::SetUserFavoriteCostumeIdRequest* request,
                                       ::apb::api::user::SetUserFavoriteCostumeIdResponse* response);
 
+    void GetUserProfileImpl(UserContext &user,
+                            const ::apb::api::user::GetUserProfileRequest* request, ::apb::api::user::GetUserProfileResponse* response);
+
     void GetAndroidArgsImpl(const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response);
+
 
 };
 

@@ -1,4 +1,3 @@
-#include "service/GiftService.pb.h"
 #include <DataModel/UserContext.h>
 #include <DataModel/DatabaseEnums.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
@@ -10,6 +9,8 @@
 #include <service/QuestService.pb.h>
 #include <service/CageOrnamentService.pb.h>
 #include <service/GimmickService.pb.h>
+#include <service/GiftService.pb.h>
+#include <service/UserService.pb.h>
 
 #include <stdexcept>
 #include <string>
@@ -5908,4 +5909,75 @@ bool UserContext::hasCostume(int32_t costumeId) {
     result->bind(1, m_userId);
     result->bind(2, costumeId);
     return result->step();
+}
+
+void UserContext::getUserProfile(int64_t profileId, ::apb::api::user::GetUserProfileResponse* response) {
+    auto query = db().prepare(R"SQL(
+        SELECT
+            level, name, favorite_costume_id, message
+        FROM
+            i_user,
+            i_user_status USING (user_id),
+            i_user_profile USING (user_id)
+        WHERE i_user.user_id = ?
+    )SQL");
+    query->bind(1, profileId);
+    if(!query->step())
+        throw std::runtime_error("no such user");
+
+    response->set_level(query->columnInt(0));
+    response->set_name(query->columnText(1));
+    response->set_favorite_costume_id(query->columnInt(2));
+    response->set_message(query->columnText(3));
+
+    /*
+     * It's supposed to be 'last used', but we don't keep track, and it doesn't
+     * really matter, so we return 'most power'
+     */
+    auto getDeck = db().prepare("SELECT deck_type, user_deck_number, power FROM i_user_deck WHERE user_id = ? ORDER BY power DESC LIMIT 1");
+    getDeck->bind(1, profileId);
+    if(getDeck->step()) {
+        auto &outDeck = *response->mutable_latest_used_deck();
+
+        DeckInDatabaseRepresentation repr;
+        UserContext otherUserContext(*this, profileId);
+        otherUserContext.readDeckRepresentation(getDeck->columnInt(0), getDeck->columnInt(1), repr);
+        outDeck.set_power(getDeck->columnInt(2));
+
+        for(const auto &character: repr.characterUUIDs) {
+            if(!character.empty()) {
+
+                auto getDeckCharacterInfo = db().prepare(R"SQL(
+                    SELECT
+                        costume_id,
+                        weapon_id,
+                        i_user_weapon.level
+                    FROM
+                        i_user_deck_character,
+                        i_user_costume ON
+                            i_user_costume.user_id = i_user_deck_character.user_id AND
+                            i_user_costume.user_costume_uuid = i_user_deck_character.user_costume_uuid,
+                        i_user_weapon ON
+                            i_user_weapon.user_id = i_user_deck_character.user_id AND
+                            i_user_weapon.user_weapon_uuid = i_user_deck_character.main_user_weapon_uuid
+                    WHERE i_user_deck_character.user_id = ? AND user_deck_character_uuid = ?
+                )SQL");
+                getDeckCharacterInfo->bind(1, profileId);
+                getDeckCharacterInfo->bind(2, character);
+                if(!getDeckCharacterInfo->step())
+                    throw std::runtime_error("unable to retrieve a deck character");
+
+                auto &outCharacter = *outDeck.add_deck_character();
+
+                outCharacter.set_costume_id(getDeckCharacterInfo->columnInt(0));
+                outCharacter.set_main_weapon_id(getDeckCharacterInfo->columnInt(1));
+                outCharacter.set_main_weapon_level(getDeckCharacterInfo->columnInt(2));
+            }
+        }
+
+    }
+
+    auto &pvp = *response->mutable_pvp_info();
+
+    auto &playHistory = *response->mutable_game_play_history();
 }

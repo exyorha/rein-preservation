@@ -107,6 +107,21 @@ void UserService::SetUserFavoriteCostumeIdImpl(UserContext &user, const ::apb::a
     user.setUserFavoriteCostume(request->favorite_costume_id());
 }
 
+
+void UserService::GetUserProfile(::google::protobuf::RpcController* controller,
+                       const ::apb::api::user::GetUserProfileRequest* request,
+                       ::apb::api::user::GetUserProfileResponse* response,
+                       ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("UserService::GetUserProfile", controller, request, response, done, &UserService::GetUserProfileImpl);
+}
+
+void UserService::GetUserProfileImpl(UserContext &user,
+                        const ::apb::api::user::GetUserProfileRequest* request, ::apb::api::user::GetUserProfileResponse* response) {
+
+    user.getUserProfile(request->player_id(), response);
+}
+
 void UserService::GetAndroidArgs(::google::protobuf::RpcController* controller,
                         const ::apb::api::user::GetAndroidArgsRequest* request,
                         ::apb::api::user::GetAndroidArgsResponse* response,

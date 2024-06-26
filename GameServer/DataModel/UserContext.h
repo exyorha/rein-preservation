@@ -32,6 +32,10 @@ namespace apb::api::gimmick {
     class GimmickReward;
 }
 
+namespace apb::api::user {
+    class GetUserProfileResponse;
+
+    }
 namespace google::protobuf {
     template <typename Element>
     class RepeatedPtrField;
@@ -242,6 +246,8 @@ public:
     void buyShopItem(int32_t shopId, int32_t shopItemId);
 
     bool hasCostume(int32_t costumeId);
+
+    void getUserProfile(int64_t profileId, ::apb::api::user::GetUserProfileResponse* response);
 
 private:
 
