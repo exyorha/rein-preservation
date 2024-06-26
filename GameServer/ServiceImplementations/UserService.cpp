@@ -135,3 +135,34 @@ void UserService::GetAndroidArgsImpl(const ::apb::api::user::GetAndroidArgsReque
     (void)response;
 
 }
+
+void UserService::GetBackupToken(::google::protobuf::RpcController* controller,
+                    const ::apb::api::user::GetBackupTokenRequest* request,
+                    ::apb::api::user::GetBackupTokenResponse* response,
+                    ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("UserService::GetBackupToken", controller, request, response, done, &UserService::GetBackupTokenImpl);
+}
+
+void UserService::GetBackupTokenImpl(UserContext &user,
+                                     const apb::api::user::GetBackupTokenRequest *request,
+                                     apb::api::user::GetBackupTokenResponse *response) {
+
+    response->set_backup_token("not-a-token");
+}
+
+void UserService::CheckTransferSetting(::google::protobuf::RpcController* controller,
+                    const ::google::protobuf::Empty* request,
+                    ::apb::api::user::CheckTransferSettingResponse* response,
+                    ::google::protobuf::Closure* done) {
+
+    return inChangesetCall("UserService::CheckTransferSetting", controller, request, response, done, &UserService::CheckTransferSettingImpl);
+}
+
+void UserService::CheckTransferSettingImpl(
+    UserContext &user,
+    const ::google::protobuf::Empty* request,
+    ::apb::api::user::CheckTransferSettingResponse* response) {
+
+
+}

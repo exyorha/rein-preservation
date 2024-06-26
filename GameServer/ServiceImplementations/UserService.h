@@ -53,6 +53,16 @@ public:
                         ::apb::api::user::GetAndroidArgsResponse* response,
                         ::google::protobuf::Closure* done) override;
 
+    void GetBackupToken(::google::protobuf::RpcController* controller,
+                       const ::apb::api::user::GetBackupTokenRequest* request,
+                       ::apb::api::user::GetBackupTokenResponse* response,
+                       ::google::protobuf::Closure* done) override;
+
+    void CheckTransferSetting(::google::protobuf::RpcController* controller,
+                       const ::google::protobuf::Empty* request,
+                       ::apb::api::user::CheckTransferSettingResponse* response,
+                       ::google::protobuf::Closure* done) override;
+
 private:
     void RegisterUserImpl(const ::apb::api::user::RegisterUserRequest* request, ::apb::api::user::RegisterUserResponse* response);
 
@@ -72,7 +82,14 @@ private:
 
     void GetAndroidArgsImpl(const ::apb::api::user::GetAndroidArgsRequest* request, ::apb::api::user::GetAndroidArgsResponse* response);
 
+    void GetBackupTokenImpl(UserContext &user,
+                            const ::apb::api::user::GetBackupTokenRequest* request,
+                       ::apb::api::user::GetBackupTokenResponse* response);
 
+    void CheckTransferSettingImpl(
+        UserContext &user,
+        const ::google::protobuf::Empty* request,
+        ::apb::api::user::CheckTransferSettingResponse* response);
 };
 
 #endif
