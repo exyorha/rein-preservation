@@ -69,8 +69,6 @@ void WebViewRPCServerLinux::runMainLoop() {
         waitNoCallInProgress();
 
         if(m_fds) {
-            printf("WebViewRPCServerLinux: releasing the previously received fds\n");
-
             for(auto ptr = reinterpret_cast<const unsigned char *>(CMSG_DATA(m_fds)),
                 limit = ptr + m_fds->cmsg_len - sizeof(cmsghdr);
                 ptr < limit;
@@ -109,7 +107,6 @@ void WebViewRPCServerLinux::runMainLoop() {
         for(auto hdr = CMSG_FIRSTHDR(&message); hdr; hdr = CMSG_NXTHDR(&message, hdr)) {
             if(hdr->cmsg_level == SOL_SOCKET && hdr->cmsg_type == SCM_RIGHTS) {
                 m_fds = hdr;
-                printf("WebViewRPCServerLinux: received %zu bytes of SCM_RIGHTS\n", m_fds->cmsg_len - sizeof(cmsghdr));
                 break;
             }
         }
@@ -131,8 +128,6 @@ void WebViewRPCServerLinux::runMainLoop() {
 }
 
 std::unique_ptr<WebViewSharedImageBuffer> WebViewRPCServerLinux::receiveImageBuffer(intptr_t handle) {
-    printf("WebViewRPCServerLinux::receiveImageBuffer: %ld\n", handle);
-
     if(handle == 0)
         return nullptr;
 

@@ -16,9 +16,6 @@ void WebViewRenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& r
 void WebViewRenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
                                    const RectList& dirtyRects, const void* buffer, int width, int height) {
 
-    printf("WebViewRenderHandler: type %d buffer %p width %d height %d shared memory %p\n",
-           type, buffer, width, height, m_sharedMemory.get());
-
     if(!m_sharedMemory || width <= 0 || height <= 0)
         return;
 
@@ -42,8 +39,6 @@ void WebViewRenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementTy
         y2 = std::min<int>(dstHeight, y2);
         x2 = std::min<int>(width, x2);
         y2 = std::min<int>(height, y2);
-
-        printf("painting rect: %d, %d, %d, %d\n", x1, y1, x2, y2);
 
         if(x2 <= x1 || y2 <= y1)
             continue;
