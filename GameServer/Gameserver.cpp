@@ -55,7 +55,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_shopService(m_db),
     m_labyrinthService(m_db),
     m_consumableItemService(m_db),
-    m_materialService(m_db) {
+    m_materialService(m_db),
+    m_friendService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -105,6 +106,7 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_labyrinthService);
     m_gameAPI.registerService(&m_consumableItemService);
     m_gameAPI.registerService(&m_materialService);
+    m_gameAPI.registerService(&m_friendService);
 }
 
 Gameserver::~Gameserver() = default;

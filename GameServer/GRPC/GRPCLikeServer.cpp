@@ -40,6 +40,14 @@ void GRPCLikeServer::handle(const std::string_view &path, LLServices::HttpReques
         auto serviceName = path.substr(1, serviceNameDelimiter - 1);
         auto methodName = path.substr(serviceNameDelimiter + 1);
 
+        /*
+         * See FriendService.proto for the explanation on why this hack is
+         * needed.
+         */
+        if(serviceName == "apb.api.friend.FriendService") {
+            serviceName = "apb.api.friends.FriendService";
+        }
+
         auto service = findService(serviceName);
         if(!service) {
             throw std::runtime_error("no such service: " + std::string(serviceName));

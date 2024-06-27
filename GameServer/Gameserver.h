@@ -49,6 +49,7 @@
 #include "ServiceImplementations/LabyrinthService.h"
 #include "ServiceImplementations/ConsumableItemService.h"
 #include "ServiceImplementations/MaterialService.h"
+#include "ServiceImplementations/FriendService.h"
 
 #include "DataModel/Database.h"
 
@@ -130,6 +131,7 @@ private:
     LabyrinthService m_labyrinthService;
     ConsumableItemService m_consumableItemService;
     MaterialService m_materialService;
+    FriendService m_friendService;
 };
 
 #endif
