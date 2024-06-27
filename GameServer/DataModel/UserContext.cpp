@@ -437,6 +437,18 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
         }
         break;
 
+        case PossessionType::PAID_GEM:
+        {
+            if(count <= 0)
+                throw std::runtime_error("Unexpected count value for PAID_GEM");
+
+            auto query = db().prepare("UPDATE i_user_gem SET paid_gem = paid_gem + ? WHERE user_id = ?");
+            query->bind(1, count);
+            query->bind(2, m_userId);
+            query->exec();
+        }
+        break;
+
         case PossessionType::FREE_GEM:
         {
             if(count <= 0)
@@ -5797,8 +5809,8 @@ void UserContext::consumeGem(int32_t count, bool paid) {
     if(!queryGem->step())
         throw std::runtime_error("no gem record for the user");
 
-    auto availableFree = queryGem->columnInt(0);
-    auto availablePaid = queryGem->columnInt(1);
+    auto availablePaid = queryGem->columnInt(0);
+    auto availableFree = queryGem->columnInt(1);
 
     if(!paid && availableFree >= count) {
         auto withdraw = db().prepare("UPDATE i_user_gem SET free_gem = free_gem - ? WHERE user_id = ?");
