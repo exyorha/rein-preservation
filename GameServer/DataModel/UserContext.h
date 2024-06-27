@@ -249,6 +249,10 @@ public:
 
     void getUserProfile(int64_t profileId, ::apb::api::user::GetUserProfileResponse* response);
 
+    void sellConsumableItem(int32_t consumableItemId, int32_t count);
+
+    void sellMaterial(int32_t materialId, int32_t count);
+
 private:
 
     struct CollectedConditionRequirements {

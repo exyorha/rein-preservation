@@ -5993,3 +5993,59 @@ void UserContext::getUserProfile(int64_t profileId, ::apb::api::user::GetUserPro
 
     auto &playHistory = *response->mutable_game_play_history();
 }
+
+void UserContext::sellConsumableItem(int32_t consumableItemId, int32_t count) {
+    if(count <= 0)
+        throw std::runtime_error("bad sell count");
+
+    auto queryPrice = db().prepare("SELECT sell_price FROM m_consumable_item WHERE consumable_item_id = ?");
+    queryPrice->bind(1, consumableItemId);
+    if(!queryPrice->step())
+        throw std::runtime_error("no such consumable item");
+
+    auto price = queryPrice->columnInt(0);
+    if(price <= 0)
+        throw std::runtime_error("bad sell price");
+
+    consumeConsumableItem(consumableItemId, count);
+    givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM), consumableItemIdForGold(), price * count);
+}
+
+void UserContext::sellMaterial(int32_t consumableItemId, int32_t count) {
+    if(count <= 0)
+        throw std::runtime_error("bad sell count");
+
+    auto queryPrice = db().prepare("SELECT sell_price, material_sale_obtain_possession_id FROM m_material WHERE material_id = ?");
+    queryPrice->bind(1, consumableItemId);
+    if(!queryPrice->step())
+        throw std::runtime_error("no such material");
+
+    consumeMaterial(consumableItemId, count);
+
+    auto price = queryPrice->columnInt(0);
+    auto obtainPossession = queryPrice->columnInt(1);
+
+    if(obtainPossession > 0) {
+        auto getPossessions = db().prepare(R"SQL(
+            SELECT possession_type, possession_id, count
+            FROM m_material_sale_obtain_possession
+            WHERE material_sale_obtain_possession_id = ?
+            ORDER BY sort_order
+        )SQL");
+        getPossessions->bind(1, obtainPossession);
+
+        while(getPossessions->step()) {
+            auto type = getPossessions->columnInt(0);
+            auto id = getPossessions->columnInt(1);
+            auto thisItemCount = getPossessions->columnInt(2);
+
+            givePossession(type, id, count * thisItemCount);
+        }
+    } else {
+
+        if(price <= 0)
+            throw std::runtime_error("bad sell price");
+
+        givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM), consumableItemIdForGold(), price * count);
+    }
+}

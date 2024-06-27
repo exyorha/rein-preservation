@@ -47,6 +47,8 @@
 #include "ServiceImplementations/GiftService.h"
 #include "ServiceImplementations/ShopService.h"
 #include "ServiceImplementations/LabyrinthService.h"
+#include "ServiceImplementations/ConsumableItemService.h"
+#include "ServiceImplementations/MaterialService.h"
 
 #include "DataModel/Database.h"
 
@@ -126,6 +128,8 @@ private:
     GiftService m_giftService;
     ShopService m_shopService;
     LabyrinthService m_labyrinthService;
+    ConsumableItemService m_consumableItemService;
+    MaterialService m_materialService;
 };
 
 #endif

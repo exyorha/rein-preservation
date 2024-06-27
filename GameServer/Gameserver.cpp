@@ -1,4 +1,5 @@
 #include "Gameserver.h"
+#include "ServiceImplementations/MaterialService.h"
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Statement.h>
 
@@ -52,7 +53,9 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_exploreService(m_db),
     m_giftService(m_db),
     m_shopService(m_db),
-    m_labyrinthService(m_db) {
+    m_labyrinthService(m_db),
+    m_consumableItemService(m_db),
+    m_materialService(m_db) {
 
     m_cliService.initCLI(m_db);
 
@@ -100,7 +103,8 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_gameAPI.registerService(&m_giftService);
     m_gameAPI.registerService(&m_shopService);
     m_gameAPI.registerService(&m_labyrinthService);
-
+    m_gameAPI.registerService(&m_consumableItemService);
+    m_gameAPI.registerService(&m_materialService);
 }
 
 Gameserver::~Gameserver() = default;

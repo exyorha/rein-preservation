@@ -308,6 +308,7 @@ add_executable(GameServer
     service/CharacterViewerService.proto
     service/ContentsStoryService.proto
     service/CompanionService.proto
+    service/ConsumableItemService.proto
     service/CostumeService.proto
     service/DataService.proto
     service/DeckService.proto
@@ -319,6 +320,7 @@ add_executable(GameServer
     service/GimmickService.proto
     service/LabyrinthService.proto
     service/LoginBonusService.proto
+    service/MaterialService.proto
     service/MissionService.proto
     service/NaviCutInService.proto
     service/NotificationService.proto
@@ -354,6 +356,9 @@ add_executable(GameServer
 
     ServiceImplementations/CompanionService.cpp
     ServiceImplementations/CompanionService.h
+
+    ServiceImplementations/ConsumableItemService.cpp
+    ServiceImplementations/ConsumableItemService.h
 
     ServiceImplementations/ContentsStoryService.cpp
     ServiceImplementations/ContentsStoryService.cpp
@@ -396,6 +401,9 @@ add_executable(GameServer
 
     ServiceImplementations/NotificationService.cpp
     ServiceImplementations/NotificationService.h
+
+    ServiceImplementations/MaterialService.cpp
+    ServiceImplementations/MaterialService.h
 
     ServiceImplementations/OmikujiService.cpp
     ServiceImplementations/OmikujiService.h
