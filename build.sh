@@ -65,7 +65,7 @@ if [ ! -f "${linprefix}/ffi_installed" ]; then
         (cd linux-build-deps/libffi-build && ${ffisrc}/configure \
             --build="$(gcc -dumpmachine)" \
             --prefix="${linprefix}" \
-            --enable-static --disable-shared --with-pic --disable-docs)
+            --enable-static --disable-shared --with-pic --disable-docs CFLAGS=-Wno-implicit-function-declaration)
     fi
 
     make -C linux-build-deps/libffi-build install
