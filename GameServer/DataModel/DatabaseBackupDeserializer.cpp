@@ -3,7 +3,7 @@
 #include "DataModel/Sqlite/Database.h"
 #include "DataModel/Sqlite/Statement.h"
 
-DatabaseBackupDeserializer::DatabaseBackupDeserializer(sqlite::Database &db) : m_db(db), m_state(State::Root) {
+DatabaseBackupDeserializer::DatabaseBackupDeserializer(sqlite::Database &db) : m_db(db), m_state(State::Root), m_writesSuppressed(false) {
 
 }
 
@@ -59,6 +59,10 @@ bool DatabaseBackupDeserializer::startMap() {
 
 bool DatabaseBackupDeserializer::mapKey(const std::string_view &key) {
     if(m_state == State::AwaitingTableNameKey) {
+        m_writesSuppressed = key == "IUserPartsGroupNote";
+            // This table is maintained by the database itself via a trigger,
+            // and does not need to be restored.
+
         m_tableName.emplace(entityNameToTableNameChecked(key));
         m_state = State::AwaitingRowListArray;
 
@@ -87,33 +91,35 @@ bool DatabaseBackupDeserializer::endMap() {
 
         return true;
     } else if(m_state == State::AwaitingColumnNameKey) {
-        auto &row = m_row.value();
+        if(!m_writesSuppressed) {
+            auto &row = m_row.value();
 
-        bool firstColumn = true;
+            bool firstColumn = true;
 
-        row.query << ") VALUES (";
+            row.query << ") VALUES (";
 
-        for(const auto &value: row.values) {
-            if(firstColumn)
-                firstColumn = false;
-            else
-                row.query << ", ";
+            for(const auto &value: row.values) {
+                if(firstColumn)
+                    firstColumn = false;
+                else
+                    row.query << ", ";
 
-            row.query << "?";
+                row.query << "?";
+            }
+
+            row.query << ")";
+
+            auto statement = m_db.prepare(row.query.str());
+
+            int index = 1;
+
+            for(const auto &value: row.values) {
+                std::visit([index, &statement](const auto &val) { bindValue(*statement, index, val); }, value);
+                index += 1;
+            }
+
+            statement->exec();
         }
-
-        row.query << ")";
-
-        auto statement = m_db.prepare(row.query.str());
-
-        int index = 1;
-
-        for(const auto &value: row.values) {
-            std::visit([index, &statement](const auto &val) { bindValue(*statement, index, val); }, value);
-            index += 1;
-        }
-
-        statement->exec();
 
         m_row.reset();
 

@@ -60,6 +60,7 @@ private:
     State m_state;
     std::optional<BuildingRow> m_row;
     std::optional<std::string> m_tableName;
+    bool m_writesSuppressed;
 };
 
 #endif
