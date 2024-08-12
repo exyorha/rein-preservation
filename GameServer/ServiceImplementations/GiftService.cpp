@@ -2,7 +2,7 @@
 #include "DataModel/DatabaseEnums.h"
 #include "DataModel/Sqlite/Statement.h"
 
-GiftService::GiftService(Database &db) : CommonService(db) {
+GiftService::GiftService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

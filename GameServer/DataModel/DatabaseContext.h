@@ -19,9 +19,11 @@ namespace LLServices {
     class LogFacility;
 }
 
+class GameServerConfiguration;
+
 class DatabaseContext {
 public:
-    explicit DatabaseContext(Database &database);
+    DatabaseContext(Database &database, const GameServerConfiguration &serverConfig);
     virtual ~DatabaseContext();
 
     DatabaseContext(const DatabaseContext &other) = delete;
@@ -72,6 +74,10 @@ public:
         const apb::api::gift::GiftCommon &gift,
         int64_t expiresAt = 0);
 
+    inline const GameServerConfiguration &config() const {
+        return m_config;
+    }
+
 protected:
     int32_t getFirstQuestScene(int32_t questId);
     int32_t getMainQuestRouteId(int32_t questId);
@@ -86,6 +92,7 @@ protected:
 
 private:
     Database &m_db;
+    const GameServerConfiguration &m_config;
 };
 
 extern LLServices::LogFacility LogDatabaseContext;

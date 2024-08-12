@@ -1,6 +1,6 @@
 #include <ServiceImplementations/ContentsStoryService.h>
 
-ContentsStoryService::ContentsStoryService(Database &db) : CommonService(db) {
+ContentsStoryService::ContentsStoryService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

@@ -1,7 +1,7 @@
 #include "ServiceImplementations/CostumeService.h"
 #include "DataModel/DatabaseEnums.h"
 
-CostumeService::CostumeService(Database &db) : CommonService(db) {
+CostumeService::CostumeService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

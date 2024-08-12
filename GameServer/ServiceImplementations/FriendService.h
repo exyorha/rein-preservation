@@ -7,7 +7,7 @@
 
 class FriendService final : public apb::api::friends::FriendService, public CommonService {
 public:
-    explicit FriendService(Database &db);
+    FriendService(Database &db, const GameServerConfiguration &config);
     ~FriendService();
 
     FriendService(const FriendService &other) = delete;

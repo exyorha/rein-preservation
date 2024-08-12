@@ -89,7 +89,7 @@ void ServerCommandLine::commandBackup(WordListParser &parser) {
     backupLocation /= std::u8string_view(reinterpret_cast<const char8_t *>(backupName.data()), backupName.size());
     backupLocation += ".dbjson";
 
-    DatabaseContext ctx(m_db);
+    DatabaseContext ctx(m_db, m_config);
     ctx.writeJSONBackup(backupLocation);
 
     LogCLI.info("The backup file '%s' has been created and saved at:", backupName.c_str());
@@ -155,7 +155,7 @@ void ServerCommandLine::commandRestore(WordListParser &parser) {
         Database restoredDB(std::filesystem::path(), m_db.masterDatabase());
         {
             sqlite::Transaction restoreTransaction(&restoredDB.db());
-            DatabaseContext restoredContext(restoredDB);
+            DatabaseContext restoredContext(restoredDB, m_config);
 
             restoredContext.restoreJSONBackup(backupLocation);
             restoreTransaction.commit();
@@ -401,7 +401,7 @@ void ServerCommandLine::commandGiftDatabase(WordListParser &parser, DatabaseCont
 void ServerCommandLine::runCommandInDatabaseContext(WordListParser &parser, void (ServerCommandLine::*command)(WordListParser &parser, DatabaseContext &db)) {
     sqlite::Transaction transaction(&m_db.db());
 
-    DatabaseContext db(m_db);
+    DatabaseContext db(m_db, m_config);
 
     (this->*command)(parser, db);
 
@@ -412,7 +412,7 @@ void ServerCommandLine::runCommandInDatabaseContext(WordListParser &parser, void
 void ServerCommandLine::runCommandInUserContext(WordListParser &parser, void (ServerCommandLine::*command)(WordListParser &parser, UserContext &user)) {
     sqlite::Transaction transaction(&m_db.db());
 
-    DatabaseContext db(m_db);
+    DatabaseContext db(m_db, m_config);
     db.registerUser();
 
     int64_t userId;
@@ -494,7 +494,7 @@ void ServerCommandLine::commandUpdateUnlocksUser(WordListParser &parser, UserCon
     user.updateUserUnlocks();
 }
 
-ServerCommandLine::ServerCommandLine(Database &db) : m_db(db) {
+ServerCommandLine::ServerCommandLine(Database &db, const GameServerConfiguration &config) : m_db(db), m_config(config) {
 
 }
 

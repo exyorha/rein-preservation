@@ -1,6 +1,6 @@
 #include <ServiceImplementations/CharacterViewerService.h>
 
-CharacterViewerService::CharacterViewerService(Database &db) :CommonService(db) {
+CharacterViewerService::CharacterViewerService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

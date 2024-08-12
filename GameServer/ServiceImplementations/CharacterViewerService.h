@@ -10,7 +10,7 @@
  */
 class CharacterViewerService final : public apb::api::characterviewer::CharacterViewerService, public CommonService {
 public:
-    explicit CharacterViewerService(Database &db);
+    CharacterViewerService(Database &db, const GameServerConfiguration &config);
     ~CharacterViewerService();
 
     CharacterViewerService(const CharacterViewerService &other) = delete;

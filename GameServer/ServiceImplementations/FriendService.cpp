@@ -1,6 +1,6 @@
 #include <ServiceImplementations/FriendService.h>
 
-FriendService::FriendService(Database &db) : CommonService(db) {
+FriendService::FriendService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

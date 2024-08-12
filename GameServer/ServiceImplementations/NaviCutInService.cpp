@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-NaviCutInService::NaviCutInService(Database &db) :CommonService(db) {
+NaviCutInService::NaviCutInService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

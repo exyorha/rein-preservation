@@ -1,5 +1,5 @@
 #ifndef SERVICE_IMPLEMENTATIONS_GIFT_SERVICE_H
-#define SERVICE_IMPLEMENTATIONS_GIFT__SERVICE_H
+#define SERVICE_IMPLEMENTATIONS_GIFT_SERVICE_H
 
 #include <service/GiftService.pb.h>
 
@@ -10,7 +10,7 @@
  */
 class GiftService final : public apb::api::gift::GiftService, public CommonService {
 public:
-    explicit GiftService(Database &db);
+    GiftService(Database &db, const GameServerConfiguration &config);
     ~GiftService();
 
     GiftService(const GiftService &other) = delete;

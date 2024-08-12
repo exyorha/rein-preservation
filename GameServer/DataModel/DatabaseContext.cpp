@@ -15,7 +15,7 @@
 
 LLServices::LogFacility LogDatabaseContext("DatabaseContext");
 
-DatabaseContext::DatabaseContext(Database &db) : m_db(db) {
+DatabaseContext::DatabaseContext(Database &db, const GameServerConfiguration &config) : m_db(db), m_config(config) {
 
 }
 

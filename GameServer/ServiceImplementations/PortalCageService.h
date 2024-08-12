@@ -7,7 +7,7 @@
 
 class PortalCageService final : public apb::api::portalcage::PortalCageService, public CommonService {
 public:
-    explicit PortalCageService(Database &db);
+    PortalCageService(Database &db, const GameServerConfiguration &config);
     ~PortalCageService();
 
     PortalCageService(const PortalCageService &other) = delete;

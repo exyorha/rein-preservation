@@ -10,7 +10,7 @@
  */
 class CageOrnamentService final : public apb::api::cageornament::CageOrnamentService, public CommonService {
 public:
-    explicit CageOrnamentService(Database &db);
+    CageOrnamentService(Database &db, const GameServerConfiguration &config);
     ~CageOrnamentService();
 
     CageOrnamentService(const CageOrnamentService &other) = delete;

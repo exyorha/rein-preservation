@@ -7,7 +7,18 @@
 #include <vector>
 #include <filesystem>
 
-struct LauncherConfiguration {
+#include <ConfigFileParser.h>
+
+struct LauncherConfiguration final : public ConfigFileParser {
+
+    LauncherConfiguration();
+    ~LauncherConfiguration();
+
+    LauncherConfiguration(const LauncherConfiguration &other);
+    LauncherConfiguration &operator =(const LauncherConfiguration &other);
+
+    LauncherConfiguration(LauncherConfiguration &&other) noexcept;
+    LauncherConfiguration &operator =(LauncherConfiguration &&other) noexcept;
 
     enum class DisplayMode : uint32_t {
         Fullscreen,
@@ -26,43 +37,11 @@ struct LauncherConfiguration {
 
     std::vector<std::string> buildCommandLine() const;
 
-    void load(const std::filesystem::path &configPath);
-    void store(const std::filesystem::path &configPath) const;
-
 private:
-    using OptionEncoder = std::string (LauncherConfiguration::*)() const;
-    using OptionDecoder = void (LauncherConfiguration::*)(const std::string_view &value);
-
-    struct Option {
-        const char *key;
-        OptionEncoder encode;
-        OptionDecoder decode;
-    };
-
-    template<bool LauncherConfiguration::*field>
-    std::string encodeBool() const;
-
-    template<bool LauncherConfiguration::*field>
-    void decodeBool(const std::string_view &value);
-
-    template<std::string LauncherConfiguration::*field>
-    std::string encodeString() const;
-
-    template<std::string LauncherConfiguration::*field>
-    void decodeString(const std::string_view &value);
-
-    template<size_t Length, std::array<char, Length> LauncherConfiguration::*field>
-    std::string encodeFixedString() const;
-
-    template<size_t Length, std::array<char, Length> LauncherConfiguration::*field>
-    void decodeFixedString(const std::string_view &value);
-
     std::string encodeDisplayMode() const;
     void decodeDisplayMode(const std::string_view &value);
 
-    static int parseInt(const std::string_view &value);
-
-    static const Option m_options[];
+    static const ConfigFileParser::Option m_options[];
 };
 
 #endif

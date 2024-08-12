@@ -4,6 +4,7 @@
 #include <thread>
 #include <variant>
 
+#include "GameServerConfiguration.h"
 #include "Gameserver.h"
 #include "ExitOnEof.h"
 
@@ -122,6 +123,8 @@ static int gameserver_main(int argc, char **argv) {
     std::optional<HANDLE> exitWithProcessHandle;
 #endif
 
+    bool configEnabled = true;
+
     static const struct option options[]{
         { .name = "master-database",     .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "individual-database", .has_arg = required_argument, .flag = nullptr, .val = 0 },
@@ -132,6 +135,8 @@ static int gameserver_main(int argc, char **argv) {
         { .name = "exit-on-eof",         .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "accept-on-socket",    .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { .name = "exit-with-process",   .has_arg = required_argument, .flag = nullptr, .val = 0 },
+        { .name = "noconfig",            .has_arg = no_argument,       .flag = nullptr, .val = 0 },
+        { .name = "config",              .has_arg = required_argument, .flag = nullptr, .val = 0 },
         { nullptr, 0, nullptr, 0 }
     };
 
@@ -142,6 +147,7 @@ static int gameserver_main(int argc, char **argv) {
     const char *individualDatabasePath = nullptr;
     const char *octoListPath = nullptr;
     const char *webroot = nullptr;
+    const char *configFilePath = nullptr;
 
     while((result = getopt_long_only(argc, argv, "", options, &longind)) >= 0) {
         if(result == '?') {
@@ -195,6 +201,13 @@ static int gameserver_main(int argc, char **argv) {
 #endif
                 break;
 
+            case 9:
+                configEnabled = false;
+                break;
+
+            case 10:
+                configFilePath = optarg;
+                break;
         }
     }
 
@@ -220,7 +233,26 @@ static int gameserver_main(int argc, char **argv) {
         webRootPath = Gameserver::defaultWebRootPath();
     }
 
+    GameServerConfiguration config;
+    if(configEnabled) {
+
+        std::filesystem::path configPath;
+        if(configFilePath) {
+            configPath = pathFromArgument(configFilePath);
+        } else {
+            configPath = Gameserver::defaultConfigurationPath();
+        }
+
+        try {
+            config.load(configPath);
+        } catch(const std::exception &e) {
+            fprintf(stderr, "%s: failed to load the configuration, will continue with the default settings: %s\n", argv[0], e.what());
+            config = GameServerConfiguration();
+        }
+    }
+
     Gameserver server(
+        config,
         pathFromArgument(individualDatabasePath),
         pathFromArgument(masterDatabasePath),
         pathFromArgument(octoListPath),

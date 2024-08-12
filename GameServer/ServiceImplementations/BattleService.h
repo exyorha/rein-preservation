@@ -7,7 +7,7 @@
 
 class BattleService final : public apb::api::battle::BattleService, public CommonService {
 public:
-    explicit BattleService(Database &db);
+    BattleService(Database &db, const GameServerConfiguration &config);
     ~BattleService();
 
     BattleService(const BattleService &other) = delete;

@@ -7,7 +7,7 @@
 
 class ConsumableItemService final : public apb::api::consumableitem::ConsumableItemService, public CommonService {
 public:
-    explicit ConsumableItemService(Database &db);
+    ConsumableItemService(Database &db, const GameServerConfiguration &config);
     ~ConsumableItemService();
 
     ConsumableItemService(const ConsumableItemService &other) = delete;

@@ -1,6 +1,6 @@
 #include <ServiceImplementations/CageOrnamentService.h>
 
-CageOrnamentService::CageOrnamentService(Database &db) : CommonService(db) {
+CageOrnamentService::CageOrnamentService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

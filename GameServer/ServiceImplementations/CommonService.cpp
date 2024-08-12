@@ -13,7 +13,7 @@
 
 LLServices::LogFacility LogRPC("RPC");
 
-CommonService::CommonService(Database &db) : m_db(db) {
+CommonService::CommonService(Database &db, const GameServerConfiguration &config) : m_db(db, config) {
 
 }
 

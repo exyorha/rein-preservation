@@ -7,7 +7,7 @@
 
 class UserService final : public apb::api::user::UserService, public CommonService {
 public:
-    explicit UserService(Database &db);
+    UserService(Database &db, const GameServerConfiguration &config);
     ~UserService();
 
     UserService(const UserService &other) = delete;

@@ -10,7 +10,7 @@
  */
 class CharacterBoardService final : public apb::api::characterboard::CharacterBoardService, public CommonService {
 public:
-    explicit CharacterBoardService(Database &db);
+    CharacterBoardService(Database &db, const GameServerConfiguration &config);
     ~CharacterBoardService();
 
     CharacterBoardService(const CharacterBoardService &other) = delete;

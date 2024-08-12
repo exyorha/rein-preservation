@@ -1,6 +1,6 @@
 #include "ServiceImplementations/ShopService.h"
 
-ShopService::ShopService(Database &db) : CommonService(db) {
+ShopService::ShopService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

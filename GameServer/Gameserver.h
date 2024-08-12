@@ -1,6 +1,7 @@
 #ifndef GAMESERVER_H
 #define GAMESERVER_H
 
+#include "GameServerConfiguration.h"
 #include "LLServices/Logging/LogManager.h"
 #include "LLServices/Logging/ConsoleLogSink.h"
 #include "LLServices/Networking/EventLoop.h"
@@ -57,10 +58,16 @@
 
 #include <ClientDataAccess/OctoContentStorage.h>
 
+#include "GameServerConfiguration.h"
+
 struct Gameserver {
 public:
-    Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               std::filesystem::path &&octoListPath, std::filesystem::path &&webRoot);
+    Gameserver(
+        const GameServerConfiguration &config,
+        const std::filesystem::path &individualDatabasePath,
+        const std::filesystem::path &masterDatabasePath,
+        std::filesystem::path &&octoListPath,
+        std::filesystem::path &&webRoot);
     ~Gameserver();
 
     Gameserver(const Gameserver &other) = delete;
@@ -81,10 +88,14 @@ public:
     void wait();
 
     static std::filesystem::path defaultWebRootPath();
+    static std::filesystem::path defaultConfigurationPath();
 
 private:
     static std::unique_ptr<WebContentStorage> createWebContentStorage(std::filesystem::path &&path);
 
+    static std::filesystem::path executableDirectory();
+
+    GameServerConfiguration m_config;
     LLServices::EventLoop m_eventLoop;
     LLServices::ConsoleLogSink m_logSink;
     ServerCLIService m_cliService;

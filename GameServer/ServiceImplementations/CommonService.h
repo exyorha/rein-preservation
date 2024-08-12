@@ -16,6 +16,7 @@
 #include <functional>
 
 class Database;
+class GameServerConfiguration;
 
 namespace sqlite {
     class Database;
@@ -25,7 +26,7 @@ extern LLServices::LogFacility LogRPC;
 
 class CommonService {
 protected:
-    explicit CommonService(Database &db);
+    CommonService(Database &db, const GameServerConfiguration &config);
     ~CommonService();
 
     CommonService(const CommonService &other) = delete;

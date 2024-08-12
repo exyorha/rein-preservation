@@ -1,6 +1,6 @@
 #include <ServiceImplementations/CompanionService.h>
 
-CompanionService::CompanionService(Database &db) : CommonService(db) {
+CompanionService::CompanionService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

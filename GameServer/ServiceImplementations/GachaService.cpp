@@ -1,7 +1,7 @@
 #include "service/GachaService.pb.h"
 #include <ServiceImplementations/GachaService.h>
 
-GachaService::GachaService(Database &db) :CommonService(db) {
+GachaService::GachaService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

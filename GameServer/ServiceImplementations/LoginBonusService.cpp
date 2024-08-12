@@ -1,6 +1,6 @@
 #include <ServiceImplementations/LoginBonusService.h>
 
-LoginBonusService::LoginBonusService(Database &db) :CommonService(db) {
+LoginBonusService::LoginBonusService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

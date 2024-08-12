@@ -7,7 +7,7 @@
 
 class CostumeService final : public apb::api::costume::CostumeService, public CommonService {
 public:
-    explicit CostumeService(Database &db);
+    CostumeService(Database &db, const GameServerConfiguration &config);
     ~CostumeService();
 
     CostumeService(const CostumeService &other) = delete;

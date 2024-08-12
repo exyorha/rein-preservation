@@ -1,6 +1,6 @@
 #include <ServiceImplementations/WeaponService.h>
 
-WeaponService::WeaponService(Database &db) : CommonService(db) {
+WeaponService::WeaponService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

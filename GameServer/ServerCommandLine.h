@@ -13,10 +13,11 @@ class WordListParser;
 class Database;
 class DatabaseContext;
 class UserContext;
+class GameServerConfiguration;
 
 class ServerCommandLine {
 public:
-    explicit ServerCommandLine(Database &db);
+    ServerCommandLine(Database &db, const GameServerConfiguration &config);
     ~ServerCommandLine();
 
     ServerCommandLine(const ServerCommandLine &other) = delete;
@@ -57,6 +58,8 @@ private:
     static constexpr int64_t FixedUserID = 1;
 
     Database &m_db;
+    const GameServerConfiguration &m_config;
+
     static const Command m_commands[];
 };
 

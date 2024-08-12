@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-OmikujiService::OmikujiService(Database &db) : CommonService(db) {
+OmikujiService::OmikujiService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

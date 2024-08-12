@@ -2,6 +2,8 @@
 #include <DataModel/DatabaseEnums.h>
 #include <DataModel/DatabaseJSONRepresentation.h>
 
+#include <GameServerConfiguration.h>
+
 #include <DataModel/Sqlite/Statement.h>
 #include <DataModel/Sqlite/Transaction.h>
 
@@ -15,11 +17,15 @@
 #include <stdexcept>
 #include <string>
 
-UserContext::UserContext(Database &db, int64_t userId) : DatabaseContext(db), m_userId(userId), m_log(makeFacilityString(userId)) {
+UserContext::UserContext(
+    Database &db,
+    int64_t userId,
+    const GameServerConfiguration &config
+) : DatabaseContext(db, config), m_userId(userId), m_log(makeFacilityString(userId)) {
 
 }
 
-UserContext::UserContext(DatabaseContext &context, int64_t userId) : UserContext(context.dataModel(), userId) {
+UserContext::UserContext(DatabaseContext &context, int64_t userId) : UserContext(context.dataModel(), userId, context.config()) {
 
 }
 
@@ -256,7 +262,8 @@ void UserContext::replaceDeckCharacter(std::string &characterUUID,
 
 
 void UserContext::givePossession(int32_t possessionType, int32_t possessionId, int32_t count,
-                                 google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards) {
+                                 google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards,
+                                 bool disableScaling) {
     m_log.debug("giving possession type %d, id %d, count %d\n",
             possessionType, possessionId, count);
 
@@ -365,6 +372,9 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
 
         case PossessionType::MATERIAL:
         {
+            if(!disableScaling)
+                count = config().scaleMaterialCount(count);
+
             if(count <= 0)
                 throw std::runtime_error("Unexpected count value for MATERIAL");
 
@@ -391,8 +401,18 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
 
         case PossessionType::CONSUMABLE_ITEM:
         {
+
+            if(!disableScaling) {
+                if(possessionId == consumableItemIdForGold()) {
+                    count = config().scaleGoldCount(count);
+                } else {
+                    count = config().scaleConsumableItemCount(count);
+                }
+            }
+
             if(count <= 0)
                 throw std::runtime_error("Unexpected count value for CONSUMABLE_ITEM");
+
 
             auto query = db().prepare(R"SQL(
                 INSERT INTO i_user_consumable_item (
@@ -439,6 +459,9 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
 
         case PossessionType::PAID_GEM:
         {
+            if(!disableScaling)
+                count = config().scaleGemCount(count);
+
             if(count <= 0)
                 throw std::runtime_error("Unexpected count value for PAID_GEM");
 
@@ -451,6 +474,9 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
 
         case PossessionType::FREE_GEM:
         {
+            if(!disableScaling)
+                count = config().scaleGemCount(count);
+
             if(count <= 0)
                 throw std::runtime_error("Unexpected count value for FREE_GEM");
 
@@ -960,6 +986,8 @@ void UserContext::deleteDeckCharacter(const std::string_view &deckCharacterUUID)
 }
 
 void UserContext::giveUserExperience(int32_t experience) {
+    experience = config().scaleUserExperience(experience);
+
     if(experience < 0)
         throw std::logic_error("experience cannot be negative");
 
@@ -1070,6 +1098,8 @@ void UserContext::giveUserDeckCharacterExperience(
 }
 
 void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience) {
+    costumeExperience = config().scaleCostumeExperience(costumeExperience);
+
     m_log.debug("giving costume %s %d character experience and %d costume experience",
         userCostumeUuid.c_str(), characterExperience, costumeExperience);
 
@@ -1197,6 +1227,8 @@ void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, 
 
 
 void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t characterExperience) {
+    characterExperience = config().scaleCharacterExperience(characterExperience);
+
     m_log.debug("Giving character %d %d character experience", characterId, characterExperience);
 
     auto updateExperience = db().prepare(R"SQL(
@@ -1249,6 +1281,8 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
 }
 
 void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, int32_t characterExperience, int32_t costumeExperience) {
+    costumeExperience = config().scaleCostumeExperience(costumeExperience);
+
     m_log.debug("Giving weapon %s %d character experience and %d costume experience", userWeaponUuid.c_str(), characterExperience, costumeExperience);
 
     auto updateExperience = db().prepare(R"SQL(
@@ -5782,7 +5816,7 @@ bool UserContext::receiveGift(const std::string_view &giftUUID) {
      * TODO: extension (leveling) data
      */
 
-    givePossession(gift.possession_type(), gift.possession_id(), gift.count());
+    givePossession(gift.possession_type(), gift.possession_id(), gift.count(), nullptr, true);
 
     return true;
 }
@@ -5892,7 +5926,7 @@ void UserContext::buyShopItem(int32_t shopId, int32_t shopItemId) {
         auto possessionId = queryPosessions->columnInt(1);
         auto count = queryPosessions->columnInt(2);
 
-        givePossession(possessionType, possessionId, count);
+        givePossession(possessionType, possessionId, count, nullptr, true);
     }
     queryPosessions->reset();
 
@@ -6008,7 +6042,7 @@ void UserContext::sellConsumableItem(int32_t consumableItemId, int32_t count) {
         throw std::runtime_error("bad sell price");
 
     consumeConsumableItem(consumableItemId, count);
-    givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM), consumableItemIdForGold(), price * count);
+    givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM), consumableItemIdForGold(), price * count, nullptr, true);
 }
 
 void UserContext::sellMaterial(int32_t consumableItemId, int32_t count) {
@@ -6039,13 +6073,13 @@ void UserContext::sellMaterial(int32_t consumableItemId, int32_t count) {
             auto id = getPossessions->columnInt(1);
             auto thisItemCount = getPossessions->columnInt(2);
 
-            givePossession(type, id, count * thisItemCount);
+            givePossession(type, id, count * thisItemCount, nullptr, true);
         }
     } else {
 
         if(price <= 0)
             throw std::runtime_error("bad sell price");
 
-        givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM), consumableItemIdForGold(), price * count);
+        givePossession(static_cast<int32_t>(PossessionType::CONSUMABLE_ITEM), consumableItemIdForGold(), price * count, nullptr, true);
     }
 }

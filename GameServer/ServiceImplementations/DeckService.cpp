@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-DeckService::DeckService(Database &db) : CommonService(db) {
+DeckService::DeckService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

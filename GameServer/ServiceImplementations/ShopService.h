@@ -8,7 +8,7 @@
 
 class ShopService final : public apb::api::shop::ShopService, public CommonService {
 public:
-    explicit ShopService(Database &db);
+    ShopService(Database &db, const GameServerConfiguration &config);
     ~ShopService();
 
     ShopService(const ShopService &other) = delete;

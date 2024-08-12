@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-DokanService::DokanService(Database &db) : CommonService(db) {
+DokanService::DokanService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

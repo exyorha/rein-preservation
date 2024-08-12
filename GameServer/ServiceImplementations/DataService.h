@@ -10,7 +10,7 @@
  */
 class DataService final : public apb::api::data::DataService, public CommonService {
 public:
-    explicit DataService(Database &db);
+    DataService(Database &db, const GameServerConfiguration &config);
     ~DataService();
 
     DataService(const DataService &other) = delete;

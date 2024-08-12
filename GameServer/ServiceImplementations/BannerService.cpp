@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-BannerService::BannerService(Database &db) : CommonService(db) {
+BannerService::BannerService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

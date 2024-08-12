@@ -1,6 +1,6 @@
 #include <ServiceImplementations/MaterialService.h>
 
-MaterialService::MaterialService(Database &db) : CommonService(db) {
+MaterialService::MaterialService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

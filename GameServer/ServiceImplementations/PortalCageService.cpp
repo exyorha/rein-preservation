@@ -1,6 +1,6 @@
 #include <ServiceImplementations/PortalCageService.h>
 
-PortalCageService::PortalCageService(Database &db) :CommonService(db) {
+PortalCageService::PortalCageService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

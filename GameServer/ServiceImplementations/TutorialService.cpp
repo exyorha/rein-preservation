@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-TutorialService::TutorialService(Database &db) : CommonService(db) {
+TutorialService::TutorialService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

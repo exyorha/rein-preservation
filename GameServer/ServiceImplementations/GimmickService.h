@@ -10,7 +10,7 @@
  */
 class GimmickService final : public apb::api::gimmick::GimmickService, public CommonService {
 public:
-    explicit GimmickService(Database &db);
+    GimmickService(Database &db, const GameServerConfiguration &config);
     ~GimmickService();
 
     GimmickService(const GimmickService &other) = delete;

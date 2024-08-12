@@ -10,7 +10,7 @@
  */
 class LabyrinthService final : public apb::api::labyrinth::LabyrinthService, public CommonService {
 public:
-    explicit LabyrinthService(Database &db);
+    LabyrinthService(Database &db, const GameServerConfiguration &config);
     ~LabyrinthService();
 
     LabyrinthService(const LabyrinthService &other) = delete;

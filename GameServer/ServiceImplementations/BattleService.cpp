@@ -2,7 +2,7 @@
 
 #include <DataModel/Sqlite/Statement.h>
 
-BattleService::BattleService(Database &db) : CommonService(db) {
+BattleService::BattleService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

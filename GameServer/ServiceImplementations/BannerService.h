@@ -7,7 +7,7 @@
 
 class BannerService final : public apb::api::banner::BannerService, public CommonService {
 public:
-    explicit BannerService(Database &db);
+    BannerService(Database &db, const GameServerConfiguration &config);
     ~BannerService();
 
     BannerService(const BannerService &other) = delete;

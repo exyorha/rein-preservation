@@ -3,7 +3,7 @@
 #include <DataModel/Database.h>
 #include <DataModel/Sqlite/Statement.h>
 
-UserService::UserService(Database &db) : CommonService(db) {
+UserService::UserService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

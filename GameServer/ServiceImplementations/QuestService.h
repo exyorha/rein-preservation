@@ -7,7 +7,7 @@
 
 class QuestService final : public apb::api::quest::QuestService, public CommonService {
 public:
-    explicit QuestService(Database &db);
+    QuestService(Database &db, const GameServerConfiguration &config);
     ~QuestService();
 
     QuestService(const QuestService &other) = delete;

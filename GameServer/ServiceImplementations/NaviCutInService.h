@@ -11,7 +11,7 @@
 
 class NaviCutInService final : public apb::api::navicutin::NaviCutInService, public CommonService {
 public:
-    explicit NaviCutInService(Database &db);
+    NaviCutInService(Database &db, const GameServerConfiguration &config);
     ~NaviCutInService();
 
     NaviCutInService(const NaviCutInService &other) = delete;

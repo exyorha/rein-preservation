@@ -10,7 +10,7 @@
  */
 class MaterialService final : public apb::api::material::MaterialService, public CommonService {
 public:
-    explicit MaterialService(Database &db);
+    MaterialService(Database &db, const GameServerConfiguration &config);
     ~MaterialService();
 
     MaterialService(const MaterialService &other) = delete;

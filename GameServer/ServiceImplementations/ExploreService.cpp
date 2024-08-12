@@ -1,6 +1,6 @@
 #include <ServiceImplementations/ExploreService.h>
 
-ExploreService::ExploreService(Database &db) : CommonService(db) {
+ExploreService::ExploreService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

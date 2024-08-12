@@ -10,7 +10,7 @@
  */
 class NotificationService final : public apb::api::notification::NotificationService, public CommonService {
 public:
-    explicit NotificationService(Database &db);
+    NotificationService(Database &db, const GameServerConfiguration &config);
     ~NotificationService();
 
     NotificationService(const NotificationService &other) = delete;

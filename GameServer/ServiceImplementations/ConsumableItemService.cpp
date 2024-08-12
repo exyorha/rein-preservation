@@ -1,6 +1,6 @@
 #include <ServiceImplementations/ConsumableItemService.h>
 
-ConsumableItemService::ConsumableItemService(Database &db) : CommonService(db) {
+ConsumableItemService::ConsumableItemService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

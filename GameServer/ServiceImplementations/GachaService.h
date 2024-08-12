@@ -7,7 +7,7 @@
 
 class GachaService final : public apb::api::gacha::GachaService, public CommonService {
 public:
-    explicit GachaService(Database &db);
+    GachaService(Database &db, const GameServerConfiguration &config);
     ~GachaService();
 
     GachaService(const GachaService &other) = delete;

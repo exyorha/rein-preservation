@@ -10,7 +10,7 @@
  */
 class ContentsStoryService final : public apb::api::contentsstory::ContentsStoryService, public CommonService {
 public:
-    explicit ContentsStoryService(Database &db);
+    ContentsStoryService(Database &db, const GameServerConfiguration &config);
     ~ContentsStoryService();
 
     ContentsStoryService(const ContentsStoryService &other) = delete;

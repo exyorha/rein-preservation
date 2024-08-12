@@ -7,7 +7,7 @@
 
 class WeaponService final : public apb::api::weapon::WeaponService, public CommonService {
 public:
-    explicit WeaponService(Database &db);
+    WeaponService(Database &db, const GameServerConfiguration &config);
     ~WeaponService();
 
     WeaponService(const WeaponService &other) = delete;

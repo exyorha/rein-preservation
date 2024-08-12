@@ -1,6 +1,6 @@
 #include "ServiceImplementations/LabyrinthService.h"
 
-LabyrinthService::LabyrinthService(Database &db) : CommonService(db) {
+LabyrinthService::LabyrinthService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

@@ -10,7 +10,7 @@
  */
 class DeckService final : public apb::api::deck::DeckService, public CommonService {
 public:
-    explicit DeckService(Database &db);
+    DeckService(Database &db, const GameServerConfiguration &config);
     ~DeckService();
 
     DeckService(const DeckService &other) = delete;

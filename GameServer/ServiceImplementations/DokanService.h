@@ -10,7 +10,7 @@
  */
 class DokanService final : public apb::api::dokan::DokanService, public CommonService {
 public:
-    explicit DokanService(Database &db);
+    DokanService(Database &db, const GameServerConfiguration &config);
     ~DokanService();
 
     DokanService(const DokanService &other) = delete;

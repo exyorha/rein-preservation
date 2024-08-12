@@ -5,7 +5,7 @@
 
 #include <LLServices/JSON/JSONWriter.h>
 
-DataService::DataService(Database &db) : CommonService(db) {
+DataService::DataService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

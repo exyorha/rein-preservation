@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <google/protobuf/repeated_ptr_field.h>
 
-GimmickService::GimmickService(Database &db) : CommonService(db) {
+GimmickService::GimmickService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

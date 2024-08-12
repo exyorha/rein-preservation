@@ -1,96 +1,66 @@
 #include "LauncherConfiguration.h"
+#include "ConfigFileParser.h"
 
 #include <fstream>
 #include <cstring>
 #include <charconv>
 
-const LauncherConfiguration::Option LauncherConfiguration::m_options[]{
+const ConfigFileParser::Option LauncherConfiguration::m_options[]{
     {
         .key = "customizeResolution",
-        .encode = &LauncherConfiguration::encodeBool<&LauncherConfiguration::customizeResolution>,
-        .decode = &LauncherConfiguration::decodeBool<&LauncherConfiguration::customizeResolution>
+        .encode = &LauncherConfiguration::encodeBool<LauncherConfiguration, &LauncherConfiguration::customizeResolution>,
+        .decode = &LauncherConfiguration::decodeBool<LauncherConfiguration, &LauncherConfiguration::customizeResolution>
     },
     {
         .key = "displayMode",
-        .encode = &LauncherConfiguration::encodeDisplayMode,
-        .decode = &LauncherConfiguration::decodeDisplayMode,
+        .encode = static_cast<LauncherConfiguration::OptionEncoder>(&LauncherConfiguration::encodeDisplayMode),
+        .decode = static_cast<LauncherConfiguration::OptionDecoder>(&LauncherConfiguration::decodeDisplayMode),
     },
     {
         .key = "disableTouchscreenEmulation",
-        .encode = &LauncherConfiguration::encodeBool<&LauncherConfiguration::disableTouchscreenEmulation>,
-        .decode = &LauncherConfiguration::decodeBool<&LauncherConfiguration::disableTouchscreenEmulation>
+        .encode = &LauncherConfiguration::encodeBool<LauncherConfiguration, &LauncherConfiguration::disableTouchscreenEmulation>,
+        .decode = &LauncherConfiguration::decodeBool<LauncherConfiguration, &LauncherConfiguration::disableTouchscreenEmulation>
     },
     {
         .key = "useCustomGameServer",
-        .encode = &LauncherConfiguration::encodeBool<&LauncherConfiguration::useCustomGameServer>,
-        .decode = &LauncherConfiguration::decodeBool<&LauncherConfiguration::useCustomGameServer>
+        .encode = &LauncherConfiguration::encodeBool<LauncherConfiguration, &LauncherConfiguration::useCustomGameServer>,
+        .decode = &LauncherConfiguration::decodeBool<LauncherConfiguration, &LauncherConfiguration::useCustomGameServer>
     },
     {
         .key = "customGameServer",
-        .encode = &LauncherConfiguration::encodeFixedString<256, &LauncherConfiguration::customGameServer>,
-        .decode = &LauncherConfiguration::decodeFixedString<256, &LauncherConfiguration::customGameServer>
+        .encode = &LauncherConfiguration::encodeFixedString<LauncherConfiguration, 256, &LauncherConfiguration::customGameServer>,
+        .decode = &LauncherConfiguration::decodeFixedString<LauncherConfiguration, 256, &LauncherConfiguration::customGameServer>
     },
     {
         .key = "useOpenGLES",
-        .encode = &LauncherConfiguration::encodeBool<&LauncherConfiguration::useOpenGLES>,
-        .decode = &LauncherConfiguration::decodeBool<&LauncherConfiguration::useOpenGLES>
+        .encode = &LauncherConfiguration::encodeBool<LauncherConfiguration, &LauncherConfiguration::useOpenGLES>,
+        .decode = &LauncherConfiguration::decodeBool<LauncherConfiguration, &LauncherConfiguration::useOpenGLES>
     },
     {
         .key = "resolution",
-        .encode = &LauncherConfiguration::encodeString<&LauncherConfiguration::resolution>,
-        .decode = &LauncherConfiguration::decodeString<&LauncherConfiguration::resolution>
+        .encode = &LauncherConfiguration::encodeString<LauncherConfiguration, &LauncherConfiguration::resolution>,
+        .decode = &LauncherConfiguration::decodeString<LauncherConfiguration, &LauncherConfiguration::resolution>
     },
     {
         .key = "unityFramePacing",
-        .encode = &LauncherConfiguration::encodeBool<&LauncherConfiguration::unityFramePacing>,
-        .decode = &LauncherConfiguration::decodeBool<&LauncherConfiguration::unityFramePacing>
+        .encode = &LauncherConfiguration::encodeBool<LauncherConfiguration, &LauncherConfiguration::unityFramePacing>,
+        .decode = &LauncherConfiguration::decodeBool<LauncherConfiguration, &LauncherConfiguration::unityFramePacing>
     },
 };
 
+LauncherConfiguration::LauncherConfiguration() : ConfigFileParser(m_options, sizeof(m_options) / sizeof(m_options[0])) {
 
-void LauncherConfiguration::load(const std::filesystem::path &configPath) {
-    std::ifstream stream;
-    stream.exceptions(std::ios::failbit | std::ios::eofbit | std::ios::badbit);
-    stream.open(configPath, std::ios::in | std::ios::binary);
-
-    stream.exceptions(std::ios::badbit);
-
-    std::string line;
-
-    while(std::getline(stream, line)) {
-        auto delim = line.find('=');
-        if(delim == std::string::npos)
-            continue;
-
-        auto lineKey = std::string_view(line).substr(0, delim);
-        auto lineValue = std::string_view(line).substr(delim + 1);
-
-        for(const auto &option: m_options) {
-            if(lineKey == option.key) {
-
-                (this->*option.decode)(lineValue);
-
-                break;
-            }
-        }
-
-    }
 }
 
-void LauncherConfiguration::store(const std::filesystem::path &configPath) const {
-    std::ofstream stream;
-    stream.exceptions(std::ios::failbit | std::ios::eofbit | std::ios::badbit);
-    stream.open(configPath, std::ios::out | std::ios::trunc | std::ios::binary);
+LauncherConfiguration::~LauncherConfiguration() = default;
 
-    for(const auto &option: m_options) {
-        stream << option.key;
-        stream << "=";
+LauncherConfiguration::LauncherConfiguration(const LauncherConfiguration &other) = default;
 
-        stream << (this->*option.encode)();
+LauncherConfiguration &LauncherConfiguration::operator =(const LauncherConfiguration &other) = default;
 
-        stream << "\n";
-    }
-}
+LauncherConfiguration::LauncherConfiguration(LauncherConfiguration &&other) noexcept = default;
+
+LauncherConfiguration &LauncherConfiguration::operator =(LauncherConfiguration &&other) noexcept = default;
 
 std::vector<std::string> LauncherConfiguration::buildCommandLine() const {
     std::vector<std::string> commandLine;
@@ -142,56 +112,10 @@ std::vector<std::string> LauncherConfiguration::buildCommandLine() const {
     return commandLine;
 }
 
-template<bool LauncherConfiguration::*field>
-std::string LauncherConfiguration::encodeBool() const {
-    return std::to_string(static_cast<int>(this->*field));
-}
-
-template<bool LauncherConfiguration::*field>
-void LauncherConfiguration::decodeBool(const std::string_view &value) {
-    this->*field = parseInt(value) != 0;
-}
-
-template<std::string LauncherConfiguration::*field>
-std::string LauncherConfiguration::encodeString() const {
-    return this->*field;
-}
-
-template<std::string LauncherConfiguration::*field>
-void LauncherConfiguration::decodeString(const std::string_view &value) {
-    this->*field = value;
-}
-
-template<size_t Length, std::array<char, Length> LauncherConfiguration::*field>
-std::string LauncherConfiguration::encodeFixedString() const {
-    const auto &val = this->*field;
-
-    return std::string(val.data(), strnlen(val.data(), val.size()));
-}
-
-template<size_t Length, std::array<char, Length> LauncherConfiguration::*field>
-void LauncherConfiguration::decodeFixedString(const std::string_view &value) {
-    auto &val = this->*field;
-
-    auto size = std::min<size_t>(val.size() - 1, value.size());
-    memcpy(val.data(), value.data(), size);
-    val[size] = 0;
-}
-
 std::string LauncherConfiguration::encodeDisplayMode() const {
     return std::to_string(static_cast<int>(displayMode));
 }
 
 void LauncherConfiguration::decodeDisplayMode(const std::string_view &value) {
-    displayMode = static_cast<DisplayMode>(parseInt(value));
-}
-
-int LauncherConfiguration::parseInt(const std::string_view &string) {
-    int value;
-
-    auto result = std::from_chars(string.data(), string.data() + string.size(), value);
-    if(result.ec != std::errc() || result.ptr != string.data() + string.size())
-        throw std::runtime_error("failed to parse an integer value");
-
-    return value;
+    displayMode = static_cast<DisplayMode>(parseNumber<std::underlying_type<DisplayMode>::type>(value));
 }

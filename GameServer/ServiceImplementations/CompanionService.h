@@ -10,7 +10,7 @@
  */
 class CompanionService final : public apb::api::companion::CompanionService, public CommonService {
 public:
-    explicit CompanionService(Database &db);
+    CompanionService(Database &db, const GameServerConfiguration &config);
     ~CompanionService();
 
     CompanionService(const CompanionService &other) = delete;

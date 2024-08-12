@@ -4,7 +4,7 @@
 #include <DataModel/Sqlite/Statement.h>
 #include <DataModel/DatabaseEnums.h>
 
-GamePlayService::GamePlayService(Database &db) : CommonService(db) {
+GamePlayService::GamePlayService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

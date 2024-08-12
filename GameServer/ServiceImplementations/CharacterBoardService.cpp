@@ -1,6 +1,6 @@
 #include <ServiceImplementations/CharacterBoardService.h>
 
-CharacterBoardService::CharacterBoardService(Database &db) : CommonService(db) {
+CharacterBoardService::CharacterBoardService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

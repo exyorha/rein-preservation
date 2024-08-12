@@ -1,6 +1,6 @@
 #include <ServiceImplementations/SideStoryQuestService.h>
 
-SideStoryQuestService::SideStoryQuestService(Database &db) : CommonService(db) {
+SideStoryQuestService::SideStoryQuestService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

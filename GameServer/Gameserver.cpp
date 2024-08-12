@@ -1,5 +1,4 @@
 #include "Gameserver.h"
-#include "ServiceImplementations/MaterialService.h"
 #include <DataModel/Sqlite/Transaction.h>
 #include <DataModel/Sqlite/Statement.h>
 
@@ -12,8 +11,13 @@
 #include <windows.h>
 #endif
 
-Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, const std::filesystem::path &masterDatabasePath,
-               std::filesystem::path &&octoListPath, std::filesystem::path &&webRoot) :
+Gameserver::Gameserver(
+    const GameServerConfiguration &config,
+    const std::filesystem::path &individualDatabasePath,
+    const std::filesystem::path &masterDatabasePath,
+    std::filesystem::path &&octoListPath,
+    std::filesystem::path &&webRoot) :
+    m_config(config),
     m_cliService(&m_eventLoop, &m_logSink),
     m_logManagerScope(std::make_shared<LLServices::LogManager>(&m_cliService)),
     m_contentStorage(std::move(octoListPath)),
@@ -25,40 +29,40 @@ Gameserver::Gameserver(const std::filesystem::path &individualDatabasePath, cons
     m_router(&m_webServer),
     m_http(&m_eventLoop, &m_router),
 
-    m_userService(m_db),
-    m_dataService(m_db),
-    m_gamePlayService(m_db),
-    m_questService(m_db),
-    m_gimmickService(m_db),
-    m_notificationService(m_db),
-    m_gachaService(m_db),
-    m_tutorialService(m_db),
-    m_bannerService(m_db),
-    m_battleService(m_db),
-    m_deckService(m_db),
-    m_loginBonusService(m_db),
-    m_portalCageService(m_db),
-    m_characterViewerService(m_db),
-    m_omikujiService(m_db),
-    m_naviCutInService(m_db),
-    m_dokanService(m_db),
-    m_costumeService(m_db),
-    m_weaponService(m_db),
-    m_cageOrnamentService(m_db),
-    m_companionService(m_db),
-    m_characterService(m_db),
-    m_characterBoardService(m_db),
-    m_contentsStoryService(m_db),
-    m_sideStoryQuestService(m_db),
-    m_exploreService(m_db),
-    m_giftService(m_db),
-    m_shopService(m_db),
-    m_labyrinthService(m_db),
-    m_consumableItemService(m_db),
-    m_materialService(m_db),
-    m_friendService(m_db) {
+    m_userService(m_db, m_config),
+    m_dataService(m_db, m_config),
+    m_gamePlayService(m_db, m_config),
+    m_questService(m_db, m_config),
+    m_gimmickService(m_db, m_config),
+    m_notificationService(m_db, m_config),
+    m_gachaService(m_db, m_config),
+    m_tutorialService(m_db, m_config),
+    m_bannerService(m_db, m_config),
+    m_battleService(m_db, m_config),
+    m_deckService(m_db, m_config),
+    m_loginBonusService(m_db, m_config),
+    m_portalCageService(m_db, m_config),
+    m_characterViewerService(m_db, m_config),
+    m_omikujiService(m_db, m_config),
+    m_naviCutInService(m_db, m_config),
+    m_dokanService(m_db, m_config),
+    m_costumeService(m_db, m_config),
+    m_weaponService(m_db, m_config),
+    m_cageOrnamentService(m_db, m_config),
+    m_companionService(m_db, m_config),
+    m_characterService(m_db, m_config),
+    m_characterBoardService(m_db, m_config),
+    m_contentsStoryService(m_db, m_config),
+    m_sideStoryQuestService(m_db, m_config),
+    m_exploreService(m_db, m_config),
+    m_giftService(m_db, m_config),
+    m_shopService(m_db, m_config),
+    m_labyrinthService(m_db, m_config),
+    m_consumableItemService(m_db, m_config),
+    m_materialService(m_db, m_config),
+    m_friendService(m_db, m_config) {
 
-    m_cliService.initCLI(m_db);
+    m_cliService.initCLI(m_db, m_config);
 
     m_router.handleSubpath("/web.app.nierreincarnation.com", &m_webRedirector);
     m_router.handleSubpath("/api.app.nierreincarnation.com", &m_gameAPI);
@@ -115,7 +119,7 @@ void Gameserver::wait() {
     m_eventLoop.run();
 }
 
-std::filesystem::path Gameserver::defaultWebRootPath() {
+std::filesystem::path Gameserver::executableDirectory() {
 #ifdef _WIN32
     std::vector<wchar_t> modulePathChars(PATH_MAX);
     DWORD outLength;
@@ -138,7 +142,11 @@ std::filesystem::path Gameserver::defaultWebRootPath() {
     auto executablePath = std::filesystem::read_symlink("/proc/self/exe");
 #endif
 
-    auto directory = executablePath.parent_path();
+    return executablePath.parent_path();
+}
+
+std::filesystem::path Gameserver::defaultWebRootPath() {
+    auto directory = executableDirectory();
 
     auto looseDir = directory / "WebRoot";
     if(std::filesystem::exists(looseDir)) {
@@ -146,6 +154,12 @@ std::filesystem::path Gameserver::defaultWebRootPath() {
     } else {
         return directory / "WebRoot.zip";
     }
+}
+
+std::filesystem::path Gameserver::defaultConfigurationPath() {
+    auto directory = executableDirectory();
+
+    return directory / "GameServer.conf";
 }
 
 std::unique_ptr<WebContentStorage> Gameserver::createWebContentStorage(std::filesystem::path &&path) {

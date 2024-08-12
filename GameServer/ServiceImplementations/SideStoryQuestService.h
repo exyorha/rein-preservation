@@ -10,7 +10,7 @@
  */
 class SideStoryQuestService final : public apb::api::sidestoryquest::SideStoryQuestService, public CommonService {
 public:
-    explicit SideStoryQuestService(Database &db);
+    SideStoryQuestService(Database &db, const GameServerConfiguration &config);
     ~SideStoryQuestService();
 
     SideStoryQuestService(const SideStoryQuestService &other) = delete;

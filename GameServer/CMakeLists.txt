@@ -184,6 +184,8 @@ add_executable(GameServer
 
     Gameserver.cpp
     Gameserver.h
+    GameServerConfiguration.cpp
+    GameServerConfiguration.h
 
     GRPC/GRPCLikeCall.cpp
     GRPC/GRPCLikeCall.h
@@ -453,7 +455,7 @@ set_target_properties(GameServer PROPERTIES
     CXX_STANDARD_REQUIRED TRUE
 )
 
-target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess UnityAsset gitversion)
+target_link_libraries(GameServer PRIVATE protobuf::libprotobuf sqlite3 master_database_ext_static yajl event ZLIB::ZLIB ClientDataAccess UnityAsset gitversion ConfigFile)
 target_include_directories(GameServer PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/libevent/include
     ${PROJECT_BINARY_DIR}/thirdparty/libevent/include)
 
@@ -479,8 +481,11 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 install(TARGETS GameServer DESTINATION GameServer COMPONENT GameServer)
-install(FILES ${PROJECT_SOURCE_DIR}/dbview_schema.sql DESTINATION GameServer COMPONENT GameServer)
-install(FILES ${PROJECT_SOURCE_DIR}/dbview_schema.json DESTINATION GameServer COMPONENT GameServer)
+install(FILES
+    ${PROJECT_SOURCE_DIR}/dbview_schema.sql
+    ${PROJECT_SOURCE_DIR}/dbview_schema.json
+    ${PROJECT_SOURCE_DIR}/GameServer.conf
+    DESTINATION GameServer COMPONENT GameServer)
 
 if(NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(makewebzip)

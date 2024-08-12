@@ -10,7 +10,7 @@
  */
 class LoginBonusService final : public apb::api::loginBonus::LoginBonusService, public CommonService {
 public:
-    explicit LoginBonusService(Database &db);
+    LoginBonusService(Database &db, const GameServerConfiguration &config);
     ~LoginBonusService();
 
     LoginBonusService(const LoginBonusService &other) = delete;

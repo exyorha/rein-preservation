@@ -1,6 +1,6 @@
 #include <ServiceImplementations/NotificationService.h>
 
-NotificationService::NotificationService(Database &db) :CommonService(db) {
+NotificationService::NotificationService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

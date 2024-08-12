@@ -48,7 +48,7 @@ set_target_properties(Launcher PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
 )
-target_link_libraries(Launcher PRIVATE gitversion)
+target_link_libraries(Launcher PRIVATE gitversion ConfigFile)
 
 check_ipo_supported(RESULT supported OUTPUT error)
 if(supported)

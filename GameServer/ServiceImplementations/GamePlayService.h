@@ -10,7 +10,7 @@
  */
 class GamePlayService final : public apb::api::gameplay::GamePlayService, public CommonService {
 public:
-    explicit GamePlayService(Database &db);
+    GamePlayService(Database &db, const GameServerConfiguration &config);
     ~GamePlayService();
 
     GamePlayService(const GamePlayService &other) = delete;

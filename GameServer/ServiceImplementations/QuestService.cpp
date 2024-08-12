@@ -7,7 +7,7 @@
 #include <google/protobuf/repeated_ptr_field.h>
 #include <stdexcept>
 
-QuestService::QuestService(Database &db) : CommonService(db) {
+QuestService::QuestService(Database &db, const GameServerConfiguration &config) : CommonService(db, config) {
 
 }
 

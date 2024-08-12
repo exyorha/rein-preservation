@@ -54,7 +54,7 @@ public:
         std::unordered_set<int32_t> charactersToRecalculate;
     };
 
-    UserContext(Database &database, int64_t userId);
+    UserContext(Database &database, int64_t userId, const GameServerConfiguration &config);
     UserContext(DatabaseContext &context, int64_t userId);
     ~UserContext() override;
 
@@ -75,7 +75,8 @@ public:
     void refreshDeckPower(int32_t deckType, int32_t userDeckNumber, const apb::api::deck::DeckPower &power);
 
     void givePossession(int32_t possessionType, int32_t possessionId, int32_t count,
-                        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr);
+                        google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr,
+                        bool disableScaling = false);
 
     void takePossession(int32_t possessionType, int32_t possessionId, int32_t count);
 

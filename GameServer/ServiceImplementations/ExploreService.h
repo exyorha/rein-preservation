@@ -10,7 +10,7 @@
  */
 class ExploreService final : public apb::api::explore::ExploreService, public CommonService {
 public:
-    explicit ExploreService(Database &db);
+    ExploreService(Database &db, const GameServerConfiguration &config);
     ~ExploreService();
 
     ExploreService(const ExploreService &other) = delete;

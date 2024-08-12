@@ -10,7 +10,7 @@
  */
 class OmikujiService final : public apb::api::omikuji::OmikujiService, public CommonService {
 public:
-    explicit OmikujiService(Database &db);
+    OmikujiService(Database &db, const GameServerConfiguration &config);
     ~OmikujiService();
 
     OmikujiService(const OmikujiService &other) = delete;

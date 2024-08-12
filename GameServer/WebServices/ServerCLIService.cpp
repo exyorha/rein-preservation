@@ -95,8 +95,8 @@ void ServerCLIService::removeConnection(ServerCLIConnection *connection) {
     m_connections.erase(std::remove(m_connections.begin(), m_connections.end(), connection), m_connections.end());
 }
 
-void ServerCLIService::initCLI(Database &db) {
-    m_cli.emplace(db);
+void ServerCLIService::initCLI(Database &db, const GameServerConfiguration &config) {
+    m_cli.emplace(db, config);
 }
 
 void ServerCLIService::beforeWait(LLServices::BeforeWaitNotifier *notifier) {

@@ -10,7 +10,7 @@
  */
 class TutorialService final : public apb::api::tutorial::TutorialService, public CommonService {
 public:
-    explicit TutorialService(Database &db);
+    TutorialService(Database &db, const GameServerConfiguration &config);
     ~TutorialService();
 
     TutorialService(const TutorialService &other) = delete;

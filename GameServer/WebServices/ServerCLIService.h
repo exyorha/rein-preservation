@@ -36,7 +36,7 @@ public:
         return m_cli.value();
     }
 
-    void initCLI(Database &db);
+    void initCLI(Database &db, const GameServerConfiguration &config);
 
 private:
     void beforeWait(LLServices::BeforeWaitNotifier *notifier) override;
