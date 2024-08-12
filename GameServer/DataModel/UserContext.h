@@ -76,7 +76,7 @@ public:
 
     void givePossession(int32_t possessionType, int32_t possessionId, int32_t count,
                         google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards = nullptr,
-                        bool disableScaling = false);
+                        bool disableScaling = false, int32_t *outCount = nullptr);
 
     void takePossession(int32_t possessionType, int32_t possessionId, int32_t count);
 

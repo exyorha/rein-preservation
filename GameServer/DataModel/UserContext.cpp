@@ -263,16 +263,9 @@ void UserContext::replaceDeckCharacter(std::string &characterUUID,
 
 void UserContext::givePossession(int32_t possessionType, int32_t possessionId, int32_t count,
                                  google::protobuf::RepeatedPtrField<apb::api::quest::QuestReward> *addToQuestRewards,
-                                 bool disableScaling) {
+                                 bool disableScaling, int32_t *outCount) {
     m_log.debug("giving possession type %d, id %d, count %d\n",
             possessionType, possessionId, count);
-
-    if(addToQuestRewards) {
-        auto reward = addToQuestRewards->Add();
-        reward->set_possession_type(possessionType);
-        reward->set_possession_id(possessionId);
-        reward->set_count(count);
-    }
 
     switch(static_cast<PossessionType>(possessionType)) {
         case PossessionType::COSTUME:
@@ -588,6 +581,17 @@ void UserContext::givePossession(int32_t possessionType, int32_t possessionId, i
 
         default:
             throw std::runtime_error("unsupported possession type " + std::to_string(possessionType));
+    }
+
+    if(outCount) {
+        *outCount = count;
+    }
+
+    if(addToQuestRewards) {
+        auto reward = addToQuestRewards->Add();
+        reward->set_possession_type(possessionType);
+        reward->set_possession_id(possessionId);
+        reward->set_count(count);
     }
 
     buildDefaultDeckIfNoneExists();
@@ -3259,13 +3263,15 @@ void UserContext::activateCageOrnament(int32_t cageOrnamentId,
             auto possessionId = getRewards->columnInt(1);
             auto count = getRewards->columnInt(2);
 
-            givePossession(possessionType, possessionId, count);
+            int32_t outCount;
+
+            givePossession(possessionType, possessionId, count, nullptr, false, &outCount);
 
             if(rewards) {
                 auto reward = rewards->Add();
                 reward->set_possession_type(possessionType);
                 reward->set_possession_id(possessionId);
-                reward->set_count(count);
+                reward->set_count(outCount);
             }
         }
 
@@ -4881,11 +4887,12 @@ void UserContext::updateGimmickProgress(int32_t gimmickSequenceScheduleId, int32
         auto possessionId = getRewards->columnInt(1);
         auto count = getRewards->columnInt(2);
 
-        givePossession(possessionType, possessionId, count);
+        int32_t outCount;
+        givePossession(possessionType, possessionId, count, nullptr, false, &outCount);
         auto reward = gimmickSequenceClearReward->Add();
         reward->set_possession_type(possessionType);
         reward->set_possession_id(possessionId);
-        reward->set_count(count);
+        reward->set_count(outCount);
     }
 }
 
