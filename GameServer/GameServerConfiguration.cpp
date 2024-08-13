@@ -5,19 +5,19 @@
 
 const ConfigFileParser::Option GameServerConfiguration::m_options[] {
     {
-        "incomingUserExperienceMul",
-        &GameServerConfiguration::encodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingUserExperienceMul>,
-        &GameServerConfiguration::decodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingUserExperienceMul>,
+        "incomingUserExperienceExp",
+        &GameServerConfiguration::encodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingUserExperienceExp>,
+        &GameServerConfiguration::decodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingUserExperienceExp>,
     },
     {
-        "incomingCostumeExperienceMul",
-        &GameServerConfiguration::encodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCostumeExperienceMul>,
-        &GameServerConfiguration::decodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCostumeExperienceMul>,
+        "incomingCostumeExperienceExp",
+        &GameServerConfiguration::encodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCostumeExperienceExp>,
+        &GameServerConfiguration::decodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCostumeExperienceExp>,
     },
     {
-        "incomingCharacterExperienceMul",
-        &GameServerConfiguration::encodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCharacterExperienceMul>,
-        &GameServerConfiguration::decodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCharacterExperienceMul>,
+        "incomingCharacterExperienceExp",
+        &GameServerConfiguration::encodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCharacterExperienceExp>,
+        &GameServerConfiguration::decodeNumber<GameServerConfiguration, float, &GameServerConfiguration::incomingCharacterExperienceExp>,
     },
     {
         "incomingConsumableItemCountMul",
@@ -56,15 +56,15 @@ GameServerConfiguration::GameServerConfiguration(GameServerConfiguration &&other
 GameServerConfiguration &GameServerConfiguration::operator =(GameServerConfiguration &&other) noexcept = default;
 
 int32_t GameServerConfiguration::scaleUserExperience(int32_t val) const {
-    return roundf(val * incomingUserExperienceMul);
+    return ceilf(powf(val, incomingUserExperienceExp));
 }
 
 int32_t GameServerConfiguration::scaleCostumeExperience(int32_t val) const {
-    return roundf(val * incomingCostumeExperienceMul);
+    return ceilf(powf(val, incomingCostumeExperienceExp));
 }
 
 int32_t GameServerConfiguration::scaleCharacterExperience(int32_t val) const {
-    return roundf(val * incomingCharacterExperienceMul);
+    return ceilf(powf(val, incomingCharacterExperienceExp));
 }
 
 int32_t GameServerConfiguration::scaleConsumableItemCount(int32_t val) const {

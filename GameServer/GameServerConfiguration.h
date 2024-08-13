@@ -14,9 +14,9 @@ public:
     GameServerConfiguration(GameServerConfiguration &&other) noexcept;
     GameServerConfiguration &operator =(GameServerConfiguration &&other) noexcept;
 
-    float incomingUserExperienceMul = 1.0f;
-    float incomingCostumeExperienceMul = 1.0f;
-    float incomingCharacterExperienceMul = 1.0f;
+    float incomingUserExperienceExp = 1.0f;
+    float incomingCostumeExperienceExp = 1.0f;
+    float incomingCharacterExperienceExp = 1.0f;
     float incomingConsumableItemCountMul = 1.0f;
     float incomingGoldCountMul = 1.0f;
     float incomingMaterialCountMul = 1.0f;
