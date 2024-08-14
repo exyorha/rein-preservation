@@ -88,8 +88,10 @@ public:
         int32_t characterExperience,
         int32_t costumeExperience);
 
-    void giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience);
-    void giveUserWeaponExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience);
+    void giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience,
+                                   bool disableScaling = false);
+    void giveUserWeaponExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience,
+                                  bool disableScaling = false);
     void giveUserCharacterExperience(int32_t characterId, int32_t characterExperience);
 
     void serializeTable(const std::string &tableEntityName, LLServices::JSONWriter &writer);

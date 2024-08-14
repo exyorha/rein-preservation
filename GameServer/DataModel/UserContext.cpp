@@ -1101,8 +1101,11 @@ void UserContext::giveUserDeckCharacterExperience(
     }
 }
 
-void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience) {
-    costumeExperience = config().scaleCostumeExperience(costumeExperience);
+void UserContext::giveUserCostumeExperience(const std::string &userCostumeUuid, int32_t characterExperience, int32_t costumeExperience,
+                                            bool disableScaling) {
+    if(!disableScaling) {
+        costumeExperience = config().scaleCostumeExperience(costumeExperience);
+    }
 
     m_log.debug("giving costume %s %d character experience and %d costume experience",
         userCostumeUuid.c_str(), characterExperience, costumeExperience);
@@ -1284,8 +1287,11 @@ void UserContext::giveUserCharacterExperience(int32_t characterId, int32_t chara
     }
 }
 
-void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, int32_t characterExperience, int32_t costumeExperience) {
-    costumeExperience = config().scaleCostumeExperience(costumeExperience);
+void UserContext::giveUserWeaponExperience(const std::string &userWeaponUuid, int32_t characterExperience, int32_t costumeExperience,
+                                           bool disableScaling) {
+
+    if(!disableScaling)
+        costumeExperience = config().scaleCostumeExperience(costumeExperience);
 
     m_log.debug("Giving weapon %s %d character experience and %d costume experience", userWeaponUuid.c_str(), characterExperience, costumeExperience);
 

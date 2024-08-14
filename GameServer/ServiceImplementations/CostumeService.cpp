@@ -75,7 +75,7 @@ void CostumeService::EnhanceImpl(
 
     user.consumeConsumableItem(user.consumableItemIdForGold(), costumeTotalEnhancementCost);
 
-    user.giveUserCostumeExperience(request->user_costume_uuid(), 0, effectValue);
+    user.giveUserCostumeExperience(request->user_costume_uuid(), 0, effectValue, true);
 }
 
 void CostumeService::LimitBreakImpl(

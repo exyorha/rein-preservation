@@ -115,7 +115,7 @@ void WeaponService::EnhanceByMaterialImpl(
 
     user.consumeConsumableItem(user.consumableItemIdForGold(), weaponTotalEnhancementCost);
 
-    user.giveUserWeaponExperience(request->user_weapon_uuid(), 0, effectValue);
+    user.giveUserWeaponExperience(request->user_weapon_uuid(), 0, effectValue, true);
 }
 
 void WeaponService::EnhanceSkillImpl(
