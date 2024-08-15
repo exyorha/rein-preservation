@@ -11,6 +11,8 @@
 
 #include <ThunkSymbolSource.h>
 
+class ICallImplementation;
+
 class GlobalContext {
 public:
     GlobalContext();
@@ -39,6 +41,12 @@ public:
 
     static inline GlobalContext &get() {
         return GlobalContextRegisterer::get();
+    }
+
+    static bool precompiledICallUseDisallowed;
+
+    inline ICallImplementation &icallImplementation() {
+        return *m_icallImplementation;
     }
 
 private:
@@ -74,6 +82,7 @@ private:
     JIT m_jit;
     ThunkSymbolSource m_thunkSymbolSource;
     ElfLinkingSet m_linkingSet;
+    std::unique_ptr<ICallImplementation> m_icallImplementation;
 };
 
 #endif

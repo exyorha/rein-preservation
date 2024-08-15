@@ -7,7 +7,7 @@
 #include <mpv/render.h>
 #include <mpv/render_gl.h>
 
-#include <VideoPlayer/PlatformDynamicLibrary.h>
+#include <PlatformDynamicLibrary.h>
 
 class DynamicallyLinkedMPV {
 public:

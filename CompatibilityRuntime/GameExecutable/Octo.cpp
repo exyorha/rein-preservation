@@ -129,6 +129,6 @@ void InitializeOcto() {
     translator_divert_method("Assembly-CSharp.dll::Adam.Framework.Resource.DarkOctoSetupper::AssetBundleLoadInterceptor",
                              Adam_Framework_Resource_DarkOctoSetupper_AssetBundleLoadInterceptor);
 
-    getPersistentDataPath = reinterpret_cast<GetPersistentDataPathPtr>(translator_resolve_native_icall("UnityEngine.Application::get_persistentDataPath()"));
+    getPersistentDataPath = reinterpret_cast<GetPersistentDataPathPtr>(translator_resolve_native_icall("UnityEngine.Application::get_persistentDataPath"));
 
 }

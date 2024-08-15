@@ -1,6 +1,7 @@
-#include <Interop/InternalCallThunk.h>
 #include <Interop/InteropMethodLocator.h>
 #include <Interop/MethodDiversion.h>
+#include <Interop/ICallImplementation.h>
+
 #include <Translator/thunking.h>
 
 #include <ELF/Image.h>
@@ -26,19 +27,40 @@ static Il2CppMethodPointer il2cpp_resolve_arm_icall(const char *name) {
 }
 
 void il2cpp_add_internal_call(const char* name, Il2CppMethodPointer method) {
-    auto thunkContext = std::make_unique<InternalCallThunk>(name, method);
+    auto &context = GlobalContext::get();
+    auto armImplementation = context.icallImplementation().installICallHandler(name, method);
 
-    typedef void(*FunctionPointer)(const char* name, void *method);
+    /*
+     * If the ICall implementation manager can't supply us an implementation
+     * (relevant for the Static manager - will return nullptr for icalls that
+     * are not mentioned in the il2cpp binary), then we don't supply it to
+     * il2cpp, and then it will raise NotImplementedException if a call to this
+     * method somehow happens after all.
+     */
 
-    static FunctionPointer arm_il2cpp_add_internal_call =
-        reinterpret_cast<FunctionPointer>(GlobalContext::get().linkingSet().getSymbolChecked("il2cpp_add_internal_call"));
+    if(armImplementation) {
+        typedef void(*FunctionPointer)(const char* name, void *method);
 
-    auto thunk = GlobalContext::get().thunkManager().allocateARMToX86ThunkCall(thunkContext.release(), &InternalCallThunk::thunkCall);
+        static FunctionPointer arm_il2cpp_add_internal_call =
+            reinterpret_cast<FunctionPointer>(GlobalContext::get().linkingSet().getSymbolChecked("il2cpp_add_internal_call"));
 
-    armcall(arm_il2cpp_add_internal_call,
-        name,
-        thunk
-    );
+        armcall(arm_il2cpp_add_internal_call,
+            name,
+            armImplementation
+        );
+    }
+}
+
+Il2CppMethodPointer IL2CPP_EXPORT translator_resolve_native_icall(const char *name) {
+
+    auto method = il2cpp_resolve_arm_icall(name);
+
+    auto resolved = GlobalContext::get().icallImplementation().resolveNativeICall(name, reinterpret_cast<void *>(method));
+    if(!resolved) {
+        fprintf(stderr, "translator_resolve_native_icall is returning nullptr for '%s', is the name misspelled?\n", name);
+    }
+
+    return resolved;
 }
 
 Il2CppMethodPointer il2cpp_resolve_icall(const char* name) {
@@ -75,20 +97,6 @@ void il2cpp_shutdown(void) {
     internal_il2cpp_shutdown();
 }
 
-Il2CppMethodPointer IL2CPP_EXPORT translator_resolve_native_icall(const char *name) {
-
-    auto method = il2cpp_resolve_arm_icall(name);
-    if(!method) {
-        return nullptr;
-    }
-
-    auto thunk = static_cast<InternalCallThunk *>(GlobalContext::get().thunkManager().lookupARMToX86ThunkCall(reinterpret_cast<void *>(method)));
-    if(!thunk)
-        panic("translator_resolve_native_icall(%s): the ARM-side handle, %p, doesn't correspond to a thunk\n",
-              name, reinterpret_cast<void *>(method));
-
-    return thunk->x86Method();
-}
 
 void IL2CPP_EXPORT translator_divert_method(const char *methodName, Il2CppMethodPointer interposer) {
 
@@ -117,4 +125,8 @@ void il2cpp_gc_wbarrier_set_field(Il2CppObject * obj, void **targetAddress, void
      * Make sure that this thread gets the JIT context.
      */
     *targetAddress = object;
+}
+
+void translator_disallow_precompiled_icall_use(void) {
+    GlobalContext::precompiledICallUseDisallowed = true;
 }

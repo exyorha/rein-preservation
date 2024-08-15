@@ -308,5 +308,7 @@ int main(int argc, char **argv) {
         .argv = argv
     };
 
+    translator_disallow_precompiled_icall_use();
+
     return translator_main(compilerMain, &args);
 }

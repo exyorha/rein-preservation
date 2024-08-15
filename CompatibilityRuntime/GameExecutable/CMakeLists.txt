@@ -9,7 +9,6 @@ add_executable(GameExecutable WIN32
     GameServerInterface.cpp
     GameServerInterface.h
 
-
     GLES/GLESAPISet.cpp
     GLES/GLESAPISet.h
     GLES/GLESObjectHandle.h
@@ -109,8 +108,6 @@ add_executable(GameExecutable WIN32
 
     VideoPlayer/MPVTypes.h
 
-    VideoPlayer/PlatformDynamicLibrary.h
-
     WebView/WebViewImplementation.cpp
     WebView/WebViewImplementation.h
     WebView/WebViewImplementationFactory.cpp
@@ -136,9 +133,6 @@ if(NOT WIN32)
 
         ProcessCommandLineLinux.cpp
         ProcessCommandLineLinux.h
-
-        VideoPlayer/LinuxDynamicLibrary.cpp
-        VideoPlayer/LinuxDynamicLibrary.h
     )
 
 endif()
@@ -156,9 +150,6 @@ if(WIN32)
         ProcessCommandLineWindows.cpp
         ProcessCommandLineWindows.h
 
-        VideoPlayer/WindowsDynamicLibrary.cpp
-        VideoPlayer/WindowsDynamicLibrary.h
-
         WindowsHelpers.cpp
         WindowsHelpers.h
 
@@ -170,7 +161,7 @@ if(WIN32)
 endif()
 
 target_include_directories(GameExecutable PRIVATE . ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/thirdparty/khronos-headers)
-target_link_libraries(GameExecutable PRIVATE GameAssembly Il2CppUtilities ClientDataAccess gitversion mpv_api SDL_api)
+target_link_libraries(GameExecutable PRIVATE GameAssembly Il2CppUtilities ClientDataAccess gitversion mpv_api SDL_api PlatformDynamicLibrary)
 set_target_properties(GameExecutable PROPERTIES
     OUTPUT_NAME NieR
     BUILD_WITH_INSTALL_RPATH TRUE

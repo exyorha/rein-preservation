@@ -25,6 +25,8 @@ void IL2CPP_EXPORT translator_flush_instruction_cache(void *baseAddress, size_t 
 
 void IL2CPP_EXPORT translator_divert_method(const char *method, Il2CppMethodPointer interposer);
 
+void IL2CPP_EXPORT translator_disallow_precompiled_icall_use(void);
+
 #if defined(__cplusplus)
 }
 #endif

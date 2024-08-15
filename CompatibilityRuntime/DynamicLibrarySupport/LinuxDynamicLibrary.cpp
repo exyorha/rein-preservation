@@ -1,4 +1,4 @@
-#include <VideoPlayer/LinuxDynamicLibrary.h>
+#include "LinuxDynamicLibrary.h"
 
 #include <stdexcept>
 #include <sstream>

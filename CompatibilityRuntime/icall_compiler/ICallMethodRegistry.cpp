@@ -64,7 +64,7 @@ void ICallMethodRegistry::addClass(Il2CppClass* klass) {
 }
 
 bool ICallMethodRegistry::isInterestingClass(const std::string &className) {
-    return className.starts_with("Unity.") || className.starts_with("UnityEngine.");
+    return className.starts_with("Unity.") || className.starts_with("UnityEngine.") || className.starts_with("UnityEngineInternal.");
 }
 
 void ICallMethodRegistry::addMethod(const std::string &className, const MethodInfo *method) {

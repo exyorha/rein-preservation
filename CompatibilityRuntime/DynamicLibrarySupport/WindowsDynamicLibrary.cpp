@@ -1,4 +1,4 @@
-#include <VideoPlayer/WindowsDynamicLibrary.h>
+#include "WindowsDynamicLibrary.h"
 
 #include <stdexcept>
 #include <sstream>

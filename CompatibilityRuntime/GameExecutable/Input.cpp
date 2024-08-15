@@ -135,7 +135,7 @@ void InitializeInput(void) {
     /*
      * The game does its own filtering, so using GetAxis just makes the movement sluggish.
      */
-    icall_GetAxisRaw = reinterpret_cast<GetAxisRawPtr>(translator_resolve_native_icall("UnityEngine.Input::GetAxisRaw(System.String)"));
+    icall_GetAxisRaw = reinterpret_cast<GetAxisRawPtr>(translator_resolve_native_icall("UnityEngine.Input::GetAxisRaw"));
 
     icall_GetKeyDown = reinterpret_cast<GetKeyDownPtr>(translator_resolve_native_icall("UnityEngine.Input::GetKeyDownString"));
 
@@ -143,14 +143,14 @@ void InitializeInput(void) {
                              Dark_Animation_ActorControllerWithGesturePan_Update);
 
     if(EmulateTouchInput) {
-        icall_GetMouseButton = reinterpret_cast<GetMouseButtonPtr>(translator_resolve_native_icall("UnityEngine.Input::GetMouseButton(System.Int32)"));
+        icall_GetMouseButton = reinterpret_cast<GetMouseButtonPtr>(translator_resolve_native_icall("UnityEngine.Input::GetMouseButton"));
         icall_get_mousePosition_Injected = reinterpret_cast<get_mousePosition_InjectedPtr>(
-            translator_resolve_native_icall("UnityEngine.Input::get_mousePosition_Injected(UnityEngine.Vector3&)"));
+            translator_resolve_native_icall("UnityEngine.Input::get_mousePosition_Injected"));
 
         touchEmulator.setBackgroundLayerInputReceiver(&unityTouchReceiver);
     }
 
-    icall_OpenURL = reinterpret_cast<OpenURLPtr>(translator_resolve_native_icall("UnityEngine.Application::OpenURL(System.String)"));
+    icall_OpenURL = reinterpret_cast<OpenURLPtr>(translator_resolve_native_icall("UnityEngine.Application::OpenURL"));
 
     translator_divert_method("UnityEngine.InputLegacyModule.dll::UnityEngine.SendMouseEvents::DoSendMouseEvents",
                                 UnityEngine_SendMouseEvent_DoSendMouseEvents);

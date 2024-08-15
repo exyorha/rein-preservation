@@ -3,6 +3,9 @@
 #include <Translator/GCHooks.h>
 #include <Translator/thunking.h>
 
+#include <Interop/ICallImplementationDynamic.h>
+#include <Interop/ICallImplementationStatic.h>
+
 #include <stdexcept>
 
 #include <musl-elf.h>
@@ -32,6 +35,8 @@ extern "C" {
 const uint32_t GlobalContext::PageSize = queryPageSize();
 
 GlobalContext *GlobalContext::GlobalContextRegisterer::m_context = nullptr;
+
+bool GlobalContext::precompiledICallUseDisallowed = getenv("TRANSLATOR_DISALLOW_PRECOMPILED_ICALL_USE");
 
 GlobalContext::GlobalContext() : m_registerer(this), m_linkingSet(&m_thunkSymbolSource) {
 
@@ -93,6 +98,26 @@ GlobalContext::GlobalContext() : m_registerer(this), m_linkingSet(&m_thunkSymbol
     m_linkingSet.runConstructors();
 
     Il2CppVMCharacteristics::initialize();
+
+    if(!precompiledICallUseDisallowed) {
+        try {
+            std::filesystem::path icallModule = thisLibraryDirectory();
+#if defined(_WIN32)
+            icallModule /= "PrecompiledICallThunks.dll";
+#else
+            icallModule /= "PrecompiledICallThunks.so";
+#endif
+
+            m_icallImplementation = std::make_unique<ICallImplementationStatic>(icallModule);
+        } catch(const std::exception &e) {
+            fprintf(stderr, "failed to initialize precompiled icall thunk support: %s\n", e.what());
+        }
+    }
+
+    if(!m_icallImplementation) {
+        m_icallImplementation = std::make_unique<ICallImplementationDynamic>();
+        fprintf(stderr, "warning: using dynamic (libffi-based) icall thunking either because the static thunking use is disallowed, or because the thunk library has failed to initialize. This is normal for the thunk compiler, and is a performance issue for the game.\n");
+    }
 }
 
 GlobalContext::~GlobalContext() {
