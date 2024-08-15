@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 project(rein-preservation)
 
 function(separate_unix_debug_info target_name)
-    if(UNIX)
+    if(UNIX OR MINGW)
         add_custom_command(
             TARGET ${target_name} POST_BUILD
-            COMMAND objcopy --only-keep-debug $<TARGET_FILE:${target_name}> "$<TARGET_FILE_DIR:${target_name}>/$<TARGET_FILE_NAME:${target_name}>.debug"
-            COMMAND objcopy --add-gnu-debuglink=$<TARGET_FILE_NAME:${target_name}>.debug $<TARGET_FILE:${target_name}>
+            COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:${target_name}> "$<TARGET_FILE_DIR:${target_name}>/$<TARGET_FILE_NAME:${target_name}>.debug"
+            COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded $<TARGET_FILE:${target_name}>
+            COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE_NAME:${target_name}>.debug $<TARGET_FILE:${target_name}>
             VERBATIM
         )
 

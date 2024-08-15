@@ -111,8 +111,8 @@ cmake \
 
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
-cmake --install build --component GameAssembly --strip
-cmake --install build --component GameServer --strip
+cmake --install build --component GameAssembly
+cmake --install build --component GameServer
 cmake --install build --component development
 
 if [ reincarnation/development/compiled_icalls.cpp -ot reincarnation/development/icall_compiler ]; then
@@ -121,8 +121,8 @@ fi
 
 cmake -B build -DPRECOMPILED_ICALL_THUNKS="$(realpath -- reincarnation/development/compiled_icalls.cpp)"
 cmake --build build
-cmake --install build --component GameAssembly --strip
-cmake --install build --component GameServer --strip
+cmake --install build --component GameAssembly
+cmake --install build --component GameServer
 
 (cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > reincarnation/libmpv-lgpl-compliance.tgz
 
@@ -221,5 +221,5 @@ cmake -S . -B mingw-build \
     -DPRECOMPILED_ICALL_THUNKS="$(realpath -- reincarnation/development/compiled_icalls.cpp)"
 
 cmake --build mingw-build
-cmake --install mingw-build --component GameAssembly --strip
-cmake --install mingw-build --component GameServer --strip
+cmake --install mingw-build --component GameAssembly
+cmake --install mingw-build --component GameServer
