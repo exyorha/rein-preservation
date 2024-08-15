@@ -52,7 +52,7 @@ void translator_set_post_initialize_callback(void (*callback)(void)) {
 int il2cpp_init(const char* domain_name) {
 
     auto result = internal_il2cpp_init(domain_name);
-    if(result != 0) {
+    if(result != 0 && postInitializeCallback) {
         postInitializeCallback();
     }
 

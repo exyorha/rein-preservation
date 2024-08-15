@@ -29,6 +29,8 @@ endif()
 
 enable_language(ASM)
 
+find_package(ZLIB REQUIRED)
+
 find_library(FFI_LIBRARY ffi REQUIRED)
 find_path(FFI_INCLUDEPATH ffi.h REQUIRED)
 
@@ -56,9 +58,13 @@ endif()
 
 add_subdirectory(Il2CppUtilities)
 
+add_subdirectory(GameExecutable)
+
 add_subdirectory(GameFramework)
 
-add_subdirectory(GameExecutable)
+if(NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(icall_compiler)
+endif()
 
 if(NOT WIN32)
     add_subdirectory(interrogator)
