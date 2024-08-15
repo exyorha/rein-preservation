@@ -139,7 +139,7 @@ static void writeMethodImpl(std::ostream &generated, const ICallMethod &method, 
 static int compilerMain(void *arg) {
     const auto &args = static_cast<const ArgumentPackage *>(arg);
 
-    il2cpp_set_data_dir("NieR_Data/il2cpp_data");
+    il2cpp_set_data_dir("../NieR_Data/il2cpp_data");
     auto result = il2cpp_init("IL2CPP Root Domain");
     if(!result) {
         fprintf(stderr, "il2cpp has failed to initialize.\n");
@@ -164,36 +164,14 @@ static int compilerMain(void *arg) {
 
 #include <zlib.h>
 
-struct ARMMachineContext {
-    using ARMVectorRegister = std::array<std::uint64_t, 2>;
-
-    uint64_t pc;
-    uint64_t sp;
-    std::array<std::uint64_t, 31> gprs;
-    std::array<ARMVectorRegister, 32> vectors;
-    uint32_t fpcr;
-    uint32_t fpsr;
-    uint32_t pstate;
-};
-
-typedef void (*ICallThunk)(ARMMachineContext &ctx);
-
-typedef void (*ICallTypeErasedTarget)(void);
-
-struct ICallPrecompiledThunks {
-    ICallThunk withoutInterposer;
-    ICallThunk withInterposer;
-    ICallTypeErasedTarget *icallHandler;
-    ICallTypeErasedTarget *icallInterposer;
-};
+#include <ARMMachineContext.h>
+#include <PrecompiledICallInterface.h>
 
 namespace {
   struct ICallMethodDeclaration {
     const char *name;
     ICallPrecompiledThunks thunks;
   };
-
-  template<typename T> void storeIntoMachineWord(T value);
 
 )SRC";
 
@@ -299,6 +277,12 @@ namespace {
 
     generated << R"SRC(
 
+extern "C"
+#if defined(_WIN32)
+__attribute__((dllexport))
+#else
+__attribute__((visibility("default")))
+#endif
 const ICallPrecompiledThunks *get_precompiled_icall_thunks(const char *icallName) {
 
     auto bucket = crc32_z(0, reinterpret_cast<const Bytef *>(icallName), strlen(icallName)) % (sizeof(hashBuckets) / sizeof(hashBuckets[0]));

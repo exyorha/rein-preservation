@@ -28,8 +28,14 @@ std::condition_variable JITThreadContext::ThreadContextRegistration::m_exitCondv
 std::vector<JITThreadContext *> JITThreadContext::ThreadContextRegistration::m_contextList;
 
 JITThreadContext::JITThreadContext(void *providedStack, size_t providedStackSize) :
-    sp(0), pc(0), fpcr(0), fpsr(0), pstate(UINT32_C(0x80000000)), stoppedWorld(false), m_referenceCount(1),
+    stoppedWorld(false), m_referenceCount(1),
     m_threadStack(providedStack), m_threadStackSize(providedStackSize), m_threadStackAllocated(false), m_threadResult(nullptr) {
+
+    sp = 0;
+    pc = 0;
+    fpcr = 0;
+    fpsr = 0;
+    pstate = UINT32_C(0x80000000);
 
     memset(&gprs, 0xBA, sizeof(gprs));
     memset(&vectors, 0xBA, sizeof(vectors));

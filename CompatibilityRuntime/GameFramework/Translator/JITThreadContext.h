@@ -11,6 +11,8 @@
 
 #include <Bionic/BionicThreading.h>
 
+#include <ARMMachineContext.h>
+
 class GarbageCollectorThreadVisitor {
 protected:
     GarbageCollectorThreadVisitor() = default;
@@ -30,7 +32,7 @@ class JITThreadContextPtr;
 class JITThreadLocalContextPtr;
 class JoinableThreadManager;
 
-class JITThreadContext {
+class JITThreadContext : public ARMMachineContext {
 private:
      ~JITThreadContext();
 
@@ -48,14 +50,6 @@ public:
 
     void apply(Dynarmic::A64::Jit &jit) const;
     void capture(const Dynarmic::A64::Jit &jit);
-
-    uint64_t pc;
-    uint64_t sp;
-    std::array<std::uint64_t, 31> gprs;
-    std::array<Dynarmic::A64::Vector, 32> vectors;
-    uint32_t fpcr;
-    uint32_t fpsr;
-    uint32_t pstate;
 
     uint64_t thunkLR;
 

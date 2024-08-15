@@ -106,13 +106,23 @@ cmake \
     -DBoost_INCLUDE_DIR="$(realpath -- "windows-build-deps/${windows_boost_version}")" \
     -DZLIB_USE_STATIC_LIBS=TRUE \
     -DZLIB_ROOT="${linprefix}" \
-    -DCMAKE_PREFIX_PATH="${linprefix}"
+    -DCMAKE_PREFIX_PATH="${linprefix}" \
+    -DPRECOMPILED_ICALL_THUNKS=""
 
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
 cmake --install build --component GameAssembly --strip
 cmake --install build --component GameServer --strip
+cmake --install build --component development
 
+if [ reincarnation/development/compiled_icalls.cpp -ot reincarnation/development/icall_compiler ]; then
+    (cd reincarnation/development && ./icall_compiler)
+fi
+
+cmake -B build -DPRECOMPILED_ICALL_THUNKS="$(realpath -- reincarnation/development/compiled_icalls.cpp)"
+cmake --build build
+cmake --install build --component GameAssembly --strip
+cmake --install build --component GameServer --strip
 
 (cd winmpv && git ls-tree --name-only --full-name HEAD | tar cz --files-from=-) > reincarnation/libmpv-lgpl-compliance.tgz
 
@@ -207,7 +217,8 @@ cmake -S . -B mingw-build \
     -DPKG_CONFIG_EXECUTABLE="${winprefix}/bin/x86_64-w64-mingw32-pkg-config" \
     -DBUILD_ASSET_PROCESSING=OFF \
     -DCEF_ROOT="$(realpath -- cef_binary_123.0.13+gfc703fb+chromium-123.0.6312.124_windows64_minimal)" \
-    -DProtobuf_PROTOC_EXECUTABLE="$(realpath -- "linux-build-deps/prefix/bin/protoc")"
+    -DProtobuf_PROTOC_EXECUTABLE="$(realpath -- "linux-build-deps/prefix/bin/protoc")" \
+    -DPRECOMPILED_ICALL_THUNKS="$(realpath -- reincarnation/development/compiled_icalls.cpp)"
 
 cmake --build mingw-build
 cmake --install mingw-build --component GameAssembly --strip

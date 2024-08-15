@@ -194,7 +194,7 @@ set_target_properties(GameAssembly PROPERTIES
     PREFIX ""
 )
 
-target_link_libraries(GameAssembly PRIVATE elfpe-interface)
+target_link_libraries(GameAssembly PRIVATE elfpe-interface TranslatorExtensionInterface)
 
 if(CR_GARBAGE_COLLECT_HOST_STACKS)
     set(bdwgc_root ${PROJECT_SOURCE_DIR}/thirdparty/bdwgc)
