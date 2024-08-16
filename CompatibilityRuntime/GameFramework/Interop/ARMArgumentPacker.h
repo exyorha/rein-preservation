@@ -90,15 +90,10 @@ public:
     }
 
     template<typename T>
-    std::vector<void *> getPointers(T &context) const {
-        std::vector<void *> pointers;
-        pointers.reserve(m_argumentTypes.size());
-
+    void getPointers(T &context, void **&pointers) const {
         for(const auto &location: m_argumentLocations) {
-            pointers.emplace_back(getPointerToLocation(location, context));
+            *pointers++ = getPointerToLocation(location, context);
         }
-
-        return pointers;
     }
 
     inline size_t argumentFrameSizeOnStack() const {

@@ -95,17 +95,20 @@ void MethodDiversion::diversionHandler(const Diversion *diversion) {
 
     auto &context = JITThreadContext::get();
 
-    std::vector<void *> args = this_->m_arguments.getPointers(context);
+    void **argsStart = reinterpret_cast<void **>(alloca(sizeof(void *) * this_->m_arguments.size()));
+    void **argsPtr = argsStart;
+
+    this_->m_arguments.getPointers(context, argsPtr);
     auto returnPointer = this_->m_result.getPointer(context);
 
     void *closurePtr = this_->m_closure.code();
-    args.push_back(&closurePtr);
+    *argsPtr++ = &closurePtr;
 
     ffi_call(
         &this_->m_cifForInterposerCall,
         this_->m_interposer,
         returnPointer,
-        args.data());
+        argsStart);
 }
 
 void MethodDiversion::continueCall(ffi_cif *cif, void *ret, void **args, void *userData) {

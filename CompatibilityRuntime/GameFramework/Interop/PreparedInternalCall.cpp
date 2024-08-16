@@ -85,29 +85,31 @@ PreparedInternalCall::~PreparedInternalCall() = default;
 
 void PreparedInternalCall::invokeInternal(Il2CppMethodPointer method, JITThreadContext &context, SavedICallContext *contextWithInputArgs) const {
 
-    std::vector<void *> args;
+    void **argsStart = reinterpret_cast<void **>(alloca(sizeof(void *) * m_arguments.size()));
+    void **argsPtr = argsStart;
+
     if(contextWithInputArgs) {
-        args = m_arguments.getPointers(*contextWithInputArgs);
+        m_arguments.getPointers(*contextWithInputArgs, argsPtr);
     } else {
-        args = m_arguments.getPointers(context);
+        m_arguments.getPointers(context, argsPtr);
     }
 
     auto returnPointer = m_result.getPointer(context);
 
     if(m_interposer) {
-        args.push_back(&method);
+        *argsPtr++ = &method;
 
         ffi_call(
             &m_cif,
             m_interposer,
             returnPointer,
-            args.data());
+            argsStart);
     } else {
 
         ffi_call(
             &m_cif,
             method,
             returnPointer,
-            args.data());
+            argsStart);
     }
 }
