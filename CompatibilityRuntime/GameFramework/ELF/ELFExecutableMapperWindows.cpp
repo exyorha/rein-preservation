@@ -61,6 +61,9 @@ ELFExecutableMapperWindows::ImageResource::ImageResource(const std::filesystem::
     m_module = LoadLibraryEx(filename.c_str(), nullptr, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
     if(!m_module)
         WindowsError::throwLastError();
+    printf("----- ARM image %ls is loaded at %p\n",
+           filename.c_str(), base());
+
 }
 
 ELFExecutableMapperWindows::ImageResource::~ImageResource() {
