@@ -127,10 +127,8 @@ void runARMCall(JITThreadContext &context) {
 }
 
 
-uintptr_t retrieveX86CallPointerSizedArgument(int position) {
+uintptr_t retrieveX86CallPointerSizedArgument(JITThreadContext &context, int position) {
     uintptr_t value;
-
-    auto &context = JITThreadContext::get();
 
     if(position < 8) {
         value = context.gprs[position];
@@ -141,27 +139,20 @@ uintptr_t retrieveX86CallPointerSizedArgument(int position) {
     return value;
 }
 
-void storeX86CallPointerSizedResult(uintptr_t result) {
-    auto &context = JITThreadContext::get();
+void storeX86CallPointerSizedResult(JITThreadContext &context, uintptr_t result) {
     context.gprs[0] = result;
 }
 
-void storeX86CallStructureResult(const void *data, size_t size) {
-    auto &context = JITThreadContext::get();
-
+void storeX86CallStructureResult(JITThreadContext &context, const void *data, size_t size) {
     memcpy(&context.gprs[0], data, size);
 }
 
-uintptr_t fetchARMCallPointerSizedResult() {
+uintptr_t fetchARMCallPointerSizedResult(JITThreadContext &context) {
 
-    auto &context = JITThreadContext::get();
-
-    return  context.gprs[0];
+    return context.gprs[0];
 }
 
-void storeARMCallPointerSizedArgument(int position, uintptr_t value) {
-    auto &context = JITThreadContext::get();
-
+void storeARMCallPointerSizedArgument(JITThreadContext &context, int position, uintptr_t value) {
     if(position < 8) {
         context.gprs[position] = value;
     } else {
@@ -169,23 +160,17 @@ void storeARMCallPointerSizedArgument(int position, uintptr_t value) {
     }
 }
 
-void storeX86CallFloatResult(float result) {
-    auto &context = JITThreadContext::get();
-
+void storeX86CallFloatResult(JITThreadContext &context, float result) {
     context.vectors[0][0] = std::bit_cast<uint32_t>(result);
     context.vectors[0][1] = 0;
 }
 
-void storeX86CallFloatResult(double result) {
-    auto &context = JITThreadContext::get();
-
+void storeX86CallFloatResult(JITThreadContext &context, double result) {
     context.vectors[0][0] = std::bit_cast<uint64_t>(result);
     context.vectors[0][1] = 0;
 }
 
-void storeX86CallFloatResult(long double result) {
-    auto &context = JITThreadContext::get();
-
+void storeX86CallFloatResult(JITThreadContext &context, long double result) {
     auto val = std::bit_cast<__int128_t>(result);
 
     context.vectors[0][0] = static_cast<uint64_t>(val);
@@ -193,28 +178,24 @@ void storeX86CallFloatResult(long double result) {
 }
 
 
-void fetchX86CallFloatingPointArgument(int position, float &out) {
+void fetchX86CallFloatingPointArgument(JITThreadContext &context, int position, float &out) {
     if(position < 8) {
-        auto &context = JITThreadContext::get();
         out = std::bit_cast<float>(static_cast<uint32_t>(context.vectors[position][0]));
     } else {
         panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
     }
 }
 
-void fetchX86CallFloatingPointArgument(int position, double &out) {
+void fetchX86CallFloatingPointArgument(JITThreadContext &context, int position, double &out) {
     if(position < 8) {
-        auto &context = JITThreadContext::get();
         out = std::bit_cast<double>(static_cast<uint64_t>(context.vectors[position][0]));
     } else {
         panic("stack argument passing is not implemented yet, cannot fetch an argument no. %d\n", position);
     }
 }
 
-void fetchX86CallFloatingPointArgument(int position, long double &out) {
+void fetchX86CallFloatingPointArgument(JITThreadContext &context, int position, long double &out) {
     if(position < 8) {
-        auto &context = JITThreadContext::get();
-
         __int128_t i128 = (static_cast<__int128_t>(context.vectors[position][1]) << 64) | context.vectors[position][0];
 
         out = std::bit_cast<long double>(i128);

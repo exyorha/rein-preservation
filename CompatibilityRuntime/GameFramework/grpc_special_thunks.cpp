@@ -14,7 +14,7 @@ void gprsharp_convert_clock_type_raw_thunk(void) {
 
     gpr_clock_type input_clock = static_cast<gpr_clock_type>(context.gprs[2]);
 
-    storeX86CallResult(gprsharp_convert_clock_type(input, input_clock));
+    storeX86CallResult(context, gprsharp_convert_clock_type(input, input_clock));
 }
 
 //GPR_EXPORT void GPR_CALLTYPE grpcsharp_channel_watch_connectivity_state(
@@ -25,14 +25,14 @@ void grpcsharp_channel_watch_connectivity_state_raw_thunk(void) {
 
     auto &context = JITThreadContext::get();
 
-    auto channel = retrieveX86CallArgument<grpc_channel *>(0);
-    auto last_observed_state = retrieveX86CallArgument<grpc_connectivity_state>(1);
+    auto channel = retrieveX86CallArgument<grpc_channel *>(context, 0);
+    auto last_observed_state = retrieveX86CallArgument<grpc_connectivity_state>(context, 1);
 
     gpr_timespec deadline;
     memcpy(&deadline, &context.gprs[2], sizeof(deadline));
 
-    auto cq = retrieveX86CallArgument<grpc_completion_queue *>(4);
-    auto ctx = retrieveX86CallArgument<grpcsharp_batch_context *>(5);
+    auto cq = retrieveX86CallArgument<grpc_completion_queue *>(context, 4);
+    auto ctx = retrieveX86CallArgument<grpcsharp_batch_context *>(context, 5);
 
     return grpcsharp_channel_watch_connectivity_state(channel, last_observed_state, deadline, cq, ctx);
 }
@@ -44,17 +44,17 @@ void grpcsharp_channel_watch_connectivity_state_raw_thunk(void) {
 void grpcsharp_channel_create_call_raw_thunk(void) {
     auto &context = JITThreadContext::get();
 
-    auto channel = retrieveX86CallArgument<grpc_channel *>(0);
-    auto parent_call = retrieveX86CallArgument<grpc_call *>(1);
-    auto propagation_mask = retrieveX86CallArgument<uint32_t>(2);
-    auto cq = retrieveX86CallArgument<grpc_completion_queue *>(3);
-    auto method = retrieveX86CallArgument<const char *>(4);
-    auto host = retrieveX86CallArgument<const char *>(5);
+    auto channel = retrieveX86CallArgument<grpc_channel *>(context, 0);
+    auto parent_call = retrieveX86CallArgument<grpc_call *>(context, 1);
+    auto propagation_mask = retrieveX86CallArgument<uint32_t>(context, 2);
+    auto cq = retrieveX86CallArgument<grpc_completion_queue *>(context, 3);
+    auto method = retrieveX86CallArgument<const char *>(context, 4);
+    auto host = retrieveX86CallArgument<const char *>(context, 5);
 
     gpr_timespec deadline;
     memcpy(&deadline, &context.gprs[6], sizeof(deadline));
 
-    storeX86CallResult(grpcsharp_channel_create_call(channel, parent_call, propagation_mask, cq, method, host, deadline));
+    storeX86CallResult(context, grpcsharp_channel_create_call(channel, parent_call, propagation_mask, cq, method, host, deadline));
 }
 
 
@@ -64,7 +64,7 @@ void grpcsharp_channel_create_call_raw_thunk(void) {
 void grpcsharp_auth_context_property_iterator_raw_thunk(void) {
     auto &context = JITThreadContext::get();
 
-    auto ctx = retrieveX86CallArgument<const grpc_auth_context *>(0);
+    auto ctx = retrieveX86CallArgument<const grpc_auth_context *>(context, 0);
 
     auto pointerToInterator = reinterpret_cast<grpc_auth_property_iterator *>(context.gprs[8]);
     *pointerToInterator  = grpcsharp_auth_context_property_iterator(ctx);
