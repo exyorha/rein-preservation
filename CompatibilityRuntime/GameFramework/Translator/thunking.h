@@ -35,9 +35,13 @@ void storeX86CallFloatResult(JITThreadContext &context, double result);
 void storeX86CallFloatResult(JITThreadContext &context, long double result);
 void storeX86CallStructureResult(JITThreadContext &context, const void *data, size_t size);
 
+uintptr_t retrieveX86CallPointerSizedArgument(JITThreadContext &context, int position);
+void storeX86CallPointerSizedResult(JITThreadContext &context, uintptr_t result);
+
 void runARMCall(JITThreadContext &context);
 
 void rethrowWrappedARMExceptionFromX86Call(const WrappedARMException &exception);
+
 
 extern "C" {
     intptr_t getOffsetOfThunkUtilitySlot();
@@ -63,27 +67,26 @@ template<typename ReturnType, typename... Args>
 static constexpr inline ThunkManager::X86ThunkTarget createTypedX86Thunk(ReturnType (*)(Args...));
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto fetchARMCallResult(JITThreadContext &context) -> typename std::enable_if<std::is_integral_v<T>, T>::type {
     return static_cast<T>(fetchARMCallPointerSizedResult(context));
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto fetchARMCallPointerResult(JITThreadContext &context) -> typename std::enable_if<!std::is_function_v<T>, T *>::type {
     return reinterpret_cast<T *>(fetchARMCallPointerSizedResult(context));
 }
 
 template<typename T>
-auto fetchARMCallPointerResult(JITThreadContext &context) -> typename std::enable_if<std::is_function_v<T>, T *>::type {
-    panic("function pointer result thunking is not implemented yet");
-}
-
-template<typename T>
+[[gnu::artificial]]
 static inline auto fetchARMCallResult(JITThreadContext &context) -> typename std::enable_if<std::is_pointer_v<T>, T>::type {
     return fetchARMCallPointerResult<typename std::remove_pointer<T>::type>(context);
 }
 
 template<typename T>
 struct ARMCallResultFetcher {
+    [[gnu::artificial]]
     static inline T fetchAndReturn(JITThreadContext &context) {
         return fetchARMCallResult<T>(context);
     }
@@ -91,10 +94,12 @@ struct ARMCallResultFetcher {
 
 template<>
 struct ARMCallResultFetcher<void> {
+    [[gnu::artificial]]
     static inline void fetchAndReturn(JITThreadContext &context) { }
 };
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto armCallStoreArgument(JITThreadContext &context, int argumentIndex, T arg) -> typename std::enable_if<std::is_integral_v<T>>::type {
     using WideningType = typename WideningType<std::is_signed_v<T>>::Type;
 
@@ -104,6 +109,7 @@ static inline auto armCallStoreArgument(JITThreadContext &context, int argumentI
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto armCallStorePointerArgument(JITThreadContext &context, int argumentIndex, T *arg) -> typename std::enable_if<!std::is_function_v<T>>::type {
     storeARMCallPointerSizedArgument(context, argumentIndex, reinterpret_cast<uintptr_t>(arg));
 }
@@ -134,20 +140,24 @@ auto armCallStorePointerArgument(JITThreadContext &context, int argumentIndex, T
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto armCallStoreArgument(JITThreadContext &context, int argumentIndex, T arg) -> typename std::enable_if<std::is_pointer_v<T>>::type {
     armCallStorePointerArgument(context, argumentIndex, arg);
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto armCallStoreArgument(JITThreadContext &context, int argumentIndex, T arg) -> typename std::enable_if<std::is_enum_v<T>>::type {
     armCallStoreArgument(context, argumentIndex, static_cast<typename std::underlying_type<T>::type>(arg));
 }
 
+[[gnu::artificial]]
 static inline void armCallStoreArguments(JITThreadContext &context, int argumentIndex) {
     (void)argumentIndex;
 }
 
 template<typename Arg, typename...Rest>
+[[gnu::artificial]]
 static inline void armCallStoreArguments(JITThreadContext &context, int argumentIndex, Arg arg, Rest... rest) {
     armCallStoreArgument(context, argumentIndex, arg);
 
@@ -155,7 +165,7 @@ static inline void armCallStoreArguments(JITThreadContext &context, int argument
 }
 
 template<typename ReturnType, typename... Args>
-ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Args... args), Args... args) {
+ReturnType armcall(ReturnType (*armFunctionPointer)(Args... args), Args... args) {
 
     auto &context = JITThreadContext::get();
 
@@ -177,16 +187,14 @@ ReturnType __attribute__((noinline)) armcall(ReturnType (*armFunctionPointer)(Ar
 }
 
 template<typename ReturnType, typename... Args>
-[[noreturn]] void __attribute__((noinline)) armcall_noreturn(ReturnType (*armFunctionPointer)(Args... args), Args... args) {
+[[noreturn]] void armcall_noreturn(ReturnType (*armFunctionPointer)(Args... args), Args... args) {
     armcall(armFunctionPointer, args...);
 
     panic("armcall returned in an armcall_noreturn function");
 }
 
-uintptr_t retrieveX86CallPointerSizedArgument(JITThreadContext &context, int position);
-void storeX86CallPointerSizedResult(JITThreadContext &context, uintptr_t result);
-
 template<typename T>
+[[gnu::artificial]]
 static inline auto retrieveX86CallPointer(JITThreadContext &context, int position) -> typename std::enable_if<!std::is_function_v<T>, T *>::type {
     return reinterpret_cast<T *>(retrieveX86CallPointerSizedArgument(context, position));
 }
@@ -221,11 +229,13 @@ static auto retrieveX86CallPointer(JITThreadContext &context, int position) -> t
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto retrieveX86CallArgument(JITThreadContext &context, int position) -> typename std::enable_if<std::is_pointer_v<T>, T>::type {
     return retrieveX86CallPointer<typename std::remove_pointer<T>::type>(context, position);
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto retrieveX86CallArgument(JITThreadContext &context, int position) -> typename std::enable_if<std::is_integral_v<T>, T>::type {
     static_assert(sizeof(T) <= sizeof(uintptr_t), "cannot retrieve arguments larger than a pointer");
 
@@ -240,11 +250,13 @@ static inline auto retrieveX86CallArgument(JITThreadContext &context, int positi
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto retrieveX86CallArgument(JITThreadContext &context, int position) -> typename std::enable_if<std::is_enum_v<T>, T>::type {
     return static_cast<T>(retrieveX86CallArgument<typename std::underlying_type<T>::type>(context, position));
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto storeX86CallPointerResult(JITThreadContext &context, T *result) -> typename std::enable_if<!std::is_function_v<T>>::type {
 
     storeX86CallPointerSizedResult(context, reinterpret_cast<uintptr_t>(result));
@@ -257,12 +269,14 @@ auto storeX86CallPointerResult(JITThreadContext &context, T *result) -> typename
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto storeX86CallResult(JITThreadContext &context, T result) -> typename std::enable_if<std::is_pointer_v<T>>::type {
 
     storeX86CallPointerResult<typename std::remove_pointer<T>::type>(context, result);
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto storeX86CallResult(JITThreadContext &context, T result) -> typename std::enable_if<std::is_integral_v<T>>::type {
     using WideningType = typename WideningType<std::is_signed_v<T>>::Type;
 
@@ -272,16 +286,19 @@ static inline auto storeX86CallResult(JITThreadContext &context, T result) -> ty
 }
 
 template<typename T>
-auto storeX86CallResult(JITThreadContext &context, T result) -> typename std::enable_if<std::is_floating_point_v<T>>::type {
+[[gnu::artificial]]
+inline auto storeX86CallResult(JITThreadContext &context, T result) -> typename std::enable_if<std::is_floating_point_v<T>>::type {
     storeX86CallFloatResult(context, result);
 }
 
 template<typename T>
+[[gnu::artificial]]
 static inline auto storeX86CallResult(JITThreadContext &context, T result) -> typename std::enable_if<std::is_enum_v<T>>::type {
     storeX86CallResult(context, static_cast<typename std::underlying_type<T>::type>(result));
 }
 
 template<typename T>
+[[gnu::artificial]]
 inline auto storeX86CallResult(JITThreadContext &context, T result) -> typename std::enable_if<std::is_class_v<T> && std::is_standard_layout_v<T> && sizeof(T) <= 16>::type {
     storeX86CallStructureResult(context, &result, sizeof(result));
 }
@@ -291,6 +308,7 @@ struct X86CallTranslateArgument {
     X86CallTranslateArgument(JITThreadContext &context) : context(context) {}
 
     template<typename T>
+    [[gnu::artificial]]
     inline operator T() const {
         return retrieveX86CallArgument<T>(context, Position);
     }
@@ -302,6 +320,7 @@ private:
 template<typename ReturnType, typename FunctionPointer, typename... Args>
 struct X86CallAndTranslateResult {
 
+    [[gnu::artificial]]
     static inline void call(JITThreadContext &context, FunctionPointer callee, Args... args) {
         storeX86CallResult<ReturnType>(context, callee(args...));
     }
@@ -310,6 +329,7 @@ struct X86CallAndTranslateResult {
 template<typename FunctionPointer, typename... Args>
 struct X86CallAndTranslateResult<void, FunctionPointer, Args...> {
 
+    [[gnu::artificial]]
     static inline void call(JITThreadContext &context, FunctionPointer callee, Args... args) {
         callee(args...);
     }
@@ -318,6 +338,7 @@ struct X86CallAndTranslateResult<void, FunctionPointer, Args...> {
 template<int ArgumentsLeftToTranslate, typename X86FunctionPointer>
 struct X86CallTranslatingFunctionApply {
     template<typename... AlreadyTranslatedArguments>
+    [[gnu::artificial]]
     static inline void apply(JITThreadContext &context, X86FunctionPointer callee, AlreadyTranslatedArguments... args) {
         X86CallTranslatingFunctionApply<ArgumentsLeftToTranslate - 1, X86FunctionPointer>::apply(
             context,
@@ -330,6 +351,7 @@ struct X86CallTranslatingFunctionApply {
 template<typename X86FunctionPointer>
 struct X86CallTranslatingFunctionApply<0, X86FunctionPointer> {
     template<typename... AlreadyTranslatedArguments>
+    [[gnu::artificial]]
     static inline void apply(JITThreadContext &context, X86FunctionPointer callee, AlreadyTranslatedArguments... args) {
         using ReturnType = std::invoke_result_t<X86FunctionPointer, AlreadyTranslatedArguments...>;
 
