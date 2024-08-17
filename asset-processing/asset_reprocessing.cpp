@@ -526,6 +526,9 @@ void AssetReprocessing::rewriteGLCoreSubprograms(UnityAsset::UnityTypes::Seriali
 }
 
 std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const UnityAsset::Stream &original) {
+    bool needsCodeReprocessing = true;
+    bool changesMade = false;
+
     auto shader = deserializeClass<UnityAsset::UnityClasses::Shader>(original);
 
     std::optional<uint32_t> glesPlatformIndex;
@@ -547,7 +550,8 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const Unity
             /*
              * If we already have the GL core platform, then we have nothing to do.
              */
-            return std::nullopt;
+            needsCodeReprocessing = false;
+            break;
         }
 
         if(platform == 9) {
@@ -560,105 +564,123 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const Unity
          * No GLES platform - nothing to convert.
          */
 
-        return std::nullopt;
+        needsCodeReprocessing = false;
     }
 
-    /*
-     * Change the GLES platform ID to the GL Core platform.
-     */
-    shader->platforms[*glesPlatformIndex] = 15;
+    if(needsCodeReprocessing) {
 
-    printf("AssetReprocessing: adding GL core platform to shader: '%s'\n", shader->m_ParsedForm.m_Name.c_str());
+        /*
+        * Change the GLES platform ID to the GL Core platform.
+        */
+        shader->platforms[*glesPlatformIndex] = 15;
 
-    for(auto &subShader: shader->m_ParsedForm.m_SubShaders) {
-        for(auto &pass: subShader.m_Passes) {
-            rewriteGLCoreSubprograms(pass.progVertex);
-            rewriteGLCoreSubprograms(pass.progFragment);
-            rewriteGLCoreSubprograms(pass.progGeometry);
-            rewriteGLCoreSubprograms(pass.progHull);
-            rewriteGLCoreSubprograms(pass.progDomain);
-            rewriteGLCoreSubprograms(pass.progRayTracing);
+        printf("AssetReprocessing: adding GL core platform to shader: '%s'\n", shader->m_ParsedForm.m_Name.c_str());
+
+        for(auto &subShader: shader->m_ParsedForm.m_SubShaders) {
+            for(auto &pass: subShader.m_Passes) {
+                rewriteGLCoreSubprograms(pass.progVertex);
+                rewriteGLCoreSubprograms(pass.progFragment);
+                rewriteGLCoreSubprograms(pass.progGeometry);
+                rewriteGLCoreSubprograms(pass.progHull);
+                rewriteGLCoreSubprograms(pass.progDomain);
+                rewriteGLCoreSubprograms(pass.progRayTracing);
+            }
         }
-    }
 
-    std::vector<UnityAsset::ShaderBlob> blobs;
-    blobs.reserve(shader->compressedLengths.size());
+        std::vector<UnityAsset::ShaderBlob> blobs;
+        blobs.reserve(shader->compressedLengths.size());
 
-    for(size_t index = 0, count = shader->compressedLengths.size(); index < count; index++) {
-        auto &blob = blobs.emplace_back(
-            shader->compressedLengths[index],
-            shader->decompressedLengths[index],
-            shader->offsets[index],
-            shader->compressedBlob);
+        for(size_t index = 0, count = shader->compressedLengths.size(); index < count; index++) {
+            auto &blob = blobs.emplace_back(
+                shader->compressedLengths[index],
+                shader->decompressedLengths[index],
+                shader->offsets[index],
+                shader->compressedBlob);
 
-        if(index == *glesPlatformIndex) {
+            if(index == *glesPlatformIndex) {
 
-            for(auto &entry: blob.entries) {
-                uint32_t version, platform;
-                entry >> version >> platform;
+                for(auto &entry: blob.entries) {
+                    uint32_t version, platform;
+                    entry >> version >> platform;
 
-                if(version != 201806140)
-                    throw std::runtime_error("unexpected shader blob version: " + std::to_string(version));
+                    if(version != 201806140)
+                        throw std::runtime_error("unexpected shader blob version: " + std::to_string(version));
 
-                if(platform == 4) {
-                    UnityAsset::Stream rebuiltBlob;
-                    rebuiltBlob << version << static_cast<uint32_t>(6); // GLCore32
+                    if(platform == 4) {
+                        UnityAsset::Stream rebuiltBlob;
+                        rebuiltBlob << version << static_cast<uint32_t>(6); // GLCore32
 
-                    rebuiltBlob.writeData(entry.data() + entry.position(), entry.length() - entry.position());
+                        rebuiltBlob.writeData(entry.data() + entry.position(), entry.length() - entry.position());
 
-                    /*
-                    * NOTE: shader blob actually binary, and contains serialized structure
-                    * interspersed with GLSL data. However, as long as we keep the length
-                    * intact, we can just modify it in place without deserialization.
-                    */
+                        /*
+                        * NOTE: shader blob actually binary, and contains serialized structure
+                        * interspersed with GLSL data. However, as long as we keep the length
+                        * intact, we can just modify it in place without deserialization.
+                        */
 
-                    char *sbegin = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + entry.position()));
-                    char *send = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + rebuiltBlob.length()));
+                        char *sbegin = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + entry.position()));
+                        char *send = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + rebuiltBlob.length()));
 
-                    static std::regex versionRegex("#version ([0-9]+) es\n");
-                    std::string_view replacementVersion = "#version 150\n";
+                        static std::regex versionRegex("#version ([0-9]+) es\n");
+                        std::string_view replacementVersion = "#version 150\n";
 
-                    for(std::cregex_iterator it(sbegin, send, versionRegex), end; it != end; ++it) {
-                        const auto &match = *it;
+                        for(std::cregex_iterator it(sbegin, send, versionRegex), end; it != end; ++it) {
+                            const auto &match = *it;
 
-                        if(match.length() < replacementVersion.size()) {
-                            throw std::runtime_error("not enough space in the shader to fit the replacement length");
+                            if(match.length() < replacementVersion.size()) {
+                                throw std::runtime_error("not enough space in the shader to fit the replacement length");
+                            }
+
+                            memcpy(sbegin + match.position(), replacementVersion.data(), replacementVersion.size());
+                            for(size_t indexToFill = match.position() + replacementVersion.size(), limit = match.position() + match.length(); indexToFill < limit;
+                                indexToFill++) {
+
+                                sbegin[indexToFill] = ' ';
+                            }
                         }
 
-                        memcpy(sbegin + match.position(), replacementVersion.data(), replacementVersion.size());
-                        for(size_t indexToFill = match.position() + replacementVersion.size(), limit = match.position() + match.length(); indexToFill < limit;
-                            indexToFill++) {
-
-                            sbegin[indexToFill] = ' ';
-                        }
+                        entry = rebuiltBlob;
                     }
-
-                    entry = rebuiltBlob;
                 }
             }
         }
+
+        shader->compressedBlob.clear();
+
+        for(size_t index = 0, count = shader->compressedLengths.size(); index < count; index++) {
+            auto &compLengths = shader->compressedLengths.at(index);
+            compLengths.clear();
+
+            auto &decompLengths = shader->decompressedLengths.at(index);
+            decompLengths.clear();
+
+            auto &outputOffsets = shader->offsets.at(index);
+            outputOffsets.clear();
+
+            blobs[index].serialize(
+                compLengths,
+                decompLengths,
+                outputOffsets,
+                shader->compressedBlob);
+        }
+
+        changesMade = true;
     }
 
-    shader->compressedBlob.clear();
-
-    for(size_t index = 0, count = shader->compressedLengths.size(); index < count; index++) {
-        auto &compLengths = shader->compressedLengths.at(index);
-        compLengths.clear();
-
-        auto &decompLengths = shader->decompressedLengths.at(index);
-        decompLengths.clear();
-
-        auto &outputOffsets = shader->offsets.at(index);
-        outputOffsets.clear();
-
-        blobs[index].serialize(
-            compLengths,
-            decompLengths,
-            outputOffsets,
-            shader->compressedBlob);
+    for(auto &prop: shader->m_ParsedForm.m_PropInfo.m_Props) {
+        if(prop.m_Name == "_DitherTex" && prop.m_DefTexture.m_DefaultName == "white") {
+            printf("Shader %s has a _DitherTex property with the default of '%s', fixing up\n", shader->m_ParsedForm.m_Name.c_str(),
+                   prop.m_DefTexture.m_DefaultName.c_str());
+            prop.m_DefTexture.m_DefaultName = "gray";
+            changesMade = true;
+        }
     }
 
-    return serializeClass(shader);
+    if(changesMade) {
+        return serializeClass(shader);
+    } else {
+        return std::nullopt;
+    }
 }
 
 bool AssetReprocessing::rgbaImageHasTransparentPixels(const unsigned char *data, const UnityAsset::TextureSubImage &image) {
