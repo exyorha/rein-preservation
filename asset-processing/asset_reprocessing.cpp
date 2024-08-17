@@ -439,12 +439,12 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
         auto settings = deserializeClass<UnityAsset::UnityClasses::BuildSettings>(original);
 
         /*
-         * Add the desktop OpenGL as supported, and set it as preferred by
-         * listing it first. Keep the original GLES API too, because we
-         * are perfectly able to run on GLES too, as long as it's a desktop
-         * or Tegra.
+         * Remove the GLES3 graphics API, and add the GLCore API.
          */
         // GraphicsDeviceType::OpenGLCore
+        settings->m_GraphicsAPIs.erase(std::remove_if(settings->m_GraphicsAPIs.begin(), settings->m_GraphicsAPIs.end(), [](auto type) {
+            return type == 11;
+        }), settings->m_GraphicsAPIs.end());
         settings->m_GraphicsAPIs.emplace(settings->m_GraphicsAPIs.begin(), 17);
 
         return serializeClass(settings);
@@ -516,13 +516,11 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessAsset(const UnityA
     }
 }
 
-void AssetReprocessing::addGLCoreSubprograms(UnityAsset::UnityTypes::SerializedProgram &program) {
+void AssetReprocessing::rewriteGLCoreSubprograms(UnityAsset::UnityTypes::SerializedProgram &program) {
     for(size_t index = 0, originalLength = program.m_SubPrograms.size(); index < originalLength; index++) {
         auto &subprogram = program.m_SubPrograms[index];
         if(subprogram.m_GpuProgramType == 4) {
-
-            auto &copy = program.m_SubPrograms.emplace_back(subprogram);
-            copy.m_GpuProgramType = 6;
+            subprogram.m_GpuProgramType = 6;
         }
     }
 }
@@ -565,75 +563,100 @@ std::optional<UnityAsset::Stream> AssetReprocessing::reprocessShader(const Unity
         return std::nullopt;
     }
 
+    /*
+     * Change the GLES platform ID to the GL Core platform.
+     */
+    shader->platforms[*glesPlatformIndex] = 15;
+
     printf("AssetReprocessing: adding GL core platform to shader: '%s'\n", shader->m_ParsedForm.m_Name.c_str());
 
     for(auto &subShader: shader->m_ParsedForm.m_SubShaders) {
         for(auto &pass: subShader.m_Passes) {
-            addGLCoreSubprograms(pass.progVertex);
-            addGLCoreSubprograms(pass.progFragment);
-            addGLCoreSubprograms(pass.progGeometry);
-            addGLCoreSubprograms(pass.progHull);
-            addGLCoreSubprograms(pass.progDomain);
-            addGLCoreSubprograms(pass.progRayTracing);
+            rewriteGLCoreSubprograms(pass.progVertex);
+            rewriteGLCoreSubprograms(pass.progFragment);
+            rewriteGLCoreSubprograms(pass.progGeometry);
+            rewriteGLCoreSubprograms(pass.progHull);
+            rewriteGLCoreSubprograms(pass.progDomain);
+            rewriteGLCoreSubprograms(pass.progRayTracing);
         }
     }
 
-    UnityAsset::ShaderBlob blob(
-        shader->compressedLengths[*glesPlatformIndex],
-        shader->decompressedLengths[*glesPlatformIndex],
-        shader->offsets[*glesPlatformIndex],
-        shader->compressedBlob);
+    std::vector<UnityAsset::ShaderBlob> blobs;
+    blobs.reserve(shader->compressedLengths.size());
 
-    for(auto &entry: blob.entries) {
-        uint32_t version, platform;
-        entry >> version >> platform;
+    for(size_t index = 0, count = shader->compressedLengths.size(); index < count; index++) {
+        auto &blob = blobs.emplace_back(
+            shader->compressedLengths[index],
+            shader->decompressedLengths[index],
+            shader->offsets[index],
+            shader->compressedBlob);
 
-        if(version != 201806140)
-            throw std::runtime_error("unexpected shader blob version: " + std::to_string(version));
+        if(index == *glesPlatformIndex) {
 
-        if(platform == 4) {
-            UnityAsset::Stream rebuiltBlob;
-            rebuiltBlob << version << static_cast<uint32_t>(6); // GLCore32
+            for(auto &entry: blob.entries) {
+                uint32_t version, platform;
+                entry >> version >> platform;
 
-            rebuiltBlob.writeData(entry.data() + entry.position(), entry.length() - entry.position());
+                if(version != 201806140)
+                    throw std::runtime_error("unexpected shader blob version: " + std::to_string(version));
 
-            /*
-             * NOTE: shader blob actually binary, and contains serialized structure
-             * interspersed with GLSL data. However, as long as we keep the length
-             * intact, we can just modify it in place without deserialization.
-             */
+                if(platform == 4) {
+                    UnityAsset::Stream rebuiltBlob;
+                    rebuiltBlob << version << static_cast<uint32_t>(6); // GLCore32
 
-            char *sbegin = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + entry.position()));
-            char *send = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + rebuiltBlob.length()));
+                    rebuiltBlob.writeData(entry.data() + entry.position(), entry.length() - entry.position());
 
-            static std::regex versionRegex("#version ([0-9]+) es\n");
-            std::string_view replacementVersion = "#version 150\n";
+                    /*
+                    * NOTE: shader blob actually binary, and contains serialized structure
+                    * interspersed with GLSL data. However, as long as we keep the length
+                    * intact, we can just modify it in place without deserialization.
+                    */
 
-            for(std::cregex_iterator it(sbegin, send, versionRegex), end; it != end; ++it) {
-                const auto &match = *it;
+                    char *sbegin = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + entry.position()));
+                    char *send = const_cast<char *>(reinterpret_cast<const char *>(rebuiltBlob.data() + rebuiltBlob.length()));
 
-                if(match.length() < replacementVersion.size()) {
-                    throw std::runtime_error("not enough space in the shader to fit the replacement length");
-                }
+                    static std::regex versionRegex("#version ([0-9]+) es\n");
+                    std::string_view replacementVersion = "#version 150\n";
 
-                memcpy(sbegin + match.position(), replacementVersion.data(), replacementVersion.size());
-                for(size_t indexToFill = match.position() + replacementVersion.size(), limit = match.position() + match.length(); indexToFill < limit;
-                    indexToFill++) {
+                    for(std::cregex_iterator it(sbegin, send, versionRegex), end; it != end; ++it) {
+                        const auto &match = *it;
 
-                    sbegin[indexToFill] = ' ';
+                        if(match.length() < replacementVersion.size()) {
+                            throw std::runtime_error("not enough space in the shader to fit the replacement length");
+                        }
+
+                        memcpy(sbegin + match.position(), replacementVersion.data(), replacementVersion.size());
+                        for(size_t indexToFill = match.position() + replacementVersion.size(), limit = match.position() + match.length(); indexToFill < limit;
+                            indexToFill++) {
+
+                            sbegin[indexToFill] = ' ';
+                        }
+                    }
+
+                    entry = rebuiltBlob;
                 }
             }
-
-            entry = rebuiltBlob;
         }
     }
 
-    shader->platforms.emplace_back(15);
-    auto &outputCompressedLengths = shader->compressedLengths.emplace_back();
-    auto &outputDecompressedLengths = shader->decompressedLengths.emplace_back();
-    auto &outputOffsets = shader->offsets.emplace_back();
+    shader->compressedBlob.clear();
 
-    blob.serialize(outputCompressedLengths, outputDecompressedLengths, outputOffsets, shader->compressedBlob);
+    for(size_t index = 0, count = shader->compressedLengths.size(); index < count; index++) {
+        auto &compLengths = shader->compressedLengths.at(index);
+        compLengths.clear();
+
+        auto &decompLengths = shader->decompressedLengths.at(index);
+        decompLengths.clear();
+
+        auto &outputOffsets = shader->offsets.at(index);
+        outputOffsets.clear();
+
+        blobs[index].serialize(
+            compLengths,
+            decompLengths,
+            outputOffsets,
+            shader->compressedBlob);
+    }
 
     return serializeClass(shader);
 }

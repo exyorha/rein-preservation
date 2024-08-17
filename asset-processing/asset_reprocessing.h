@@ -38,7 +38,7 @@ private:
                     size_t outputDepthPitch);
 
     static std::optional<UnityAsset::Stream> reprocessShader(const UnityAsset::Stream &original);
-    static void addGLCoreSubprograms(UnityAsset::UnityTypes::SerializedProgram &program) ;
+    static void rewriteGLCoreSubprograms(UnityAsset::UnityTypes::SerializedProgram &program) ;
 
     static void checkNoScriptData(const UnityAsset::SerializedType &type);
 
