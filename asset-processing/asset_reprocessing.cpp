@@ -21,7 +21,12 @@
 #include "etc2_transcoder.h"
 #include "HalfFloat.h"
 #include "crunch/crn_decomp.h"
+
+#ifdef USE_BC7E
 #include "bc7e_ispc.h"
+#else
+#include "bc7enc_rdo/bc7enc.h"
+#endif
 
 void AssetReprocessing::checkNoScriptData(const UnityAsset::SerializedType &type) {
 
@@ -785,24 +790,26 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
 
         auto outputBlocksX = outputImage.storageInfo().storedWidth() / outputBlockWidth;
         auto outputBlocksY = outputImage.storageInfo().storedHeight() / outputBlockHeight;
-        auto totalOutputBlocks = outputBlocksX *outputBlocksY;
+        auto totalOutputBlocks = outputBlocksX * outputBlocksY;
 
         printf("  %u X blocks, %u Y blocks, %u blocks total\n", outputBlocksX, outputBlocksY, totalOutputBlocks);
 
+        unsigned int sourcePitchBytes = sizeof(uint32_t) * inputImage.storageInfo().storedWidth();
+
+#ifdef USE_BC7E
         ispc::bc7e_compress_block_params params;
         if(layout.format().blockWidth() <= 6 || layout.format().blockHeight() <= 6) {
             ispc::bc7e_compress_block_params_init_veryslow(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
         } else {
             ispc::bc7e_compress_block_params_init_basic(&params, colorSpace == UnityAsset::ColorSpace::Gamma);
         }
+
         static const unsigned int BC7Batch = 64;
 
         std::vector<unsigned int> scanRange;
         for(unsigned int blockIndex = 0; blockIndex < totalOutputBlocks; blockIndex += BC7Batch) {
             scanRange.push_back(blockIndex);
         }
-
-        unsigned int sourcePitchBytes = sizeof(uint32_t) * inputImage.storageInfo().storedWidth();
 
         std::for_each(std::execution::par_unseq, scanRange.begin(), scanRange.end(), [totalOutputBlocks, outputData,
                         &params, outputBlocksX, inputData, sourcePitchBytes](unsigned int firstBlockNumber) {
@@ -834,6 +841,39 @@ std::optional<AssetReprocessing::RebuiltUnityTextureData>
                 batchPixels.data(),
                 &params);
         });
+#else
+        bc7enc_compress_block_params params;
+        bc7enc_compress_block_params_init(&params);
+        bc7enc_compress_block_params_init_linear_weights(&params);
+        params.m_uber_level = BC7ENC_MAX_UBER_LEVEL;
+
+        std::vector<unsigned int> scanRange(totalOutputBlocks);
+        for(size_t index = 0; index < scanRange.size(); index++) {
+            scanRange[index] = index;
+        }
+
+        std::for_each(std::execution::par_unseq, scanRange.begin(), scanRange.end(), [totalOutputBlocks, outputData,
+                        &params, outputBlocksX, inputData, sourcePitchBytes](unsigned int blockIndex) {
+
+            auto blockX = blockIndex % outputBlocksX;
+            auto blockY = blockIndex / outputBlocksX;
+
+            std::array<uint32_t, 4*4> blockPixels;
+
+            const uint8_t *pixel = inputData + sourcePitchBytes * (blockY * 4) + sizeof(uint32_t) * blockX * 4;
+
+            for(unsigned int scanline = 0; scanline < 4; scanline++) {
+                memcpy(&blockPixels[scanline * 4], pixel, 4 * sizeof(uint32_t));
+                pixel += sourcePitchBytes;
+            }
+
+
+            bc7enc_compress_block(
+                reinterpret_cast<uint64_t *>(outputData + 16 * blockIndex),
+                blockPixels.data(),
+                &params);
+        });
+#endif
     }
 
     return RebuiltUnityTextureData{

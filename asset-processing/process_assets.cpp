@@ -11,7 +11,12 @@
 #include <Octo/Proto/Database.pb.h>
 
 #include "conversion_context.h"
+
+#ifdef USE_BC7E
 #include "bc7e_ispc.h"
+#else
+#include "bc7enc_rdo/bc7enc.h"
+#endif
 
 #include "asset_reprocessing.h"
 
@@ -40,7 +45,11 @@ static UnityAsset::Stream openSourceAssetBundle(
 }
 
 int main(int argc, char **argv) {
+#ifdef USE_BC7E
     ispc::bc7e_compress_block_init();
+#else
+    bc7enc_compress_block_init();
+#endif
 
     if(argc < 2)
         return usage();

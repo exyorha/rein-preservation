@@ -107,7 +107,8 @@ cmake \
     -DZLIB_USE_STATIC_LIBS=TRUE \
     -DZLIB_ROOT="${linprefix}" \
     -DCMAKE_PREFIX_PATH="${linprefix}" \
-    -DPRECOMPILED_ICALL_THUNKS=""
+    -DPRECOMPILED_ICALL_THUNKS="" \
+    -DBUILD_ASSET_PROCESSING=TRUE
 
 ln -sf build/compile_commands.json compile_commands.json
 cmake --build build
