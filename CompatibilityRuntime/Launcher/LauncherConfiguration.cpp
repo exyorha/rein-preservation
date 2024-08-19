@@ -32,11 +32,6 @@ const ConfigFileParser::Option LauncherConfiguration::m_options[]{
         .decode = &LauncherConfiguration::decodeFixedString<LauncherConfiguration, 256, &LauncherConfiguration::customGameServer>
     },
     {
-        .key = "useOpenGLES",
-        .encode = &LauncherConfiguration::encodeBool<LauncherConfiguration, &LauncherConfiguration::useOpenGLES>,
-        .decode = &LauncherConfiguration::decodeBool<LauncherConfiguration, &LauncherConfiguration::useOpenGLES>
-    },
-    {
         .key = "resolution",
         .encode = &LauncherConfiguration::encodeString<LauncherConfiguration, &LauncherConfiguration::resolution>,
         .decode = &LauncherConfiguration::decodeString<LauncherConfiguration, &LauncherConfiguration::resolution>
@@ -99,10 +94,6 @@ std::vector<std::string> LauncherConfiguration::buildCommandLine() const {
     if(useCustomGameServer) {
         commandLine.emplace_back("-gameserver");
         commandLine.emplace_back(customGameServer.data());
-    }
-
-    if(useOpenGLES) {
-        commandLine.emplace_back("-force-gles");
     }
 
     if(unityFramePacing) {

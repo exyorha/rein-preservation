@@ -31,7 +31,6 @@ struct LauncherConfiguration final : public ConfigFileParser {
     bool disableTouchscreenEmulation = false;
     bool useCustomGameServer = false;
     std::array<char, 256> customGameServer = { 0 };
-    bool useOpenGLES = false;
     std::string resolution;
     bool unityFramePacing = false;
 
