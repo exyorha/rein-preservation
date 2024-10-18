@@ -80,6 +80,8 @@ struct bionic_timeval {
 
 struct bionic_Dl_info;
 
+struct bionic_dirent;
+
 #define BIONIC_PROT_READ 0x1
 #define BIONIC_PROT_WRITE 0x2
 #define BIONIC_PROT_EXEC 0x4

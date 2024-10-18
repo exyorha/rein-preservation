@@ -111,3 +111,9 @@ int plat_nanosleep(const bionic_timespec *rqtp, bionic_timespec *rmtp) {
     return result;
 }
 
+int plat_getdents64(unsigned int fd, bionic_dirent *dirp, unsigned int count) {
+    fprintf(stderr, "plat_getdents64 is a stub on all platforms!\n");
+
+    bionic_set_errno(BIONIC_ENOSYS);
+    return -1;
+}

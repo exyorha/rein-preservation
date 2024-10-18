@@ -47,6 +47,7 @@ static const std::unordered_map<std::string_view, SymbolProvidingFunction> syste
     { "unlink", &thunkX86<plat_unlink> },
     { "mkdir", &thunkX86<plat_mkdir> },
     { "rmdir", &thunkX86<plat_rmdir> },
+    { "__getdents64", &thunkX86<plat_getdents64> },
 
     { "mmap", &thunkX86<plat_mmap> },
     { "mprotect", &thunkX86<plat_mprotect> },

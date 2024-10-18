@@ -32,6 +32,8 @@ void *plat_mmap(void *addr, size_t len, int prot, int flags, int fildes, bionic_
 int plat_mprotect(void *addr, size_t len, int prot);
 int plat_munmap(void *addr, size_t len);
 
+int plat_getdents64(unsigned int fd, bionic_dirent *dirp, unsigned int count);
+
 int translateErrno(int error);
 bool translateClockID(clockid_t &host, bionic_clockid_t bionic);
 int translateOpenFlag(int flag);
