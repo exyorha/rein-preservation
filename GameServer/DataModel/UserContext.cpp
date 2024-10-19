@@ -1853,7 +1853,8 @@ void UserContext::commonStartQuest(int32_t questId, const std::optional<bool> &i
 void UserContext::startMainQuest(
     int32_t questId, bool isMainFlow, bool isReplayFlow, const std::optional<bool> &isBattleOnly) {
 
-    leaveSpecialStates();
+    if(isMainFlow || isReplayFlow)
+        leaveSpecialStates();
 
     /*
      * TODO: we currently select the first scene in a quest, and this is probably incorrect
