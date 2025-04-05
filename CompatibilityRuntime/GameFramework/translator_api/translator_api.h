@@ -27,6 +27,9 @@ void IL2CPP_EXPORT translator_divert_method(const char *method, Il2CppMethodPoin
 
 void IL2CPP_EXPORT translator_disallow_precompiled_icall_use(void);
 
+struct CustomAttributesCache;
+void IL2CPP_EXPORT translator_invoke_attribute_generator(void (*generator)(struct CustomAttributesCache *cache), struct CustomAttributesCache *cache);
+
 #if defined(__cplusplus)
 }
 #endif

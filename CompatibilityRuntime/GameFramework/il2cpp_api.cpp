@@ -130,3 +130,7 @@ void il2cpp_gc_wbarrier_set_field(Il2CppObject * obj, void **targetAddress, void
 void translator_disallow_precompiled_icall_use(void) {
     GlobalContext::precompiledICallUseDisallowed = true;
 }
+
+void translator_invoke_attribute_generator(void (*generator)(struct CustomAttributesCache *cache), struct CustomAttributesCache *cache) {
+    armcall(generator, cache);
+}
